@@ -1,5 +1,6 @@
 // Print of a saved sales invoice: GET /sales-invoices/{id}/print?layout=, drawn in a new window with a Print button.
-// Layouts: a4, gift (no amounts), star (amounts as stars) on A4; thermal and receipt on 80 mm paper. A backend refusal is shown in its own words.
+// Layouts: a4, gift (no amounts unless asked), star (amounts as stars) on A4; thermal and receipt on 80 mm paper. A backend refusal is shown in its own words.
+// A gift prints the recipient where the customer goes, never the real buyer; no layout prints the seller (backend #169).
 import { api, ApiFailure } from "@/lib/api";
 import { esc, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
@@ -37,14 +38,14 @@ function payments(d: any) {
 }
 
 function header(d: any) {
-  const facts = [[p("invoiceNumber"), ltr(d.invoiceNumber)], [p("date"), ltr(String(d.invoiceDate).slice(0, 10))], [p("branch"), esc(d.branchName)], [p("seller"), esc(d.seller)], [p("customer"), esc(d.customerName)], [p("phone"), ltr(d.customerPhone)]];
+  const facts = [[p("invoiceNumber"), ltr(d.invoiceNumber)], [p("date"), ltr(String(d.invoiceDate).slice(0, 10))], [p("branch"), esc(d.branchName)], [d.isGift ? p("recipient") : p("customer"), esc(d.customerName)], [p("phone"), ltr(d.customerPhone)]];
   return `<div class="head"><p>${esc(d.shopName || "GoldGram")}</p><h2>${esc(d.layout === "receipt" ? p("receiptTitle") : p("title"))}</h2></div>
     <dl class="facts">${facts.map(([k, v]: any) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join("")}</dl>`;
 }
 
 // A4: the whole invoice as a table, then totals and payments. Gift leaves prices out; star prints the stars.
 function a4(d: any) {
-  const withPrice = d.layout !== "gift";
+  const withPrice = d.layout !== "gift" || (d.totals.total !== null && d.totals.total !== undefined);   // gift: prices only when asked
   const split = withPrice && d.lines.every((l: any) => l.goldValue !== undefined);
   const th = (k: string, end?: any) => `<th class="${end ? "e" : ""}">${esc(p(k))}</th>`;
   const tr = d.lines.map((l: any) => `<tr><td>${ltr(l.pieceCode)}</td><td>${esc(l.itemName)}</td><td>${esc(l.karat)}</td><td class="e">${ltr(gramsText(l.weight))}</td>${split ? `<td class="e">${ltr(amountText(l.goldValue) ?? "")}</td><td class="e">${ltr(amountText(l.makingCharge) ?? "")}</td><td class="e">${ltr(amountText(l.discount ?? 0) ?? "")}</td>` : ""}${withPrice ? `<td class="e">${ltr(amountText(l.linePrice) ?? "")}</td>` : ""}</tr>`).join("");
@@ -60,7 +61,9 @@ function narrow(d: any) {
 }
 
 // Must be called straight from the click (the window is opened before the answer, so no pop-up blocker objects).
-export async function openPrint(id: string, layout: string, tr: Tr) {
+// `choices` (gift layout): the recipient of this print and whether the prices show.
+export type PrintChoices = { recipientName?: string; recipientPhone?: string; showPrices?: boolean };
+export async function openPrint(id: string, layout: string, tr: Tr, choices: PrintChoices = {}) {
   const { t, L, isAr: ar } = tr;
   p = (k, v) => t("gold-sales", `prints.${k}`, v);
   const w = window.open("", "_blank");
@@ -69,7 +72,7 @@ export async function openPrint(id: string, layout: string, tr: Tr) {
   const page = (title: string, body: string, size: string) => { w.document.open(); w.document.write(`<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${CSS}@page{size:${size};margin:${size === "A4" ? "10mm" : "3mm"}}</style></head><body>${body}</body></html>`); w.document.close(); };
   page(p("title"), `<p style="text-align:center;margin-top:40px">${esc(L("جارٍ التحميل…", "Loading…"))}</p>`, "A4");
   try {
-    const d = await api(`/sales-invoices/${id}/print`, { query: { layout } });
+    const d = await api(`/sales-invoices/${id}/print`, { query: { layout, ...(choices.recipientName ? { recipientName: choices.recipientName } : {}), ...(choices.recipientPhone ? { recipientPhone: choices.recipientPhone } : {}), ...(choices.showPrices !== undefined ? { showPrices: String(choices.showPrices) } : {}) } });
     const isNarrow = layout === "thermal" || layout === "receipt";
     const bar = `<div class="bar"><b>${esc(t("common", "report.printPreview"))} · ${esc(p(`layouts.${layout}`))}</b><span>${esc(isNarrow ? p("sizes.thermal") : p("sizes.a4"))}</span><button onclick="print()">${esc(t("common", "print"))}</button></div>`;
     page(`${p("title")} ${d.invoiceNumber}`, `${bar}<main>${isNarrow ? narrow(d) : a4(d)}</main>`, isNarrow ? "80mm auto" : "A4");

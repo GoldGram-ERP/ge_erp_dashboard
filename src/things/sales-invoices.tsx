@@ -10,6 +10,7 @@ import { addDays, intText, latinNumber, milligramsText, monthStart, piastresText
 import { useSession } from "@/stores/session";
 import { Kv, Ltr, Section, ThingPage, cellNode } from "@/components/engine";
 import { LAYOUTS, openPrint } from "./sales-invoices-print";
+import { GiftPrintBox } from "./sales-gift";
 import { SalesInvoiceForm } from "./sales-invoices-form";
 import { PIECE_CODE } from "./sales-form-parts";
 import { useAccess } from "./sales-access";
@@ -21,7 +22,7 @@ const bankAccountSpec = { path: "/bank-accounts", value: "id", label: (r: Row) =
 const categorySpec = { path: "/categories", value: "id", label: "categoryName", query: { pageSize: undefined } };
 
 // The history: a number (1-7 digits) or a phone (8+) goes to the list; a piece code (a letter in it, or digits the list does not know) to /find-invoice.
-const asListItem = (inv: Row) => ({ id: inv.id, invoiceType: inv.invoiceType, employeeId: inv.employeeId, sellerName: inv.employeeName, invoiceNumber: inv.invoiceNumber, branchId: inv.branchId, invoiceDate: inv.invoiceDate, customerName: inv.customerName, customerPhone: inv.customerPhone, lineCount: inv.totals.lineCount, cashTotal: inv.cashTotal, createdAt: inv.createdAt, deletedAt: inv.deletedAt });
+const asListItem = (inv: Row) => ({ id: inv.id, invoiceType: inv.invoiceType, employeeId: inv.employeeId, sellerName: inv.employeeName, invoiceNumber: inv.invoiceNumber, branchId: inv.branchId, invoiceDate: inv.invoiceDate, customerName: inv.customerName, customerPhone: inv.customerPhone, isGift: inv.isGift, lineCount: inv.totals.lineCount, cashTotal: inv.cashTotal, createdAt: inv.createdAt, deletedAt: inv.deletedAt });
 async function findByPiece(code: string, signal?: AbortSignal) {
   try {
     const inv = await api("/find-invoice", { query: { pieceCode: code }, signal });
@@ -64,7 +65,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
   };
 
   const historyCols: Column[] = [
-    { key: "invoiceNumber", label: m("invoiceNumber"), render: (r) => <><Ltr>{code6(r.invoiceNumber)}</Ltr>{r.deletedAt && <> <span className="st off"><i />{m("deletedBadge")}</span></>}</> },
+    { key: "invoiceNumber", label: m("invoiceNumber"), render: (r) => <><Ltr>{code6(r.invoiceNumber)}</Ltr>{r.isGift && <> <span className="st" data-gift><i />{m("giftBadge")}</span></>}{r.deletedAt && <> <span className="st off"><i />{m("deletedBadge")}</span></>}</> },
     { key: "invoiceDate", label: m("invoiceDate"), type: "date" },
     { key: "invoiceType", label: m("invoiceType"), get: (r) => m(`invoiceTypes.${r.invoiceType}`) },
     { key: "customerName", label: m("customerName") },
@@ -167,9 +168,13 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
             <Kv k={m("invoiceNumber")}><Ltr>{code6(r.invoiceNumber)}</Ltr></Kv><Kv k={m("branch")}>{r.branchName ?? ""}</Kv>
             <Kv k={m("invoiceDate")}><Ltr>{String(r.invoiceDate).slice(0, 10)}</Ltr></Kv><Kv k={m("seller")}>{r.employeeName ?? ""}</Kv>
             <Kv k={m("invoiceType")}>{m(`invoiceTypes.${r.invoiceType}`)}</Kv>
+            {r.isGift && <Kv k={m("gift")}><span className="st" data-gift><i />{m("giftBadge")}</span></Kv>}
             <Kv k={m("priceKarat")}><Ltr>{r.priceKarat}</Ltr></Kv><Kv k={m("priceDate")}><Ltr>{String(r.priceDate).slice(0, 10)}</Ltr></Kv><Kv k={m("goldPrice21k")}><Ltr>{piastresText(r.goldPrice21k)}</Ltr></Kv>
           </Section>
-          <Section title={m("customer")}>
+          {r.isGift && <Section title={m("giftRecipient")}>
+            <Kv k={m("recipientName")}>{r.giftRecipientName ?? ""}</Kv><Kv k={m("recipientPhone")}><Ltr>{r.giftRecipientPhone ?? ""}</Ltr></Kv>
+          </Section>}
+          <Section title={r.isGift ? m("buyerInternal") : m("customer")}>
             <Kv k={m("customerName")}>{r.customerName ?? ""}</Kv><Kv k={m("customerPhone")}><Ltr>{r.customerPhone ?? ""}</Ltr></Kv><Kv k={m("nationalId")}><Ltr>{r.nationalId ?? ""}</Ltr></Kv>
           </Section>
           <Section title={m("pieces")} wide>
@@ -194,10 +199,11 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
             <Kv k={m("lineCount")}><Ltr>{tot.lineCount}</Ltr></Kv><Kv k={m("totalWeight")}><Ltr>{milligramsText(tot.weight)}</Ltr></Kv><Kv k={m("cashDiscount")}><Ltr>{piastresText(tot.discount)}</Ltr></Kv>
             <Kv k={m("total")}><Ltr>{piastresText(tot.total)}</Ltr></Kv><Kv k={m("paid")}><Ltr>{piastresText(tot.paid)}</Ltr></Kv>
           </Section>
+          {!r.deletedAt && <GiftPrintBox key={r.id} row={r} tr={tr} />}
         </>;
       },
-      // Print: one button per layout (a4, thermal, receipt, gift, star), the print endpoint, in a new window.
-      actions: LAYOUTS.map((layout) => ({ id: `print-${layout}`, label: t("gold-sales", `prints.layouts.${layout}`), icon: "print", when: (r: Row) => !r.deletedAt, run: (r: Row) => { openPrint(r.id, layout, tr); } })),
+      // Print: one button per layout in a new window; the gift layout has its own box above (recipient and prices), so it is not one of them.
+      actions: LAYOUTS.filter((layout) => layout !== "gift").map((layout) => ({ id: `print-${layout}`, label: t("gold-sales", `prints.layouts.${layout}`), icon: "print", when: (r: Row) => !r.deletedAt, run: (r: Row) => { openPrint(r.id, layout, tr); } })),
       // No edit: a saved sales invoice is never changed. Delete marks it, puts its pieces back for sale and gives back cash and bank.
       remove: { when: (r) => !r.deletedAt, path: (r) => `/sales-invoices/${r.id}`, confirm: (r) => ({ title: m("deleteTitle", { code: code6(r.invoiceNumber) }), text: m("deleteBody") }) },
     },

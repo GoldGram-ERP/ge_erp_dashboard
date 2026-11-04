@@ -1475,7 +1475,18 @@
    "cashDiscountHint": "بيتخصم من المصنعية بس، مش من قيمة الذهب. أقصى حاجة {max}.",
    "cashDiscountAbove": "الخصم النقدي أكبر من المصنعية: أقصاه {max}.",
    "cashDiscountInvalid": "اكتب مبلغ أكبر من صفر، أو نسبة صحيحة من 0 إلى 100.",
-   "cashDiscountNotAllowed": "مالكش صلاحية الخصم النقدي."
+   "cashDiscountNotAllowed": "مالكش صلاحية الخصم النقدي.",
+   "gift": "هدية",
+   "giftBadge": "هدية",
+   "giftSwitch": "دي هدية",
+   "giftSwitchHint": "الفاتورة المطبوعة بتظهر اسم المستلم، ومش بتظهر المشتري أبدًا.",
+   "giftRecipient": "مستلم الهدية",
+   "recipientName": "اسم المستلم",
+   "recipientPhone": "تليفون المستلم",
+   "buyerInternal": "المشتري (داخلي، مش بيتطبع على الهدية)",
+   "giftPrintTitle": "اطبع كهدية",
+   "showPrices": "اعرض الأسعار",
+   "showPricesHint": "مقفولة من الأساس: القطع والأوزان والعيار بس."
   },
   "prints": {
    "buttonsLabel": "طباعة الفاتورة",
@@ -1498,6 +1509,7 @@
    "branch": "الفرع",
    "seller": "البائع",
    "customer": "العميل",
+   "recipient": "المستلم",
    "phone": "الهاتف",
    "pieceCode": "كود القطعة",
    "item": "الصنف",

@@ -73,7 +73,7 @@ export async function capture(browser: any, re: RegExp, methods = ['POST', 'PATC
   return seen;
 }
 
-export const MAIN_BRANCH = 'a2deabe8-31a9-448e-95e5-04e74efceaee'; // seeded "Main branch" (no admin, so the superadmin can use it)
+export const MAIN_BRANCH = process.env.E2E_MAIN_BRANCH ?? 'a2deabe8-31a9-448e-95e5-04e74efceaee'; // seeded "Main branch" (no admin, so the superadmin can use it)
 /** Goods for the gold tests, all through the real API as superadmin; remove() deletes what can be deleted, in order. */
 export async function seed(tag = stamp()) {
   const api = await apiAs('superadmin');
