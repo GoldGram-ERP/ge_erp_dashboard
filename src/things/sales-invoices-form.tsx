@@ -276,7 +276,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
             <div id="pcErr">{pcErr && <ErrBox>{pcErr}{pcErr === m("pieceNoGoldPrice") && <> <NavLink href="/setup/gold-prices">{m("enterGoldPrice")}</NavLink></>}</ErrBox>}{errs.pieceCode && <ErrBox>{errs.pieceCode}</ErrBox>}</div></div>
           <div className="table" style={{ marginTop: 12 }}><table>
             <thead><tr><th>{m("lineHeading")}</th><th>{m("pieceCode")}</th><th>{m("item")}</th><th>{m("karat")}</th><th className="num">{m("weight")}</th><th className="num">{m("weight24")}</th><th className="num">{m("pricePerGram24")}</th><th className="num">{m("goldValue")}</th><th className="num">{m("makingCharge")}</th><th className="num">{m("linePrice")}</th><th /></tr></thead>
-            <tbody id="lineRows">{lines.map((l, i) => <FragmentRow key={l.pieceCode}>
+            <tbody id="lineRows">{lines.length === 0 && <tr id="noPieces"><td colSpan={11} className="mute" style={{ textAlign: "center", padding: "22px 12px" }}>{m("noPieces")}</td></tr>}{lines.map((l, i) => <FragmentRow key={l.pieceCode}>
               <tr data-line={i}><td className="num">{i + 1}</td><td dir="ltr"><b>{l.pieceCode}</b></td><td>{l.itemName}</td><td dir="ltr">{l.karat}</td>
                 <td className="num">{milligramsText(l.weight)}</td><td className="num">{l.weight24Mg === null ? "—" : milligramsText(l.weight24Mg)}</td><td className="num">{l.pricePerGram24 === null ? "—" : piastresText(l.pricePerGram24)}</td>
                 <td className="num">{piastresText(l.goldValue)}</td><td className="num">{piastresText(l.makingCharge)}</td><td className="num">{made ? m("priceByReservation") : piastresText(l.linePrice)}</td>

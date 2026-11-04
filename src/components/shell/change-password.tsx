@@ -25,9 +25,11 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
   const set = (n: string, val: string) => { setV((o) => ({ ...o, [n]: val })); setErrs((o) => ({ ...o, [n]: "" })); setKey(newSaveKey()); };
 
   const n = v.newPassword;
+  // A forced change (first sign-in or a temporary password) has no current password: POST /access/forced-password-change {newPassword}.
+  const names = forced ? NAMES.filter((x) => x !== "currentPassword") : NAMES;
   const checks: [string, boolean][] = [
     [rules("length"), n.length >= 8 && n.length <= 128],
-    [rules("differs"), n !== "" && n !== v.currentPassword],
+    ...(forced ? [] : [[rules("differs"), n !== "" && n !== v.currentPassword] as [string, boolean]]),
     [rules("matches"), v.confirmPassword !== "" && v.confirmPassword === n],
   ];
   const label = { currentPassword: a("currentPassword"), newPassword: a("newPassword"), confirmPassword: a("confirmPassword") };
@@ -35,18 +37,18 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
   async function save(e: FormEvent) {
     e.preventDefault();
     const er: Record<string, string> = {};
-    if (!v.currentPassword.trim()) er.currentPassword = a("errors.required");
+    if (!forced && !v.currentPassword.trim()) er.currentPassword = a("errors.required");
     if (!n.trim()) er.newPassword = a("errors.required");
     else if (n.length < 8) er.newPassword = a("errors.tooShort");
     else if (n.length > 128) er.newPassword = a("errors.tooLong");
-    else if (n === v.currentPassword) er.newPassword = a("errors.sameAsCurrent");
+    else if (!forced && n === v.currentPassword) er.newPassword = a("errors.sameAsCurrent");
     if (!v.confirmPassword) er.confirmPassword = a("errors.required");
     else if (v.confirmPassword !== n) er.confirmPassword = a("errors.mismatch");
     setErrs(er); setFail("");
     if (Object.keys(er).length) return;
     setBusy(true);
     try {
-      await api("/access/change-password", { method: "POST", body: { currentPassword: v.currentPassword, newPassword: n }, saveKey: key });
+      await api(forced ? "/access/forced-password-change" : "/access/change-password", { method: "POST", body: forced ? { newPassword: n } : { currentPassword: v.currentPassword, newPassword: n }, saveKey: key });
       setDone(true); setKey(newSaveKey()); setV({ currentPassword: "", newPassword: "", confirmPassword: "" }); toast(a("saved"));
       if (forced) { await qc.invalidateQueries({ queryKey: ["me"] }); window.location.reload(); }
     } catch (x) {
@@ -67,7 +69,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
       {done && !forced ? <div className="note" role="status">{a("saved")} <Link href="/">{a("toHome")}</Link></div> : null}
       <p className="mute">{a("sub")}</p>
       <form id="pwf" onSubmit={save} noValidate>
-        {NAMES.map((name) => (
+        {names.map((name) => (
           <div className="field" key={name}>
             <label htmlFor={`f-${name}`}>{label[name]}</label>
             <input id={`f-${name}`} name={name} type={shown[name] ? "text" : "password"} value={v[name]} onChange={(e) => set(name, e.target.value)} autoComplete={name === "currentPassword" ? "current-password" : "new-password"} dir="ltr" style={{ textAlign: "start" }} aria-invalid={!!errs[name]} aria-describedby={errs[name] ? `e-${name}` : undefined} />

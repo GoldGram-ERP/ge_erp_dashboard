@@ -1409,6 +1409,7 @@
    "moreChoices": "{count, plural, zero {لا المزيد} one {واحد آخر: اكتب للبحث} two {اثنان آخران: اكتب للبحث} few {# آخرون: اكتب للبحث} other {# آخر: اكتب للبحث}}",
    "pieces": "القطع",
    "pieceCount": "{count, plural, zero {لا قطع} one {قطعة واحدة} two {قطعتان} few {# قطع} other {# قطعة}}",
+   "noPieces": "لا توجد قطع بعد. اكتب كود القطعة أو امسحه أعلاه.",
    "pieceCode": "كود القطعة",
    "pieceCodePlaceholder": "اكتب الكود أو امسحه",
    "pieceCodeHint": "اضغط Enter لإضافة القطعة. لكل قطعة كودها.",

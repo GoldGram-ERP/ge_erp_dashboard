@@ -1409,6 +1409,7 @@
    "moreChoices": "{count, plural, one {# more: type to search} other {# more: type to search}}",
    "pieces": "Pieces",
    "pieceCount": "{count, plural, =0 {No pieces} one {# piece} other {# pieces}}",
+   "noPieces": "No pieces yet. Type or scan a piece code above.",
    "pieceCode": "Piece code",
    "pieceCodePlaceholder": "Type or scan the code",
    "pieceCodeHint": "Press Enter to add the piece. Every piece needs its code.",
