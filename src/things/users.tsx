@@ -1,0 +1,123 @@
+"use client";
+// المستخدمين: administration/users (add / edit), administration/users-list (list + record) and "assign jobs" (PUT /users/job-holders/{jobId}).
+// Ported from docs/nav-preview/app/things/users.js. List sends only: search, page, order=newest, type, locked=only, deleted=only (Super admin). Page size is the backend's 20.
+// Admin: reads every user, manages plain Users only (mayManage). Delete refusals (ownAccount, lastSuperAdmin, isBranchAdmin, notAllowed) show their errors.json text.
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, ApiFailure, newSaveKey } from "@/lib/api";
+import type { CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
+import { useMe } from "@/lib/session";
+import type { Tr } from "@/lib/t";
+import { ThingPage, Ltr, toast } from "@/components/engine";
+import { JOBS } from "./admin-names";
+import { TYPES, UserForm, UserRecord, code6, jobName, manageable, typeName } from "./admin-shared";
+import { useAccess } from "./sales-access";
+
+// The jobs page: pick who holds a job (whole set), from the plain Users who have every screen of it open.
+function Holders({ row, close, reload, tr }: CustomFormProps) {
+  const { t } = tr;
+  const a = (k: string, v?: Record<string, any>) => t("administration", `jobAssignments.${k}`, v);
+  const [people, setPeople] = useState<Row[] | null>(null);
+  const [on, setOn] = useState<Set<string>>(new Set());
+  const [q, setQ] = useState(""), [err, setErr] = useState(""), [saving, setSaving] = useState(false);
+  const key = useRef(newSaveKey());
+  useEffect(() => {
+    api(`/users/job-holders/${row!.id}`).then((r) => { setPeople([...r.holders, ...r.couldHold]); setOn(new Set(r.holders.map((p: Row) => p.id))); })
+      .catch((e) => setErr(e instanceof ApiFailure ? tr.errorText(e.error) : t("common", "couldNotLoad")));
+  }, [row, tr, t]);
+  const f = q.trim().toLowerCase(), list = (people ?? []).filter((p) => !f || `${p.name} ${p.username}`.toLowerCase().includes(f));
+  const save = async () => {
+    if (!navigator.onLine) { toast(t("common", "offline"), { error: true }); return; }
+    setSaving(true);
+    try { await api(`/users/job-holders/${row!.id}`, { method: "PUT", body: { userIds: [...on] }, saveKey: key.current }); toast(a("saved")); reload(); }
+    catch (e) { setSaving(false); toast(e instanceof ApiFailure ? tr.errorText(e.error) : a("saveFailed"), { error: true }); }
+  };
+  return (
+    <>
+      <div className="note">{a("hint")}</div>
+      <div className="card">
+        {err ? <div className="note warn">{err}</div> : !people ? <div className="skeleton" aria-busy="true"><i /><i /><i /></div>
+          : people.length === 0 ? <p className="mute">{a("noUsers")}</p>
+          : <>
+            <input id="hp-q" placeholder={a("searchUser")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={a("searchUser")} autoComplete="off" />
+            <p dir="ltr" aria-live="polite">{a("count", { on: on.size, all: people.length })}</p>
+            {list.map((p) => <label key={p.id} className="field check"><input type="checkbox" checked={on.has(p.id)} onChange={(e) => { const n = new Set(on); e.target.checked ? n.add(p.id) : n.delete(p.id); setOn(n); key.current = newSaveKey(); }} /><span>{p.name} <bdi dir="ltr" className="mute">{p.username}</bdi></span></label>)}
+          </>}
+      </div>
+      <div className="formbar"><button type="button" className="btn primary" id="hp-save" disabled={!people || saving} onClick={save}>{a("save")}</button><button type="button" className="btn quiet" onClick={close}>{t("common", "cancel")}</button></div>
+    </>
+  );
+}
+
+const CreateUser = (p: CustomFormProps) => <UserForm {...p} path="/users" />;
+const EditUser = (p: CustomFormProps) => <UserForm {...p} path="/users" staysAfterAdd={false} />;
+
+const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
+  const { t, L } = tr;
+  const u = (k: string, v?: Record<string, any>) => t("administration", `users.${k}`, v);
+  const a = (k: string) => t("administration", `jobAssignments.${k}`);
+  const can = manageable(viewer);
+  return {
+    id: "users",
+    title: u("title"),
+    unit: L("مستخدم", "users"),
+    keys: ["administration/users", "administration/users-list"],
+    create: [{ form: "create", label: u("add"), keys: ["administration/users"] }],
+    views: [{
+      id: "list", label: u("listTitle"), keys: ["administration/users-list"],
+      endpoint: "/users", query: { order: "newest" },
+      search: { param: "search", placeholder: u("searchPlaceholder") },
+      filters: [
+        { name: "type", label: u("userType"), type: "select", searchable: false, options: TYPES.map((x) => [x, typeName(tr, x)]) },
+        { name: "lockedOnly", label: u("lockedOnly"), type: "checkbox", toQuery: (v) => (v ? { locked: "only" } : {}) },
+        ...(viewer === "super_admin" ? [{ name: "deletedOnly", label: u("deletedOnly"), type: "checkbox" as const, toQuery: (v: unknown) => (v ? { deleted: "only" } : {}) }] : []),
+      ],
+      paging: { sizeParam: null },
+      onRow: (row, h) => h.open(row),
+      columns: [
+        { key: "userCode", label: u("userCode"), render: (r) => <><Ltr>{code6(r.userCode)}</Ltr>{r.deletedAt ? <> <span className="st off"><i />{u("deletedBadge")}</span></> : r.locked ? <> <span className="st warn"><i />{u("lockedBadge")}</span></> : null}</> },
+        { key: "username", label: u("username"), render: (r) => <bdi dir="ltr">{r.username}</bdi> },
+        { key: "email", label: u("email"), render: (r) => (r.needsEmail ? "—" : <bdi dir="ltr">{r.email}</bdi>) },
+        { key: "userType", label: u("userType"), get: (r) => typeName(tr, r.userType) },
+        { key: "branchName", label: u("branchId"), render: (r) => r.branchName || "—" },
+      ],
+      rowClass: (r) => (r.deletedAt ? "deleted" : ""),
+    }, {
+      id: "jobs", label: a("title"), keys: ["administration/users"], create: [],
+      load: async () => ({ items: ((await api("/users/jobs")).jobs ?? []).map((j: Row) => ({ id: j.id, screens: j.screens })) }),
+      paging: false,
+      onRow: (row, h) => h.openForm("holders", row),
+      columns: [
+        { key: "id", label: a("job"), get: (r) => jobName(tr, r.id) },
+        { key: "group", label: L("المجموعة", "Group"), get: (r) => { const j = JOBS.find((x) => x[0] === r.id); return j ? t("jobs", `groups.${j[1]}`) : ""; } },
+        { key: "screens", label: u("screens.heading"), type: "int", get: (r) => r.screens.length },
+      ],
+    }],
+    record: {
+      title: (r) => `${u("recordNo")} ${code6(r.userCode)}`,
+      endpoint: (r) => `/users/${r.id}`,
+      render: (r) => <UserRecord r={r} tr={tr} />,
+      actions: [
+        { id: "edit", label: t("common", "edit"), icon: "edit", when: can, run: (r, h) => { h.close(); h.openForm("edit", r); } },
+        { id: "print", label: t("common", "print"), icon: "print", run: () => window.print() },
+        { id: "unlock", label: u("unlock"), icon: "key", when: (r) => can(r) && !!r.locked, run: async (r, h) => { await api(`/users/${r.id}/unlock`, { method: "POST" }); h.close(); h.toast(u("unlocked")); h.reload(); } },
+      ],
+      remove: {
+        when: can,
+        path: (r) => `/users/${r.id}`,
+        confirm: (r) => ({ title: u("deleteTitle", { code: code6(r.userCode) }), text: `${u("deleteBody")} ${L("لا يمكن التراجع عن الحذف.", "This cannot be undone.")}` }),
+      },
+    },
+    forms: {
+      create: { display: "page", title: u("new"), fields: [], path: () => "/users", custom: CreateUser },
+      edit: { display: "page", title: (r) => u("editTitle", { code: code6(r!.userCode) }), fields: [], path: (r) => `/users/${r!.id}`, custom: EditUser },
+      holders: { display: "page", title: (r) => `${a("title")} · ${jobName(tr, r!.id)}`, fields: [], path: (r) => `/users/job-holders/${r!.id}`, custom: Holders },
+    },
+  };
+};
+
+export default function Page() {
+  const { data: me } = useMe();
+  const viewer = me?.userType;
+  const make = useMemo<MakeConfig>(() => (tr) => build(tr, viewer), [viewer]);
+  return <ThingPage make={make} access={useAccess()} />;
+}
