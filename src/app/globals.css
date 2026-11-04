@@ -104,6 +104,7 @@ tr.row{cursor:pointer;transition:background .12s}
 tr.row:hover{background:#fbf8ee}
 tr.row[aria-selected=true]{background:var(--gold-wash)}
 tr.row.deleted td{color:var(--off);text-decoration:line-through}
+tr.row.inactive td{color:var(--mute)}
 tr.row:focus-visible{outline-offset:-2px}
 .num{text-align:end;font-variant-numeric:tabular-nums}
 .id{font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums}
@@ -154,6 +155,10 @@ tr.flash td{animation:flash 1.6s ease-out}
 .kv span:last-child{font-weight:600;font-variant-numeric:tabular-nums;text-align:end}
 .note{font-size:13px;color:var(--ink-2);background:var(--gold-wash);border-radius:10px;padding:10px 14px;margin-bottom:14px}
 .note.warn{background:#f9e9e4;color:#6b2616}
+/* Items form: the example box under a workmanship or cashback setting */
+.note.example{margin:0;line-height:1.55;font-variant-numeric:tabular-nums}
+.note.example .example-title{font-weight:600;color:var(--ink);margin-bottom:2px}
+.note.example .example-line{font-weight:600;color:var(--ink)}
 
 /* ───── Sheet (side panel): enters and leaves along the same path ───── */
 .sheet{position:absolute;inset-block:12px;inset-inline-end:12px;width:420px;max-width:calc(100% - 24px);z-index:5;background:var(--surface);border-radius:16px;

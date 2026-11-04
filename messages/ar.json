@@ -1191,7 +1191,46 @@
    "openFullHistory": "فتح السجل الكامل",
    "latestOpens": "آخر السجلات: فتح سجل مجموعات الأصناف",
    "searchPlaceholder": "ابحث بالكود أو الاسم",
-   "nameHasItem": "لهذا الاسم صنف بالفعل. لكل اسم صنف واحد."
+   "nameHasItem": "لهذا الاسم صنف بالفعل. لكل اسم صنف واحد.",
+   "weightG": "الوزن (جم)",
+   "karatHelp": "الذهب: 18 أو 21 أو 24. الفضة: 999.",
+   "workmanship": "المصنعية",
+   "cashback": "الكاش باك",
+   "workmanshipMode": "طريقة حساب المصنعية",
+   "workmanshipValue": "قيمة المصنعية",
+   "cashbackMode": "طريقة حساب الكاش باك",
+   "cashbackValue": "قيمة الكاش باك",
+   "modes": {
+    "per_gram": "لكل جرام",
+    "percent": "نسبة من قيمة الذهب",
+    "per_piece": "لكل قطعة"
+   },
+   "valueHelp": {
+    "per_gram": "جنيه لكل جرام، مثل 187.50",
+    "percent": "نسبة مئوية، مثل 4.50",
+    "per_piece": "جنيه للقطعة، مثل 800.00"
+   },
+   "shown": {
+    "per_gram": "{value} / جم",
+    "percent": "{value} ٪",
+    "per_piece": "{value} / قطعة"
+   },
+   "status": "الحالة",
+   "isActive": "نشط",
+   "active": "نشط",
+   "inactive": "موقوف",
+   "activeOnly": "النشطة",
+   "inactiveOnly": "الموقوفة",
+   "activeAdminOnly": "تشغيل الصنف أو إيقافه للمدير والمدير العام فقط.",
+   "example": {
+    "title": "مثال بسعر اليوم",
+    "basis": "قطعة واحدة عيار {karat} بسعر {price} ج.م للجرام، وزنها {weight} جم",
+    "workmanship": "القطعة = ذهب {gold} + مصنعية {charge} = {total} ج.م",
+    "cashback": "القطعة: ذهب {gold}، والكاش باك عليها {charge} ج.م",
+    "noPrice": "لا يوجد سعر محفوظ لهذا العيار بعد، فلا يمكن حساب المثال.",
+    "fill": "اختر العيار واكتب الوزن والقيمة لترى سعر قطعة واحدة اليوم."
+   },
+   "percentMax": "النسبة لا تزيد على 100."
   },
   "newLine": {
    "title": "الصنف الجديد",

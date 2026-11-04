@@ -1191,7 +1191,46 @@
    "openFullHistory": "Open full history",
    "latestOpens": "Latest records: open the Item list",
    "searchPlaceholder": "Search by code or name",
-   "nameHasItem": "This item name already has an item. Each name has one item."
+   "nameHasItem": "This item name already has an item. Each name has one item.",
+   "weightG": "Weight (g)",
+   "karatHelp": "Gold: 18, 21 or 24. Silver: 999.",
+   "workmanship": "Workmanship",
+   "cashback": "Cashback",
+   "workmanshipMode": "Workmanship setting",
+   "workmanshipValue": "Workmanship value",
+   "cashbackMode": "Cashback setting",
+   "cashbackValue": "Cashback value",
+   "modes": {
+    "per_gram": "Per gram",
+    "percent": "Percent of the gold",
+    "per_piece": "Per piece"
+   },
+   "valueHelp": {
+    "per_gram": "EGP per gram, such as 187.50",
+    "percent": "A percent, such as 4.50",
+    "per_piece": "EGP per piece, such as 800.00"
+   },
+   "shown": {
+    "per_gram": "{value} / g",
+    "percent": "{value} %",
+    "per_piece": "{value} / piece"
+   },
+   "status": "Status",
+   "isActive": "Active",
+   "active": "Active",
+   "inactive": "Inactive",
+   "activeOnly": "Active",
+   "inactiveOnly": "Inactive",
+   "activeAdminOnly": "Only an Admin or the Super admin can switch an item on or off.",
+   "example": {
+    "title": "Example at today's price",
+    "basis": "One piece of {karat} karat at {price} EGP a gram, {weight} g",
+    "workmanship": "One piece = gold {gold} + workmanship {charge} = {total} EGP",
+    "cashback": "One piece: gold {gold}, cashback on it {charge} EGP",
+    "noPrice": "No price is saved for this karat yet, so there is no example.",
+    "fill": "Choose the karat and type the weight and the value to see one piece priced today."
+   },
+   "percentMax": "A percent is 100 at most."
   },
   "newLine": {
    "title": "The new line",
