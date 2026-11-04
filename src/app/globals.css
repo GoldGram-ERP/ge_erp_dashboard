@@ -750,8 +750,12 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 #nav,.side-foot,#usearch{transition:opacity .14s ease-out}
 @media (prefers-reduced-motion:reduce){#nav,.side-foot,#usearch{transition:none}}
 
-/* The language switch never scrolls inside itself: it keeps its natural width, and drops to its own line when the sidebar is too tight (large text). */
-.foot-top{flex-wrap:wrap}
-.foot-top .langbar{flex:1 1 150px;min-width:150px}
-.langbar .seg{overflow:visible;width:100%}
-.langbar .seg button{flex:1 1 0;min-width:max-content}
+
+/* Sidebar foot: one compact line, the connection pill and the language switch at their natural size, and a tight person row. */
+.foot-top{flex-wrap:wrap;gap:6px 8px;margin:0 10px 4px;align-items:center}
+.foot-top .status{flex:none;margin:0;padding:3px 9px 3px 8px;font-size:11.5px;line-height:18px;gap:5px}
+.foot-top .langbar{flex:0 0 auto;margin:0;margin-inline-start:auto;min-width:0;width:auto}
+.foot-top .langbar .seg{width:auto;overflow:visible;padding:2px;gap:1px;border-radius:8px}
+.foot-top .langbar .seg button{flex:none;height:22px;padding:0 9px;font-size:11.5px;border-radius:6px;min-width:0}
+.side-foot .me{padding:6px 12px 8px}
+.side-foot{padding-top:2px}
