@@ -6,9 +6,8 @@ export type ThingEntry = { load: () => Promise<{ default: ComponentType }> };
 export const things: Record<string, ThingEntry> = {};
 
 // Engine pages (builder B). Add one line per ported page.
-things["bank-accounts/banks"] = { load: () => import("./banks") };
-things["bank-accounts/bank-accounts"] = { load: () => import("./banks") };
-things["system-codes/gold-prices"] = { load: () => import("./gold-prices") };
+things["money/banks"] = { load: () => import("./banks") };
+things["setup/gold-prices"] = { load: () => import("./gold-prices") };
 things["sales/invoices"] = { load: () => import("./sales-invoices") };
 things["sales/returns"] = { load: () => import("./sales-returns") };
 things["sales/reservations"] = { load: () => import("./sales-reservations") };
