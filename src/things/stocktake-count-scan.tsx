@@ -1,0 +1,184 @@
+"use client";
+// The page of one stock count: details, scan box (typed / hand scanner + Enter / camera), scanned pieces, Save and close, Delete.
+// Open = scan more; Save closes it for good; Delete only marks it. Ported from docs/nav-preview/app/things/stocktake-count-scan.js.
+// Writes: POST /stock-counts/:id/scan, POST /stock-counts/:id/save (one key per attempt, renewed after a failure), DELETE /stock-counts/:id.
+// Refusals (alreadyCounted, pieceOutsideCount, pieceNotInBranch, inTransit, pieceNotFound, countClosed) show as a toast; the typed text stays.
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api, ApiFailure, newSaveKey } from "@/lib/api";
+import type { Row } from "@/lib/engine-types";
+import { Icon, Kv, Ltr, Section, ToastHost, toast, useConfirm } from "@/components/engine";
+import { useT } from "@/lib/t";
+import { CameraBox } from "./stocktake-count-camera";
+import { code6, nameOf } from "./stocktake-shared";
+
+// The dashboard's readPieceCode: trim, Arabic-Indic and Persian digits to Latin, must be 1..20 of letters, digits, space, dot.
+export function readPieceCode(raw: string): { code?: string; problem?: "arabicLayout" | "notOurs" } {
+  const code = String(raw).trim().replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+  if (/^[A-Za-z0-9 .]{1,20}$/.test(code)) return { code };
+  return { problem: /[؀-ۿ]/.test(code) ? "arabicLayout" : "notOurs" };
+}
+
+const gone = (e: unknown) => e instanceof ApiFailure && e.status === 404;
+
+function Chips({ codes, red }: { codes: string[]; red?: boolean }) {
+  const { L } = useT();
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      {codes.map((c) => (
+        <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+          <span dir="ltr" className={`st ${red ? "warn" : "off"}`}><i />{c}</span>
+          <button type="button" className="btn quiet sm" aria-label={`${L("نسخ", "Copy")} ${c}`} style={{ padding: "0 4px" }} onClick={() => navigator.clipboard?.writeText(c).catch(() => {})}>{L("نسخ", "Copy")}</button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
+  const tr = useT();
+  const { t, L } = tr;
+  const m = (k: string, v?: Record<string, string | number>) => t("gold-stocktake", `stockCount.${k}`, v);
+  const [confirm, dialog] = useConfirm();
+  const [data, setData] = useState<Row | null>(null);
+  const [names, setNames] = useState<{ branch: string; category: string; item: string }>({ branch: "", category: "", item: "" });
+  const [loadErr, setLoadErr] = useState("");
+  const [code, setCode] = useState("");
+  const [problem, setProblem] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [camera, setCamera] = useState(false);
+  const [camNote, setCamNote] = useState("");
+  const [online, setOnline] = useState(true);
+  const saveKey = useRef(newSaveKey());
+  const input = useRef<HTMLInputElement>(null);
+  const busy = useRef(false);
+  const open = data?.status === "open" && !data.deletedAt;
+
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine);
+    sync(); window.addEventListener("online", sync); window.addEventListener("offline", sync);
+    return () => { window.removeEventListener("online", sync); window.removeEventListener("offline", sync); };
+  }, []);
+  const leaveGone = useCallback(() => { toast(m("notFound"), { error: true }); onClose(); }, [onClose]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const failText = (e: ApiFailure, fallback: string) => { const x = tr.errorText(e.error); return x === tr.errorText({ message: "unexpected" }) ? tr.errorText({ message: fallback }) : x; };
+  const generic = L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.");
+
+  const load = useCallback(async (first: boolean) => {
+    try {
+      const d = await api(`/stock-counts/${id}`);
+      const [branch, category, item] = await Promise.all([nameOf("/branches", d.branchId, "branchName"), nameOf("/categories", d.categoryId, "categoryName"), nameOf("/items", d.itemId, "itemName")]);
+      setNames({ branch, category, item }); setLoadErr(""); setData(d);
+      if (first && d.status === "open" && !d.deletedAt) setTimeout(() => input.current?.focus(), 0);
+    } catch (e) {
+      if (gone(e)) return leaveGone();
+      setLoadErr(e instanceof ApiFailure ? tr.errorText(e.error) : t("common", "couldNotLoad"));
+    }
+  }, [id, leaveGone]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(true); }, [load]);
+  useEffect(() => { if (data && !open) setCamera(false); }, [data, open]);
+
+  async function scanCode(raw: string) {
+    const r = readPieceCode(raw);
+    setProblem(r.problem ?? "");
+    if (!r.code || busy.current || !navigator.onLine) return;
+    busy.current = true; setScanning(true);
+    try {
+      setData(await api(`/stock-counts/${id}/scan`, { method: "POST", body: { pieceCode: r.code } }));
+      toast(m("countedOnce", { code: r.code }));
+      setCode(""); input.current?.focus();
+    } catch (e) {
+      if (gone(e)) return leaveGone();
+      toast(e instanceof ApiFailure ? tr.errorText(e.error) : generic, { error: true });
+    } finally { busy.current = false; setScanning(false); }
+  }
+
+  async function save() {
+    if (!navigator.onLine) { toast(t("common", "offline"), { error: true }); return; }
+    if (saving) return;
+    setSaving(true);
+    try {
+      setData(await api(`/stock-counts/${id}/save`, { method: "POST", saveKey: saveKey.current }));
+      toast(m("saved"));
+    } catch (e) {
+      saveKey.current = newSaveKey();
+      if (gone(e)) return leaveGone();
+      toast(e instanceof ApiFailure ? failText(e, "saveFailed") : generic, { error: true });
+    } finally { setSaving(false); }
+  }
+
+  async function remove() {
+    if (!navigator.onLine || !data) return;   // the dashboard's Delete does nothing while offline
+    if (!(await confirm({ title: m("deleteTitle", { code: code6(data.countNumber) }), text: m("deleteBody"), ok: m("delete"), cancel: t("common", "cancel"), danger: true }))) return;
+    try {
+      await api(`/stock-counts/${id}`, { method: "DELETE", saveKey: newSaveKey() });
+      toast(m("deleted")); onClose();
+    } catch (e) {
+      if (gone(e)) return leaveGone();
+      toast(e instanceof ApiFailure ? failText(e, "deleteFailed") : generic, { error: true });
+      load(false);   // the record is read again
+    }
+  }
+
+  const heading = data ? `${m("recordNo")} ${code6(data.countNumber)}` : m("recordNo");
+  return (
+    <div className="thing-root" style={{ position: "relative" }}>
+      <button type="button" className="back" id="back" onClick={onClose}><Icon name="back" />{m("title")}</button>
+      <div className="head"><div><h1>{heading}</h1></div></div>
+      <div className="card" id="sc">
+        {!data && !loadErr && <p className="help" role="status">{t("common", "loading")}</p>}
+        {loadErr && <><div className="err" role="alert">{loadErr}</div><button type="button" className="btn quiet" id="sc-retry" onClick={() => load(true)}>{t("common", "retry")}</button></>}
+        {data && <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <p style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
+              {m("recordNo")} <span dir="ltr" style={{ fontFamily: "monospace", fontSize: "1.2em" }}>{code6(data.countNumber)}</span>
+              <button type="button" className="btn quiet sm" aria-label={L("نسخ", "Copy")} onClick={() => navigator.clipboard?.writeText(code6(data.countNumber)).catch(() => {})}>{L("نسخ", "Copy")}</button>
+              <span className={`st ${open ? "good" : "off"}`}><i />{data.deletedAt ? t("gold-sales", "salesInvoices.deletedBadge") : open ? m("statusOpen") : m("statusClosed")}</span>
+            </p>
+            {!data.deletedAt && <button type="button" className="btn quiet danger" id="sc-del" onClick={remove}><Icon name="trash" />{m("delete")}</button>}
+          </div>
+          <Section title={m("details")}>
+            <Kv k={m("branch")}>{names.branch || "…"}</Kv>
+            <Kv k={m("countDate")}><Ltr>{String(data.countDate).slice(0, 10)}</Ltr></Kv>
+            <Kv k={m("category")}>{data.categoryId ? names.category || "…" : m("allCategories")}</Kv>
+            <Kv k={m("item")}>{data.itemId ? names.item || "…" : m("anyItem")}</Kv>
+            <Kv k={m("karat")}>{data.karat ? <Ltr>{data.karat}</Ltr> : m("anyKarat")}</Kv>
+            <Kv k={m("scanned")}><Ltr>{m("scannedCount", { count: data.scannedCount })}</Ltr></Kv>
+            {!open && <Kv k={m("missing")}><Ltr>{m("missingCount", { count: data.missingCount })}</Ltr></Kv>}
+          </Section>
+          {open && (
+            <div id="sc-scan">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <h3 className="grp-title">{m("scanTitle")}</h3>
+                <button type="button" className="btn quiet" id="sc-camtoggle" onClick={() => { setCamNote(""); setCamera((c) => !c); }}>{camera ? m("stopCamera") : m("useCamera")}</button>
+              </div>
+              {camera && <div id="sc-cam"><CameraBox onCode={scanCode} onUnavailable={(why) => { setCamera(false); setCamNote(why === "denied" ? m("cameraDenied") : m("cameraUnsupported")); }} /></div>}
+              {camNote && <p id="sc-note" role="status" className="help">{camNote}</p>}
+              <form id="sc-form" noValidate className="field" data-k="pieceCode" style={{ display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap" }}
+                onSubmit={(e) => { e.preventDefault(); if (code.trim() !== "") scanCode(code); }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <label htmlFor="sc-code">{m("pieceCode")}</label>
+                  <input id="sc-code" ref={input} dir="ltr" autoComplete="off" maxLength={20} style={{ fontFamily: "monospace" }} value={code} aria-invalid={!!problem}
+                    onChange={(e) => { setCode(e.target.value); setProblem(""); }} />
+                  {problem && <div id="sc-err" className="err" role="alert">{t("gold-sales", "pieceLookUp.notOurCode")}{problem === "arabicLayout" && <span style={{ display: "block" }}>{t("gold-sales", "pieceLookUp.switchKeyboard")}</span>}</div>}
+                </div>
+                <button type="submit" className="btn primary" id="sc-go" disabled={scanning || !online || code.trim() === ""}>{m("scan")}</button>
+              </form>
+            </div>
+          )}
+          <Section title={m("scannedCodes")}>
+            {(data.scannedPieceCodes as string[]).length ? <Chips codes={data.scannedPieceCodes} /> : <p className="help">{m("noScans")}</p>}
+          </Section>
+          {!open && (data.missingPieceCodes as string[]).length > 0 && <Section title={m("missingCodes")}><Chips codes={data.missingPieceCodes} red /></Section>}
+          {open && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderTop: "1px solid var(--line,#ddd)", marginTop: 16, paddingTop: 12 }}>
+              <button type="button" className="btn primary" id="sc-savebtn" disabled={saving} onClick={save}>{m("save")}</button>
+              <span className="help">{m("savingHint")}</span>
+            </div>
+          )}
+        </>}
+      </div>
+      {dialog}
+      <ToastHost />
+    </div>
+  );
+}
