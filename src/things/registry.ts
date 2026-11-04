@@ -13,3 +13,5 @@ things["sales/invoices"] = { load: () => import("./sales-invoices") };
 things["sales/returns"] = { load: () => import("./sales-returns") };
 things["sales/reservations"] = { load: () => import("./sales-reservations") };
 things["sales/pieces"] = { load: () => import("./sales-pieces") };
+things["stock/count"] = { load: () => import("./stocktake-count") };
+things["stock/branch-stock"] = { load: () => import("./stocktake-branch") };
