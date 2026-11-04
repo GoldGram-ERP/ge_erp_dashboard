@@ -370,9 +370,13 @@ html[dir=ltr] .sheet.show{transform:none}
 
 /* section titles in sheets and forms: a soft gold bubble, no divider (replaces the ruled plain title above) */
 .sheet .grp-title,.card h3,.card .grp-title{
-  display:inline-flex;align-items:center;margin:26px 0 8px;padding:5px 16px;border:0;border-radius:999px;
+  display:inline-flex;align-items:center;gap:.5em;margin:26px 0 8px;padding:5px 16px;border:0;border-radius:999px;
   background:var(--gold-tint);color:var(--gold);font-size:14.5px;font-weight:700;line-height:1.5}
 .sheet .body>.grp-title:first-child,.card>h3:first-child{margin-top:4px}
+/* a flex box drops the space between a title and its note, so the gap above keeps them apart (القطع + لا قطع) */
+.sheet .grp-title small,.card h3 small,.card .grp-title small{font-weight:400}
+/* a placeholder is never monospace or spaced: a code box forces monospace on what is typed, and the Arabic hint inherited it and lost its joins */
+input::placeholder,textarea::placeholder{font-family:var(--font);letter-spacing:0}
 
 /* the off-screen sheet must never widen or shift the page */
 .main{overflow:clip}
