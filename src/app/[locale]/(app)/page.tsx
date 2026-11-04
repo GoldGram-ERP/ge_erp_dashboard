@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { setRequestLocale } from "next-intl/server";
 import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, ApiFailure } from "@/lib/api";
 import { HomeView } from "@/components/home/home-view";
 
 // Server: prefetch the gold price with the visitor's cookie and hand it to TanStack Query (no spinner on first paint).

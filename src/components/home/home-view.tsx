@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, ApiFailure } from "@/lib/api";
 import { dateText, piastresText, today } from "@/lib/format";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Icon } from "@/components/shell/icon";
@@ -24,7 +24,7 @@ export function HomeView() {
   const { data: me } = useMe();
   const ui = useUi();
   const [q, setQ] = useState("");
-  const price = useQuery<Price>({ queryKey: ["gold-price-today"], queryFn: () => api("/gold-prices/today").then((r) => r ?? null) });
+  const price = useQuery<Price>({ queryKey: ["gold-price-today"], queryFn: () => api("/gold-prices/today").then((r) => r ?? null, (e) => { if (e instanceof ApiFailure && e.status === 404) return null; throw e; }) });
   const staff = me?.userType !== "user";
   const locked = useQuery({ queryKey: ["locked-count"], enabled: !!me && staff, queryFn: () => api("/users", { query: { locked: "only", limit: 1 } }).then((r) => Number(r?.total) || 0) });
   if (!me) return null;
