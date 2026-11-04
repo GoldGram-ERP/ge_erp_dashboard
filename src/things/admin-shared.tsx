@@ -199,38 +199,45 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
 
   const ql = q.trim().toLowerCase();
   const loaded = !!permQ.data, shownTab = permErr ? "screen" : tab;
-  const perm = ty !== "user"
-    ? <><p className="mute">{ty ? u(`screens.fixed.${ty}`) : u("screens.chooseType")}</p>{ty && <p className="mute">{u("jobs.all")}</p>}</>
+  const nOfJobs = [...jobs].filter((id) => givable(id)).length;
+  const summary = L(`${nOfJobs} وظيفة · ${screens.size} شاشة`, `${nOfJobs} jobs · ${screens.size} screens`);
+  const box = (on: boolean, off = false): React.CSSProperties => ({ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: 14, border: `1px solid ${on ? "var(--gold)" : "var(--line)"}`, background: on ? "var(--gold-wash)" : "var(--surface)", cursor: off ? "default" : "pointer", opacity: off ? 0.6 : 1 });
+  const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 8 };
+  const small: React.CSSProperties = { display: "block", fontSize: 12, color: "var(--mute)", marginTop: 2, lineHeight: 1.45 };
+  const jobCards = (preview: boolean) => {
+    const list = JOBS.filter((j) => permQ.data?.jobScreens[j[0]]);
+    return GROUPS.map((g) => { const inG = list.filter((j) => j[1] === g); if (!inG.length) return null;
+      const ids = inG.map((j) => j[0]).filter(givable), on = ids.filter((id) => jobs.has(id)).length, gname = t("jobs", `groups.${g}`);
+      return <div key={g} style={{ marginTop: 12 }}>
+        <div className="actions"><b>{gname}</b> <span dir="ltr" className="mute">{on}/{ids.length}</span>
+          {!preview && <><button type="button" className="btn quiet sm" disabled={on === ids.length} onClick={() => toggleJobs(ids, true)}>{u("jobs.selectAll")}</button>
+          <button type="button" className="btn quiet sm" disabled={on === 0} onClick={() => toggleJobs(ids, false)}>{u("jobs.unselectAll")}</button></>}</div>
+        <div style={grid}>{inG.map((j) => { const id = j[0], can = givable(id), keys = jobScreens(id), has = can && jobs.has(id), missing = keys.filter((k) => !screens.has(k));
+          return <label key={id} style={box(has, preview || !can)}>
+            <input type="checkbox" data-job={id} checked={has} disabled={preview || !can} onChange={(e) => toggleJobs([id], e.target.checked, false)} style={{ marginTop: 3 }} />
+            <span><b style={{ fontWeight: 600 }}>{L(j[2], j[3])}</b>{!can && <> <span className="mute">{u("jobs.adminOnly")}</span></>}
+              <span style={small}>{keys.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ")}</span>
+              {has && missing.length > 0 && !preview && <span className="note warn" style={{ display: "block", marginTop: 4 }}>{u("jobs.partMissing", { names: missing.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ") })} <button type="button" className="btn quiet sm" onClick={(e) => { e.preventDefault(); keys.forEach((k) => screens.add(k)); setScreens(new Set(screens)); mark(); }}>{u("jobs.giveMissing")}</button></span>}</span>
+          </label>; })}</div></div>; });
+  };
+  const switcher = (off: boolean) => <div className="seg" role="tablist" aria-label={u("jobs.tabs")}>{(["job", "screen"] as const).map((k) => <button key={k} type="button" disabled={off} role="tab" aria-pressed={shownTab === k} aria-selected={shownTab === k} onClick={() => setTab(k)}>{u(k === "job" ? "jobs.byJob" : "jobs.byScreen")}</button>)}</div>;
+  const perm = ty !== "user" && ty
+    ? <><p className="mute">{u(`screens.fixed.${ty}`)}</p><p className="mute">{u("jobs.all")}</p></>
     : permQ.isError ? <><div className="note warn">{c("couldNotLoad")}</div><button type="button" className="btn quiet" onClick={() => permQ.refetch()}>{c("retry")}</button></>
     : !loaded ? <div className="skeleton" aria-busy="true"><i /><i /><i /></div>
+    : !ty ? <><p className="mute">{L("اختر نوع المستخدم لتحديد وظائفه وشاشاته.", "Choose a user type to give it jobs and screens.")}</p>{switcher(true)}<div aria-hidden="true">{jobCards(true).slice(0, 1)}</div></>
     : <>
-      <div className="seg" role="tablist" aria-label={u("jobs.tabs")}>{(["job", "screen"] as const).map((k) => <button key={k} type="button" role="tab" aria-pressed={shownTab === k} aria-selected={shownTab === k} onClick={() => setTab(k)}>{u(k === "job" ? "jobs.byJob" : "jobs.byScreen")}</button>)}</div>
+      <div className="actions" style={{ justifyContent: "space-between" }}>{switcher(false)}<b dir="auto" aria-live="polite">{summary}</b></div>
       {shownTab === "screen" ? (() => { const open = offered.filter((k) => screens.has(k)).length; return <>
         <div className="actions"><span dir="ltr" aria-live="polite">{u("screens.count", { open, all: offered.length })}</span>
           <button type="button" className="btn quiet sm" disabled={open === offered.length} onClick={() => toggleScreens(offered, true)}>{u("screens.selectAll")}</button>
           <button type="button" className="btn quiet sm" disabled={open === 0} onClick={() => toggleScreens(offered, false)}>{u("screens.unselectAll")}</button></div>
-        <p className="mute">{u("screens.note")}</p>
         <input id="screen-q" placeholder={L("ابحث عن شاشة", "Search screens")} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" aria-label={L("ابحث عن شاشة", "Search screens")} />
         {mods.map((m0) => { const m = { ...m0, list: m0.list.filter((x) => !ql || `${x.name} ${m0.name}`.toLowerCase().includes(ql)) }; if (!m.list.length) return null; const keys = m.list.map((x) => x.key), on = keys.filter((k) => screens.has(k)).length;
-          return <fieldset key={m.id}><legend>{m.name}</legend>
-            <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: m.name })} label={<><b>{m.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span></>} />
-            {m.list.map((x) => <Check key={x.key} checked={screens.has(x.key)} onChange={(v) => toggleScreens([x.key], v)} label={x.name} data-screen={x.key} />)}</fieldset>; })}
-      </>; })() : (() => {
-        const list = JOBS.filter((j) => permQ.data!.jobScreens[j[0]]), allIds = list.map((j) => j[0]).filter(givable), given = allIds.filter((id) => jobs.has(id)).length;
-        return <>
-          <div className="actions"><span dir="ltr" aria-live="polite">{u("jobs.count", { given, all: allIds.length })}</span>
-            <button type="button" className="btn quiet sm" disabled={given === allIds.length} onClick={() => toggleJobs(offeredJobs(), true)}>{u("jobs.selectAll")}</button>
-            <button type="button" className="btn quiet sm" disabled={given === 0} onClick={() => toggleJobs(offeredJobs(), false)}>{u("jobs.unselectAll")}</button></div>
-          <p className="mute">{u("jobs.note")}</p>
-          {GROUPS.map((g) => { const inG = list.filter((j) => j[1] === g); if (!inG.length) return null;
-            const ids = inG.map((j) => j[0]).filter(givable), on = ids.filter((id) => jobs.has(id)).length, gname = t("jobs", `groups.${g}`);
-            return <fieldset key={g}><legend>{gname}</legend>
-              <Check checked={ids.length > 0 && on === ids.length} ind={on > 0 && on < ids.length} disabled={!ids.length} onChange={(v) => toggleJobs(ids, v)} aria-label={u("jobs.group", { name: gname })} label={<><b>{gname}</b> <span dir="ltr" className="mute">{on}/{ids.length}</span></>} />
-              {inG.map((j) => { const id = j[0], can = givable(id), keys = jobScreens(id), missing = keys.filter((k) => !screens.has(k)), part = can && missing.length > 0 && missing.length < keys.length, half = part && jobs.has(id);
-                return <div key={id}><Check checked={can && jobs.has(id)} disabled={!can} onChange={(v) => toggleJobs([id], v, false)} data-job={id} label={<>{L(j[2], j[3])}{!can && <> <span className="mute">{u("jobs.adminOnly")}</span></>}</>} />
-                  {part && <div className={half ? "note warn" : "mute"}><b>{u("jobs.partCount", { open: keys.length - missing.length, all: keys.length })}</b> {u("jobs.partMissing", { names: missing.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ") })}
-                    {half && <> <button type="button" className="btn quiet sm" onClick={() => { keys.forEach((k) => screens.add(k)); setScreens(new Set(screens)); mark(); }}>{u("jobs.giveMissing")}</button></>}</div>}</div>; })}</fieldset>; })}
-        </>; })()}
+          return <div key={m.id} style={{ marginTop: 12 }}>
+            <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: m.name })} label={<><b>{m.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span> <span className="mute">· {u("screens.selectAll")}</span></>} />
+            <div style={grid}>{m.list.map((x) => <label key={x.key} style={box(screens.has(x.key))}><input type="checkbox" data-screen={x.key} checked={screens.has(x.key)} onChange={(e) => toggleScreens([x.key], e.target.checked)} style={{ marginTop: 3 }} /><span>{x.name}</span></label>)}</div></div>; })}
+      </>; })() : jobCards(false)}
     </>;
 
   return (
