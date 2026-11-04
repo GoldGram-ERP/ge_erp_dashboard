@@ -1475,7 +1475,18 @@
    "cashDiscountHint": "Taken out of the making charge only, never the gold. At most {max}.",
    "cashDiscountAbove": "The cash discount cannot be more than the making charge: {max}.",
    "cashDiscountInvalid": "Type an amount above 0, or a whole percent from 0 to 100.",
-   "cashDiscountNotAllowed": "You do not have the permission to give a cash discount."
+   "cashDiscountNotAllowed": "You do not have the permission to give a cash discount.",
+   "gift": "Gift",
+   "giftBadge": "Gift",
+   "giftSwitch": "This is a gift",
+   "giftSwitchHint": "The printed invoice shows the recipient, never the buyer.",
+   "giftRecipient": "Gift recipient",
+   "recipientName": "Recipient name",
+   "recipientPhone": "Recipient phone",
+   "buyerInternal": "Buyer (internal, not printed on a gift)",
+   "giftPrintTitle": "Print as a gift",
+   "showPrices": "Show prices",
+   "showPricesHint": "Off by default: pieces, weights and karat only."
   },
   "prints": {
    "buttonsLabel": "Print the invoice",
@@ -1498,6 +1509,7 @@
    "branch": "Branch",
    "seller": "Seller",
    "customer": "Customer",
+   "recipient": "Recipient",
    "phone": "Phone",
    "pieceCode": "Piece code",
    "item": "Item",

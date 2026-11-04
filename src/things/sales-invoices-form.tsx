@@ -13,6 +13,7 @@ import { Icon, toast } from "@/components/engine";
 import { LINES_MAX, MAX_PIASTRES, bankRowErrors, formRowOfRefusal, makingBase, readDiscount, sentBanks, totalsOf } from "./sales-invoices-math";
 import { BankRows, Choice, DiscountBox, ErrBox, PIECE_CODE, allPages, accountOptions, checkedCustomer, code6, customerFields, customerNameOf, fe, latestPrice, ltrStyle, mayDiscount, sg, type BankRow, type DiscountKind } from "./sales-form-parts";
 import { Link as NavLink } from "@/i18n/navigation";
+import { GiftFields, checkRecipient, type Recipient, type RecipientErrors } from "./sales-gift";
 
 type Line = Row;
 const fills = (line: Row, piece: Row) => line.itemName === piece.itemName && line.karat === piece.karat;
@@ -53,6 +54,9 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [short, setShort] = useState(false);
+  const [gift, setGift] = useState(false);
+  const [recipient, setRecipient] = useState<Recipient>({ name: "", phone: "" });
+  const [recipientErr, setRecipientErr] = useState<RecipientErrors>({});
   const [saving, setSaving] = useState(false);
   const saveKey = useRef(newSaveKey());
   const edited = () => { saveKey.current = newSaveKey(); setShort(false); setPayRefusal(null); };
@@ -159,6 +163,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       else if (f.field === "reservationId") ref = true;
       else if ((row = /^bankPayments\.(\d+)\.(bankAccountId|amount)$/.exec(f.field))) out[`bank${formRowOfRefusal(banks, +row[1])}${row[2] === "amount" ? "Amount" : "Account"}`] = texts[f.field];
       else if ((row = /^lines\.(\d+)\.(pieceCode|linePrice)$/.exec(f.field))) { const line = lines[+row[1]]; if (line) lerr[line.pieceCode] = key === "pieceNotForSale" ? errorText({ message: key }) : texts[f.field]; }
+      else if (f.field === "giftRecipientName" || f.field === "giftRecipientPhone") setRecipientErr((prev) => ({ ...prev, [f.field === "giftRecipientName" ? "name" : "phone"]: texts[f.field] }));
       else if (f.field === "lines") out.pieceCode = texts[f.field];
       else if (["invoiceType", "branchId", "cash", "cashDiscount", "customerPhone", "customerName", "nationalId"].includes(f.field)) {
         if (f.field.startsWith("customer") || f.field === "nationalId") cust.setError(f.field, { type: "server", message: texts[f.field] }); else out[f.field] = texts[f.field];
@@ -181,6 +186,9 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       if (r.amount) e[`bank${i}Amount`] = r.amount === "invalid" ? m("amountInvalid") : fe(tr, r.amount);
     });
     if (!lines.length) e.pieceCode = fe(tr, "required");
+    const rErr = gift ? checkRecipient(tr, recipient) : {};
+    setRecipientErr(rErr);
+    if (rErr.name || rErr.phone) e.giftRecipient = "x";
     let gen = "";
     if (made && today() < String(made.date).slice(0, 10)) gen = m("invoiceBeforeReservation", { date: String(made.date).slice(0, 10) });   // the day cannot precede the reservation
     setSubmitted(true); setErrs(e); setGeneral(gen);
@@ -197,6 +205,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       bankPayments: sentBanks(banks),
       ...(d.sent ? { cashDiscount: d.sent } : {}),   // the kind and the number typed; the backend works the discount out itself
       lines: lines.map((l) => ({ pieceCode: l.pieceCode })),
+      ...(gift ? { isGift: true, giftRecipientName: recipient.name.trim(), giftRecipientPhone: latinNumber(recipient.phone.trim()) } : {}),
       ...(made ? { reservationId: made.id } : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), ...(String(c.nationalId ?? "").trim() ? { nationalId: latinNumber(String(c.nationalId).trim()) } : {}) }),
     };
     try {
@@ -273,7 +282,8 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
         </div>
       )}
 
-      {showCustomer && <div className="card" id="sec-customer"><h3>{m("customer")}</h3><FormFields form={cust} fields={checkedCustomer(tr, customerFields(tr, Boolean(made)))} /></div>}
+      {showCustomer && <div className="card" id="sec-customer"><h3>{m("customer")}</h3><FormFields form={cust} fields={checkedCustomer(tr, customerFields(tr, Boolean(made)))} />
+        <GiftFields tr={tr} on={gift} onToggle={(v) => { setGift(v); setRecipientErr({}); edited(); }} value={recipient} onChange={(v) => { setRecipient(v); setRecipientErr({}); }} errors={recipientErr} /></div>}
 
       {showPayment && (
         <div className="card" id="sec-payment">
