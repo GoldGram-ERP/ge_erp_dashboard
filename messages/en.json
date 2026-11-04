@@ -867,7 +867,8 @@
   "exportsBusy": "Too many exports are waiting.",
   "exportFailed": "The file could not be made. Please try again.",
   "exportOutOfMemory": "This file is too large to make. Choose a shorter period.",
-  "exportInterrupted": "The file was interrupted. Please try again."
+  "exportInterrupted": "The file was interrupted. Please try again.",
+  "itemInactive": "Not coded: {itemName} is inactive or missing its weight, workmanship or cashback. Fix it on the Items screen, then code again."
  },
  "expenses": {
   "expenseTypes": {
@@ -1260,14 +1261,12 @@
    "moreItems": "{count, plural, one {1 more item} other {# more items}}: type to search.",
    "quantity": "Quantity",
    "weight": "Weight (g)",
-   "weightHint": "Optional when the item has a standard weight.",
    "gram": "g",
    "totals": "Totals",
    "totalQuantity": "Total quantity",
    "totalWeight": "Total weight (g)",
    "dateInvalid": "Write the date as day/month/year, such as 05/10/2026.",
    "quantityInvalid": "Write a whole number from 1 to 100,000.",
-   "weightInvalid": "Write the weight in grams, above zero, with at most three decimals, such as 12.345.",
    "recordNo": "Invoice no.",
    "deletedBadge": "Deleted",
    "editTitle": "Edit Purchase invoice · {code}",
@@ -1287,7 +1286,10 @@
    "noDeletedTitle": "No deleted purchase invoices.",
    "searchPlaceholder": "Search by invoice number",
    "fromDate": "From date",
-   "toDate": "To date"
+   "toDate": "To date",
+   "itemInactive": "{item} is inactive. Activate it on the Items screen or choose another item.",
+   "itemIncomplete": "{item} is incomplete: fill its weight, workmanship and cashback on the Items screen.",
+   "weightFromItem": "Weight = the item's weight × the count. It is changed on the Items screen only."
   },
   "purchaseCoding": {
    "title": "Purchase coding",
@@ -1304,20 +1306,15 @@
    "pieceLabel": "Label",
    "labelCount": "{count, plural, one {1 label} other {# labels}}",
    "toCode": "Lines to code",
-   "fixRows": "Some rows need attention.",
-   "makingAll": "Making charge per gram for all rows",
    "lineNumber": "Line {number}",
    "lineQuantity": "{count, plural, one {1 piece} other {# pieces}}",
    "lineWeight": "Line weight",
    "gram": "g",
-   "remaining": "Remaining weight:",
-   "weightFilled": "From the invoice, can be changed",
-   "weightsDontAdd": "The pieces must add up to the weight of the line.",
    "pieceNumber": "Piece {number}",
    "codeAuto": "Given by the system",
    "pieceCode": "Code",
    "weight": "Weight (g)",
-   "makingChargePerGram": "Making charge per gram (EGP)",
+   "makingChargePerGram": "Workmanship per gram (EGP)",
    "tagPrice": "Tag price (EGP)",
    "salePrice": "Sale price (EGP)",
    "weight21": "Weight 21 (g)",
@@ -1326,8 +1323,6 @@
    "printPiece": "Print label {code}",
    "deletePiece": "Delete piece {code}",
    "codedLines": "Coded lines",
-   "weightInvalid": "Write the weight in grams, above zero, with at most three decimals, such as 12.345.",
-   "priceInvalid": "Write an amount above zero, with at most two decimals, such as 5125.50.",
    "karatValue": "Karat {karat}",
    "pieceDeleted": "Piece deleted",
    "deleteTitle": "Delete piece {code}?",
@@ -1368,7 +1363,8 @@
    "cpSaved": "Customer piece {code} saved",
    "cpNew": "Another customer piece",
    "cpNotStock": "Not stock: it is never sold, reserved, returned or counted.",
-   "cpPhoneInvalid": "8 to 15 digits."
+   "cpPhoneInvalid": "8 to 15 digits.",
+   "fromItem": "Each piece takes the item's weight and workmanship. They are changed on the Items screen only."
   }
  },
  "gold-sales": {

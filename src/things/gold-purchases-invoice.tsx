@@ -1,25 +1,32 @@
 "use client";
 // The purchase invoice as a full page (forms.create / forms.edit): number, branch, date, lines, totals. Port of gold-purchases-invoice.js.
-// The backend gives the number (per branch and year) and works the real totals out; the totals shown while typing are the quantity and the typed weights.
+// The backend gives the number (per branch and year) and the weights. A line's weight is the item weight x the count, read only (one source: the Items screen).
 // An invoice is editable only until one line is coded, and for a normal user only 24 hours after the save (admin: any time): the refusals come back as words.
 // An Admin or Super admin whose account has no branch picks the branch of a new invoice.
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
-import { dateText, milligramsInput, milligramsText, today } from "@/lib/format";
+import { dateText, milligramsText, today } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { toast, Icon } from "@/components/engine";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { Select } from "@/components/fields/Select";
 import { loadLookup } from "@/components/fields/useLookup";
-import { LINES_MAX, readInvoice, totalsOf } from "./purchases-rules";
+import { LINES_MAX, itemProblem, lineWeightOf, readInvoice, totalsOf } from "./purchases-rules";
 
 const code6 = (n: unknown) => String(n).padStart(6, "0");
 const itemLabel = (code: unknown, name?: string) => `${code6(code)} · ${name || code6(code)}`;
-const FIELD = /^(date|lines\.\d+\.(itemId|quantity|weight))$/;
-type Line = { itemId: string; label: string; quantity: string; weight: string };
-const blank = (): Line => ({ itemId: "", label: "", quantity: "1", weight: "" });
+const FIELD = /^(date|lines\.\d+\.(itemId|quantity))$/;
+type Line = { itemId: string; label: string; quantity: string; itemWeight: number | null };
+const blank = (): Line => ({ itemId: "", label: "", quantity: "1", itemWeight: null });
+
+/** The items of these ids, read in full (weight, workmanship, Active), by id. One that fails to load is left out. */
+export async function itemsById(ids: string[]): Promise<Map<string, Row>> {
+  const rows = await Promise.all([...new Set(ids)].map((id) => api(`/items/${id}`).catch(() => null)));
+  return new Map(rows.filter((r): r is Row => !!r).map((r) => [r.id, r]));
+}
+const milligramsOrEmpty = (mg: number | undefined) => (mg === undefined ? "" : milligramsText(mg));
 const ERR = { color: "var(--warn)", fontSize: 12.5, marginTop: 4 } as const;
 
 export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
@@ -31,25 +38,38 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
   const picksBranch = !editing && !!me && me.userType !== "user" && !me.branchId;
   const [date, setDate] = useState(editing ? dateText(row!.date) : today());
   const [branchId, setBranchId] = useState("");
-  const [lines, setLines] = useState<Line[]>(editing ? (row!.lines as Row[]).map((l) => ({ itemId: l.itemId, label: itemLabel(l.itemCode, l.itemName), quantity: String(l.quantity), weight: milligramsInput(l.weight) })) : [blank()]);
+  const [lines, setLines] = useState<Line[]>(editing ? (row!.lines as Row[]).map((l) => ({ itemId: l.itemId, label: itemLabel(l.itemCode, l.itemName), quantity: String(l.quantity), itemWeight: l.weight % l.quantity === 0 ? l.weight / l.quantity : null })) : [blank()]);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState("");
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<[string, string][]>([]);
   const [choices, setChoices] = useState<[string, string][]>([]);
-  const known = useRef(new Map<string, string>());       // datalist label -> item id
+  const known = useRef(new Map<string, Row>());          // datalist label -> item
   const saveKey = useRef(newSaveKey());
   const touch = () => { saveKey.current = newSaveKey(); };   // what is typed after a Save is another Save
 
-  const fieldText = (name: string, key: string) => {
+  const fieldText = (name: string, key: string, label = "") => {
     const kind = name.split(".").pop();
     if (key === "invalid" && kind === "date") return m("dateInvalid");
     if (key === "invalid" && kind === "quantity") return m("quantityInvalid");
-    if (key === "invalid" && kind === "weight") return m("weightInvalid");
+    if (kind === "itemId" && (key === "inactive" || key === "incomplete")) return m(key === "inactive" ? "itemInactive" : "itemIncomplete", { item: label });
     return t("common", `fieldErrors.${key}`);
   };
+  const lineErr = (i: number, text?: string) => setErrs((e) => { const n = { ...e }; if (text) n[`lines.${i}.itemId`] = text; else delete n[`lines.${i}.itemId`]; return n; });
+  // A chosen item fills the line weight; an inactive or incomplete one is not taken and says why.
+  const pick = (l: Line, it: Row | undefined): Line => (it && !itemProblem(it) ? { ...l, itemId: it.id, itemWeight: it.weight } : { ...l, itemId: "", itemWeight: null });
+  const problemText = (i: number, label: string, it: Row | undefined) => { const p = it && itemProblem(it); lineErr(i, p ? fieldText(`lines.${i}.itemId`, p, label) : undefined); };
 
   const branchName = useQuery({ enabled: editing, queryKey: ["branch-name", row?.branchId], queryFn: () => api(`/branches/${row!.branchId}`).then((b) => b.branchName as string) });
+  // Editing: the weight follows the item as it is now (the backend works it out the same way on Save).
+  useEffect(() => {
+    if (!editing) return;
+    itemsById((row!.lines as Row[]).map((l) => l.itemId)).then((items) => {
+      setLines((ls) => ls.map((l) => { const it = items.get(l.itemId); return it ? { ...l, itemWeight: it.weight ?? null } : l; }));
+      (row!.lines as Row[]).forEach((l, i) => problemText(i, itemLabel(l.itemCode, l.itemName), items.get(l.itemId)));
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => { if (picksBranch) loadLookup({ path: "/branches", value: "id", label: "branchName" }).then((o) => setBranches(o as [string, string][])).catch(() => {}); }, [picksBranch]);
   const next = useQuery({
     enabled: !editing && (!picksBranch || !!branchId), retry: false,
@@ -62,11 +82,11 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
     clearTimeout(search.current);
     search.current = setTimeout(async () => {
       try {
-        const r = await api("/items", { query: { search: text || undefined, order: "newest" } });
+        const r = await api("/items", { query: { search: text || undefined, order: "newest", active: "true" } });
         const items = (r.items ?? []) as Row[];
-        for (const it of items) known.current.set(itemLabel(it.itemCode, it.itemName), it.id);
-        setChoices(items.map((it) => [it.id, itemLabel(it.itemCode, it.itemName)]));
-        setLines((ls) => ls.map((l) => (!l.itemId && known.current.has(l.label) ? { ...l, itemId: known.current.get(l.label)! } : l)));
+        for (const it of items) known.current.set(itemLabel(it.itemCode, it.itemName), it);
+        setChoices(items.filter((it) => !itemProblem(it)).map((it) => [it.id, itemLabel(it.itemCode, it.itemName)]));   // only items with their weight and workmanship are offered
+        setLines((ls) => ls.map((l, i) => { if (l.itemId || !known.current.has(l.label)) return l; const it = known.current.get(l.label); problemText(i, l.label, it); return pick(l, it); }));
       } catch { /* the box still takes a typed code or name; the backend refuses an unknown item */ }
     }, 250);
   };
@@ -80,6 +100,7 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
     const r = readInvoice({ date, lines });
     const e = Object.fromEntries(Object.entries(r.errors).map(([k, v]) => [k, fieldText(k, v)]));
+    lines.forEach((l, i) => { const it = known.current.get(l.label), p = !l.itemId && it && itemProblem(it); if (p) e[`lines.${i}.itemId`] = fieldText(`lines.${i}.itemId`, p, l.label); });   // why, not just "required"
     if (picksBranch && !branchId) e.branchId = m("branchRequired");
     setBanner(""); setErrs(e);
     if (Object.keys(e).length || !r.payload) return;
@@ -94,7 +115,7 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
       if (!(err instanceof ApiFailure)) { setBanner(tr.errorText({ message: "serverUnreachable" })); return; }
       const fields = (Array.isArray(err.error.fields) ? err.error.fields : []) as { field: string; message: string }[];
       const refused = Object.fromEntries(fields.filter((f) => FIELD.test(f.field) || f.field === "branch" || f.field === "branchId")
-        .map((f) => [FIELD.test(f.field) ? f.field : "branchId", f.field === "branch" || f.field === "branchId" ? m("branchRequired") : fieldText(f.field, f.message)]));
+        .map((f) => [FIELD.test(f.field) ? f.field : "branchId", f.field === "branch" || f.field === "branchId" ? m("branchRequired") : fieldText(f.field, f.message, lines[Number(f.field.split(".")[1])]?.label)]));
       if (Object.keys(refused).length) setErrs(refused); else setBanner(tr.errorText(err.error));   // editWindowClosed, invoiceCoded, notYourInvoice, changedByAnother ...
     }
   }
@@ -133,19 +154,19 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
               <td><div className="field" data-k={`lines.${i}.itemId`}>
                 <input data-f="item" list="inv-items" autoComplete="off" aria-label={m("item")} placeholder={m("itemSearchPlaceholder")} value={l.label}
                   onFocus={() => { if (!choices.length) searchItems(""); }}
-                  onChange={(ev) => { const label = ev.target.value; setLine(i, { label, itemId: known.current.get(label) ?? "" }); searchItems(label); }} />{err(`lines.${i}.itemId`)}</div></td>
+                  onChange={(ev) => { const label = ev.target.value, it = known.current.get(label); touch(); setLines((ls) => ls.map((x, j) => (j === i ? pick({ ...x, label }, it) : x))); problemText(i, label, it); searchItems(label); }} />{err(`lines.${i}.itemId`)}</div></td>
               <td><div className="field" data-k={`lines.${i}.quantity`}><input data-f="quantity" dir="ltr" inputMode="numeric" aria-label={m("quantity")} value={l.quantity} onChange={(ev) => setLine(i, { quantity: ev.target.value })} />{err(`lines.${i}.quantity`)}</div></td>
-              <td><div className="field" data-k={`lines.${i}.weight`}><input data-f="weight" dir="ltr" inputMode="decimal" placeholder="0.000" aria-label={m("weight")} value={l.weight} onChange={(ev) => setLine(i, { weight: ev.target.value })} />{err(`lines.${i}.weight`)}</div></td>
+              <td><div className="field"><input data-f="weight" dir="ltr" readOnly aria-label={m("weight")} aria-describedby="inv-weight-help" placeholder="—" value={milligramsOrEmpty(lineWeightOf(l.itemWeight, l.quantity))} /></div></td>
               <td><button type="button" className="btn quiet sm" data-remove={i} disabled={lines.length === 1} aria-label={m("removeLine", { number: i + 1 })} onClick={() => { touch(); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{m("remove")}</button></td>
             </tr>))}</tbody>
         </table></div>
+        <div className="help" id="inv-weight-help" style={{ marginTop: 8 }}>{m("weightFromItem")}</div>
         <div style={{ marginTop: 12 }}><button type="button" className="btn quiet" id="inv-add" disabled={lines.length >= LINES_MAX} onClick={() => { touch(); setLines((ls) => [...ls, blank()]); }}><Icon name="plus" />{m("addLine")}</button></div>
       </div>
       <div className="card"><h3>{m("totals")}</h3>
         <div className="totals" id="inv-totals">
           <div className="kv"><span>{m("totalQuantity")}</span><span dir="ltr">{tot.quantity}</span></div>
           <div className="kv"><span>{m("totalWeight")}</span><span dir="ltr">{milligramsText(tot.weight)}</span></div>
-          {tot.weightMissing > 0 && <div className="help" style={{ color: "var(--mute)", fontSize: 12.5 }}>{m("weightHint")}</div>}
         </div></div>
       <div className="formbar">
         <button type="button" className="btn primary" id="inv-save" disabled={saving} onClick={save}>{saving ? c("saving") : editing ? c("saveChanges") : c("save")}</button>

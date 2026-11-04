@@ -1,29 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { autoRemainder, readCoding, readInvoice, remainingOf, totalsOf } from "./purchases-rules";
+import { itemProblem, lineWeightOf, readInvoice, totalsOf } from "./purchases-rules";
 
 describe("purchase invoice rules", () => {
-  it("reads a good invoice and leaves an empty weight out", () => {
-    const r = readInvoice({ date: "2026-11-04", lines: [{ itemId: "a", quantity: "2", weight: "" }, { itemId: "b", quantity: "١", weight: "12.5" }] });
-    expect(r.payload).toEqual({ date: "2026-11-04", lines: [{ itemId: "a", quantity: 2 }, { itemId: "b", quantity: 1, weight: 12500 }] });
+  it("sends the item and the count only, never a weight", () => {
+    const r = readInvoice({ date: "2026-11-04", lines: [{ itemId: "a", quantity: "2" }, { itemId: "b", quantity: "١" }] });
+    expect(r.payload).toEqual({ date: "2026-11-04", lines: [{ itemId: "a", quantity: 2 }, { itemId: "b", quantity: 1 }] });
   });
   it("refuses each bad field by its own key", () => {
-    const r = readInvoice({ date: "2026-02-30", lines: [{ itemId: "", quantity: "0", weight: "-1" }] });
-    expect(r.errors).toEqual({ date: "invalid", "lines.0.itemId": "required", "lines.0.quantity": "invalid", "lines.0.weight": "invalid" });
+    const r = readInvoice({ date: "2026-02-30", lines: [{ itemId: "", quantity: "0" }] });
+    expect(r.errors).toEqual({ date: "invalid", "lines.0.itemId": "required", "lines.0.quantity": "invalid" });
   });
-  it("totals count typed weights and the lines without one", () => {
-    expect(totalsOf([{ quantity: "2", weight: "1.5" }, { quantity: "3", weight: "" }])).toEqual({ quantity: 5, weight: 1500, weightMissing: 1 });
+  it("the line weight is the item weight times the count, in whole milligrams", () => {
+    expect(lineWeightOf(4375, "3")).toBe(13125);
+    expect(lineWeightOf(4375, "٣")).toBe(13125);
+    expect(lineWeightOf(1, "100000")).toBe(100000);
+    expect(lineWeightOf(4375, "0")).toBeUndefined();
+    expect(lineWeightOf(4375, "")).toBeUndefined();
+    expect(lineWeightOf(null, "2")).toBeUndefined();
+    expect(lineWeightOf(9_999_999_999_999, "100000")).toBeUndefined();
   });
-});
-
-describe("purchase coding rules", () => {
-  it("the last open box takes what remains", () => {
-    expect(remainingOf(10000, ["4", ""]).remaining).toBe(6000);
-    expect(autoRemainder(10000, [{ weight: "4", typed: true }, { weight: "", typed: false }])).toEqual({ index: 1, text: "6.000" });
+  it("totals add the worked-out weights", () => {
+    expect(totalsOf([{ quantity: "2", itemWeight: 1500 }, { quantity: "3", itemWeight: null }, { quantity: "1", itemWeight: 250 }])).toEqual({ quantity: 6, weight: 3250 });
   });
-  it("pieces must add up exactly to the line weight", () => {
-    const line = (w2: string) => [{ lineId: "l", weight: 10000, pieces: [{ weight: "4", makingChargePerGram: "1" }, { weight: w2, makingChargePerGram: "1" }] }];
-    expect(readCoding(line("6")).payload).toBeDefined();
-    expect(readCoding(line("5.999")).off).toEqual([0]);
-    expect(readCoding(line("")).errors["lines.0.pieces.1.weight"]).toBe("required");
+  it("an item is offered only when active and complete", () => {
+    const ok = { isActive: true, weight: 4375, workmanshipValue: "187.50", cashbackValue: "10.00" };
+    expect(itemProblem(ok)).toBeNull();
+    expect(itemProblem({ ...ok, isActive: false })).toBe("inactive");
+    expect(itemProblem({ ...ok, weight: null })).toBe("incomplete");
+    expect(itemProblem({ ...ok, workmanshipValue: null })).toBe("incomplete");
+    expect(itemProblem({ ...ok, cashbackValue: "" })).toBe("incomplete");
   });
 });

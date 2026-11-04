@@ -54,6 +54,13 @@ Object.assign(APP, {
   "gold-accounts.items.inactive": ["موقوف", "Inactive"],
   "gold-accounts.items.activeOnly": ["النشطة", "Active"],
   "gold-accounts.items.inactiveOnly": ["الموقوفة", "Inactive"],
+  // One source (owner, 2026-11-04): purchase lines and coding read weight and workmanship from the item.
+  "gold-accounts.purchaseInvoices.itemInactive": ["الصنف {item} موقوف. شغّله من شاشة الأصناف أو اختر صنفاً آخر.", "{item} is inactive. Activate it on the Items screen or choose another item."],
+  "gold-accounts.purchaseInvoices.itemIncomplete": ["الصنف {item} ناقص البيانات: أكمل وزنه ومصنعيته والكاش باك من شاشة الأصناف.", "{item} is incomplete: fill its weight, workmanship and cashback on the Items screen."],
+  "gold-accounts.purchaseInvoices.weightFromItem": ["الوزن = وزن الصنف × العدد، ويُعدَّل من شاشة الأصناف فقط.", "Weight = the item's weight × the count. It is changed on the Items screen only."],
+  "gold-accounts.purchaseCoding.fromItem": ["وزن كل قطعة ومصنعيتها من الصنف، ويُعدَّلان من شاشة الأصناف فقط.", "Each piece takes the item's weight and workmanship. They are changed on the Items screen only."],
+  "gold-accounts.purchaseCoding.makingChargePerGram": ["المصنعية للجرام (ج.م)", "Workmanship per gram (EGP)"],
+  "errors.itemInactive": ["لم يتم التكويد: الصنف {itemName} موقوف أو ناقص الوزن أو المصنعية أو الكاش باك. أصلحه من شاشة الأصناف ثم كوّد مرة أخرى.", "Not coded: {itemName} is inactive or missing its weight, workmanship or cashback. Fix it on the Items screen, then code again."],
   "gold-accounts.items.activeAdminOnly": ["تشغيل الصنف أو إيقافه للمدير والمدير العام فقط.", "Only an Admin or the Super admin can switch an item on or off."],
   "gold-accounts.items.percentMax": ["النسبة لا تزيد على 100.", "A percent is 100 at most."],
   "gold-accounts.items.example.title": ["مثال بسعر اليوم", "Example at today's price"],

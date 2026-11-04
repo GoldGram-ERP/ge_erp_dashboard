@@ -132,6 +132,8 @@ tr.flash td{animation:flash 1.6s ease-out}
 .field input:focus,.field select:focus,.field textarea:focus{box-shadow:inset 0 0 0 2px var(--gold)}
 /* one disabled look for every control: faded, like the disabled select. The :not() chain gives the input rule the same weight as the base input rule above, which used to win and left a disabled input (an item code, a next number) white */
 .field input:not([type=checkbox]):not([type=radio]):disabled,.field select:disabled,.field textarea:disabled{background:#f3efe3;color:var(--mute);opacity:.5;cursor:not-allowed}
+/* read only (a weight from the item): full-contrast text on the sidebar beige, so it reads as shown, not typed */
+.field input[readonly]:not([type=hidden]):not(:disabled){background:var(--side);color:var(--ink);cursor:default}
 .field[data-err] input,.field[data-err] select,.field[data-err] textarea{box-shadow:inset 0 0 0 2px var(--warn)}
 .field .err{color:var(--warn);font-size:12.5px;margin-top:4px}
 .field .help{color:var(--mute);font-size:12.5px;margin-top:4px}
