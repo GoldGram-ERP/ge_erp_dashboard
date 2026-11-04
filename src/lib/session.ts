@@ -14,8 +14,13 @@ export function useMe(initial?: Me) {
 }
 export const isSuper = (me?: Me | null) => me?.userType === "super_admin";
 
+export const REMEMBERED_KEYS = ["ge-erp:query", "ge-erp:session-lock", "ge-erp:last-activity", "ge-erp:me"];
+export function clearRemembered(store: Pick<Storage, "removeItem"> = localStorage) {
+  try { for (const k of REMEMBERED_KEYS) store.removeItem(k); } catch { /* private mode */ }
+}
+
 // Clears everything remembered about the person (also the persisted query cache).
 export function useForgetMe() {
   const qc = useQueryClient();
-  return () => { useSession.getState().setMe(null); qc.clear(); try { for (const k of ["ge-erp:query", "ge-erp:session-lock", "ge-erp:last-activity", "ge-erp:me"]) localStorage.removeItem(k); } catch { /* private mode */ } };
+  return () => { useSession.getState().setMe(null); qc.clear(); clearRemembered(); };
 }

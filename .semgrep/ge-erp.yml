@@ -1,0 +1,98 @@
+# GE ERP own Semgrep rules (owner's "Testing scope", 15 Oct 2026). Run: semgrep --config .semgrep/ge-erp.yml src scripts next.config.mjs
+rules:
+  - id: ge-no-dangerously-set-inner-html
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: dangerouslySetInnerHTML is banned; render text, not HTML.
+    pattern: <$X dangerouslySetInnerHTML={...} />
+  - id: ge-no-dom-html-sink-non-constant
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: HTML sink with a non-constant value; escape every interpolated value or use textContent.
+    patterns:
+      - pattern-either:
+          - pattern: $E.innerHTML = $V
+          - pattern: $E.outerHTML = $V
+          - pattern: $E.insertAdjacentHTML($P, $V)
+          - pattern: $D.write($V)
+          - pattern: $D.writeln($V)
+      - pattern-not: $E.innerHTML = "..."
+      - pattern-not: $E.outerHTML = "..."
+      - pattern-not: $E.insertAdjacentHTML($P, "...")
+      - pattern-not: $D.write("...")
+  - id: ge-no-eval
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: eval / new Function / string timers are banned.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+      - pattern: setTimeout("...", ...)
+      - pattern: setInterval("...", ...)
+  - id: ge-no-unchecked-navigation-from-input
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: Navigation / window.open to a value that may come from user input; check it is same-origin (starts with a single "/") first.
+    patterns:
+      - pattern-either:
+          - pattern: window.open($U, ...)
+          - pattern: location.assign($U)
+          - pattern: window.location.assign($U)
+          - pattern: location.replace($U)
+          - pattern: window.location.replace($U)
+          - pattern: location.href = $U
+          - pattern: window.location.href = $U
+      - pattern-not: window.open("", ...)
+      - pattern-not: $L.assign("...")
+      - pattern-not: $L.assign(`/${...}/...`)
+      - metavariable-pattern:
+          metavariable: $U
+          patterns:
+            - pattern-either:
+                - pattern: searchParams.get(...)
+                - pattern: $S.get("next")
+                - pattern: router.query.$X
+                - pattern: $P.next
+  - id: ge-no-fs-child-process-from-request
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: File paths or shell commands must not be built from request / user input.
+    mode: taint
+    pattern-sources:
+      - pattern: req.$X
+      - pattern: request.$X
+      - pattern: $REQ.nextUrl.$X
+      - pattern: searchParams.get(...)
+      - pattern: params.$X
+    pattern-sinks:
+      - pattern: fs.$F(...)
+      - pattern: fsp.$F(...)
+      - pattern: readFile(...)
+      - pattern: writeFile(...)
+      - pattern: path.join(...)
+      - pattern: path.resolve(...)
+      - pattern: exec(...)
+      - pattern: execSync(...)
+      - pattern: spawn(...)
+      - pattern: spawnSync(...)
+      - pattern: execFile(...)
+  - id: ge-no-raw-sql-unsafe
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: $queryRawUnsafe / $executeRawUnsafe are banned (kept for the team; the backend uses it).
+    pattern-either:
+      - pattern: $X.$queryRawUnsafe(...)
+      - pattern: $X.$executeRawUnsafe(...)
+  - id: ge-no-secret-in-next-public
+    languages: [generic]
+    severity: ERROR
+    message: NEXT_PUBLIC_* is shipped to every browser; never put a secret, key, token or password in one.
+    pattern-regex: NEXT_PUBLIC_[A-Z0-9_]*(SECRET|TOKEN|PASSWORD|PRIVATE|API_KEY|APIKEY|CREDENTIAL)[A-Z0-9_]*
+  - id: ge-target-blank-needs-noopener
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: target="_blank" without rel="noopener".
+    patterns:
+      - pattern: <$T ... target="_blank" ... />
+      - pattern-not: <$T ... target="_blank" ... rel="...noopener..." ... />
+      - pattern-not: <$T ... rel="...noopener..." ... target="_blank" ... />

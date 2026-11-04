@@ -5,6 +5,24 @@ import createNextIntlPlugin from "next-intl/plugin";
 // The browser calls this site's own /api; API_URL (read at build time) is where it is forwarded, so the session cookie stays on this domain.
 const apiUrl = process.env.API_URL?.replace(/\/$/, "");
 
+// CSP: scripts only from this site. 'unsafe-inline' stays for script-src because Next's hydration data and the before-paint snippet are inline
+// and the print windows (about:blank, they inherit this policy) use onclick; shortcut: move to a per-request nonce in proxy.ts to drop it.
+export const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "frame-src 'none'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join("; ");
+
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
@@ -15,7 +33,7 @@ const nextConfig = {
     return [{
       source: "/((?!api/).*)",
       headers: [
-        { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" },
+        { key: "Content-Security-Policy", value: csp },
         { key: "X-Frame-Options", value: "DENY" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

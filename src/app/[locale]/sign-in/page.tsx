@@ -1,10 +1,11 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure } from "@/lib/api";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useSession } from "@/stores/session";
+import { useForgetMe } from "@/lib/session";
 import type { Me } from "@/stores/ui";
 
 export default function SignInPage() {
@@ -14,7 +15,11 @@ export default function SignInPage() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  useEffect(() => { document.title = `${t("title")} - GoldGram`; }, [t]);
   const qc = useQueryClient();
+  // The sign-in page means nobody is signed in: drop what the last person left on this browser (expired session, closed tab).
+  const forget = useForgetMe();
+  useEffect(() => { forget(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [show, setShow] = useState(false);
