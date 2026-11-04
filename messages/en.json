@@ -688,7 +688,8 @@
    "wrongDomain": "Use an email on the company domain.",
    "notToday": "The invoice date must be today.",
    "duplicateItem": "This item is already on another line.",
-   "duplicateAccount": "This bank account is already on another row."
+   "duplicateAccount": "This bank account is already on another row.",
+   "duplicatePiece": "This piece is already on another line."
   },
   "view": "View",
   "print": "Print",
@@ -753,6 +754,9 @@
   "saveFailed": "Could not save. Try again.",
   "deleteFailed": "Could not delete. Try again.",
   "unlockFailed": "Could not unlock. Try again.",
+  "itemInUse": "Not deleted: purchase invoices still use this item.",
+  "mustChangePassword": "Change your password first.",
+  "noBranch": "No branch exists yet.",
   "unexpected": "Something went wrong. Try again.",
   "serverUnreachable": "Could not reach the server, so nothing was changed. Try again.",
   "badRequest": "This request could not be understood. Try again.",
