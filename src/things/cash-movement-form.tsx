@@ -140,12 +140,12 @@ function Recent({ m }: { m: (k: string) => string }) {
   const q = useQuery({ queryKey: ["cash-recent"], retry: false, queryFn: () => api("/cash-movements") });
   const rows = (((q.data?.items ?? []) as Row[]).slice(0, 5));
   return (
-    <aside id="mv-recent" className="card" style={{ flex: "0 1 340px" }}>
+    <div id="mv-recent" role="complementary" className="card" style={{ flex: "0 1 340px" }}>
       <h3 className="grp-title">{m("latest")}</h3>
       {q.isLoading ? <div className="skeleton" aria-busy="true"><i /><i /><i /></div>
         : q.isError ? null
         : rows.length ? rows.map((x) => <div className="kv" key={x.id}><span dir="ltr">{code6(x.documentNumber)} · {String(x.date).slice(0, 10)}</span><span dir="ltr">{piastresText(x.amount)}</span></div>)
         : <div className="mute">{m("emptyTitle")}</div>}
-    </aside>
+    </div>
   );
 }

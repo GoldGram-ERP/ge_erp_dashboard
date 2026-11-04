@@ -117,7 +117,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
           </div></div></div>
           <FormFields form={form} fields={fields} values={values} />
         </form>
-        <aside className="st-prev grp-block" id="st-prev" aria-label={m("previewTitle")}>
+        <div className="st-prev grp-block" id="st-prev" role="complementary" aria-label={m("previewTitle")}>
           <h3 className="grp-title">{m("previewTitle")}</h3>
           <div className="grp-panel st-card">
             {logo ? <img src={logo} alt={m("logoAlt")} style={{ maxHeight: 72, maxWidth: 160 }} /> : <div className="mute">{m("logoPlaceholder")}</div>}
@@ -127,7 +127,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
             <div className="mute">{m("previewInvoiceNo")} 000001</div>
             <p className="mute">{m("previewNote")}</p>
           </div>
-        </aside>
+        </div>
       </div>
       {alert && <div className="err" id="st-alert" role="alert">{alert}</div>}
       <div className="formbar">
