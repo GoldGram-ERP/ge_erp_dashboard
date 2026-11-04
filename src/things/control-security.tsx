@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
+import { timeText } from "@/lib/format";
 import type { CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
 import { ThingPage, toast } from "@/components/engine";
 import { Skeleton } from "@/components/engine/ui";
@@ -198,7 +199,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         ],
         columns: [
           { key: "date", label: m("activityLog.columns.date"), sortable: false, render: (r) => <span dir="ltr">{cairo(r.at, { day: "2-digit", month: "2-digit", year: "numeric" })}</span> },
-          { key: "time", label: m("activityLog.columns.time"), sortable: false, render: (r) => <span dir="ltr">{cairo(r.at, { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })}</span> },
+          { key: "time", label: m("activityLog.columns.time"), sortable: false, render: (r) => <span dir="ltr">{timeText(r.at, undefined, true)}</span> },
           { key: "user", label: m("activityLog.columns.user"), sortable: false, render: (r) => (r.userName ? <bdi dir="auto">{r.userName}</bdi> : r.userId ? mono(r.userId) : m("activityLog.system")) },
           { key: "screen", label: m("activityLog.columns.screen"), sortable: false, get: (r) => screenText(typeOf(r)) },
           { key: "action", label: m("activityLog.columns.action"), sortable: false, get: (r) => actionText(r.action) },

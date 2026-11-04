@@ -1,9 +1,9 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure } from "@/lib/api";
-import { dateText, piastresText, today } from "@/lib/format";
+import { dateText, piastresText, timeText, today } from "@/lib/format";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Icon } from "@/components/shell/icon";
 import { useMe, isSuper } from "@/lib/session";
@@ -19,7 +19,6 @@ const tile = (leaf: Leaf, label: string, group: string) => (
 export function HomeView() {
   const t = useTranslations();
   const h = useTranslations("shell.homeScreen");
-  const fmt = useFormatter();
   const router = useRouter();
   const { data: me } = useMe();
   const ui = useUi();
@@ -32,7 +31,8 @@ export function HomeView() {
   const pins = (ui.pins[me.id] ?? []).map((r) => leaves.find((l) => l.route === r)).filter((x): x is Leaf => !!x);
   const recents = (ui.recents[me.id] ?? []).map((r) => ({ ...r, leaf: leaves.find((l) => l.route === r.id) })).filter((r): r is typeof r & { leaf: Leaf } => !!r.leaf);
   const sameDay = (at: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(at) === today();
-  const when = (at: number) => fmt.dateTime(at, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Africa/Cairo", ...(sameDay(at) ? {} : { day: "2-digit", month: "2-digit" }) });
+  const dayOf = (at: number) => new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", day: "2-digit", month: "2-digit" }).format(at);
+  const when = (at: number) => (sameDay(at) ? timeText(at) : `${dayOf(at)} ${timeText(at)}`);   // 12-hour clock, as everywhere
   const find = (e: FormEvent) => { e.preventDefault(); if (q.trim()) router.push(`/sales/invoices?q=${encodeURIComponent(q.trim())}`); };
   return (
     <>

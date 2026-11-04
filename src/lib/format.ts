@@ -46,13 +46,15 @@ export const intText = (n: unknown) => group(String(Math.trunc(Number(n))));
 const cairo = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit" });
 // 12-hour clock everywhere (owner, 2026-11-04): "1:51 PM" in English, "1:51 م" in Arabic; the business day is Cairo's.
 const cairoParts = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", hour: "numeric", minute: "2-digit", hour12: true });
-export const timeText = (iso: unknown, lang?: string) => {
+const cairoPartsSec = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+/** The Cairo clock, 12-hour ("1:51 PM", "1:51:07 PM" with seconds). Every time on screen goes through this. A number is a timestamp in milliseconds. */
+export const timeText = (iso: unknown, lang?: string, seconds = false) => {
   if (!iso) return "";
-  const parts = cairoParts.formatToParts(new Date(iso as string));
+  const parts = (seconds ? cairoPartsSec : cairoParts).formatToParts(new Date(typeof iso === "number" ? iso : (iso as string)));
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   const l = lang ?? (typeof document !== "undefined" ? document.documentElement.lang : "en");
   const mark = get("dayPeriod").toUpperCase() === "AM" ? (l === "ar" ? "ص" : "AM") : (l === "ar" ? "م" : "PM");
-  return `${get("hour")}:${get("minute")} ${mark}`;
+  return `${get("hour")}:${get("minute")}${seconds ? `:${get("second")}` : ""} ${mark}`;
 };
 export const today = () => cairo.format(new Date());                       // "2026-11-04"
 export const dateText = (iso: unknown) => (iso ? String(iso).slice(0, 10) : "");    // date-only values stay as written
