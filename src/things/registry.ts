@@ -9,3 +9,7 @@ export const things: Record<string, ThingEntry> = {};
 things["bank-accounts/banks"] = { load: () => import("./banks") };
 things["bank-accounts/bank-accounts"] = { load: () => import("./banks") };
 things["system-codes/gold-prices"] = { load: () => import("./gold-prices") };
+things["sales/invoices"] = { load: () => import("./sales-invoices") };
+things["sales/returns"] = { load: () => import("./sales-returns") };
+things["sales/reservations"] = { load: () => import("./sales-reservations") };
+things["sales/pieces"] = { load: () => import("./sales-pieces") };
