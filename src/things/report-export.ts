@@ -7,6 +7,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { Query, Row, ViewAction, ViewConfig } from "@/lib/engine-types";
 import type { Tr } from "@/lib/t";
 import { cellNode, toast } from "@/components/engine";
+import { LOOKUPS, rowsOf } from "@/lib/fields";
+import { loadLookup } from "@/components/fields/useLookup";
 
 type Status = { id: string; state: "waiting" | "preparing" | "ready" | "failed"; place: number; ahead: number; error?: string; errorValues?: Record<string, string | number> };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -52,37 +54,78 @@ const CSS = `body{margin:0;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;co
 main{padding:16px}h1{font-size:18px;margin:0 0 6px}p{margin:2px 0;font-size:12px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:4px;border-bottom:1px solid #e3dccb;text-align:start}th{border-bottom:1px solid #1c1912}
 .e{text-align:end;white-space:nowrap}tfoot td{font-weight:600}@page{size:A4 landscape;margin:10mm}@media print{.bar{display:none}}`;
 
-/** Every row of the report, from the queue, in a new window with a Print button. `build` turns the JSON into the page's table. */
-export async function printReport(path: string, query: Query, tr: Tr, build: (data: any) => PrintTable | Promise<PrintTable>) {
-  const w = window.open("", "_blank");
-  if (!w) { toast(tr.L("المتصفح منع نافذة الطباعة", "The browser blocked the print window"), { error: true }); return; }
-  w.document.write(`<!doctype html><title>${esc(tr.t("common", "print"))}</title><p style="padding:20px">${esc(tr.t("common", "report.export.reading"))}</p>`);
-  const r = await finished("print", path, query, tr);
-  if (!r) { w.close(); return; }
-  const t = await build(JSON.parse(await r.text()));
+function showPrint(w: Window, tr: Tr, t: PrintTable) {
   w.document.open();
   w.document.write(`<!doctype html><html lang="${tr.locale}" dir="${tr.isAr ? "rtl" : "ltr"}"><meta charset="utf-8"><title>${esc(t.title)}</title><style>${CSS}</style>
-    <div class="bar"><button onclick="print()">${esc(tr.t("common", "print"))}</button></div><main><h1>${esc(t.title)}</h1>${t.filters.map(([k, v]) => `<p>${esc(k)}: <b>${v}</b></p>`).join("")}
+    <div class="bar"><button onclick="print()">${esc(tr.t("common", "print"))}</button></div><main><h1>${esc(t.title)}</h1>${t.filters.map(([k, v]) => `<p>${esc(k)}: <b>${esc(v)}</b></p>`).join("")}
     <table><thead><tr>${t.heads.map((h) => `<th class="${h.end ? "e" : ""}">${esc(h.label)}</th>`).join("")}</tr></thead>
     <tbody>${t.rows.map((row) => `<tr>${row.map((c, i) => `<td class="${t.heads[i]?.end ? "e" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody>
     ${t.foot ? `<tfoot><tr>${t.foot.map((c, i) => `<td class="${t.heads[i]?.end ? "e" : ""}">${c}</td>`).join("")}</tr></tfoot>` : ""}</table></main>`);
   w.document.close();
 }
 
+/** Opens the print window, gets the data (`get`), and shows the table `build` makes of it. */
+async function printWith(tr: Tr, get: () => Promise<any | null>, build: (data: any) => PrintTable | Promise<PrintTable>) {
+  const w = window.open("", "_blank");
+  if (!w) { toast(tr.L("المتصفح منع نافذة الطباعة", "The browser blocked the print window"), { error: true }); return; }
+  w.document.write(`<!doctype html><title>${esc(tr.t("common", "print"))}</title><p style="padding:20px">${esc(tr.t("common", "report.export.reading"))}</p>`);
+  try {
+    const data = await get();
+    if (!data) { w.close(); return; }
+    showPrint(w, tr, await build(data));
+  } catch (e) {
+    w.close();
+    toast(e instanceof ApiFailure ? tr.errorText(e.error) : tr.t("common", "report.export.failed"), { error: true });
+  }
+}
+
+/** Every row of the report, from the queue, in a new window with a Print button. `build` turns the JSON into the page's table. */
+export async function printReport(path: string, query: Query, tr: Tr, build: (data: any) => PrintTable | Promise<PrintTable>) {
+  await printWith(tr, async () => { const r = await finished("print", path, query, tr); return r ? JSON.parse(await r.text()) : null; }, build);
+}
+
+/** The filters that are set, as [label, shown value] for the top of the print page. */
+async function filterLines(view: ViewConfig, query: Query, tr: Tr): Promise<[string, string][]> {
+  const out: [string, string][] = [];
+  for (const f of view.filters ?? []) {
+    const raw = query[f.param ?? f.name];
+    if (raw === undefined || raw === null || raw === "" || raw === false) continue;
+    let shown = String(raw);
+    if (f.type === "select") {
+      const opts = f.options ?? (f.optionsFrom ? await loadLookup(typeof f.optionsFrom === "string" ? LOOKUPS[f.optionsFrom] : f.optionsFrom).catch(() => []) : []);
+      shown = opts.find((o) => String(o[0]) === String(raw))?.[1] ?? shown;
+    } else if (f.type === "checkbox") shown = tr.L("نعم", "Yes");
+    out.push([f.label, shown]);
+  }
+  return out;
+}
+
+const html = (n: unknown) => renderToStaticMarkup(createElement("td", null, n as never)).replace(/^<td[^>]*>|<\/td>$/g, "");
+/** The view's own columns and footer over the data the backend gave, with the filters on top. */
+async function tableOf(view: ViewConfig, query: Query, tr: Tr, d: any): Promise<PrintTable> {
+  const raw: Row[] = rowsOf(d, view.rowsPath);
+  const rows = view.transform ? view.transform(raw, d) : raw;       // some columns follow the answer (karats with stock)
+  const foot = view.footer ? renderToStaticMarkup(createElement("table", null, createElement("tbody", null, createElement("tr", null, view.footer(rows, d) as never)))).match(/<td[\s\S]*?<\/td>/g)?.map((c) => c.replace(/^<td[^>]*>|<\/td>$/g, "")) : undefined;
+  return { title: view.label, filters: await filterLines(view, query, tr), heads: view.columns.map((c) => ({ label: c.label, end: ["money", "weight", "int"].includes(c.type ?? "") })), rows: rows.map((r) => view.columns.map((c) => html(cellNode(c, r, tr)))), foot };
+}
+
 // Reports the backend can export (GET <path>/excel and /print). A report view with no actions of its own gets Excel and Print from its own columns.
 export const EXPORTABLE = new Set(["bank-balances", "bank-statement", "safe-balances", "safe-statement", "expenses-by-type", "expenses-report", "cancelled-reservations", "reserved-pieces", "sales-by-period", "sales-report", "unpaid-invoices", "branch-stock", "branch-stock-by-item", "missing-pieces", "missing-pieces-previous", "sales-by-item", "stock-by-category", "activity-log"]);
 
+// Reports with no export route in the backend: the screen prints what it shows through the browser (no Excel).
+const BROWSER_PRINT = new Set(["treasury-balances", "in-transit", "treasury-statement"]);
+
 export function exportActions(view: ViewConfig, tr: Tr): ViewAction[] {
-  const path = view.endpoint;
-  if (view.actions?.length || !path?.startsWith("/reports/") || !EXPORTABLE.has(path.slice(9))) return [];
-  const keys = view.keys;
+  const path = view.exportPath ?? view.endpoint;
+  if (view.actions?.length || !path?.startsWith("/reports/")) return [];
+  const slug = path.slice(9), keys = view.keys;
+  if (BROWSER_PRINT.has(slug)) return [{ label: tr.t("common", "print"), icon: "print", keys, run: ({ query }) => {
+    const { page: _p, pageSize: _s, ...rest } = query; void [_p, _s];
+    return printWith(tr, () => api(path, { query: rest }), (d) => tableOf(view, query, tr, d));
+  } }];
+  if (!EXPORTABLE.has(slug)) return [];
   return [
     { label: tr.L("تصدير Excel", "Excel"), icon: "download", keys, run: ({ query }) => downloadExcel(path, query, tr) },
-    { label: tr.t("common", "print"), icon: "print", keys, run: ({ query }) => printReport(path, query, tr, (d) => {
-      const rows: Row[] = d.items ?? [];
-      const html = (n: unknown) => renderToStaticMarkup(createElement("td", null, n as never)).replace(/^<td[^>]*>|<\/td>$/g, "");
-      const foot = view.footer ? renderToStaticMarkup(createElement("table", null, createElement("tbody", null, createElement("tr", null, view.footer(rows, d) as never)))).match(/<td[\s\S]*?<\/td>/g)?.map((c) => c.replace(/^<td[^>]*>|<\/td>$/g, "")) : undefined;
-      return { title: view.label, filters: [], heads: view.columns.map((c) => ({ label: c.label, end: ["money", "weight", "int"].includes(c.type ?? "") })), rows: rows.map((r) => view.columns.map((c) => html(cellNode(c, r, tr)))), foot };
-    }) },
+    { label: tr.t("common", "print"), icon: "print", keys, run: ({ query }) => printReport(path, query, tr, (d) => tableOf(view, query, tr, d)) },
   ];
 }

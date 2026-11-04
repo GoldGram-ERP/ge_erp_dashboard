@@ -65,6 +65,7 @@ export type CreateButton = { form: string; label: string; keys?: string[] };
 export type ViewConfig = {
   id: string; label: string; keys?: string[];
   endpoint?: string;
+  exportPath?: string;                 // the report address Excel and Print use when the view loads through `load`
   load?: (query: Query, o: { signal?: AbortSignal }) => Promise<any>;
   query?: Query;                       // fixed params (the ONLY params besides chip/search/filters/paging/sort the list sends)
   rowsPath?: string; totalPath?: string; rowKey?: string;

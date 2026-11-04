@@ -56,6 +56,7 @@ export const makeConfigWith = (treasuries: GoldTreasury[], lists: Lists): MakeCo
       label: m(item ? "titles.stock-by-item" : "titles.stock-by-category"),
       keys: [item ? "gold-stocktake/stock-by-item" : "gold-stocktake/stock-by-category"],
       rowKey: "id",
+      exportPath: path,
       runLabel: rep("run"),
       filters: stockFilters(),
       sort: { default: { key: "code", dir: "asc" } },
