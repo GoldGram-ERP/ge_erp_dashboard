@@ -94,5 +94,5 @@ rules:
     message: target="_blank" without rel="noopener".
     patterns:
       - pattern: <$T ... target="_blank" ... />
-      - pattern-not: <$T ... target="_blank" ... rel="...noopener..." ... />
-      - pattern-not: <$T ... rel="...noopener..." ... target="_blank" ... />
+      - pattern-not: <$T ... rel="noopener" ... />
+      - pattern-not: <$T ... rel="noopener noreferrer" ... />
