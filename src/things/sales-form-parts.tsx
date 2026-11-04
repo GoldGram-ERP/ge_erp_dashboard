@@ -1,0 +1,141 @@
+"use client";
+// Pieces the sales forms share (invoice, reservation, return). Ported from docs/nav-preview/app/things/sales-form-parts.js.
+// Text helpers take `tr` (useT()); the HTML's string builders became small React components.
+import type { ReactNode } from "react";
+import { api } from "@/lib/api";
+import type { FieldConfig, Row } from "@/lib/engine-types";
+import { latinNumber, piastresText } from "@/lib/format";
+import type { Tr } from "@/lib/t";
+import type { Me } from "@/stores/ui";
+import { Select } from "@/components/fields/Select";
+
+export const sg = (tr: Tr, k: string, v?: Record<string, string | number | undefined>) => tr.t("gold-sales", `salesInvoices.${k}`, v);
+export const fe = (tr: Tr, k: string) => tr.t("common", `fieldErrors.${k}`);
+export const code6 = (n: unknown) => String(n).padStart(6, "0");
+export const PIECE_CODE = /^[A-Za-z0-9 .]{1,20}$/;   // the backend's pattern for a piece code
+
+export const ErrBox = ({ children }: { children: ReactNode }) => <div className="err" role="alert" style={{ color: "var(--warn)", fontSize: 12.5, marginTop: 4 }}>{children}</div>;
+/** Style for inputs that hold numbers/codes: left-to-right, text at the end. */
+export const ltrStyle = { direction: "ltr", textAlign: "end" } as const;
+
+// Cash discount: Admin and Super admin always may, a User only with the flag. An older /access/me without the flag follows the user type.
+export const mayDiscount = (me: Pick<Me, "userType" | "canGiveCashDiscount">) => (me.canGiveCashDiscount === undefined ? me.userType !== "user" : Boolean(me.canGiveCashDiscount));
+
+// Every row of a paged list (the backend's lists page at 20). Capped at 25 pages.
+export async function allPages(path: string, query: Record<string, any> = {}): Promise<Row[]> {
+  const out: Row[] = [];
+  for (let page = 1; page <= 25; page++) {
+    const r = await api(path, { query: { ...query, page } });
+    const items: Row[] = r?.items ?? [];
+    out.push(...items);
+    if (!items.length || out.length >= (r?.total ?? 0)) break;
+  }
+  return out;
+}
+
+// The latest saved gold price set dated up to `day` (the owner's rule: always the latest); null when there is none at all.
+export async function latestPrice(day: string): Promise<Row | null> {
+  const items: Row[] = (await api("/gold-prices", { query: { toDate: day } })).items ?? [];
+  return items.reduce<Row | null>((best, s) => (best && best.date >= s.date ? best : s), null);
+}
+
+/** A choice box (no native select): id/name `id`, value is the picked key or "". */
+export function Choice({ id, options, value, onChange, tr, placeholder, searchable = true, disabled }: { id: string; options: [string | number, string][]; value: string; onChange: (v: string) => void; tr: Tr; placeholder?: string; searchable?: boolean; disabled?: boolean }) {
+  return <Select id={id} name={id} value={value} onChange={onChange} options={options} placeholder={placeholder ?? sg(tr, "choose")} searchable={searchable} disabled={disabled} />;
+}
+
+// ── customer ──
+export const customerFields = (tr: Tr, disabled?: boolean): FieldConfig[] => [
+  { name: "customerPhone", label: `${sg(tr, "customerPhone")} *`, type: "text", maxLength: 15, disabled, help: sg(tr, "phoneHint") },
+  { name: "customerName", label: `${sg(tr, "customerName")} *`, type: "text", maxLength: 100, disabled },
+  { name: "nationalId", label: sg(tr, "nationalId"), type: "text", maxLength: 14, disabled, help: sg(tr, "optional") },
+];
+export const customerRules = (tr: Tr): Record<string, (v: string) => string | null> => ({
+  customerPhone: (v) => (v === "" ? fe(tr, "required") : /^\d{8,15}$/.test(latinNumber(v)) ? null : sg(tr, "phoneInvalid")),
+  customerName: (v) => (v === "" ? fe(tr, "required") : v.length > 100 ? fe(tr, "tooLong") : null),
+  nationalId: (v) => (v === "" || /^\d{14}$/.test(latinNumber(v)) ? null : sg(tr, "nationalIdInvalid")),
+});
+/** The customer fields with their rules attached (for the engine's field machinery). */
+export const checkedCustomer = (tr: Tr, fields: FieldConfig[] = customerFields(tr)): FieldConfig[] => {
+  const rules = customerRules(tr);
+  return fields.map((f) => ({ ...f, validate: (v: any) => rules[f.name]?.(String(v ?? "").trim()) ?? null }));
+};
+/** The name last used with a phone (GET /sales-invoices/customer-name); null when none or not a phone. */
+export async function customerNameOf(phone: string): Promise<string | null> {
+  const digits = latinNumber(phone.trim());
+  if (!/^\d{8,15}$/.test(digits)) return null;
+  try { return (await api("/sales-invoices/customer-name", { query: { phone: digits } })).customerName ?? null; } catch { return null; }
+}
+
+// ── bank rows (any number; row 1 stays) ──
+export type BankRow = { bankAccountId: string; amount: string };
+export const accountOptions = (rows: Row[]): [string, string][] => rows.map((a) => [a.id, `${a.accountName} · ${a.bankName}`]);
+export function BankRows({ banks, accounts, onChange, tr }: { banks: BankRow[]; accounts: [string, string][]; onChange: (next: BankRow[]) => void; tr: Tr }) {
+  const set = (i: number, patch: Partial<BankRow>) => onChange(banks.map((b, j) => (j === i ? { ...b, ...patch } : b)));
+  return <>{banks.map((b, i) => (
+    <div className="formgrid" data-bank={i} key={i} style={{ marginBottom: 8 }}>
+      <div className="field" data-k={`bank${i}Account`}>
+        <label htmlFor={`ba${i}`}>{i === 0 ? sg(tr, "bankAccount") : sg(tr, "bankAccountN", { number: i + 1 })}</label>
+        <Choice tr={tr} id={`ba${i}`} options={accounts} value={b.bankAccountId} onChange={(v) => set(i, { bankAccountId: v })} />
+      </div>
+      <div className="field" data-k={`bank${i}Amount`}>
+        <label htmlFor={`bm${i}`}>{i === 0 ? sg(tr, "bankAmount") : sg(tr, "bankAmountN", { number: i + 1 })}</label>
+        <input id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} style={{ textAlign: "end" }} onChange={(e) => set(i, { amount: e.target.value })} />
+      </div>
+      {i > 0 && <div style={{ alignSelf: "end" }}><button type="button" className="btn quiet sm" data-rmbank={i} onClick={() => onChange(banks.filter((_, j) => j !== i))}>{sg(tr, "removeBankRow", { number: i + 1 })}</button></div>}
+    </div>
+  ))}</>;
+}
+
+export type DiscountKind = "amount" | "percent";
+/** Cash discount box. lockedValue: a reservation's own (read only); may=false: locked 0 + note. Help/error rows are the caller's (#discHelp, #discErr). */
+export function DiscountBox({ tr, may, kind, disc, lockedValue, onKind, onDisc, help, error }: { tr: Tr; may: boolean; kind: DiscountKind; disc: string; lockedValue?: number; onKind: (k: DiscountKind) => void; onDisc: (v: string) => void; help?: ReactNode; error?: ReactNode }) {
+  if (lockedValue !== undefined) return <input id="cashDiscount" disabled dir="ltr" value={piastresText(lockedValue)} style={{ textAlign: "end" }} readOnly />;
+  if (!may) return <><input id="cashDiscount" disabled dir="ltr" value={piastresText(0)} style={{ textAlign: "end" }} readOnly /><div className="help">{sg(tr, "cashDiscountNotAllowed")}</div></>;
+  return (
+    <>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="seg" role="group" aria-label={sg(tr, "cashDiscountKind")}>
+          {(["amount", "percent"] as const).map((k) => <button type="button" key={k} data-kind={k} aria-pressed={kind === k} onClick={() => onKind(k)}>{sg(tr, k === "amount" ? "discountAmount" : "discountPercent")}</button>)}
+        </div>
+        <input id="cashDiscount" dir="ltr" inputMode="decimal" autoComplete="off" maxLength={13} placeholder="0" value={disc} style={{ maxWidth: 140, textAlign: "end" }} onChange={(e) => onDisc(e.target.value)} />
+      </div>
+      <div className="help" id="discHelp">{help}</div><div id="discErr">{error}</div>
+    </>
+  );
+}
+
+/** A labelled text box with the HTML's ids (#f-<name>), help and error. */
+export function TextBox({ name, label, value, onChange, error, help, maxLength, ltr, disabled, onBlur }: { name: string; label: string; value: string; onChange: (v: string) => void; error?: string; help?: string; maxLength?: number; ltr?: boolean; disabled?: boolean; onBlur?: () => void }) {
+  return (
+    <div className="field" data-k={name}>
+      <label htmlFor={`f-${name}`}>{label}</label>
+      <input id={`f-${name}`} name={name} value={value} maxLength={maxLength} disabled={disabled} autoComplete="off" aria-invalid={!!error} dir={ltr ? "ltr" : undefined} style={ltr ? { textAlign: "end" } : undefined}
+        onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
+      {help && <div className="help">{help}</div>}
+      {error && <ErrBox>{error}</ErrBox>}
+    </div>
+  );
+}
+
+/** The customer boxes (phone, name, national id); the phone used before fills an empty name on blur. */
+export function CustomerBoxes({ tr, v, set, errors = {}, disabled }: { tr: Tr; v: Record<string, string>; set: (k: string, val: string) => void; errors?: Record<string, string>; disabled?: boolean }) {
+  const fill = async () => { if ((v.customerName ?? "").trim() !== "") return; const n = await customerNameOf(v.customerPhone ?? ""); if (n) set("customerName", n); };
+  return <div className="formgrid" id="cust">{customerFields(tr, disabled).map((f) => (
+    <TextBox key={f.name} name={f.name} label={f.label} value={v[f.name] ?? ""} onChange={(x) => set(f.name, x)} error={errors[f.name]} help={f.help} maxLength={f.maxLength} disabled={disabled}
+      ltr={f.name !== "customerName"} onBlur={f.name === "customerPhone" ? fill : undefined} />
+  ))}</div>;
+}
+
+// readPieceCode (dashboard piece-code.ts): trimmed, Arabic digits -> Latin; only the shop's pattern.
+export function readPieceCode(tr: Tr, typed: unknown): { code: string; error?: undefined } | { error: string; code?: undefined } {
+  const code = String(typed ?? "").trim().replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+  if (PIECE_CODE.test(code)) return { code };
+  const arabic = /[؀-ۿ]/.test(code);
+  return { error: tr.t("gold-sales", "pieceLookUp.notOurCode") + (arabic ? `. ${tr.t("gold-sales", "pieceLookUp.switchKeyboard")}` : "") };
+}
+// The latest pieces to pick from (the dashboard's RecordBox): state "available" | "sold" | undefined (any).
+export async function pieceChoices(search: string, { state, branchId }: { state?: string; branchId?: string } = {}): Promise<Row[]> {
+  const r = await api("/piece-choices", { query: { search: search.trim(), state, branchId: branchId || undefined, page: 1 } });
+  return r.items ?? [];
+}
