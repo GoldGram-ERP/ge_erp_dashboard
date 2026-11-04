@@ -12,6 +12,8 @@ import { ThingPage, toast } from "@/components/engine";
 import { Skeleton } from "@/components/engine/ui";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
 import { useAccess } from "./sales-access";
+import { useT } from "@/lib/t";
+import { useRouter } from "@/i18n/navigation";
 import { useLeaveGuard } from "./leave-guard";
 
 const LOGO_MAX = 90_000;
@@ -98,10 +100,9 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
     <>
       <div className="mute"><span className="req">*</span> {c("required")}</div>
       {empty && <div className="note">{m("emptyNote")}</div>}
-      <div className="grid">
-        <form id="st" className="card" noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }}>
-          <div className="field" data-k="logo">
-            <label>{m("logo")}</label>
+      <div className="st-grid">
+        <form id="st" className="st-main" noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }}>
+          <div className="grp-block"><h3 className="grp-title">{m("logo")}</h3><div className="grp-panel"><div className="field" data-k="logo">
             <div id="logo-box">
               <div>{logo ? <img src={logo} alt={m("logoAlt")} style={{ maxHeight: 72, maxWidth: 160 }} /> : <span className="mute">{m("noLogo")}</span>}</div>
               <div className="actions">
@@ -113,19 +114,19 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
             </div>
             <div className="help">{m("logoHint")}</div>
             {logoErr && <div className="err" id="logo-err" role="alert">{logoErr}</div>}
-          </div>
+          </div></div></div>
           <FormFields form={form} fields={fields} values={values} />
         </form>
-        <aside className="card" id="st-prev" aria-label={m("previewTitle")}>
+        <aside className="st-prev grp-block" id="st-prev" aria-label={m("previewTitle")}>
           <h3 className="grp-title">{m("previewTitle")}</h3>
-          <div style={{ textAlign: "center" }}>
+          <div className="grp-panel st-card">
             {logo ? <img src={logo} alt={m("logoAlt")} style={{ maxHeight: 72, maxWidth: 160 }} /> : <div className="mute">{m("logoPlaceholder")}</div>}
             <h2>{name}</h2>
             <div>{shown.address?.trim() || m("addressPlaceholder")}</div>
             {shown.phone?.trim() && <div dir="ltr">{m("previewPhone")} {shown.phone.trim()}</div>}
             <div className="mute">{m("previewInvoiceNo")} 000001</div>
+            <p className="mute">{m("previewNote")}</p>
           </div>
-          <p className="mute">{m("previewNote")}</p>
         </aside>
       </div>
       {alert && <div className="err" id="st-alert" role="alert">{alert}</div>}
@@ -176,4 +177,14 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
   };
 };
 
-export default function Page() { return <ThingPage make={makeConfig} access={useAccess()} />; }
+export default function Page() {
+  const tr = useT(), access = useAccess(), router = useRouter();
+  const { t, L } = tr;
+  if (access.canOpen && !access.canOpen(["administration/settings"])) return <div className="empty"><strong>{L("غير مسموح لك بفتح هذه الصفحة.", "You are not allowed to open this page.")}</strong></div>;
+  return (
+    <div className="st-page">
+      <div className="head"><div><h1>{t("administration", "settings.title")}</h1><div className="sub">{L("هوية المتجر وما يُطبع على الفاتورة", "The shop's identity and what prints on the invoice")}</div></div></div>
+      <SettingsPage row={null} reload={() => {}} close={() => router.push("/")} tr={tr} />
+    </div>
+  );
+}

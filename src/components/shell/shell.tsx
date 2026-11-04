@@ -124,6 +124,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           }))}
         </nav>
         <div className="side-foot">
+          <div className="foot-top">
           <div className={`status ${health === "ok" ? "ok" : health === "bad" ? "bad" : ""}`} id="status" role="status" aria-live="polite" title={statusText}><i /><div><b>{statusText}</b></div></div>
           <div className="langbar" id="langbar">
             <div className="seg" role="group" aria-label={t("app.language")}>
@@ -132,14 +133,14 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
             </div>
             <button className="ic-btn short" title={other === "en" ? "English" : "العربية"} aria-label={other === "en" ? "English" : "العربية"} onClick={() => router.replace(pathname, { locale: other })}>{other === "en" ? "EN" : "ع"}</button>
           </div>
+          </div>
           <div className="me" id="me">
-            <div>{me.name}<small>{t(`app.userType.${me.userType}`)}</small></div>
+            <div className="who"><b>{me.name}</b><small>{t(`app.userType.${me.userType}`)}</small><span className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</span></div>
             <span className="actions">
               <Link className="ic-btn" href="/account" title={t("app.myAccount")} aria-label={t("app.myAccount")}><Icon name="profile" /></Link>
               <button className="ic-btn" type="button" title={t("app.signOut")} aria-label={t("app.signOut")} onClick={signOut}><Icon name="out" /></button>
             </span>
           </div>
-          <div className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</div>
         </div>
       </div></aside>
       <div className="main">
