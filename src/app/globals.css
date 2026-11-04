@@ -688,3 +688,8 @@ dialog.palette .pal-in{flex:none;padding:16px 16px 12px 20px;border-bottom:1px s
 dialog.palette .pal-in input{font-size:16px}
 dialog.palette .pal-list{flex:1;max-height:none;overflow:auto;padding:6px 10px 14px;overscroll-behavior:contain;contain:content}
 dialog.palette .pal-item{contain:layout paint;content-visibility:auto;contain-intrinsic-size:auto 52px}
+
+/* A tab switch never shrinks below its buttons (it scrolls sideways instead): inside a tall flex column it collapsed to a thin bar. */
+.seg{flex:none;min-height:36px}
+.seg.page{flex:none}
+.filters,.tools,.pager,.head{flex:none}
