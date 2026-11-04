@@ -80,8 +80,12 @@ export async function seed(tag = stamp()) {
   const day = new Date().toISOString().slice(0, 10);
   const must = async (p: Promise<{ status: number; body: any }>) => { const r = await p; if (r.status >= 300) throw new Error(`seed failed ${r.status} ${JSON.stringify(r.body)}`); return r.body; };
   const cat = await must(api('POST', '/categories', { categoryName: `E2E Cat ${tag}`, qrLabel: false }));
-  const name = await must(api('POST', '/item-names', { categoryId: cat.id, itemName: `E2E Ring ${tag}` }));
-  const item = await must(api('POST', '/items', { itemNameId: name.id, isCoded: true, itemType: 'gold', categoryId: cat.id, karat: '21' }));
+  // the name is typed with the item (the backend adds it to the category), as the item form does
+  const item = await must(api('POST', '/items', {
+    itemName: `E2E Ring ${tag}`, isCoded: true, itemType: 'gold', categoryId: cat.id, karat: '21', weight: 5000,
+    workmanshipMode: 'per_gram', workmanshipValue: '50.00', cashbackMode: 'per_gram', cashbackValue: '0.00',
+  }));
+  const name = { id: item.itemNameId as string, itemName: item.itemName as string };
   const inv = await must(api('POST', '/purchase-invoices', { date: day, branchId: MAIN_BRANCH, lines: [{ itemId: item.id, quantity: 4, weight: 20000 }] }));
   const coding = await must(api('GET', `/purchase-coding/invoices/${inv.id}`));
   const piece = { weight: 5000, makingChargePerGram: 5000, tagPrice: 200000, salePrice: 190000 };

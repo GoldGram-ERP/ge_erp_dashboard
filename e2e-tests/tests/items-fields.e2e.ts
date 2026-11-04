@@ -131,13 +131,13 @@ for (const lang of LANGS) {
     expect(await options(browser, 'cashbackMode')).toEqual(['per_gram', 'percent', 'per_piece'].map((x) => g(lang, `modes.${x}`)));
     await shot(`items-fields-${lang}-6-cashback-settings`);
     await browser.locator('#f-cashbackMode-btn').tap();
-    const back = '#cashback-example';
-    await pick('cashbackMode', g(lang, 'modes.percent'));
-    await browser.locator('#f-cashbackValue').fill('4.5');
-    await expect.poll(() => tx(browser, back)).toContain(money((gold * B(450) + B(5000)) / B(10000)));
+    const back = '#cashback-example';   // percent is already chosen (picking it again would clear it), so per piece first
     await pick('cashbackMode', g(lang, 'modes.per_piece'));
     await browser.locator('#f-cashbackValue').fill('800');
     await expect.poll(() => tx(browser, back)).toContain(money(B(80000)));
+    await pick('cashbackMode', g(lang, 'modes.percent'));
+    await browser.locator('#f-cashbackValue').fill('4.5');
+    await expect.poll(() => tx(browser, back)).toContain(money((gold * B(450) + B(5000)) / B(10000)));
     await pick('cashbackMode', g(lang, 'modes.per_gram'));
     await browser.locator('#f-cashbackValue').fill('10');
     await expect.poll(() => tx(browser, back)).toContain(money((B(1000) * B(4375) + B(500)) / B(1000)));
