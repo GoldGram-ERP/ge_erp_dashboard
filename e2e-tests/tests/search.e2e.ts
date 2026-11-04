@@ -6,8 +6,7 @@ for (const [q, why] of [['مبيعات', 'Arabic word'], ['lfduhj', 'Arabic type
     await go('superadmin', '', 'en');
     await browser.locator('#usearch-input').fill(q);
     await expect(browser.locator('#usearch-list [role=option]').first()).toBeVisible();
-    const names = await browser.evaluate(() => [...document.querySelectorAll('#usearch-list [role=option]')].map((o) => (o as HTMLElement).innerText).join('
-'));
+    const names = await browser.evaluate(() => [...document.querySelectorAll('#usearch-list [role=option]')].map((o) => (o as HTMLElement).innerText).join('|'));
     for (const n of ['Sales invoices', 'Reservations', 'Returns']) expect(names).toContain(n);
     await shot(`search-${why.split(' ')[0]}`);
   });
