@@ -58,7 +58,8 @@ const stage = join(root, ".pack");
 rmSync(stage, { recursive: true, force: true });
 for (const file of files) {
   const from = join(root, file);
-  if (existsSync(from)) cpSync(from, join(stage, file), { recursive: true });
+  // Tests are never part of a deploy archive: the host only installs and builds (a test that imports the config file once broke its type check, v1.0.8).
+  if (existsSync(from)) cpSync(from, join(stage, file), { recursive: true, filter: (p) => !/\.(test|spec)\.(ts|tsx|mjs)$/.test(p) });
 }
 
 const { version } = JSON.parse(execFileSync(process.execPath, ["-p", "JSON.stringify(require('./package.json'))"], { cwd: root, encoding: "utf8" }));
