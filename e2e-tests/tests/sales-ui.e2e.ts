@@ -3,19 +3,19 @@ import { test, expect, seed, capture, stamp } from './lib.ts';
 
 // Sales invoice through the real form: each payment method, exact request body captured, totals read from the page, invoice deleted through the record sheet path (API Delete in cleanup).
 let S: Awaited<ReturnType<typeof seed>>;
-let acc: { bank?: string; acc?: string; name?: string } = {};
+let acc: { bank?: string; acc?: string; name?: string; label?: string } = {};
 const money = (s: string) => Math.round(parseFloat(s.replace(/,/g, '')) * 100); // "17,751.25" -> piastres
 
 async function openForm(go: any, browser: any, screen: any, lang: 'en' | 'ar', code: string, shot: any, label: string) {
   S ??= await seed();
   if (!acc.acc) {
     acc.name = `E2E Acc ${stamp()}`;
-    const b = await S.api('POST', '/banks', { bankName: `E2E Bank ${stamp()}` }); acc.bank = b.body.id;
+    const bn = `E2E Bank ${stamp()}`; const b = await S.api('POST', '/banks', { bankName: bn }); acc.label = `${acc.name} · ${bn}`; acc.bank = b.body.id;
     acc.acc = (await S.api('POST', '/bank-accounts', { accountName: acc.name, bankId: b.body.id, commission: '1.00' })).body.id;
   }
   await go('superadmin', '/sales/invoices?new=create', lang);
-  await browser.locator('[data-type=sale]').tap(); // the sidebar language switch is also a .seg
-  await browser.locator('[data-k=branchId] [role=combobox]').tap();
+  await browser.locator('#ws [data-type=sale]').tap(); // the sidebar language switch is also a .seg
+  await browser.locator('#ws [data-k=branchId] [role=combobox]').tap();
   await screen.getByRole('option', 'Main branch').tap();
   await expect(browser.locator('#pc')).toBeVisible();
   await browser.locator('#pc').fill(code);
@@ -38,8 +38,8 @@ for (const [i, kind] of (['cash', 'bank', 'mixed'] as const).entries()) {
       const total = await openForm(go, browser, screen, lang, code, shot, `sales-${kind}-${lang}`);
       const bankPay = async (amount: number, idx = 0) => {
         await browser.locator('[data-addbank]').tap();
-        await browser.locator(`[data-k=bank${idx}Account] [role=combobox]`).tap();
-        await screen.getByRole('option', acc.name!).tap();
+        await browser.locator(`#ws [data-k=bank${idx}Account] [role=combobox]`).tap();
+        await screen.getByRole('option', acc.label!).tap();
         await browser.locator(`#bm${idx}`).fill((amount / 100).toFixed(2));
       };
       if (kind === 'cash') await browser.locator('#f-cash').fill((total / 100).toFixed(2));
