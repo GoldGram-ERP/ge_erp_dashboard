@@ -17,7 +17,6 @@ import { JOBS, SECTIONS, type ScreenName, type Section as Sec } from "./admin-na
 
 export const code6 = (n: unknown) => String(n).padStart(6, "0");   // userCodeText: six digits
 export const TYPES = ["user", "admin", "super_admin"] as const;
-export const SHORTCUTS_MAX = 12;
 const GROUPS = ["sell", "stock", "finance", "people", "control"];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -32,9 +31,6 @@ export const jobName = (tr: Tr, id: string) => { const j = JOBS.find((x) => x[0]
 export const typeName = (tr: Tr, x: string) => tr.t("administration", `users.userTypes.${x}`);
 
 // The screens a user of this type may pin: built ones (with an address) the type may open, by section.
-const mayOpen = (type: string, s: Sec, x: ScreenName) => (s[0] !== "super-control" || type === "super_admin") && (!x[4] || type !== "user");
-const shortcutChoices = (type: string) => SECTIONS.flatMap((s) => { const list = s[4].filter((x) => x[3] && mayOpen(type, s, x)); return list.length ? [{ s, list }] : []; });
-const shortcutIds = (ids: string[], type: string) => ids.filter((id) => shortcutChoices(type).some((g) => g.list.some((x) => x[0] === id)));
 
 type Maps = { modules: { id: string; name: string; list: { key: string; name: string }[] }[]; jobScreens: Record<string, string[]> };
 const offeredModules = (tr: Tr, screens: any) => (screens?.modules ?? []).flatMap((m: any) => {
@@ -135,15 +131,12 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   // a lone branch is the one (not an unsaved change)
   useEffect(() => { if (adding) api("/branches", { query: { limit: 20 } }).then((r) => { const rows = rowsOf(r); if (rows.length === 1 && !f.getValues("branchId")) f.setValue("branchId", rows[0].id); }).catch(() => {}); }, [adding, f]);
 
-  // shortcuts, screens, jobs
-  const [short, setShort] = useState<string[]>([...(row?.shortcutScreens ?? [])]);
   const [screens, setScreens] = useState<Set<string>>(new Set(row?.screens ?? []));
   const [jobs, setJobs] = useState<Set<string>>(new Set());
   const [jobsInit, setJobsInit] = useState("[]");
   const [tab, setTab] = useState<"job" | "screen">((row as Row | null)?.openTab === "screen" ? "screen" : "job");
-  const [openShort, setOpenShort] = useState(false);
   const [q, setQ] = useState("");
-  const [permErr, setPermErr] = useState(""), [shortErr, setShortErr] = useState(""), [alert, setAlert] = useState(""), [note, setNote] = useState(""), [saving, setSaving] = useState(false);
+  const [permErr, setPermErr] = useState(""), [alert, setAlert] = useState(""), [note, setNote] = useState(""), [saving, setSaving] = useState(false);
   const permQ = useQuery({ queryKey: ["users", "screens-jobs"], staleTime: Infinity, queryFn: async () => { const [s, j] = await Promise.all([api("/users/screens"), api("/users/jobs")]); return { screens: s, jobScreens: Object.fromEntries((j.jobs ?? []).map((x: any) => [x.id, x.screens as string[]])) as Record<string, string[]> }; } });
   const savedJobs = useQuery({ enabled: row?.userType === "user", queryKey: ["users", "jobs", row?.id], gcTime: 0, queryFn: () => api(`/users/${row!.id}/jobs`).catch(() => ({ jobIds: [] })) });
   useEffect(() => { if (savedJobs.data) { setJobs(new Set<string>(savedJobs.data.jobIds)); setJobsInit(JSON.stringify([...savedJobs.data.jobIds].sort())); } }, [savedJobs.data]);
@@ -171,20 +164,16 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     }
     setJobs(nj); setScreens(ns); mark();
   };
-  const groups = shortcutChoices(ty || "user");
-  const shortNow = shortcutIds(short, ty || "user");   // a type changed after choosing drops the others
-  const nm = (id: string) => { for (const g of groups) { const x = g.list.find((y) => y[0] === id); if (x) return screenName(tr, x); } return id; };
 
   const leave = async () => { if (!dirty || await confirm({ title: c("unsaved.title"), text: c("unsaved.body"), ok: c("unsaved.leave"), cancel: c("unsaved.keepEditing"), danger: true })) close(); };
   const save = async () => {
-    setAlert(""); setPermErr(""); setShortErr("");
+    setAlert(""); setPermErr("");
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
     const v = await f.read();
     if (!v) { setAlert(c("couldNotSave", { count: Object.keys(f.formState.errors).length || 1 })); return; }
     if (ty === "user" && permQ.data && screens.size === 0 && !(await confirm({ title: u("screens.noneTitle"), text: u("screens.noneBody"), ok: c("save"), cancel: c("cancel") }))) return;
     const discount = !!v.canGiveCashDiscount;
     const body = { ...(ty === "super_admin" ? {} : { branchId: v.branchId }), username: v.username, ...(v.email === "" ? {} : { email: v.email }), userType: ty,
-      shortcutScreens: shortNow,
       ...(ty === "user" ? { screens: [...screens], canUseTreasuries: !!v.canUseTreasuries, ...(discount !== initialDiscount ? { canGiveCashDiscount: discount } : {}) } : {}),
       ...(v.password === "" ? {} : { password: v.password }) };
     setSaving(true); setNote(c("savingNote"));
@@ -203,12 +192,12 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
       if (!e.unreachable && e.error.message !== "saveInProgress") saveKey.current = newSaveKey();
       const fe = refusedFields(tr, e.error);
       if (fe.screens) { setTab("screen"); setPermErr(fe.screens); }
-      if (fe.shortcutScreens) setShortErr(fe.shortcutScreens);
       if (Object.keys(fe).length) { f.setErrors(fe); setAlert(c("couldNotSave", { count: Object.keys(fe).length })); return; }
       toast(tr.errorText(e.error), { error: true });
     }
   };
 
+  const ql = q.trim().toLowerCase();
   const loaded = !!permQ.data, shownTab = permErr ? "screen" : tab;
   const perm = ty !== "user"
     ? <><p className="mute">{ty ? u(`screens.fixed.${ty}`) : u("screens.chooseType")}</p>{ty && <p className="mute">{u("jobs.all")}</p>}</>
@@ -221,7 +210,8 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
           <button type="button" className="btn quiet sm" disabled={open === offered.length} onClick={() => toggleScreens(offered, true)}>{u("screens.selectAll")}</button>
           <button type="button" className="btn quiet sm" disabled={open === 0} onClick={() => toggleScreens(offered, false)}>{u("screens.unselectAll")}</button></div>
         <p className="mute">{u("screens.note")}</p>
-        {mods.map((m) => { const keys = m.list.map((x) => x.key), on = keys.filter((k) => screens.has(k)).length;
+        <input id="screen-q" placeholder={L("ابحث عن شاشة", "Search screens")} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" aria-label={L("ابحث عن شاشة", "Search screens")} />
+        {mods.map((m0) => { const m = { ...m0, list: m0.list.filter((x) => !ql || `${x.name} ${m0.name}`.toLowerCase().includes(ql)) }; if (!m.list.length) return null; const keys = m.list.map((x) => x.key), on = keys.filter((k) => screens.has(k)).length;
           return <fieldset key={m.id}><legend>{m.name}</legend>
             <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: m.name })} label={<><b>{m.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span></>} />
             {m.list.map((x) => <Check key={x.key} checked={screens.has(x.key)} onChange={(v) => toggleScreens([x.key], v)} label={x.name} data-screen={x.key} />)}</fieldset>; })}
@@ -243,22 +233,10 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
         </>; })()}
     </>;
 
-  const ql = q.trim().toLowerCase();
   return (
     <>
       {dialog}
       <div className="card"><FormFields form={f} fields={fields} values={values} /></div>
-      <Section title={u("shortcuts")}>
-        <label>{u("shortcutScreens")} <span className="mute">· {u("optional")}</span></label>
-        <div className="chips">{shortNow.map((id) => <span key={id} className="st off"><i />{nm(id)} <button type="button" className="btn quiet sm" aria-label={u("removeShortcut", { name: nm(id) })} onClick={() => { setShort(shortNow.filter((x) => x !== id)); mark(); }}>×</button></span>)}</div>
-        <button type="button" className="btn quiet sm" aria-expanded={openShort} onClick={() => setOpenShort(!openShort)}>{shortNow.length === 0 ? u("shortcutsChoose") : u("shortcutsCount", { count: shortNow.length, max: SHORTCUTS_MAX })}</button>
-        {openShort && <div className="card"><input id="short-q" placeholder={u("shortcutsSearch")} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" aria-label={u("shortcutsSearch")} />
-          {groups.map((g) => { const items = g.list.filter((x) => !ql || [x[0], x[1], x[2], secName(tr, g.s)].some((s) => s.toLowerCase().includes(ql))); const full = shortNow.length >= SHORTCUTS_MAX;
-            return items.length ? <div key={g.s[0]}><h4>{secName(tr, g.s)}</h4>{items.map((x) => { const on = shortNow.includes(x[0]); return <Check key={x[0]} checked={on} disabled={full && !on} data-short={x[0]} label={screenName(tr, x)} onChange={(v) => { setShort(v ? [...shortNow, x[0]] : shortNow.filter((y) => y !== x[0])); mark(); }} />; })}</div> : null; })}
-          {shortNow.length >= SHORTCUTS_MAX && <p className="mute">{u("shortcutsFull", { max: SHORTCUTS_MAX })}</p>}</div>}
-        <div className="help">{u("shortcutsHint", { max: SHORTCUTS_MAX })}</div>
-        {shortErr && <div className="err" role="alert">{shortErr}</div>}
-      </Section>
       <Section title={u("screens.heading")} wide>{perm}{permErr && <div className="err" role="alert">{permErr}</div>}</Section>
       {alert && <div className="err" role="alert">{alert}</div>}
       <div className="formbar">
