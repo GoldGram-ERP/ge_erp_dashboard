@@ -3,7 +3,8 @@
 // المجموعات الرئيسية (category) -> أسماء الأصناف (item name, one category) -> مجموعات الأصناف (item, one per name).
 // Ported from docs/nav-preview/app/things/gold-items.js. Codes come from the backend (the form shows the upcoming one, a preview).
 // Lists take only search / page (fixed 20) / order / deleted (+ categoryId on names and items): no pageSize, no limit.
-// Category and name forms are engine sheets; the item form cascades (name list follows the category), so it is a page form (custom).
+// Category and name forms are engine sheets (a name only edited: it is created by typing it on the item form, which is a page form, custom).
+// Workmanship is always per gram; cashback keeps its three settings.
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useWatch } from "react-hook-form";
@@ -64,7 +65,8 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
     const k = K[kind], keys = KEYS.filter((s) => s.startsWith(`gold-accounts/${{ category: "categories", name: "item-names", item: "items" }[kind]}`));
     return {
       id: k.view, label, keys,
-      create: [{ form: `create${kind[0].toUpperCase()}${kind.slice(1)}`, label: m(`${k.ns}.add`), keys: keys.filter((s) => !s.endsWith("-list")) }],   // each tab adds its own kind
+      // categories and items add their own kind; a name is added only by typing it on the item form
+      create: kind === "name" ? undefined : [{ form: `create${kind[0].toUpperCase()}${kind.slice(1)}`, label: m(`${k.ns}.add`), keys: keys.filter((s) => !s.endsWith("-list")) }],
       endpoint: k.path,
       query: { order: "newest" },
       search: { param: "search", placeholder: m(`${k.ns}.searchPlaceholder`) },
@@ -111,12 +113,10 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
   };
 
   const deleteText = (kind: Kind, r: Row) => ({ title: m(`${K[kind].ns}.deleteTitle`, { code: code6(r[K[kind].codeKey]) }), text: m(`${K[kind].ns}.deleteBody`) });
-  const sheet = (kind: Kind, fields: () => FieldConfig[]) => {
+  const catPayload = (v: Row) => ({ categoryName: v.categoryName, qrLabel: v.qrLabel });
+  const editSheet = (kind: "category" | "name", fields: () => FieldConfig[]) => {
     const k = K[kind];
-    return {
-      [`create${kind[0].toUpperCase()}${kind.slice(1)}`]: { title: m(`${k.ns}.new`), path: () => k.path, method: "POST", fields: fields(), load: () => ({}), toPayload: kind === "category" ? (v: Row) => ({ categoryName: v.categoryName, qrLabel: v.qrLabel }) : (v: Row) => ({ categoryId: v.categoryId, itemName: v.itemName }), afterSave: afterNew(kind) },
-      [k.editForm]: { title: (r: Row | null) => m(`${k.ns}.editTitle`, { code: code6(r![k.codeKey]) }), path: (r: Row | null) => `${k.path}/${r!.id}`, method: "PATCH", fields: fields(), load: (r: Row | null) => ({ ...r }), toPayload: kind === "category" ? (v: Row) => ({ categoryName: v.categoryName, qrLabel: v.qrLabel }) : (v: Row) => ({ categoryId: v.categoryId, itemName: v.itemName }), afterSave: afterEdit(kind) },
-    };
+    return { [k.editForm]: { title: (r: Row | null) => m(`${k.ns}.editTitle`, { code: code6(r![k.codeKey]) }), path: (r: Row | null) => `${k.path}/${r!.id}`, method: "PATCH", fields: fields(), load: (r: Row | null) => ({ ...r }), toPayload: kind === "category" ? catPayload : (v: Row) => ({ categoryId: v.categoryId, itemName: v.itemName }), afterSave: afterEdit(kind) } };
   };
 
   return {
@@ -177,8 +177,9 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
       },
     },
     forms: {
-      ...sheet("category", catFields),
-      ...sheet("name", nameFields),
+      createCategory: { title: m("categories.new"), path: () => "/categories", method: "POST", fields: catFields(), load: () => ({}), toPayload: catPayload, afterSave: afterNew("category") },
+      ...editSheet("category", catFields),
+      ...editSheet("name", nameFields),   // a name is renamed or moved here; it is created only from the item form
       createItem: { title: m("items.new"), display: "page", fields: [], path: () => "/items", custom: ItemForm },
       editItem: { title: (r) => m("items.editTitle", { code: code6(r!.itemCode) }), display: "page", fields: [], path: (r) => `/items/${r!.id}`, custom: ItemForm },
     },
@@ -196,9 +197,9 @@ const hundredthsOf = (v: unknown) => (v == null || v === "" ? "" : typedPiastres
 // Under each workmanship and cashback setting: one piece at today's price, following the typing.
 function ExampleBox({ kind, price, tr }: { kind: "workmanship" | "cashback"; price: PriceSet | null | undefined; tr: Tr }) {
   const m = (k: string, v?: Record<string, string>) => tr.t("gold-accounts", `items.${k}`, v);
-  const [karat, weight, mode, value] = useWatch({ name: ["karat", "weight", `${kind}Mode`, `${kind}Value`] });
+  const [karat, weight, watchedMode, value] = useWatch({ name: ["karat", "weight", "cashbackMode", `${kind}Value`] });
   if (price === undefined) return <div className="note example" id={`${kind}-example`}>{tr.L("جارٍ التحميل…", "Loading…")}</div>;
-  const ex = exampleOf(price, { karat, weight, mode, value });
+  const ex = exampleOf(price, { karat, weight, mode: kind === "workmanship" ? "per_gram" : watchedMode, value });
   const money = (p: bigint) => piastresText(Number(p));
   return (
     <div className="note example" id={`${kind}-example`}>
@@ -211,7 +212,7 @@ function ExampleBox({ kind, price, tr }: { kind: "workmanship" | "cashback"; pri
   );
 }
 
-// ───── the item form: category -> its item names (a name that already has another item is shown, refused) ─────
+// ───── the item form: category, then the item name typed (the backend finds it in the category or adds it) ─────
 function ItemForm({ row, close, reload, tr }: CustomFormProps) {
   const { t, L } = tr;
   const m = (k: string, v?: Record<string, string>) => t("gold-accounts", k, v);
@@ -219,45 +220,41 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
   const qc = useQueryClient();
   const { data: me } = useMe();
   const canSwitch = me?.userType === "admin" || me?.userType === "super_admin";   // the backend refuses anyone else (403 notAllowed)
-  const [catId, setCatId] = useState(String(row?.categoryId ?? ""));
   const [itemType, setItemType] = useState(String(row?.itemType ?? "gold"));
-  const [modes, setModes] = useState({ workmanship: String(row?.workmanshipMode ?? ""), cashback: String(row?.cashbackMode ?? "") });
+  const [cashbackMode, setCashbackMode] = useState(String(row?.cashbackMode ?? ""));
   const [saving, setSaving] = useState(false);
   const [saveKey, setSaveKey] = useState(newSaveKey());
   const cats = useQuery({ queryKey: CATS, queryFn: loadCats, staleTime: 60_000 });
   const karats = useQuery({ queryKey: KARATS, queryFn: () => api("/karats"), staleTime: 5 * 60_000 });
   const price = useQuery({ queryKey: ["gold-prices", "today"], queryFn: loadPrice, staleTime: 60_000 });
-  const names = useQuery({ queryKey: ["gold-accounts", "names-of", catId], enabled: !!catId, queryFn: () => allPages("/item-names", { categoryId: catId, order: "newest" }) });
-  const nameOptions: Option[] = (names.data ?? []).map((n) => {
-    const used = !!n.liveItemId && n.liveItemId !== row?.id;
-    return [n.id, used ? `${n.itemName} · ${m("itemNames.hasItem")}` : n.itemName, used];
-  });
   // The karat list follows the type: gold 18 / 21 / 24, silver 999 (from GET /karats).
   const karatOptions: Option[] = ((karats.data ?? []) as Row[]).map((k) => String(k.karat)).filter((k) => (itemType === "gold") === (k !== SILVER)).map((k) => [k, k]);
   const fields = useMemo<FieldConfig[]>(() => {
     const details = m("items.basicDetails"), work = m("items.workmanship"), back = m("items.cashback");
     const modeOptions: Option[] = CHARGE_MODES.map((x) => [x, m(`items.modes.${x}`)]);
-    const setting = (kind: "workmanship" | "cashback", section: string): FieldConfig[] => [
-      { name: `${kind}Mode`, label: m(`items.${kind}Mode`), type: "select", required: true, searchable: false, options: modeOptions, placeholder: c("choose"), section },
-      { name: `${kind}Value`, label: m(`items.${kind}Value`), type: "money", required: true, help: modes[kind] ? m(`items.valueHelp.${modes[kind]}`) : undefined, section,
-        // As the backend's rule: ten whole digits at most, and a percent is 100 at most (v is hundredths).
-        validate: (v, all) => (v > 999_999_999_999 ? m("items.commissionInvalid") : all[`${kind}Mode`] === "percent" && v > 10_000 ? m("items.percentMax") : null) },
-      { name: `${kind}Example`, label: "", type: "html", wide: true, html: () => <ExampleBox kind={kind} price={price.isPending ? undefined : price.data ?? null} tr={tr} />, section },
-    ];
+    const example = (kind: "workmanship" | "cashback", section: string): FieldConfig =>
+      ({ name: `${kind}Example`, label: "", type: "html", wide: true, html: () => <ExampleBox kind={kind} price={price.isPending ? undefined : price.data ?? null} tr={tr} />, section });
+    // As the backend's rule: ten whole digits at most (v is hundredths).
+    const tooBig = (v: number) => (v > 999_999_999_999 ? m("items.commissionInvalid") : null);
     return [
       { name: "itemCode", label: m("items.itemCode"), type: "code", documentType: "item", hint: m("items.autoHint"), section: details },
       { name: "categoryId", label: m("items.categoryId"), type: "select", required: true, options: (cats.data ?? []).map((x) => [x.id, x.categoryName] as Option), placeholder: c("choose"), section: details },
-      { name: "itemNameId", label: m("items.itemName"), type: "select", required: true, disabled: !catId, options: nameOptions, placeholder: !catId ? m("itemNames.categoryFirst") : names.data && !names.data.length ? m("itemNames.noNamesInCategory") : c("choose"), section: details },
+      { name: "itemName", label: m("items.itemName"), type: "text", required: true, maxLength: 100, section: details },
       { name: "isCoded", label: m("items.coding"), type: "select", required: true, searchable: false, options: [["true", m("items.coded")], ["false", m("items.notCoded")]], section: details },
       { name: "itemType", label: m("items.itemType"), type: "select", required: true, searchable: false, options: [["gold", m("items.itemTypes.gold")], ["other_or_silver", m("items.itemTypes.other_or_silver")]], section: details },
       { name: "karat", label: m("items.karat"), type: "select", required: true, searchable: false, options: karatOptions, placeholder: c("choose"), help: m("items.karatHelp"), section: details },
       { name: "weight", label: m("items.weightG"), type: "weight", required: true, positive: true, placeholder: "0.000", section: details },
-      ...setting("workmanship", work),
-      ...setting("cashback", back),
+      // workmanship: always per gram, so only its value
+      { name: "workmanshipValue", label: m("items.workmanshipValue"), type: "money", required: true, help: m("items.valueHelp.per_gram"), section: work, validate: tooBig },
+      example("workmanship", work),
+      { name: "cashbackMode", label: m("items.cashbackMode"), type: "select", required: true, searchable: false, options: modeOptions, placeholder: c("choose"), section: back },
+      { name: "cashbackValue", label: m("items.cashbackValue"), type: "money", required: true, help: cashbackMode ? m(`items.valueHelp.${cashbackMode}`) : undefined, section: back,
+        validate: (v, all) => tooBig(v) ?? (all.cashbackMode === "percent" && v > 10_000 ? m("items.percentMax") : null) },   // a percent is 100 at most
+      example("cashback", back),
       { name: "isActive", label: m("items.isActive"), type: "checkbox", disabled: !canSwitch, help: canSwitch ? undefined : m("items.activeAdminOnly"), section: m("items.status") },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cats.data, karats.data, names.data, price.data, price.isPending, catId, itemType, modes, canSwitch, tr]);
+  }, [cats.data, karats.data, price.data, price.isPending, itemType, cashbackMode, canSwitch, tr]);
   const values = useMemo<Row>(() => (row
     ? { ...row, isCoded: String(row.isCoded), weight: row.weight ?? "", workmanshipValue: hundredthsOf(row.workmanshipValue), cashbackValue: hundredthsOf(row.cashbackValue), isActive: row.isActive !== false }
     : { isCoded: "true", itemType: "gold", isActive: true }), [row]);
@@ -265,12 +262,11 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
   useEffect(() => {
     const s = f.watch((v, info) => {
       setSaveKey(newSaveKey());                                  // edited: another attempt
-      if (info.name === "categoryId") { setCatId(String(v.categoryId ?? "")); f.setValue("itemNameId", ""); }   // another category clears the name
       if (info.name === "itemType") {                            // silver has one karat; gold never takes it
         setItemType(String(v.itemType ?? ""));
         if (v.itemType === "gold" ? v.karat === SILVER : v.karat !== SILVER) f.setValue("karat", v.itemType === "gold" ? "" : SILVER);
       }
-      if (info.name === "workmanshipMode" || info.name === "cashbackMode") setModes({ workmanship: String(v.workmanshipMode ?? ""), cashback: String(v.cashbackMode ?? "") });
+      if (info.name === "cashbackMode") setCashbackMode(String(v.cashbackMode ?? ""));
     });
     return () => s.unsubscribe();
   }, [f]);
@@ -281,8 +277,8 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
     setSaving(true);
     try {
       const body = {
-        itemNameId: v.itemNameId, isCoded: v.isCoded === "true", itemType: v.itemType, categoryId: v.categoryId, karat: v.karat, weight: v.weight,
-        workmanshipMode: v.workmanshipMode, workmanshipValue: valueText(BigInt(v.workmanshipValue)), cashbackMode: v.cashbackMode, cashbackValue: valueText(BigInt(v.cashbackValue)),
+        itemName: v.itemName, isCoded: v.isCoded === "true", itemType: v.itemType, categoryId: v.categoryId, karat: v.karat, weight: v.weight,
+        workmanshipMode: "per_gram", workmanshipValue: valueText(BigInt(v.workmanshipValue)), cashbackMode: v.cashbackMode, cashbackValue: valueText(BigInt(v.cashbackValue)),
         ...(canSwitch ? { isActive: v.isActive } : {}),   // a normal user never sends it: the item keeps its state
       };
       const a = await api(row ? `/items/${row.id}` : "/items", { method: row ? "PATCH" : "POST", body, saveKey });
@@ -292,6 +288,7 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
     } catch (e) {
       if (e instanceof ApiFailure) {
         const fe = backendFieldErrors(e.error, tr);
+        if (e.error.message === "itemNameHasItem") fe.itemName = tr.errorText(e.error);   // "taken" alone is too vague here: say the name already has its item
         if (!(Object.keys(fe).length && f.setErrors(fe))) toast(tr.errorText(e.error), { error: true });
       } else toast(L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again."), { error: true });
       setSaving(false);

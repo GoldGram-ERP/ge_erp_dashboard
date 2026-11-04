@@ -1095,8 +1095,6 @@
   "itemNames": {
    "title": "Item names",
    "listTitle": "Item name list",
-   "add": "Add item name",
-   "new": "New item name",
    "backToList": "Back to Item name list",
    "details": "Details",
    "itemNameCode": "Item name code",
@@ -1123,9 +1121,7 @@
    "openFullHistory": "Open full history",
    "latestOpens": "Latest records: open the Item name list",
    "searchPlaceholder": "Search by code or name",
-   "noNamesInCategory": "This category has no item names yet.",
-   "hasItem": "Already has an item",
-   "categoryFirst": "Choose the category first"
+   "hasItem": "Already has an item"
   },
   "items": {
    "title": "Items",
@@ -1196,8 +1192,7 @@
    "karatHelp": "Gold: 18, 21 or 24. Silver: 999.",
    "workmanship": "Workmanship",
    "cashback": "Cashback",
-   "workmanshipMode": "Workmanship setting",
-   "workmanshipValue": "Workmanship value",
+   "workmanshipValue": "Workmanship per gram (EGP)",
    "cashbackMode": "Cashback setting",
    "cashbackValue": "Cashback value",
    "modes": {

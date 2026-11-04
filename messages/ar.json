@@ -1095,8 +1095,6 @@
   "itemNames": {
    "title": "أسماء الأصناف",
    "listTitle": "سجل أسماء الأصناف",
-   "add": "إضافة اسم صنف",
-   "new": "اسم صنف جديد",
    "backToList": "العودة إلى سجل أسماء الأصناف",
    "details": "البيانات الأساسية",
    "itemNameCode": "كود اسم الصنف",
@@ -1123,9 +1121,7 @@
    "openFullHistory": "فتح السجل الكامل",
    "latestOpens": "آخر السجلات: فتح سجل أسماء الأصناف",
    "searchPlaceholder": "ابحث بالكود أو الاسم",
-   "noNamesInCategory": "لا توجد أسماء أصناف في هذه المجموعة بعد.",
-   "hasItem": "له صنف بالفعل",
-   "categoryFirst": "اختر المجموعة أولاً"
+   "hasItem": "له صنف بالفعل"
   },
   "items": {
    "title": "مجموعات الأصناف",
@@ -1196,8 +1192,7 @@
    "karatHelp": "الذهب: 18 أو 21 أو 24. الفضة: 999.",
    "workmanship": "المصنعية",
    "cashback": "الكاش باك",
-   "workmanshipMode": "طريقة حساب المصنعية",
-   "workmanshipValue": "قيمة المصنعية",
+   "workmanshipValue": "المصنعية لكل جرام (ج.م)",
    "cashbackMode": "طريقة حساب الكاش باك",
    "cashbackValue": "قيمة الكاش باك",
    "modes": {
