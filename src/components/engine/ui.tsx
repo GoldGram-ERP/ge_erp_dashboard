@@ -117,7 +117,7 @@ export function Seg<T extends string>({ label, items, value, onChange, className
 
 export function Skeleton({ rows = 6 }: { rows?: number }) {
   const { L } = useT();
-  return <div className="skeleton" aria-busy="true" aria-label={L("جارٍ التحميل", "Loading")}>{Array.from({ length: rows }, (_, i) => <i key={i} />)}</div>;
+  return <div className="skeleton" role="status" aria-busy="true" aria-label={L("جارٍ التحميل", "Loading")}>{Array.from({ length: rows }, (_, i) => <i key={i} />)}</div>;
 }
 export function EmptyState({ title, text, children, icon = "inbox" }: { title: string; text?: string; children?: ReactNode; icon?: string }) {
   return <div className="empty"><Icon name={icon} size={40} /><strong>{title}</strong>{text && <span>{text}</span>}{children}</div>;

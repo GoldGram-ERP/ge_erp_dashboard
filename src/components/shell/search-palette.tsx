@@ -119,7 +119,7 @@ export function SidebarSearch({ me, onOpenSheet }: { me: Me; onOpenSheet: () => 
             else if (e.key === "Enter") { e.preventDefault(); go(hits[at]); }
             else if (e.key === "Escape") { setQ(""); setFocus(false); (e.target as HTMLElement).blur(); }
           }} />
-        <button type="button" className="kbd-btn" title={t("app.searchSheet")} aria-label={t("app.searchSheet")} onClick={onOpenSheet}><kbd>Ctrl K</kbd></button>
+        <button type="button" className="kbd-btn" title={t("app.searchSheet")} aria-label={`${t("app.searchSheet")} Ctrl K`} onClick={onOpenSheet}><kbd>Ctrl K</kbd></button>
       </div>
       {show ? (
         <div className="usearch-pop" id="usearch-list" role="listbox" aria-label={t("app.search")}>

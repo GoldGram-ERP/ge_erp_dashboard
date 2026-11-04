@@ -6,6 +6,7 @@ import { today } from "@/lib/format";
 import { ISO_DAY, isoDay, monthGrid, parseDay, shiftDay, shiftMonth } from "@/lib/fields";
 import { useT } from "@/lib/t";
 import { Popover } from "./Popover";
+import { useLabelFallback } from "./Select";
 
 type Props = {
   id: string; name: string; value: string; onChange: (v: string) => void; onBlur?: () => void;
@@ -20,6 +21,7 @@ export function DatePicker({ id, name, value, onChange, onBlur, min = "", max = 
   const { L, isAr } = useT();
   const val = ISO_DAY.test(value) ? value : "";
   const btn = useRef<HTMLButtonElement>(null);
+  useLabelFallback(btn, id, labelledBy, `${id}-val`);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("days");
   const [cursor, setCursor] = useState("");
@@ -58,9 +60,9 @@ export function DatePicker({ id, name, value, onChange, onBlur, min = "", max = 
   return (
     <div className="sel dp" data-date>
       <input type="hidden" id={id} name={name} value={val} readOnly />
-      <button ref={btn} type="button" id={`${id}-btn`} className={`sel-btn dp-btn${val ? "" : " empty"}`} aria-haspopup="dialog" aria-expanded={open} aria-labelledby={labelledBy} aria-describedby={describedBy} aria-invalid={invalid || undefined}
+      <button ref={btn} type="button" id={`${id}-btn`} className={`sel-btn dp-btn${val ? "" : " empty"}`} aria-haspopup="dialog" aria-expanded={open} aria-labelledby={labelledBy ? `${labelledBy} ${id}-val` : undefined} aria-describedby={describedBy} aria-invalid={invalid || undefined}
         disabled={disabled} onClick={() => (open ? shut() : show())} onKeyDown={(e) => { if (!open && e.key === "ArrowDown") { e.preventDefault(); show(); } }} onBlur={() => { if (!open) onBlur?.(); }}>
-        <span className="sel-val" dir="ltr">{val || placeholder || L("اختر التاريخ", "Pick a date")}</span>{ICON}
+        <span className="sel-val" id={`${id}-val`} dir="ltr">{val || placeholder || L("اختر التاريخ", "Pick a date")}</span>{ICON}
       </button>
       {open && (
         <Popover trigger={btn} onClose={() => shut(false)} className="dp-pop" role="dialog" label={L("اختيار التاريخ", "Choose a date")} watch={`${mode}${shown}`}>
@@ -71,12 +73,12 @@ export function DatePicker({ id, name, value, onChange, onBlur, min = "", max = 
               <button type="button" className="dp-nav next" aria-label={L("التالي", "Next")} onClick={() => go(next, unit)}>{ARROW}</button>
             </div>
             {mode === "days" && (
-              <div className="dp-grid" role="grid">
+              <div className="dp-grid" role="group" aria-label={title}>
                 {Array.from({ length: 7 }, (_, i) => <span key={i} className="dp-wd" aria-hidden="true">{weekday((ws + i) % 7)}</span>)}
                 {monthGrid(y, m, ws).map((c) => (
                   <button key={c.iso} type="button" ref={(el) => { if (el && c.iso === cursor && open) el.focus({ preventScroll: true }); }}
                     className={`dp-day${c.inMonth ? "" : " out"}${c.iso === t ? " today" : ""}${c.iso === val ? " sel" : ""}`} data-d={c.iso} tabIndex={c.iso === cursor ? 0 : -1}
-                    aria-label={c.iso} aria-current={c.iso === t ? "date" : undefined} aria-selected={c.iso === val} disabled={!ok(c.iso)} onClick={() => pick(c.iso)}>{c.day}</button>
+                    aria-label={`${c.day} ${c.iso}`} aria-current={c.iso === t ? "date" : undefined} aria-pressed={c.iso === val} disabled={!ok(c.iso)} onClick={() => pick(c.iso)}>{c.day}</button>
                 ))}
               </div>
             )}

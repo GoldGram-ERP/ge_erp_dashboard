@@ -1,7 +1,7 @@
 "use client";
 // Select: a trigger button + a popover listbox (no native <select>). The value lives in <input type="hidden" id name>,
 // so #f-<name> still holds the value; picking the selected option again clears it. Keyboard: arrows, Home/End, Enter/Space, Esc, type-ahead.
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Option } from "@/lib/engine-types";
 import { useLocale } from "next-intl";
 import { filterOptions, norm, type AddNew } from "@/lib/fields";
@@ -14,6 +14,18 @@ type Props = {
   labelledBy?: string; describedBy?: string; invalid?: boolean; addNew?: AddNew;
 };
 
+/** A trigger button whose caller wrote a plain <label for=id> (not our Field) still gets its name: point aria-labelledby at that label. */
+export function useLabelFallback(btn: React.RefObject<HTMLButtonElement | null>, id: string, labelledBy?: string, also?: string) {
+  useEffect(() => {
+    const el = btn.current;
+    if (!el || labelledBy) return;
+    const lab = document.querySelector<HTMLElement>(`label[for="${id}"], label[for="${id}-btn"]`);
+    if (!lab) return;
+    lab.id ||= `${id}-lbl`;
+    el.setAttribute("aria-labelledby", also ? `${lab.id} ${also}` : lab.id);
+  });
+}
+
 export function Select({ id, name, value, onChange, onBlur, options, placeholder, disabled, searchable, className = "", labelledBy, describedBy, invalid, addNew }: Props) {
   const { L } = useT();
   const locale = useLocale();
@@ -24,6 +36,7 @@ export function Select({ id, name, value, onChange, onBlur, options, placeholder
   const btn = useRef<HTMLButtonElement>(null), searchEl = useRef<HTMLInputElement>(null), list = useRef<HTMLUListElement>(null);
   const buf = useRef({ s: "", at: 0 });
   const pid = useId();
+  useLabelFallback(btn, id, labelledBy);
   const hasSearch = searchable === undefined ? real.length > 8 : searchable;
   const shown = filterOptions(real, q);
   const current = real.find(([v]) => String(v) === value);

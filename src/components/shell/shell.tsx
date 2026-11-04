@@ -24,6 +24,16 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const me = data ?? initialMe;
   const t = useTranslations();
   const pathname = usePathname();
+  // WCAG 2.4.2: each route gets a title from its page heading ("Users - GoldGram").
+  useEffect(() => {
+    let n = 0;
+    const id = setInterval(() => { // the page heading renders after the lazy page loads: retry for ~4 s
+      const h = document.querySelector("#ws h1, h1")?.textContent?.trim();
+      if (h) document.title = `${h} - GoldGram`;
+      if (h || ++n > 12) clearInterval(id);
+    }, 300);
+    return () => clearInterval(id);
+  }, [pathname]);
   const ui = useUi();
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -137,7 +147,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
               <button aria-pressed={locale === "ar"} lang="ar" onClick={() => locale !== "ar" && router.replace(pathname, { locale: "ar" })}>العربية</button>
               <button aria-pressed={locale === "en"} lang="en" onClick={() => locale !== "en" && router.replace(pathname, { locale: "en" })}>English</button>
             </div>
-            <button className="ic-btn short" title={other === "en" ? "English" : "العربية"} aria-label={other === "en" ? "English" : "العربية"} onClick={() => router.replace(pathname, { locale: other })}>{other === "en" ? "EN" : "ع"}</button>
+            <button className="ic-btn short" title={other === "en" ? "English" : "العربية"} aria-label={other === "en" ? "EN English" : "ع العربية"} onClick={() => router.replace(pathname, { locale: other })}>{other === "en" ? "EN" : "ع"}</button>
           </div>
           </div>
           <div className="me" id="me">
@@ -152,9 +162,9 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
       <div className="main">
         <div className="topbar"><button className="ic-btn" id="trigger" type="button" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></button></div>
         {me.mustChangePassword ? null : <Suspense><JobBar /></Suspense>}
-        <section className="ws" id="ws" aria-live="polite">
+        <main className="ws" id="ws">
           {me.mustChangePassword ? <ChangePassword forced /> : children}
-        </section>
+        </main>
       </div>
       <SearchPalette me={me} open={palette} onClose={() => setPalette(false)} />
       <SessionLock me={me} onSignOut={signOut} />
