@@ -11,6 +11,7 @@ import { JobBar } from "@/components/jobs/job-bar";
 import { ChangePassword } from "./change-password";
 import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
+import { SearchPalette } from "./search-palette";
 
 const JOBS_ITEMS = [["", "jobsHome"], ["questions", "jobsQuestions"], ["todo", "jobsTodo"]] as const;
 const narrow = () => matchMedia("(max-width:900px)").matches;
@@ -24,6 +25,15 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const pathname = usePathname();
   const ui = useUi();
   const [drawer, setDrawer] = useState(false);
+  const [palette, setPalette] = useState(false);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setPalette(true); }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
 
   // Hard navigation: drops every in-memory cache with the page.
   const leave = () => { forget(); location.assign(`/${document.documentElement.lang || "en"}/sign-in`); };
@@ -97,6 +107,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           <button className="ic-btn" id="fold-all" type="button" title={allOpen ? t("app.foldAll") : t("app.unfoldAll")} aria-label={allOpen ? t("app.foldAll") : t("app.unfoldAll")} onClick={() => ui.setGroups(allOpen ? [] : allIds)}><Icon name={allOpen ? "fold" : "unfold"} /></button>
           <button className="ic-btn" id="collapse" type="button" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></button>
         </div>
+        <button className="usearch" id="usearch" type="button" aria-label={t("app.search")} title={`${t("app.search")} (Ctrl+K)`} onClick={() => setPalette(true)}><Icon name="search" size={17} /><span className="name">{t("app.search")}</span><kbd>Ctrl K</kbd></button>
         <nav id="nav" aria-label="GoldGram">
           <div className={`sec ${pathname === "/" ? "has-active" : ""}`}>
             <Link className="sec-head" href="/" aria-current={pathname === "/" ? "page" : undefined} title={t("nav.home")}><span className="ico"><Icon name="home" size={19} /></span><span className="name">{t("nav.home")}</span></Link>
@@ -136,6 +147,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           {me.mustChangePassword ? <ChangePassword forced /> : children}
         </section>
       </div>
+      <SearchPalette me={me} open={palette} onClose={() => setPalette(false)} />
       <SessionLock me={me} onSignOut={signOut} />
     </>
   );

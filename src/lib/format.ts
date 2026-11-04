@@ -44,10 +44,19 @@ export const intText = (n: unknown) => group(String(Math.trunc(Number(n))));
 
 // Dates: the backend sends ISO strings. The business day is Cairo's.
 const cairo = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit" });
-const cairoTime = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
+// 12-hour clock everywhere (owner, 2026-11-04): "1:51 PM" in English, "1:51 م" in Arabic; the business day is Cairo's.
+const cairoParts = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", hour: "numeric", minute: "2-digit", hour12: true });
+export const timeText = (iso: unknown, lang?: string) => {
+  if (!iso) return "";
+  const parts = cairoParts.formatToParts(new Date(iso as string));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const l = lang ?? (typeof document !== "undefined" ? document.documentElement.lang : "en");
+  const mark = get("dayPeriod").toUpperCase() === "AM" ? (l === "ar" ? "ص" : "AM") : (l === "ar" ? "م" : "PM");
+  return `${get("hour")}:${get("minute")} ${mark}`;
+};
 export const today = () => cairo.format(new Date());                       // "2026-11-04"
 export const dateText = (iso: unknown) => (iso ? String(iso).slice(0, 10) : "");    // date-only values stay as written
-export const dateTimeText = (iso: unknown) => { if (!iso) return ""; const d = new Date(iso as string); return `${cairo.format(d)} ${cairoTime.format(d)}`; };
+export const dateTimeText = (iso: unknown, lang?: string) => { if (!iso) return ""; return `${cairo.format(new Date(iso as string))} ${timeText(iso, lang)}`; };
 export function addDays(ymd: string, n: number) { const d = new Date(`${ymd}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
 export const monthStart = () => `${today().slice(0, 8)}01`;
 

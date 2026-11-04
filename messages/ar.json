@@ -1632,19 +1632,15 @@
    "openReturn": "فتح المرتجع"
   },
   "pieceLookUp": {
-   "title": "عرض قطعة معينة",
-   "goldPrice": "سعر الذهب",
-   "piece": "القطعة",
-   "price": "السعر",
-   "priceKarat": "العيار",
-   "priceDate": "التاريخ",
-   "goldPrice21k": "سعر عيار 21 الآن",
+   "title": "تفاصيل القطعة",
    "pieceCode": "كود القطعة",
    "needCode": "اكتب كود القطعة أو امسحه.",
    "priceBeforeDiscount": "سعر القطعة قبل الخصم",
    "discountPercent": "نسبة الخصم",
    "priceAfterDiscount": "السعر بعد الخصم",
-   "livePrice": "السعر الحالي",
+   "livePrice": "سعر البيع اليوم",
+   "notOurCode": "هذا ليس من أكواد قطعنا",
+   "switchKeyboard": "حوّل لوحة المفاتيح إلى الإنجليزية وامسح مرة أخرى",
    "scan": "مسح",
    "scanWithCamera": "مسح بالكاميرا",
    "scanTitle": "مسح {label}",
@@ -1656,20 +1652,44 @@
    "typeCode": "كتابة الكود يدوياً",
    "notFoundTitle": "لا توجد قطعة",
    "notFoundBody": "لا توجد قطعة بهذا الكود، أو تم حذفها. راجع الكود وحاول مرة أخرى.",
-   "noGoldPrice": "لا يوجد سعر ذهب بعد. أدخل سعرًا من شاشة أسعار الذهب، ثم ابحث مرة أخرى.",
-   "notOurCode": "هذا ليس من أكواد قطعنا",
-   "switchKeyboard": "حوّل لوحة المفاتيح إلى الإنجليزية وامسح مرة أخرى",
+   "noGoldPrice": "لا يوجد سعر ذهب بعد. أدخل سعراً من شاشة أسعار الذهب، ثم ابحث مرة أخرى.",
    "customerPieceTitle": "قطعة عميل",
-   "notStock": "ليست مخزونًا: قطعة يملكها عميل، بلا سعر.",
+   "notStock": "ليست مخزوناً: قطعة يملكها عميل، بلا سعر.",
    "description": "الوصف",
    "karat": "العيار",
    "weight": "الوزن (جم)",
-   "breakdown": "تفصيل السعر",
-   "weight24": "الوزن عيار 24 (جم)",
-   "pricePerGram24": "سعر جرام عيار 24",
-   "goldValue": "قيمة الذهب",
-   "makingChargePerGram": "المصنعية للجرام",
-   "makingCharge": "المصنعية"
+   "field": "البيان",
+   "value": "القيمة",
+   "latestTitle": "آخر تحديث للقطعة",
+   "branch": "الفرع الآن",
+   "purchaseInvoiceNumber": "رقم فاتورة الشراء",
+   "codedOrPurchasedOn": "تاريخ التكويد أو الشراء",
+   "itemName": "اسم الصنف",
+   "quantity": "العدد",
+   "totalWeight": "الوزن الكلي (جم)",
+   "weight21": "وزن 21 (جم)",
+   "state": "الحالة",
+   "goldPrice21k": "سعر جرام 21 اليوم",
+   "stateAvailable": "متاحة",
+   "stateSold": "مباعة",
+   "stateTransfer": "في تحويل",
+   "salesTitle": "تاريخ مبيعات القطعة",
+   "salesEmpty": "لم تُبع هذه القطعة ولم تُرجع.",
+   "transfersTitle": "تاريخ تحويلات الفروع",
+   "transfersEmpty": "لم تنتقل هذه القطعة بين الفروع.",
+   "invoiceOrReturnNumber": "رقم الفاتورة أو المرتجع",
+   "saleOrReturnDate": "تاريخ البيع أو المرتجع",
+   "customerName": "اسم العميل",
+   "price": "السعر",
+   "transferNumber": "رقم التحويل",
+   "fromBranch": "من فرع",
+   "toBranch": "إلى فرع",
+   "transferredOn": "تاريخ التحويل",
+   "receivedOn": "تاريخ الاستلام",
+   "notReceived": "لم تُستلم",
+   "returnBadge": "مرتجع",
+   "deletedBadge": "محذوفة",
+   "openRecord": "افتح {number}"
   },
   "salesReport": {
    "title": "تقرير مبيعات الذهب",
@@ -2042,8 +2062,7 @@
    "lockedTitle": "الخطوة دي مش بتاعتك",
    "lockedBody": "دوس «التالي» وكمّل. لما تخلّص، هتروح لقائمة اللي عنده الشاشة دي.",
    "waitingTitle": "الخطوة دي مستنية خطوة قبلها",
-   "waitingBody": "محتاجة اللي بييجي من: {names}. لما تخلّص، هتروح للي عنده الشاشة دي، والخطوة دي هترجعلك في قائمتك ومعاها السجل.",
-   "noScreen": "هذه الشاشة غير متاحة بعد"
+   "waitingBody": "محتاجة اللي بييجي من: {names}. لما تخلّص، هتروح للي عنده الشاشة دي، والخطوة دي هترجعلك في قائمتك ومعاها السجل."
   },
   "home": {
    "title": "عايز تعمل إيه؟",
@@ -2082,13 +2101,6 @@
    "openReservations": "{count, plural, one {حجز واحد مفتوح} two {حجزين مفتوحين} few {# حجوزات مفتوحة} other {# حجز مفتوح}}",
    "handOver": "{job}، سابها {from}",
    "handOverDone": "تم"
-  },
-  "run": {
-   "unavailable": "هذه المهمة غير متاحة لك",
-   "noScreen": "هذه الشاشة غير متاحة بعد"
-  },
-  "ask": {
-   "unavailable": "هذا السؤال غير متاح لك"
   }
  },
  "shell": {
@@ -2631,6 +2643,17 @@
   }
  },
  "app": {
+  "search": "بحث",
+  "searchPlaceholder": "ابحث عن صفحة أو مهمة أو سؤال أو رقم فاتورة أو كود قطعة…",
+  "searchNone": "لا توجد نتائج.",
+  "searchGroup": {
+   "pages": "الصفحات",
+   "jobs": "المهام",
+   "questions": "الأسئلة",
+   "find": "بحث مباشر"
+  },
+  "searchFindInvoice": "فاتورة: {text}",
+  "searchFindPiece": "قطعة: {text}",
   "pin": "تثبيت",
   "unpin": "إلغاء التثبيت",
   "pinHint": "اضغط على الدبوس بجانب أي صفحة لتثبيتها هنا.",

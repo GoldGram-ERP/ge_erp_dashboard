@@ -78,7 +78,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
         <div className="note" id="pw-rules"><b>{rules("title")}</b>
           <div id="pw-rules-list">{checks.map(([txt, ok]) => <div key={txt}>{ok ? "✓" : "○"} {txt} <span className="sr-only">{ok ? rules("met") : rules("unmet")}</span></div>)}</div></div>
         {fail ? <div className="err" id="pw-err" role="alert">{fail}</div> : null}
-        <div className="formbar"><button className="btn primary" id="pw-save" type="submit" disabled={busy}>{busy ? a("saving") : a("save")}</button></div>
+        <div className="formbar" style={{ position: "static" }}><button className="btn primary" id="pw-save" type="submit" disabled={busy}>{busy ? a("saving") : a("save")}</button></div>
       </form>
     </div>
   );

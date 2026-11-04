@@ -34,3 +34,13 @@ describe("gold weight is whole milligrams", () => {
   });
   it("latinNumber maps digits", () => { expect(latinNumber("٠١٢٫٥")).toBe("012.5"); });
 });
+
+import { dateTimeText as dtt, timeText as tt } from "./format";
+describe("12-hour time", () => {
+  it("shows the Cairo clock with AM/PM, never 24 hours", () => {
+    expect(tt("2026-11-02T11:51:00Z", "en")).toBe("1:51 PM");
+    expect(tt("2026-11-03T10:09:00Z", "en")).toBe("12:09 PM");
+    expect(tt("2026-11-03T22:05:00Z", "ar")).toBe("12:05 ص");
+    expect(dtt("2026-11-02T11:51:00Z", "en")).toBe("2026-11-02 1:51 PM");
+  });
+});

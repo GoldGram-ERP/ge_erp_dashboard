@@ -1632,19 +1632,15 @@
    "openReturn": "Open return"
   },
   "pieceLookUp": {
-   "title": "Piece look-up",
-   "goldPrice": "Gold price",
-   "piece": "Piece",
-   "price": "Price",
-   "priceKarat": "Price karat",
-   "priceDate": "Price date",
-   "goldPrice21k": "Gold price (21K)",
+   "title": "Piece details",
    "pieceCode": "Piece code",
    "needCode": "Type or scan a piece code.",
    "priceBeforeDiscount": "Price before discount",
    "discountPercent": "Discount %",
    "priceAfterDiscount": "Price after discount",
-   "livePrice": "Live price",
+   "livePrice": "Live price today",
+   "notOurCode": "This is not one of our piece codes",
+   "switchKeyboard": "Switch the keyboard to English and scan again",
    "scan": "Scan",
    "scanWithCamera": "Scan with camera",
    "scanTitle": "Scan {label}",
@@ -1657,19 +1653,43 @@
    "notFoundTitle": "No piece found",
    "notFoundBody": "No piece has this code, or it was deleted. Check the code and try again.",
    "noGoldPrice": "There is no gold price yet. Enter one in Gold prices, then look again.",
-   "notOurCode": "This is not one of our piece codes",
-   "switchKeyboard": "Switch the keyboard to English and scan again",
    "customerPieceTitle": "Customer piece",
    "notStock": "Not stock: a customer's own piece, no price.",
    "description": "Description",
    "karat": "Karat",
    "weight": "Weight (g)",
-   "breakdown": "Price breakdown",
-   "weight24": "Weight in 24K (g)",
-   "pricePerGram24": "24K gram price",
-   "goldValue": "Gold value",
-   "makingChargePerGram": "Making charge per gram",
-   "makingCharge": "Making charge"
+   "field": "Field",
+   "value": "Value",
+   "latestTitle": "Latest state of the piece",
+   "branch": "Branch now",
+   "purchaseInvoiceNumber": "Purchase invoice no.",
+   "codedOrPurchasedOn": "Coded or purchased on",
+   "itemName": "Item",
+   "quantity": "Quantity",
+   "totalWeight": "Total weight (g)",
+   "weight21": "Weight 21 (g)",
+   "state": "State",
+   "goldPrice21k": "Today's 21K gram price",
+   "stateAvailable": "Available",
+   "stateSold": "Sold",
+   "stateTransfer": "In transfer",
+   "salesTitle": "Sales history of the piece",
+   "salesEmpty": "This piece has not been sold or returned.",
+   "transfersTitle": "Branch transfer history",
+   "transfersEmpty": "This piece has not moved between branches.",
+   "invoiceOrReturnNumber": "Invoice or return no.",
+   "saleOrReturnDate": "Sale or return date",
+   "customerName": "Customer",
+   "price": "Price",
+   "transferNumber": "Transfer no.",
+   "fromBranch": "From branch",
+   "toBranch": "To branch",
+   "transferredOn": "Transfer date",
+   "receivedOn": "Receive date",
+   "notReceived": "Not received",
+   "returnBadge": "Return",
+   "deletedBadge": "Deleted",
+   "openRecord": "Open {number}"
   },
   "salesReport": {
    "title": "Sales report",
@@ -2042,8 +2062,7 @@
    "lockedTitle": "This step is not yours",
    "lockedBody": "Press Next to go on. When you finish, it goes to the to-do of whoever holds this screen.",
    "waitingTitle": "This step waits for an earlier one",
-   "waitingBody": "It needs what {names} gives. When you finish, that goes to whoever holds it, and this step comes back in your to-do with its record.",
-   "noScreen": "This screen is not available yet"
+   "waitingBody": "It needs what {names} gives. When you finish, that goes to whoever holds it, and this step comes back in your to-do with its record."
   },
   "home": {
    "title": "What do you want to do?",
@@ -2082,13 +2101,6 @@
    "openReservations": "{count, plural, one {One reservation is} other {# reservations are}} open",
    "handOver": "{job}, left by {from}",
    "handOverDone": "Done"
-  },
-  "run": {
-   "unavailable": "This job is not available to you",
-   "noScreen": "This screen is not available yet"
-  },
-  "ask": {
-   "unavailable": "This question is not available to you"
   }
  },
  "shell": {
@@ -2631,6 +2643,17 @@
   }
  },
  "app": {
+  "search": "Search",
+  "searchPlaceholder": "Search pages, jobs, questions, an invoice number or a piece code…",
+  "searchNone": "No results.",
+  "searchGroup": {
+   "pages": "Pages",
+   "jobs": "Jobs",
+   "questions": "Questions",
+   "find": "Find directly"
+  },
+  "searchFindInvoice": "Invoice: {text}",
+  "searchFindPiece": "Piece: {text}",
   "pin": "Pin",
   "unpin": "Unpin",
   "pinHint": "Press the pin next to any page to pin it here.",

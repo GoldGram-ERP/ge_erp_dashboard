@@ -578,3 +578,34 @@ a.tile b{color:var(--ink)}
 .jobs-gate{margin-top:24px}
 @media (max-width:700px){.jobbar{margin:6px 12px 0}.jobbar .jb-btns{width:100%;justify-content:flex-end}}
 @media (prefers-reduced-motion:reduce){.jobbar .steps li{transition:none}}
+
+/* Sidebar: a long label shortens with an ellipsis; the icon and the chevron never shrink or leave the row. */
+.sec-head .name{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sec-head .ico,.sec-head .chev{flex:none}
+/* Tiles: every icon sits in the same 40px rounded square, whatever the text length. */
+.tile .ico{flex:none;width:40px;height:40px;aspect-ratio:1;border-radius:11px}
+.tile .ico svg{display:block;width:22px;height:22px}
+.tile>b,.tile>span:not(.ico){min-width:0}
+
+/* Universal search: a field in the sidebar head that opens a palette (Ctrl K or /). */
+.usearch{display:flex;align-items:center;gap:8px;width:calc(100% - 24px);margin:2px 12px 8px;height:38px;padding:0 10px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--mute);text-align:start;font-size:14px;transition:box-shadow .15s}
+.usearch:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
+.usearch .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.usearch kbd{font:600 11px/1 inherit;padding:3px 6px;border-radius:6px;background:var(--gold-tint);color:var(--gold)}
+.sb-collapsed .usearch{width:38px;margin-inline:auto;justify-content:center;padding:0}
+.sb-collapsed .usearch .name,.sb-collapsed .usearch kbd{display:none}
+dialog.palette{width:min(620px,94vw);max-height:78vh;margin:8vh auto auto;padding:0;border:0;border-radius:18px;background:var(--surface);color:var(--ink);box-shadow:0 24px 70px rgba(60,40,5,.28);overflow:hidden}
+dialog.palette::backdrop{background:rgba(40,28,6,.38);backdrop-filter:blur(3px)}
+dialog.palette .pal-in{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);color:var(--mute)}
+dialog.palette .pal-in input{flex:1;border:0;outline:0;background:none;font-size:16px;color:var(--ink);min-width:0}
+dialog.palette .pal-list{max-height:60vh;overflow:auto;padding:8px}
+dialog.palette .pal-grp{margin:10px 8px 4px;font-size:12px;font-weight:700;color:var(--mute)}
+dialog.palette .pal-item{display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border-radius:11px;text-align:start;color:var(--ink)}
+dialog.palette .pal-item[aria-selected=true]{background:var(--gold-tint)}
+dialog.palette .pal-item .ico{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--gold-tint);color:var(--gold)}
+dialog.palette .pal-item small{display:block;color:var(--mute);font-size:12.5px}
+dialog.palette .pal-empty{padding:26px;text-align:center;color:var(--mute)}
+
+/* Segmented controls: the pressed button carries the highlight (the mockup moved a "thumb" with script; no script needed here). */
+.seg button[aria-pressed=true],.seg button[aria-selected=true]{background:var(--surface);box-shadow:0 1px 2px rgba(60,45,10,.18)}
+.seg button{transition:color .18s var(--calm),background .18s var(--calm),box-shadow .18s var(--calm)}
