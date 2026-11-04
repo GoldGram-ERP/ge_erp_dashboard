@@ -25,7 +25,8 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const ui = useUi();
   const [drawer, setDrawer] = useState(false);
 
-  const leave = () => { forget(); router.replace("/sign-in"); };
+  // Hard navigation: drops every in-memory cache with the page.
+  const leave = () => { forget(); location.assign(`/${document.documentElement.lang || "en"}/sign-in`); };
   const signOut = async () => { await api("/auth/sign-out", { method: "POST" }).catch(() => {}); leave(); };
   useEffect(() => { window.addEventListener(SESSION_ENDED, leave); return () => window.removeEventListener(SESSION_ENDED, leave); });
   useEffect(() => { if ((error as { status?: number } | null)?.status === 401) leave(); });

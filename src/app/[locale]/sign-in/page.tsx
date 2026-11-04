@@ -38,7 +38,7 @@ export default function SignInPage() {
       setBusy(false);
       if (x instanceof ApiFailure) {
         const key = x.error.message;
-        setError(x.unreachable ? t("unreachable") : key === "accountLocked" ? t("lockedTitle") : x.status === 401 ? t("errorTitle") : e.has(key) ? e(key, x.error.values as never) : t("failed"));
+        setError(x.unreachable ? t("unreachable") : key === "accountLocked" ? t("lockedTitle") : x.status === 401 ? t("errorTitle") + (typeof x.error.values?.attemptsLeft === "number" ? " " + t("attemptsLeft", { count: x.error.values.attemptsLeft }) : "") : e.has(key) ? e(key, x.error.values as never) : t("failed"));
       } else setError(app("signIn.cookie"));
     }
   }

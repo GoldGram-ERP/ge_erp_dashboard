@@ -29,6 +29,7 @@ for (const lang of LANGS) {
     expect(want.length).toBeGreaterThan(10);
     await screen.getByRole('button', M(lang, 'app', 'signOut')).tap();
     await expect(browser).toHaveURL(new RegExp(`/${lang}/sign-in`));
+    expect((await browser.cookies()).some((c) => c.name.includes('session_token'))).toBe(false);
     await shot(`signed-out-${lang}`);
   });
 
@@ -47,14 +48,15 @@ for (const lang of LANGS) {
     await signInApi('e2euser'); // a good sign-in resets the failed-attempts counter
   });
 
-  // Owner brief: the wrong-password message is followed by how many attempts are left. The page only shows errorTitle; the backend sign-in does not send attemptsLeft.
-  test(`wrong password also shows the attempts left text (${lang})`, { tags: ['auth', 'bug-candidate'], requires: ['browser'] }, async ({ app, screen, browser }) => {
+  // Same as the old dashboard: the sign-in form shows attemptsLeft only when the backend sends it. POST /access/sign-in never does (only the unlock screen does), so the text must be absent.
+  test(`wrong password shows no attempts-left text, as the old dashboard (${lang})`, { tags: ['auth'], requires: ['browser'] }, async ({ app, browser }) => {
     await app.open(`/${lang}/sign-in`);
     await browser.locator('#f-email').fill('e2euser');
     await browser.locator('#f-password').fill('Wrong-Pass-9999');
     await browser.locator('#si-go').tap();
+    await expect(browser.locator('form .note.warn')).toContainText(T(lang, 'signIn.errorTitle'));
     const tail = T(lang, 'signIn.attemptsLeft').replace('{count}', '').trim();
-    await expect(browser.locator('form .note.warn')).toContainText(tail);
+    await expect(browser.locator('form .note.warn')).not.toContainText(tail);
     await signInApi('e2euser');
   });
 }

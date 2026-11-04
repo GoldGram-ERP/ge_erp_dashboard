@@ -17,5 +17,5 @@ export const isSuper = (me?: Me | null) => me?.userType === "super_admin";
 // Clears everything remembered about the person (also the persisted query cache).
 export function useForgetMe() {
   const qc = useQueryClient();
-  return () => { useSession.getState().setMe(null); qc.clear(); try { localStorage.removeItem("ge-erp:query"); localStorage.removeItem("ge-erp:session-lock"); } catch { /* private mode */ } };
+  return () => { useSession.getState().setMe(null); qc.clear(); try { for (const k of ["ge-erp:query", "ge-erp:session-lock", "ge-erp:last-activity", "ge-erp:me"]) localStorage.removeItem(k); } catch { /* private mode */ } };
 }
