@@ -7,7 +7,6 @@ const apiUrl = process.env.API_URL?.replace(/\/$/, "");
 
 const nextConfig = {
   output: "standalone",
-  cacheComponents: true,
   poweredByHeader: false,
   async rewrites() {
     return apiUrl ? [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }] : [];
