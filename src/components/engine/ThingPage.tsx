@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { intText, milligramsText, piastresText } from "@/lib/format";
 import type { MakeConfig, Row, RowJump, ThingConfig, ViewConfig } from "@/lib/engine-types";
+import { otherLayout } from "@/lib/search";
 import { buildQuery, initialViewState, rawValues, readFields, rowsOf, type ViewState } from "@/lib/fields";
 import { useT } from "@/lib/t";
 import { parseDeepLink, pruneParams, withParams } from "./query";
@@ -191,7 +192,17 @@ function ViewBody({ cfg, view, vs, set, chips, unit, flashId, onRow, openForm, j
     queryKey: ["thing", cfg.id, view.id, query],
     enabled: vs.ran,
     placeholderData: keepPreviousData,
-    queryFn: ({ signal }) => (view.load ? view.load(query, { signal }) : api(view.endpoint!, { query, signal })),
+    // A search that finds nothing is tried once more as the same keys on the other language's keyboard ("lfduhj" is "مبيعات").
+    queryFn: async ({ signal }) => {
+      const run = (qq: typeof query) => (view.load ? view.load(qq, { signal }) : api(view.endpoint!, { query: qq, signal }));
+      const first = await run(query);
+      const key = view.search?.param ?? "search", typed = query[key];
+      if (typeof typed === "string" && typed.trim() && rowsOf(first, view.rowsPath).length === 0) {
+        const alt = otherLayout(typed);
+        if (alt) { const second = await run({ ...query, [key]: alt }); if (rowsOf(second, view.rowsPath).length) return second; }
+      }
+      return first;
+    },
   });
   const answer = q.data;
   let rows: Row[] = answer ? rowsOf(answer, view.rowsPath) : [];

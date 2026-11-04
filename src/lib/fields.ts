@@ -1,3 +1,4 @@
+import { matchesText } from "./search";
 // Pure rules of the form fields, ported from docs/nav-preview/app/core/fields.js (readForm, backendFieldErrors) and select.js/datepicker.js.
 import { latinNumber, milligramsInput, piastresInput, typedMilligrams, typedPiastres } from "./format";
 import type { FieldConfig, LookupSpec, Query, Row, ViewConfig } from "./engine-types";
@@ -106,11 +107,8 @@ export function buildQuery(view: ViewConfig, vs: ViewState): Query {
 
 // ───── select search and the calendar ─────
 // Arabic-normalised text for searching: no diacritics or tatweel, alef/yeh/heh variants merged, Arabic digits -> Latin.
-export const norm = (s: unknown) => String(s ?? "").toLowerCase()
-  .replace(/[ً-ٰٟـ]/g, "")
-  .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ئ/g, "ي").replace(/ؤ/g, "و").replace(/ة/g, "ه")
-  .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).trim();
-export const filterOptions = <T extends [unknown, string, ...unknown[]]>(opts: T[], q: string) => { const n = norm(q); return n ? opts.filter(([, l]) => norm(l).includes(n)) : opts; };
+export { norm } from "./search";
+export const filterOptions = <T extends [unknown, string, ...unknown[]]>(opts: T[], q: string) => (q.trim() ? opts.filter(([, l]) => matchesText(q, l)) : opts);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 export const isoDay = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;           // m is 0-11

@@ -7,6 +7,8 @@ import { NAV, canOpen } from "@/nav/tree";
 import { JOBS, QUESTIONS, canAsk, isVisible, jobName, matches, normalise, runHref } from "@/nav/jobs";
 import { isSuper } from "@/lib/session";
 import type { Me } from "@/stores/ui";
+import { matchesText } from "@/lib/search";
+import { NAV_LABELS } from "@/nav/labels.generated";
 import { Icon, jobIconName } from "./icon";
 
 export type Hit = { key: string; group: "pages" | "jobs" | "questions" | "find"; label: string; hint?: string; icon: string; href: string };
@@ -22,7 +24,7 @@ export function useSearchHits(me: Me, q: string): Hit[] {
     const pages = NAV.filter((g) => !g.superOnly || isSuper(me)).flatMap((g) => g.items.filter((i) => canOpen(me, i.screens)).map((i) => ({ g, i })));
     for (const { g, i } of pages) {
       const label = t(`nav.item.${i.id}`), group = t(`nav.group.${g.id}`);
-      if (!word || normalise(`${label} ${group}`).includes(normalise(word))) out.push({ key: `p:${i.route}`, group: "pages", label, hint: group, icon: g.icon, href: i.route });
+      if (matchesText(word, label, group, NAV_LABELS.item[i.id], NAV_LABELS.group[g.id])) out.push({ key: `p:${i.route}`, group: "pages", label, hint: group, icon: g.icon, href: i.route });
     }
     if (word) {
       JOBS.filter((j: any) => isVisible(j, screens, (me as any).jobs) && matches(j, word)).slice(0, MAX)

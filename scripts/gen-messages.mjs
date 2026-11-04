@@ -20,3 +20,4 @@ for (const [i, lang] of ["ar", "en"].entries()) {
   writeFileSync(path.join(here, `../messages/${lang}.json`), JSON.stringify(out, null, 1) + "\n");
 }
 console.log("messages/ar.json + en.json written");
+import "./gen-nav-labels.mjs";

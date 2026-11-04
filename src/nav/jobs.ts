@@ -1,5 +1,6 @@
 // The jobs registry rules (ported from docs/nav-preview/app/jobs/registry.js). Data: jobs-data.ts.
 import { JOB_DATA, QUESTION_DATA } from "./jobs-data";
+import { matchesText, norm } from "@/lib/search";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type Lang = "ar" | "en";
@@ -22,9 +23,5 @@ export const firstShownStep = (job: any, screens: string[]) => {
 export const runHref = (job: any, index: number, carried: Record<string, string> = {}) => `/jobs/run/${encodeURIComponent(job.id)}?${new URLSearchParams({ step: String(index + 1), ...carried })}`;
 
 // Arabic typed many ways reads as one: no diacritics or tatweel, one alef, ة as ه, ى as ي.
-export const normalise = (text: unknown) =>
-  String(text ?? "").toLowerCase().replace(/[ً-ٰٟـ]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").trim();
-export const matches = (entry: any, search: string) => {
-  const wanted = normalise(search);
-  return !wanted || [entry.ar, entry.en, ...entry.keywords.ar, ...entry.keywords.en].some((t) => normalise(t).includes(wanted));
-};
+export const normalise = norm;
+export const matches = (entry: any, search: string) => matchesText(search, entry.ar, entry.en, ...entry.keywords.ar, ...entry.keywords.en);
