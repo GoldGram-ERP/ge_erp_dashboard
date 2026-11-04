@@ -624,3 +624,4 @@ dialog.palette .pal-empty{padding:26px;text-align:center;color:var(--mute)}
 /* Just the word: the dot only shows when the sidebar is collapsed and the word is hidden. */
 .status i{display:none}
 .sb-collapsed .status i{display:block}
+.sec-head{font-size:14.5px}

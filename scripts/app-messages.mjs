@@ -3,7 +3,7 @@ export const APP = {
   "nav.home": ["الرئيسية", "Home"], "nav.pinned": ["المثبّتة", "Pinned"], "nav.jobs": ["المهام", "Jobs"],
   "nav.jobsHome": ["ماذا تريد أن تفعل؟", "What do you want to do?"], "nav.jobsQuestions": ["ماذا تريد أن تعرف؟", "What do you want to know?"], "nav.jobsTodo": ["بانتظارك", "Waiting for you"],
   "nav.group.sales": ["المبيعات", "Sales"], "nav.group.buy": ["الشراء والأصناف", "Purchasing and items"], "nav.group.stock": ["الجرد", "Stocktake"],
-  "nav.group.money": ["الخزن والبنوك", "Treasuries and banks"], "nav.group.expenses": ["المصروفات", "Expenses"], "nav.group.setup": ["الإدارة والإعدادات", "Administration and settings"], "nav.group.control": ["التحكم الكامل", "Full control"],
+  "nav.group.money": ["الخزن والبنوك", "Treasuries and banks"], "nav.group.expenses": ["المصروفات", "Expenses"], "nav.group.setup": ["الإدارة", "Admin"], "nav.group.control": ["التحكم الكامل", "Full control"],
   "nav.item.invoices": ["فواتير المبيعات", "Sales invoices"], "nav.item.reservations": ["الحجوزات", "Reservations"], "nav.item.returns": ["المرتجعات", "Returns"], "nav.item.pieces": ["القطع والأرصدة", "Pieces and balances"],
   "nav.item.items": ["الأصناف", "Items"], "nav.item.purchases": ["المشتريات", "Purchases"], "nav.item.count": ["جرد الذهب", "Gold stocktake"], "nav.item.branch-stock": ["جرد الفرع", "Branch stock"],
   "nav.item.cash": ["حركات النقدية", "Cash movements"], "nav.item.treasuries": ["الخزن", "Treasuries"], "nav.item.transfers": ["تحويلات الخزن", "Treasury transfers"], "nav.item.banks": ["البنوك", "Banks"],
