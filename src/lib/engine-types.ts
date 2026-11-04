@@ -10,7 +10,7 @@ export type Query = Record<string, string | number | boolean | undefined | null>
 export type FieldType = "text" | "textarea" | "password" | "number" | "money" | "weight" | "select" | "date" | "checkbox" | "code" | "html";
 /** [value, label, disabled?] */
 export type Option = [string | number, string, boolean?];
-export type LookupSpec = { path: string; value?: string; label?: string | ((row: Row) => string); query?: Query; rowsPath?: string; paged?: boolean };
+export type LookupSpec = { path: string; value?: string; label?: string | ((row: Row) => string); query?: Query; rowsPath?: string; paged?: boolean; pageOnly?: boolean };   // pageOnly: the list takes `page` but refuses `limit`
 
 export type FieldConfig = {
   name: string;

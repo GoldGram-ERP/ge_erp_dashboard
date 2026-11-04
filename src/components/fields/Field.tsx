@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { FieldConfig, Option, Row } from "@/lib/engine-types";
 import { useT } from "@/lib/t";
+import { addNewFor } from "@/lib/fields";
 import { useLookup } from "./useLookup";
 import { Select } from "./Select";
 import { DatePicker } from "./DatePicker";
@@ -79,7 +80,8 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
     return wrap(<>
       {label}
       <Select id={id} name={f.name} value={String(value)} onChange={onChange} onBlur={onBlur} options={options} placeholder={f.placeholder}
-        disabled={f.disabled} searchable={f.searchable} labelledBy={lid} describedBy={describedBy} invalid={!!err} />
+        disabled={f.disabled} searchable={f.searchable} labelledBy={lid} describedBy={describedBy} invalid={!!err}
+        addNew={typeof f.optionsFrom === "object" ? addNewFor(f.optionsFrom.path) : undefined} />
       {lookup.failed && <div className="help">{L("تعذّر تحميل القائمة", "Could not load the list")}</div>}
       {help}
     </>);

@@ -10,10 +10,10 @@ export async function loadLookup(spec: LookupSpec): Promise<Option[]> {
   if (spec.paged === false) rows.push(...rowsOf(await api(spec.path, { query: spec.query ?? {} }), spec.rowsPath));   // refuses page/limit (e.g. /treasuries)
   else {
     for (let page = 1; page <= 100; page++) {
-      const r = await api(spec.path, { query: { ...(spec.query ?? {}), page, limit: 20 } });
+      const r = await api(spec.path, { query: { ...(spec.query ?? {}), page, ...(spec.pageOnly ? {} : { limit: 20 }) } });
       const got = rowsOf(r, spec.rowsPath);
       rows.push(...got);
-      if (got.length < 20 || (typeof r?.total === "number" && rows.length >= r.total)) break;
+      if (got.length === 0 || (typeof r?.total === "number" ? rows.length >= r.total : got.length < 20)) break;
     }
   }
   return rows.map((row) => [row[spec.value ?? "id"], typeof spec.label === "function" ? spec.label(row) : String(row[spec.label ?? "name"])] as Option);
@@ -26,6 +26,7 @@ export function useLookup(from?: string | LookupSpec) {
     queryKey: ["lookup", spec?.path, spec?.query, spec?.paged, typeof spec?.label === "string" ? spec.label : "fn", spec?.value],
     queryFn: () => loadLookup(spec!),
     staleTime: 5 * 60_000,
+    refetchOnWindowFocus: spec?.path === "/bank-accounts" || spec?.path === "/banks" ? "always" : true,
   });
   return { options: q.data, failed: q.isError };
 }

@@ -3,18 +3,20 @@
 // so #f-<name> still holds the value; picking the selected option again clears it. Keyboard: arrows, Home/End, Enter/Space, Esc, type-ahead.
 import { useId, useRef, useState } from "react";
 import type { Option } from "@/lib/engine-types";
-import { filterOptions, norm } from "@/lib/fields";
+import { useLocale } from "next-intl";
+import { filterOptions, norm, type AddNew } from "@/lib/fields";
 import { useT } from "@/lib/t";
 import { Popover } from "./Popover";
 
 type Props = {
   id: string; name: string; value: string; onChange: (v: string) => void; onBlur?: () => void;
   options: Option[]; placeholder?: string; disabled?: boolean; searchable?: boolean; className?: string;
-  labelledBy?: string; describedBy?: string; invalid?: boolean;
+  labelledBy?: string; describedBy?: string; invalid?: boolean; addNew?: AddNew;
 };
 
-export function Select({ id, name, value, onChange, onBlur, options, placeholder, disabled, searchable, className = "", labelledBy, describedBy, invalid }: Props) {
+export function Select({ id, name, value, onChange, onBlur, options, placeholder, disabled, searchable, className = "", labelledBy, describedBy, invalid, addNew }: Props) {
   const { L } = useT();
+  const locale = useLocale();
   const real = options.filter((o) => String(o[0]) !== "");
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -92,6 +94,7 @@ export function Select({ id, name, value, onChange, onBlur, options, placeholder
               </li>
             )) : <li className="sel-empty" role="presentation">{L("لا توجد نتائج", "No results")}</li>}
           </ul>
+          {addNew && <a className="sel-add" role="option" aria-selected={false} href={`/${locale}${addNew.route}`} target="_blank" rel="noopener" onClick={() => shut(false)}>+ {locale === "ar" ? addNew.ar : addNew.en}</a>}
         </Popover>
       )}
     </div>

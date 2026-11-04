@@ -10,9 +10,9 @@ export const LOOKUPS: Record<string, LookupSpec> = {
   bank: { path: "/banks", value: "id", label: "name" },
   bankAccount: { path: "/bank-accounts", value: "id", label: "name" },
   karat: { path: "/karats", value: "id", label: "name" },
-  category: { path: "/categories", value: "id", label: "name" },
-  itemName: { path: "/item-names", value: "id", label: "name" },
-  item: { path: "/items", value: "id", label: "name" },
+  category: { path: "/categories", value: "id", label: "categoryName", pageOnly: true },
+  itemName: { path: "/item-names", value: "id", label: "itemName", pageOnly: true },
+  item: { path: "/items", value: "id", label: "itemName", pageOnly: true },
   expenseType: { path: "/expense-types", value: "id", label: "name" },
   user: { path: "/users", value: "id", label: "name" },
 };
@@ -127,3 +127,10 @@ export function monthGrid(y: number, m: number, weekStart: number) {
 export const shiftDay = (s: string, n: number) => { const { y, m, d } = parseDay(s), t = new Date(Date.UTC(y, m, d + n)); return isoDay(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()); };
 export const shiftMonth = (s: string, n: number) => { const { y, m, d } = parseDay(s), t = y * 12 + m + n; return isoDay(Math.floor(t / 12), t % 12, Math.min(d, daysIn(Math.floor(t / 12), t % 12))); };
 export const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+// An option list that can grow from its own screen: the select always offers "Add ..." as its last entry (opens that screen's create form in a new tab, so the form being filled is kept).
+export type AddNew = { ar: string; en: string; route: string };
+export const addNewFor = (path?: string): AddNew | undefined =>
+  path === "/bank-accounts" ? { ar: "إضافة حساب بنكي جديد", en: "Add a bank account", route: "/money/banks?new=createAccount" }
+  : path === "/banks" ? { ar: "إضافة بنك جديد", en: "Add a bank", route: "/money/banks?new=createBank" }
+  : undefined;
