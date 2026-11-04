@@ -12,6 +12,7 @@ import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
 import { Icon, toast } from "@/components/engine";
 import { LINES_MAX, MAX_PIASTRES, bankRowErrors, formRowOfRefusal, makingBase, readDiscount, sentBanks, totalsOf } from "./sales-invoices-math";
 import { BankRows, Choice, DiscountBox, ErrBox, PIECE_CODE, allPages, accountOptions, checkedCustomer, code6, customerFields, customerNameOf, fe, latestPrice, ltrStyle, mayDiscount, sg, type BankRow, type DiscountKind } from "./sales-form-parts";
+import { Link as NavLink } from "@/i18n/navigation";
 
 type Line = Row;
 const fills = (line: Row, piece: Row) => line.itemName === piece.itemName && line.karat === piece.karat;
@@ -259,7 +260,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
               <datalist id="pcl">{choices.filter((p) => !p.sold && !p.inTransfer && !lines.some((l) => l.pieceCode === p.pieceCode)).map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName} · ${p.karat} · ${milligramsText(p.weight)}`}</option>)}</datalist>
               <button type="button" className="btn quiet" id="addPiece" onClick={() => addPiece()}><Icon name="plus" />{m("addPiece")}</button></div>
             <div className="help">{m("pieceCodeHint")}</div>
-            <div id="pcErr">{pcErr && <ErrBox>{pcErr}{pcErr === m("pieceNoGoldPrice") && <> <a href="/system-codes/gold-prices">{m("enterGoldPrice")}</a></>}</ErrBox>}{errs.pieceCode && <ErrBox>{errs.pieceCode}</ErrBox>}</div></div>
+            <div id="pcErr">{pcErr && <ErrBox>{pcErr}{pcErr === m("pieceNoGoldPrice") && <> <NavLink href="/setup/gold-prices">{m("enterGoldPrice")}</NavLink></>}</ErrBox>}{errs.pieceCode && <ErrBox>{errs.pieceCode}</ErrBox>}</div></div>
           <div className="table" style={{ marginTop: 12 }}><table>
             <thead><tr><th>{m("lineHeading")}</th><th>{m("pieceCode")}</th><th>{m("item")}</th><th>{m("karat")}</th><th className="num">{m("weight")}</th><th className="num">{m("weight24")}</th><th className="num">{m("pricePerGram24")}</th><th className="num">{m("goldValue")}</th><th className="num">{m("makingCharge")}</th><th className="num">{m("linePrice")}</th><th /></tr></thead>
             <tbody id="lineRows">{lines.map((l, i) => <FragmentRow key={l.pieceCode}>
