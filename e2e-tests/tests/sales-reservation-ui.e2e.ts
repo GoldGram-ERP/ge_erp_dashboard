@@ -29,8 +29,16 @@ test('reservation UI: create with a cash deposit, then convert to a sales invoic
   const seenI = await capture(browser, /\/sales-invoices(\?|$)/, ['POST']);
   await go('superadmin', `/sales/invoices?new=create&reservation=${rs[0].id}`, 'en');
   await expect(browser.locator('#ws #pc')).toBeVisible();
-  await shot('reservation-3-convert-page');
-  expect(await browser.evaluate(() => document.location.search)).toContain('reservation=');
+  await browser.locator('#ws [data-type=sale]').tap();
+  await browser.locator('#ws #pc').fill(S.pieces[0].pieceCode);
+  await browser.locator('#ws #addPiece').tap();
+  await expect(browser.locator('#ws #lineRows tr').first()).toBeVisible();
+  await shot('reservation-3-convert-piece-added');
+  await browser.locator('#ws #sec-save button[type=submit]').tap();
+  await expect.poll(() => seenI.length).toBe(1);
+  expect(seenI[0].body).toMatchObject({ invoiceType: 'sale', reservationId: rs[0].id, bankPayments: [], lines: [{ pieceCode: S.pieces[0].pieceCode }] });
+  await shot('reservation-4-converted');
+  for (const inv of (await S.api('GET', '/sales-invoices?search=01012345678')).body.items as any[]) S.created.invoices.push(inv.id);
 });
 
 afterAll(async () => { if (S) await S.remove(); });
