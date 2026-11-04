@@ -17,4 +17,9 @@ Method: old `src/shell/screens.ts` screens and old module API paths compared wit
 | Super control: admins, locked, policy, sessions, reset, log | /control/accounts, /control/security | Covered | |
 | Customer accounts | none | Not built in the old app either | |
 
-Not checked in this pass (time): column and filter parity per report, print and Excel on every report, empty and permission states. Next pass should diff each old `*-table.tsx` columns against the matching `things/*.tsx` view.
+Second pass (2026-11-04):
+- Users access area redesigned: By jobs / By screens switch, job cards by group with their screens in small text, live "N jobs · M screens", screens grouped by section with search and select-all per section, readable disabled preview before a type is chosen, Admin / Super admin explained as full access. Bodies checked against the local backend: POST and PATCH accepted; a PATCH without `shortcutScreens` leaves them unchanged; jobs PUT and DELETE work (test user removed).
+- Reports: Excel and Print now appear on every report view whose backend route exists (expenses, expenses by type, sales report, sales by period, unpaid invoices, sales by item, bank and safe balances and statements, activity log). Before only Gold stock had them. Print uses the view's own columns and footer. Gap: the print page does not list the filters used, and print was not opened in a browser in this pass.
+- Still to check: views on the backend export list that the new app has no view for (reserved-pieces, cancelled-reservations, missing-pieces, previous counts, stock by category, branch-stock-by-item; these are not separate views in the new app, so their old print/Excel is missing), Treasury balances / in-transit / treasury statement (no backend export route), column-by-column diff of old tables.
+
+Not checked (time): column and filter parity per report, print and Excel on every report, empty and permission states. Next pass should diff each old `*-table.tsx` columns against the matching `things/*.tsx` view.

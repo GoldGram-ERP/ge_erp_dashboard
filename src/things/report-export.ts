@@ -2,9 +2,11 @@
 // /exports/:id/file gives the .xlsx (excel) or the print data as JSON (print). Status shows as a toast; no queue panel (shortcut: add one if people wait long).
 import { api, ApiFailure } from "@/lib/api";
 import { esc } from "@/lib/format";
-import type { Query } from "@/lib/engine-types";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import type { Query, Row, ViewAction, ViewConfig } from "@/lib/engine-types";
 import type { Tr } from "@/lib/t";
-import { toast } from "@/components/engine";
+import { cellNode, toast } from "@/components/engine";
 
 type Status = { id: string; state: "waiting" | "preparing" | "ready" | "failed"; place: number; ahead: number; error?: string; errorValues?: Record<string, string | number> };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -65,4 +67,22 @@ export async function printReport(path: string, query: Query, tr: Tr, build: (da
     <tbody>${t.rows.map((row) => `<tr>${row.map((c, i) => `<td class="${t.heads[i]?.end ? "e" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody>
     ${t.foot ? `<tfoot><tr>${t.foot.map((c, i) => `<td class="${t.heads[i]?.end ? "e" : ""}">${c}</td>`).join("")}</tr></tfoot>` : ""}</table></main>`);
   w.document.close();
+}
+
+// Reports the backend can export (GET <path>/excel and /print). A report view with no actions of its own gets Excel and Print from its own columns.
+export const EXPORTABLE = new Set(["bank-balances", "bank-statement", "safe-balances", "safe-statement", "expenses-by-type", "expenses-report", "cancelled-reservations", "reserved-pieces", "sales-by-period", "sales-report", "unpaid-invoices", "branch-stock", "branch-stock-by-item", "missing-pieces", "missing-pieces-previous", "sales-by-item", "stock-by-category", "activity-log"]);
+
+export function exportActions(view: ViewConfig, tr: Tr): ViewAction[] {
+  const path = view.endpoint;
+  if (view.actions?.length || !path?.startsWith("/reports/") || !EXPORTABLE.has(path.slice(9))) return [];
+  const keys = view.keys;
+  return [
+    { label: tr.L("تصدير Excel", "Excel"), icon: "download", keys, run: ({ query }) => downloadExcel(path, query, tr) },
+    { label: tr.t("common", "print"), icon: "print", keys, run: ({ query }) => printReport(path, query, tr, (d) => {
+      const rows: Row[] = d.items ?? [];
+      const html = (n: unknown) => renderToStaticMarkup(createElement("td", null, n as never)).replace(/^<td[^>]*>|<\/td>$/g, "");
+      const foot = view.footer ? renderToStaticMarkup(createElement("table", null, createElement("tbody", null, createElement("tr", null, view.footer(rows, d) as never)))).match(/<td[\s\S]*?<\/td>/g)?.map((c) => c.replace(/^<td[^>]*>|<\/td>$/g, "")) : undefined;
+      return { title: view.label, filters: [], heads: view.columns.map((c) => ({ label: c.label, end: ["money", "weight", "int"].includes(c.type ?? "") })), rows: rows.map((r) => view.columns.map((c) => html(cellNode(c, r, tr)))), foot };
+    }) },
+  ];
 }

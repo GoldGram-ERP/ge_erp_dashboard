@@ -18,6 +18,7 @@ import { FilterFields, useFieldsForm } from "../fields/useFieldsForm";
 import { FormPage, FormSheet } from "./FormView";
 import { RecordSheet } from "./RecordSheet";
 import { Table } from "./Table";
+import { exportActions } from "@/things/report-export";
 import { EmptyState, Icon, Seg, Skeleton, ToastHost, toast } from "./ui";
 
 export type Access = { canOpen?: (keys?: string[]) => boolean; isSuper?: boolean };
@@ -140,7 +141,7 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
     return <div className="thing-root" style={{ position: "relative" }}><FormPage thingTitle={cfg.title} form={pageForm} row={form!.row} onClose={closeForm} onOpen={openRecord} onSaved={() => { set({ page: 1 }); reload(); }} /><ToastHost /></div>;
   }
 
-  const actions = (view.actions ?? []).filter((a) => seen(a.keys ?? view.keys ?? cfg.keys));
+  const actions = [...(view.actions ?? []), ...exportActions(view, tr)].filter((a) => seen(a.keys ?? view.keys ?? cfg.keys));
   const chips = (view.chips ?? []).filter((c) => seen(c.keys) && (!c.superOnly || isSuper));
   const sheetForm = form && !pageForm ? cfg.forms![form.id] : null;
 
