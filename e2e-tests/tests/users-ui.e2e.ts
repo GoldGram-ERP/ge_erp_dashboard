@@ -48,4 +48,29 @@ for (const lang of LANGS) {
   });
 }
 
+test('users UI: Admin type needs no jobs or screens; record opens, locked user is unlocked, then deleted with confirm', { tags: ['e2e', 'users'], requires: ['browser'] }, async ({ go, browser, screen, shot }) => {
+  const tag = stamp().toLowerCase(), name = `e2ev${tag}`;
+  const api = await apiAs('superadmin');
+  // Admin type in the add form: no job cards, no screen boxes
+  await go('superadmin', '/setup/users?new=create', 'en');
+  await browser.locator('#ws [data-k=userType] [role=combobox]').tap();
+  await screen.getByRole('option', 'Admin').tap();
+  expect(await browser.evaluate(() => document.querySelectorAll('#ws input[data-job], #ws input[data-screen]').length)).toBe(0);
+  await shot('users-admin-no-access-boxes');
+  // a plain user, locked by wrong passwords
+  const c = await api('POST', '/users', { username: name, email: `${name}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'user', branchId: 'a2deabe8-31a9-448e-95e5-04e74efceaee', screens: [], canUseTreasuries: false });
+  expect(c.status).toBe(201); made.push(c.body.id);
+  for (let i = 0; i < 6; i++) await apiAs(name, 'Wrong-Pass-0000');
+  expect((await api('GET', `/users/${c.body.id}`)).body.locked).toBe(true);
+  await go('superadmin', `/setup/users?open=${c.body.id}`, 'en');
+  await screen.getByRole('button', 'Unlock').tap();
+  await expect.poll(async () => (await api('GET', `/users/${c.body.id}`)).body.locked).toBe(false);
+  await shot('users-unlocked');
+  await go('superadmin', `/setup/users?open=${c.body.id}`, 'en');
+  await screen.getByRole('button', 'Delete').tap();
+  await shot('users-delete-confirm');
+  await browser.locator('[role=dialog] button.danger, [role=alertdialog] button.danger, dialog button.danger').last().tap();
+  await expect.poll(async () => Boolean((await api('GET', `/users/${c.body.id}`)).body.deletedAt)).toBe(true);
+});
+
 afterAll(async () => { const api = await apiAs('superadmin'); for (const id of made) await api('DELETE', `/users/${id}`); });
