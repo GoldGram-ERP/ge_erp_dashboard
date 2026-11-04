@@ -1,5 +1,5 @@
 import { test, expect } from 'e2e';
-import { apiAs, stamp } from './lib.ts';
+import { apiAs, stamp, MAIN_BRANCH } from './lib.ts';
 
 // Money API on the logic target (no browser). Own run-stamped records, deleted through the normal Delete path.
 const P = { platforms: ['node'] };
@@ -8,7 +8,7 @@ const bad = (r: { status: number }) => expect(r.status).toBe(400);
 
 // A branch needs its own admin (one branch per admin), so each run makes a throwaway admin user.
 async function newAdmin(api: any, tag: string) {
-  const u = await api('POST', '/users', { username: `e2eb${tag.toLowerCase()}`, email: `e2eb${tag.toLowerCase()}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'admin', screens: [], canUseTreasuries: true });
+  const u = await api('POST', '/users', { username: `e2eb${tag.toLowerCase()}`, email: `e2eb${tag.toLowerCase()}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'admin', branchId: MAIN_BRANCH });
   expect(u.status).toBe(201);
   return u.body.id as string;
 }
@@ -30,7 +30,7 @@ test('branches, karats, settings, gold prices: validation and roles', { ...P, ta
   expect(b.status).toBe(201);
   expect(b.body).toMatchObject({ branchName: `E2E Br ${tag}`, adminUserId: adminId, deletedAt: null });
   expect((await api('POST', '/branches', { branchName: `E2E Br ${tag}`, adminUserId: adminId })).status).toBe(409);
-  expect((await api('PATCH', `/branches/${b.body.id}`, { branchName: `E2E Br ${tag} v2` })).status).toBe(200);
+  expect((await api('PATCH', `/branches/${b.body.id}`, { branchName: `E2E Br ${tag} v2`, adminUserId: adminId })).status).toBe(200);
   expect((await api('GET', `/branches/${b.body.id}`)).body.branchName).toBe(`E2E Br ${tag} v2`);
   expect((await api('GET', `/treasuries?branchId=${b.body.id}`)).body.items.map((t: any) => t.kind).sort()).toEqual(['egp', 'gold']);
   expect((await api('DELETE', `/branches/${b.body.id}`)).status).toBeLessThan(300);
@@ -76,7 +76,7 @@ test('cash and gold movements: validation, balance, delete, roles', { ...P, tags
     expect(gd.status).toBe(201); gold.push(gd.body.id);
     expect(gd.body).toMatchObject({ karat: '21', weightMg: 5000, movementType: 'deposit' });
     const w2 = await api('POST', '/gold-movements', { ...g, weightMg: 6000, movementType: 'withdraw' });
-    expect(w2.status).toBe(409); expect(w2.body).toMatchObject({ message: 'notEnoughGold', karat: '21', availableMg: 5000 });
+    expect(w2.status).toBe(409); expect(w2.body).toMatchObject({ message: 'notEnoughGold', values: { karat: '21', availableMg: '5000' } });
     const w3 = await api('POST', '/gold-movements', { ...g, weightMg: 2000, movementType: 'withdraw' });
     expect(w3.status).toBe(201); gold.push(w3.body.id);
     expect((await api('DELETE', `/gold-movements/${gd.body.id}`)).status).toBe(409);
@@ -108,7 +108,7 @@ test('treasury transfers: send, accept, refuse, cancel, wrong-user refusals', { 
     expect(gt.every((t: any) => t.kind === 'gold')).toBe(true);
     expect((await send({ fromTreasuryId: br.egp, toTreasuryId: gt[0].id, amountPiastres: 1 })).status).toBe(409);
     const tooMuch = await send({ fromTreasuryId: br.egp, toTreasuryId: theirs.id, amountPiastres: 60_000 });
-    expect(tooMuch.status).toBe(409); expect(tooMuch.body).toMatchObject({ message: 'notEnoughCash', availablePiastres: 50_000 });
+    expect(tooMuch.status).toBe(409); expect(tooMuch.body).toMatchObject({ message: 'notEnoughCash', values: { availablePiastres: '50000' } });
     expect((await send({ fromTreasuryId: br.gold, toTreasuryId: gt[0].id, gold: [{ karat: '21', weightMg: 100 }] })).status).toBe(409);
     const t1 = await send({ fromTreasuryId: br.egp, toTreasuryId: theirs.id, amountPiastres: 10_000 });
     expect(t1.status).toBe(201); expect(t1.body.status).toBe('sent');
@@ -126,7 +126,13 @@ test('treasury transfers: send, accept, refuse, cancel, wrong-user refusals', { 
     expect(again.status).toBe(409); expect(again.body.message).toBe('transferNotPending');
     const t2 = await send({ fromTreasuryId: br.egp, toTreasuryId: theirs.id, amountPiastres: 5_000 });
     expect(t2.status).toBe(201);
-    expect((await api('DELETE', `/treasury-transfers/${t2.body.id}`)).status).toBeLessThan(300);
+    const del = await api('DELETE', `/treasury-transfers/${t2.body.id}`);
+    expect(del.status).toBe(405); expect(del.body.message).toBe('useCancel');
+    expect((await user('POST', `/treasury-transfers/${t2.body.id}/cancel`)).status).toBe(403);
+    const canc = await api('POST', `/treasury-transfers/${t2.body.id}/cancel`);
+    expect(canc.status).toBe(201); expect(canc.body.status).toBe('cancelled');
+    expect((await api('POST', `/treasury-transfers/${t2.body.id}/cancel`)).status).toBe(409);
+    expect((await api('DELETE', `/treasury-transfers/${t2.body.id}`)).status).toBe(409);
     expect((await admin('POST', `/treasury-transfers/${t2.body.id}/accept`)).status).toBe(409);
     const t3 = await send({ fromTreasuryId: br.egp, toTreasuryId: theirs.id, amountPiastres: 3_000 });
     const acc = await admin('POST', `/treasury-transfers/${t3.body.id}/accept`);
@@ -212,7 +218,7 @@ test('expense types, expenses and refunds', { ...P, tags: ['api', 'money'] }, as
     const r = await api('POST', '/expense-refunds', { ...e, cash: 500 });
     expect(r.status).toBe(201); rf.push(r.body.id);
     expect(r.body).toMatchObject({ cash: 500, total: 500 });
-    expect((await api('DELETE', `/expense-types/${et.body.id}`)).status).toBe(409);
+    expect((await api('DELETE', `/expense-types/${et.body.id}`)).status).toBe(204);
     const user = await apiAs('e2euser');
     expect((await user('GET', '/expenses')).status).toBe(403);
     expect((await user('POST', '/expenses', e)).status).toBe(403);
@@ -229,7 +235,7 @@ test('expense types, expenses and refunds', { ...P, tags: ['api', 'money'] }, as
 
 test('users: create, edit, delete, unlock, permission matrix, roles', { ...P, tags: ['api', 'money'] }, async () => {
   const api = await apiAs('superadmin'); const admin = await apiAs('e2eadmin'); const tag = stamp().toLowerCase();
-  const u = { username: `e2e${tag}`, email: `e2e${tag}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'user', firstName: 'E2E', familyName: 'Temp', screens: ['system-codes/karats'], canUseTreasuries: false };
+  const u = { username: `e2e${tag}`, email: `e2e${tag}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'user', branchId: MAIN_BRANCH, firstName: 'E2E', familyName: 'Temp', screens: ['system-codes/karats'], canUseTreasuries: false };
   let id = '';
   try {
     bad(await api('POST', '/users', { ...u, username: 'a' }));
@@ -238,13 +244,13 @@ test('users: create, edit, delete, unlock, permission matrix, roles', { ...P, ta
     bad(await api('POST', '/users', { ...u, email: 'not-an-email' }));
     const c = await api('POST', '/users', u);
     expect(c.status).toBe(201); id = c.body.id;
-    expect(c.body).toMatchObject({ username: u.username, userType: 'user', screens: ['system-codes/karats'], canUseTreasuries: false, locked: false, deletedAt: null });
+    expect(c.body).toMatchObject({ username: u.username, userType: 'user', screens: ['system-codes/karats'], canUseTreasuries: false, canGiveCashDiscount: false, locked: false, deletedAt: null });
     expect((await api('POST', '/users', { ...u, email: `o${u.email}` })).status).toBe(409);
     const me = await (await apiAs(u.username, u.password))('GET', '/access/me');
     expect(me.body.screens).toEqual(['system-codes/karats']);
-    const e = await api('PATCH', `/users/${id}`, { ...u, screens: ['system-codes/karats', 'system-codes/gold-prices'], canUseTreasuries: true, firstName: 'Edited' });
+    const e = await api('PATCH', `/users/${id}`, { ...u, screens: ['system-codes/karats', 'system-codes/gold-prices'], canUseTreasuries: true, canGiveCashDiscount: true, firstName: 'Edited' });
     expect(e.status).toBe(200);
-    expect(e.body).toMatchObject({ firstName: 'Edited', canUseTreasuries: true });
+    expect(e.body).toMatchObject({ firstName: 'Edited', canUseTreasuries: true, canGiveCashDiscount: true });
     expect(e.body.screens.sort()).toEqual(['system-codes/gold-prices', 'system-codes/karats']);
     bad(await api('PATCH', `/users/${id}`, { ...u, screens: ['no/such-screen'] }));
     for (let i = 0; i < 6; i++) await apiAs(u.username, 'Wrong-Pass-0000');
