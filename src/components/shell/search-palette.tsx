@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { NAV, canOpen } from "@/nav/tree";
@@ -57,7 +57,6 @@ export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; on
   const hits = useSearchHits(me, q);
 
   const go = (h?: Hit) => { if (!h) return; onClose(); router.push(h.href as never); };
-  const groups = groupHits(hits);
 
   return (
     <dialog ref={ref} className="palette" aria-label={t("app.search")} onClose={onClose} onClick={(e) => { if (e.target === ref.current) onClose(); }}>
@@ -69,19 +68,25 @@ export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; on
             else if (e.key === "ArrowUp") { e.preventDefault(); setAt((a) => Math.max(a - 1, 0)); }
             else if (e.key === "Enter") { e.preventDefault(); go(hits[at]); }
           }} />
+        <button type="button" className="ic-btn" aria-label={t("app.close")} title="Esc" onClick={onClose}><Icon name="x" size={16} /></button>
       </div>
       <div className="pal-list" id="pal-list" role="listbox" aria-label={t("app.search")}>
-        {hits.length === 0 ? <div className="pal-empty">{t("app.searchNone")}</div> : groups.map(({ g, items }) => (
+        {hits.length === 0 ? <div className="pal-empty">{t("app.searchNone")}</div> : groupHits(hits).map(({ g, items }) => (
           <div key={g}><div className="pal-grp">{t(`app.searchGroup.${g}`)}</div>
-            {items.map((h) => { const idx = hits.indexOf(h); return (
-              <button key={h.key} className="pal-item" role="option" aria-selected={idx === at} onMouseMove={() => setAt(idx)} onClick={() => go(h)}>
-                <span className="ico"><Icon name={h.icon} size={18} /></span><span><b>{h.label}</b>{h.hint ? <small>{h.hint}</small> : null}</span>
-              </button>); })}
+            {items.map((h) => <Row key={h.key} h={h} idx={hits.indexOf(h)} selected={hits.indexOf(h) === at} onPick={go} onHover={setAt} />)}
           </div>))}
       </div>
     </dialog>
   );
 }
+
+const Row = memo(function Row({ h, selected, onPick, onHover, idx }: { h: Hit; selected: boolean; onPick: (h: Hit) => void; onHover: (i: number) => void; idx: number }) {
+  return (
+    <button className="pal-item" role="option" aria-selected={selected} onMouseEnter={() => onHover(idx)} onClick={() => onPick(h)}>
+      <span className="ico"><Icon name={h.icon} size={18} /></span><span><b>{h.label}</b>{h.hint ? <small>{h.hint}</small> : null}</span>
+    </button>
+  );
+});
 
 export const groupHits = (hits: Hit[]) => (["pages", "jobs", "questions", "find"] as const).map((g) => ({ g, items: hits.filter((h) => h.group === g) })).filter((x) => x.items.length);
 
