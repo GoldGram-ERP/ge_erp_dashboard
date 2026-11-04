@@ -12,6 +12,7 @@ import { ChangePassword } from "./change-password";
 import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
 import { SearchPalette, SidebarSearch } from "./search-palette";
+import { DASHBOARD_VERSION } from "@/version";
 
 const JOBS_ITEMS = [["", "jobsHome"], ["questions", "jobsQuestions"], ["todo", "jobsTodo"]] as const;
 const narrow = () => matchMedia("(max-width:900px)").matches;
@@ -138,6 +139,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
               <button className="ic-btn" type="button" title={t("app.signOut")} aria-label={t("app.signOut")} onClick={signOut}><Icon name="out" /></button>
             </span>
           </div>
+          <div className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</div>
         </div>
       </div></aside>
       <div className="main">

@@ -14,6 +14,12 @@ export class ApiFailure extends Error {
 
 export const newSaveKey = () => crypto.randomUUID();
 
+// A write that passes no saveKey still gets ONE key per user attempt (rule G1 idempotency): the same method+path+body shares one
+// in-flight request (a double click sends once) and keeps its key while the answer is lost or still running (unreachable, saveInProgress, 5xx),
+// so a retry is a repeat the backend answers with the first result. Any definite answer (done or refused) ends the attempt.
+const attempts = new Map<string, { key: string; inflight?: Promise<any> }>();
+const keepsKey = (e: unknown) => e instanceof ApiFailure && (e.unreachable || e.status >= 500 || e.error.message === "saveInProgress");
+
 type Query = Record<string, string | number | boolean | undefined | null | (string | number)[]>;
 export type Call = { method?: string; body?: unknown; query?: Query; saveKey?: string; signal?: AbortSignal; blob?: boolean; cookie?: string };
 
@@ -27,7 +33,21 @@ function toQuery(url: URL, query?: Query) {
 
 // api("/branches", {query}) -> parsed JSON (undefined for 204). blob:true returns the Response (downloads, prints).
 // On the server (SSR prefetch) pass the visitor's cookie header and set API_URL; in the browser the cookie travels by itself.
-export async function api<T = any>(path: string, call: Call = {}): Promise<T> {
+export function api<T = any>(path: string, call: Call = {}): Promise<T> {
+  const m = call.method ?? "GET";
+  if (m === "GET" || m === "HEAD" || call.saveKey) return send<T>(path, call);
+  const id = `${m} ${path} ${JSON.stringify(call.query ?? "")} ${JSON.stringify(call.body ?? "")}`;
+  const a = attempts.get(id) ?? { key: newSaveKey() };
+  attempts.set(id, a);
+  if (a.inflight) return a.inflight;
+  a.inflight = send<T>(path, { ...call, saveKey: a.key }).then(
+    (r) => { attempts.delete(id); return r; },
+    (e) => { if (keepsKey(e)) a.inflight = undefined; else attempts.delete(id); throw e; },
+  );
+  return a.inflight;
+}
+
+async function send<T>(path: string, call: Call): Promise<T> {
   const method = call.method ?? "GET";
   const server = typeof window === "undefined";
   const base = server ? (process.env.API_URL ?? "").replace(/\/$/, "") : BASE;

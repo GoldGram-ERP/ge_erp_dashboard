@@ -1,15 +1,16 @@
 {
-  "name": "ge_erp_dashboard_new",
-  "version": "0.1.0",
+  "name": "ge_erp_dashboard",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "node scripts/set-version.mjs && next build --webpack",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "pack:hostinger": "node scripts/pack-hostinger.mjs"
+    "pack:hostinger": "node scripts/pack-hostinger.mjs",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

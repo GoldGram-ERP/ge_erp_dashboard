@@ -21,7 +21,9 @@ function useSave({ form, row, onSaved, onClose, onOpen }: Pick<Props, "form" | "
   const saveKey = useRef(newSaveKey());
   useEffect(() => { const s = f.watch(() => { saveKey.current = newSaveKey(); }); return () => s.unsubscribe(); }, [f]);   // edited: a new attempt, a new key
   const dirty = f.formState.isDirty;
+  const going = useRef(false);
   const mutation = useMutation({
+    onSettled: () => { going.current = false; },
     mutationFn: (body: unknown) => api(form.path(row), { method: form.method ?? (row ? "PATCH" : "POST"), body, saveKey: saveKey.current }),
     onSuccess: async (answer) => {
       toast(L("تم الحفظ", "Saved"));
@@ -30,6 +32,7 @@ function useSave({ form, row, onSaved, onClose, onOpen }: Pick<Props, "form" | "
     },
     onError: (e) => {
       if (e instanceof ApiFailure) {
+        if (!e.unreachable && e.error.message !== "saveInProgress") saveKey.current = newSaveKey();   // a refusal is final for this content
         const fe = backendFieldErrors(e.error, tr);
         if (Object.keys(fe).length && f.setErrors(fe)) return;
         toast(tr.errorText(e.error), { error: true });
@@ -37,9 +40,11 @@ function useSave({ form, row, onSaved, onClose, onOpen }: Pick<Props, "form" | "
     },
   });
   const submit = async () => {
-    if (typeof navigator !== "undefined" && !navigator.onLine) { toast(t("common", "offline"), { error: true }); return; }   // no save without a connection
+    if (going.current) return;   // Enter or a second click while the first Save validates or runs
+    going.current = true;
+    if (typeof navigator !== "undefined" && !navigator.onLine) { toast(t("common", "offline"), { error: true }); going.current = false; return; }   // no save without a connection
     const v = await f.read();
-    if (!v) return;
+    if (!v) { going.current = false; return; }
     mutation.mutate(form.toPayload ? form.toPayload(v, row) : v);
   };
   // form.onReady: live raw values for derived display fields (e.g. the 24K price follows the sell price)
