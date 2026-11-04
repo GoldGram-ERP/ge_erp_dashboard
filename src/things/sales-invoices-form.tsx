@@ -14,6 +14,7 @@ import { LINES_MAX, MAX_PIASTRES, bankRowErrors, formRowOfRefusal, makingBase, r
 import { BankRows, Choice, DiscountBox, ErrBox, PIECE_CODE, allPages, accountOptions, checkedCustomer, code6, customerFields, customerNameOf, fe, latestPrice, ltrStyle, mayDiscount, sg, type BankRow, type DiscountKind } from "./sales-form-parts";
 import { Link as NavLink } from "@/i18n/navigation";
 import { GiftFields, checkRecipient, type Recipient, type RecipientErrors } from "./sales-gift";
+import { PieceScanner } from "./piece-scanner";
 
 type Line = Row;
 const fills = (line: Row, piece: Row) => line.itemName === piece.itemName && line.karat === piece.karat;
@@ -37,6 +38,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const [lines, setLines] = useState<Line[]>([]);
   const [lineErr, setLineErr] = useState<Record<string, string>>({});
   const [pc, setPc] = useState("");
+  const [scanning, setScanning] = useState(false);
   const [pcErr, setPcErr] = useState("");
   const [choices, setChoices] = useState<Row[]>([]);
   const [adding, setAdding] = useState(false);
@@ -267,7 +269,9 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
                 onChange={(e) => { setPc(e.target.value); setPcErr(""); const hit = choices.some((c) => c.pieceCode === e.target.value && !c.sold && !c.inTransfer); if (hit && (e.nativeEvent as InputEvent).inputType === "insertReplacementText") addPiece(e.target.value); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPiece(); } }} />
               <datalist id="pcl">{choices.filter((p) => !p.sold && !p.inTransfer && !lines.some((l) => l.pieceCode === p.pieceCode)).map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName} · ${p.karat} · ${milligramsText(p.weight)}`}</option>)}</datalist>
+              <button type="button" className="btn quiet" id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</button>
               <button type="button" className="btn quiet" id="addPiece" onClick={() => addPiece()}><Icon name="plus" />{m("addPiece")}</button></div>
+            {scanning && <PieceScanner label={m("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); setPcErr(""); void addPiece(c); }} />}
             <div className="help">{m("pieceCodeHint")}</div>
             <div id="pcErr">{pcErr && <ErrBox>{pcErr}{pcErr === m("pieceNoGoldPrice") && <> <NavLink href="/setup/gold-prices">{m("enterGoldPrice")}</NavLink></>}</ErrBox>}{errs.pieceCode && <ErrBox>{errs.pieceCode}</ErrBox>}</div></div>
           <div className="table" style={{ marginTop: 12 }}><table>

@@ -11,6 +11,7 @@ import { DatePicker } from "@/components/fields/DatePicker";
 import { Icon, toast } from "@/components/engine";
 import { MAX_PIASTRES } from "./sales-invoices-math";
 import { Choice, ErrBox, accountOptions, allPages, code6, fe, ltrStyle, pieceChoices, readPieceCode, sg } from "./sales-form-parts";
+import { PieceScanner } from "./piece-scanner";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 type Amount = { empty: true } | { bad: true } | { value: number };
@@ -27,6 +28,7 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
   const [branchId, setBranchId] = useState(me?.branchId ?? "");
   const [date, setDate] = useState(today());
   const [piece, setPiece] = useState("");
+  const [scanning, setScanning] = useState(false);
   const [choices, setChoices] = useState<Row[]>([]);
   const [cash, setCash] = useState("");
   const [bankAccountId, setBankAccountId] = useState("");
@@ -112,7 +114,11 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
           {field("branchId", "branchId", `${sg(tr, "branch")} *`, <Choice tr={tr} id="branchId" options={branches.map((x) => [x.id, x.branchName])} value={branchId} onChange={(v) => { edited(); setBranchId(v); }} />)}
           {field("date", "f-date-btn", `${rt("date")} *`, <DatePicker id="f-date" name="date" value={date} onChange={(v) => { edited(); setDate(v || date); }} max={isUser ? today() : undefined} required />)}
           {field("pieceCode", "pc", `${rt("pieceCode")} *`, <>
-            <input id="pc" dir="ltr" list="pcl" maxLength={20} autoComplete="off" value={piece} onChange={(e) => { edited(); setPiece(e.target.value); }} style={{ fontFamily: "monospace" }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <input id="pc" dir="ltr" list="pcl" maxLength={20} autoComplete="off" value={piece} onChange={(e) => { edited(); setPiece(e.target.value); }} style={{ fontFamily: "monospace", flex: 1, minWidth: 0 }} />
+              <button type="button" className="btn quiet" id="scan-piece" style={{ width: 42, padding: 0, flex: "none" }} title={t("gold-sales", "pieceLookUp.scanWithCamera")} aria-label={t("gold-sales", "pieceLookUp.scanWithCamera")} onClick={() => setScanning(true)}><Icon name="camera" size={18} /></button>
+            </div>
+            {scanning && <PieceScanner label={rt("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { edited(); setPiece(c); setScanning(false); }} />}
             <datalist id="pcl">{choices.map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName ?? ""} · ${p.karat ?? ""}`}</option>)}</datalist></>, rt("pieceCodeHint"))}
         </div>
       </div>

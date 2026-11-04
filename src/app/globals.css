@@ -699,7 +699,7 @@ dialog.palette .pal-list{flex:1;max-height:none;overflow:auto;padding:6px 10px 1
 dialog.palette .pal-item{contain:layout paint;content-visibility:auto;contain-intrinsic-size:auto 52px}
 
 /* A tab switch never shrinks below its buttons (it scrolls sideways instead): inside a tall flex column it collapsed to a thin bar. */
-.seg{flex:none;min-height:36px}
+.seg{flex:none;align-items:center}
 .seg.page{flex:none}
 .filters,.tools,.pager,.head{flex:none}
 
@@ -780,3 +780,17 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .formbar .mute::before{content:"";display:inline-block;width:6px;height:6px;margin-inline-end:6px;border-radius:50%;background:#b8860b;vertical-align:1px}
 .sheet .formbar{position:sticky;bottom:0;margin:0 -20px -16px;border-radius:0 0 16px 16px;box-shadow:0 -1px 0 rgba(111,81,16,.22)}
 .st-prev .grp-title{align-self:stretch;text-align:start;width:auto}
+
+/* No bubble around a table: a section whose only content is a table shows that table directly (the same single off-white card as a list page),
+   not a table card inside another panel. */
+.grp-panel:has(> .table:only-child),.grp-panel:has(> div:only-child > .table:only-child){background:transparent;box-shadow:none;padding:0;border-radius:0}
+.grp-panel > .table:only-child,.grp-panel > div:only-child > .table:only-child{background:#f6f4ee;margin-block:0;border-radius:22px;padding:6px 12px}
+
+/* A piece's story is not a table of rows: it shows straight on the page, so the list table that carries it loses its card, its header, its row lines and
+   its white cell. Only the story's own tables (sales, returns, transfers) keep their card, header and rows. */
+.table:has(> table > tbody > tr > td > [data-piece-history],> table > tbody > tr > td > [data-customer-piece]){background:transparent;box-shadow:none;padding:0;border-radius:0;overflow:visible}
+.table:has(> table > tbody > tr > td > [data-piece-history]) > table > thead,.table:has(> table > tbody > tr > td > [data-customer-piece]) > table > thead{display:none}
+.table:has(> table > tbody > tr > td > [data-piece-history]) > table > tbody > tr,.table:has(> table > tbody > tr > td > [data-customer-piece]) > table > tbody > tr{background:transparent;box-shadow:none}
+.table:has(> table > tbody > tr > td > [data-piece-history]) > table > tbody > tr > td,.table:has(> table > tbody > tr > td > [data-customer-piece]) > table > tbody > tr > td{padding:0;border:0;background:transparent}
+[data-piece-history] .grp-block.kv-block{width:100%;max-width:none}
+[data-piece-history] .grp-block .grp-panel{width:auto;min-width:min(100%,320px);max-width:100%}
