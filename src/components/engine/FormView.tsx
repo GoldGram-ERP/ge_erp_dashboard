@@ -10,9 +10,9 @@ import { useT } from "@/lib/t";
 import { FormFields, useFieldsForm } from "../fields/useFieldsForm";
 import { Icon, Sheet, toast, useConfirm } from "./ui";
 
-type Props = { thingTitle: string; form: FormConfig; row: Row | null; onClose: () => void; onSaved: (answer: any) => void };
+type Props = { thingTitle: string; form: FormConfig; row: Row | null; onClose: () => void; onSaved: (answer: any) => void; onOpen?: (row: Row) => void };
 
-function useSave({ form, row, onSaved, onClose }: Pick<Props, "form" | "row" | "onSaved" | "onClose">) {
+function useSave({ form, row, onSaved, onClose, onOpen }: Pick<Props, "form" | "row" | "onSaved" | "onClose" | "onOpen">) {
   const tr = useT();
   const { t, L } = tr;
   const values = useMemo(() => (form.load ? form.load(row) : (row ?? {})), [form, row]);
@@ -25,7 +25,7 @@ function useSave({ form, row, onSaved, onClose }: Pick<Props, "form" | "row" | "
     mutationFn: (body: unknown) => api(form.path(row), { method: form.method ?? (row ? "PATCH" : "POST"), body, saveKey: saveKey.current }),
     onSuccess: async (answer) => {
       toast(L("تم الحفظ", "Saved"));
-      await form.afterSave?.(answer, { toast: (m) => toast(m), row });
+      await form.afterSave?.(answer, { toast: (m) => toast(m), row, open: (r) => onOpen?.(r) });
       onClose(); onSaved(answer);
     },
     onError: (e) => {

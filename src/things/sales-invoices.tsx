@@ -136,8 +136,8 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         endpoint: "/reports/sales-by-period", rowKey: "date", runLabel: rep("run"),
         filters: [from(), to(), branch(), bankAccount(t("gold-sales", "salesByPeriod.bankAccountId"))],
         sort: { default: { key: "date", dir: "asc" } }, paging, columns: periodCols,
-        // (the HTML jumped to that day's history; the engine has no cross-view jump, so the row stays inert)
-        onRow: false,
+        // a day opens that day's list (same branch)
+        onRow: (row, h) => ({ view: "list", filters: { fromDate: row.date, toDate: row.date, branchId: h.filters.branchId || undefined } }),
         footer: footerOf(periodCols, rep("total"), (tot) => ({ invoices: tot.invoices, pieces: tot.pieces, weight: tot.weightMg, cash: tot.cash, bank: tot.bank, discount: tot.discount, total: tot.total })),
       },
       {

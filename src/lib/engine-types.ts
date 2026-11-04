@@ -59,6 +59,7 @@ export type PagingConfig = { param?: string; sizeParam?: string | null; sizes?: 
 export type SumConfig = { key: string; label: string; type: "money" | "weight" | "int" };
 export type ViewAction = { label: string; icon?: string; keys?: string[]; run: (c: ActionCtx) => void | Promise<void> };
 export type ActionCtx = { query: Query; rows: Row[]; reload: () => void; toast: (msg: string, o?: { error?: boolean }) => void };
+export type RowJump = { view: string; filters?: Record<string, string | number | undefined | null> };
 export type CreateButton = { form: string; label: string; keys?: string[] };
 
 export type ViewConfig = {
@@ -79,7 +80,8 @@ export type ViewConfig = {
   footer?: (rows: Row[], answer: any) => ReactNode;       // the cells of the footer row (<td>...</td>)
   transform?: (rows: Row[], answer: any) => Row[];
   answerExtra?: (answer: any) => string;
-  onRow?: false | ((row: Row, h: { open: (row: Row) => void; openForm: (formId: string, row?: Row | null) => void }) => void);
+  /** false: rows are inert. A function may open the record/a form, or return {view, filters} to jump to another view with those filters (the address changes). `filters` in h are this view's current ones. */
+  onRow?: false | ((row: Row, h: { open: (row: Row) => void; openForm: (formId: string, row?: Row | null) => void; filters: Record<string, any> }) => void | RowJump);
   rowClass?: (row: Row) => string;
   actions?: ViewAction[];
   create?: CreateButton[];
@@ -117,7 +119,8 @@ export type FormConfig = {
   note?: ReactNode;
   /** Runs after the form is on screen; `watch` follows live raw values, `setValue` writes a raw (typed-text) value. */
   onReady?: (api: { watch: (cb: (raw: Record<string, any>, changed?: string) => void) => () => void; setValue: (name: string, raw: unknown) => void; values: Row }, row: Row | null) => void | (() => void);
-  afterSave?: (answer: any, h: { toast: (msg: string) => void; row: Row | null }) => void | Promise<void>;
+  /** `open(row)` shows that record's sheet once the form has closed (e.g. open the saved record: `h.open(answer)`). */
+  afterSave?: (answer: any, h: { toast: (msg: string) => void; row: Row | null; open: (row: Row) => void }) => void | Promise<void>;
 };
 
 export type ThingConfig = {

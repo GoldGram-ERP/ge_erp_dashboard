@@ -3,12 +3,15 @@
 // views (list/report) with filters, chips, search, group-by, sum, sort, paging; a record sheet; create/edit/delete forms.
 // Lists are TanStack queries (the last answer of the same query shows at once while the fresh one loads) and send ONLY the params the config names.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { intText, milligramsText, piastresText } from "@/lib/format";
-import type { MakeConfig, Row, ThingConfig, ViewConfig } from "@/lib/engine-types";
+import type { MakeConfig, Row, RowJump, ThingConfig, ViewConfig } from "@/lib/engine-types";
 import { buildQuery, initialViewState, rawValues, readFields, rowsOf, type ViewState } from "@/lib/fields";
 import { useT } from "@/lib/t";
+import { parseDeepLink, pruneParams, withParams } from "./query";
 import { Select } from "../fields/Select";
 import { FilterFields, useFieldsForm } from "../fields/useFieldsForm";
 import { FormPage, FormSheet } from "./FormView";
@@ -17,7 +20,7 @@ import { Table } from "./Table";
 import { EmptyState, Icon, Seg, Skeleton, ToastHost, toast } from "./ui";
 
 export type Access = { canOpen?: (keys?: string[]) => boolean; isSuper?: boolean };
-type Memory = { view: string; per: Record<string, ViewState> };
+type Memory = { view: string; per: Record<string, ViewState>; applied?: string };
 const memory = new Map<string, Memory>();                  // thing id -> view state, kept while the app stays open
 const memoryOf = (id: string): Memory => { let m = memory.get(id); if (!m) memory.set(id, (m = { view: "", per: {} })); return m; };
 const patchView = (id: string, viewId: string, next: ViewState) => { memoryOf(id).per[viewId] = next; };
@@ -35,52 +38,107 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   const tr = useT();
   const { L } = tr;
   const qc = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const dl = useMemo(() => parseDeepLink(search), [search]);
   const seen = (keys?: string[]) => !keys || keys.length === 0 || (access?.canOpen?.(keys) ?? true);
   const isSuper = access?.isSuper ?? false;
   const views = cfg.views.filter((v) => seen(v.keys ?? cfg.keys));
 
+  // The address is the single source of truth for view, create form and open record. `addr` is the address as last written (router.replace lands a tick later).
+  const addr = useRef(search);
+  useEffect(() => { addr.current = search; }, [search]);
+  const edit = (fn: (s: string) => string) => {
+    const next = fn(addr.current);
+    if (next === addr.current) return;
+    addr.current = next;
+    router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+  };
+  const go = (patch: Record<string, string | null | undefined>, fresh = false) => edit((s) => withParams(s, patch, fresh));
+
   const mem = memoryOf(cfg.id);
   const [, bump] = useState(0);
-  const view = views.find((v) => v.id === (initial?.view ?? mem.view)) ?? views[0];
-  const [form, setForm] = useState<{ id: string; row: Row | null } | null>(null);
-  const [opened, setOpened] = useState<{ row: Row; full: Row } | null>(null);
+  const view = views.find((v) => v.id === (dl.view ?? initial?.view ?? mem.view)) ?? views[0];
+  const [editing, setEditing] = useState<{ id: string; row: Row } | null>(null);   // an edit form; a create form lives in the address (?new=)
+  const [picked, setPicked] = useState<Row | null>(null);                            // the row clicked for the record sheet; the sheet itself lives in the address (?open=)
   const [flashId, setFlashId] = useState<string | null>(null);
   const unit = cfg.unit ?? L("سجل", "records");
+  const filterNames = useMemo(() => cfg.views.flatMap((v) => (v.filters ?? []).map((f) => f.name)), [cfg]);
 
-  if (!view) return <EmptyState title={L("لا تملك صلاحية هذه الصفحة", "You do not have access to this page")} />;
-  pickView(cfg.id, view.id);
-  let vs = mem.per[view.id];
-  if (!vs) {
-    vs = initialViewState(view);
-    for (const [k, v] of Object.entries(initial?.query ?? {})) { if (k === "q") vs.q = v; else if (k === "chip") vs.chip = v; else if (k in vs.filters) vs.filters[k] = v; }
-    if (initial?.query && Object.keys(initial.query).length && view.runLabel) vs.ran = true;
-    patchView(cfg.id, view.id, vs);
+  let vs: ViewState | null = null;
+  if (view) {
+    pickView(cfg.id, view.id);
+    vs = mem.per[view.id] ?? null;
+    if (!vs) {
+      vs = initialViewState(view);
+      for (const [k, v] of Object.entries(initial?.query ?? {})) { if (k === "q") vs.q = v; else if (k === "chip") vs.chip = v; else if (k in vs.filters) vs.filters[k] = v; }
+      if (initial?.query && Object.keys(initial.query).length && view.runLabel) vs.ran = true;
+      patchView(cfg.id, view.id, vs);
+    }
   }
-  const set = (patch: Partial<ViewState>) => { patchView(cfg.id, view.id, { ...vs, ...patch }); bump((n) => n + 1); };
+  // address values prefill the view (q, chip, a filter's name), once per address
+  let rel = "";
+  if (view && vs) {
+    const hit = Object.entries(dl.query).filter(([k]) => k === "q" || k === "chip" || k in vs!.filters);
+    rel = JSON.stringify(hit);
+    if (mem.applied !== search) {
+      mem.applied = search;
+      if (hit.length) {
+        for (const [k, v] of hit) { if (k === "q") vs.q = v; else if (k === "chip") vs.chip = v; else vs.filters[k] = v; }
+        vs.page = 1;
+        if (view.runLabel) vs.ran = true;
+      }
+    }
+  }
+  const set = (patch: Partial<ViewState>) => { patchView(cfg.id, view!.id, { ...vs!, ...patch }); bump((n) => n + 1); };
   const reload = () => qc.invalidateQueries({ queryKey: ["thing", cfg.id] });
+
+  const creates = view ? (view.create ?? cfg.create ?? []).filter((c) => seen(c.keys ?? cfg.keys)) : [];
+  const allCreates = [...(cfg.create ?? []), ...cfg.views.flatMap((v) => v.create ?? [])].filter((c) => seen(c.keys ?? cfg.keys));
+  // ?new=<form id>; anything else (a view id, "1") means this view's first create button
+  const newId = !dl.newForm ? undefined : allCreates.some((c) => c.form === dl.newForm) ? dl.newForm : cfg.forms?.[dl.newForm] ? undefined : creates[0]?.form;
+  const form = editing ?? (newId && cfg.forms?.[newId] ? { id: newId, row: null as Row | null } : null);
 
   const openForm = (id: string, row: Row | null = null) => {
     if (!cfg.forms?.[id]) throw new Error(`Unknown form ${id} in ${cfg.id}`);
-    setOpened(null); setForm({ id, row });
+    if (row) { setEditing({ id, row }); go({ open: null, new: null }); } else go({ open: null, new: id });
   };
-  const openRecord = async (row: Row) => {
-    const rec = cfg.record;
-    if (!rec) return;
-    try {
-      let full = row;
-      if (rec.endpoint) full = await api(rec.endpoint(row));
-      if (rec.enrich) full = { ...full, ...(await rec.enrich(full)) };
-      setOpened({ row, full });
-    } catch (e: any) { toast(tr.errorText(e?.error ?? { message: "unexpected" }), { error: true }); }
-  };
+  const closeForm = () => { setEditing(null); edit((s) => pruneParams(s, filterNames)); };
+  const closeRecord = () => go({ open: null });
+  const openRecord = (row: Row) => { if (cfg.record) { setPicked(row); go({ open: String(row[view?.rowKey ?? "id"] ?? "") }); } };
+
+  // the record sheet: its id is in the address; the full record is fetched fresh each time it opens
+  const rec = cfg.record;
+  const rowKey = view?.rowKey ?? "id";
+  const openRow = dl.open && rec && !form ? (picked && String(picked[rowKey]) === dl.open ? picked : rec.endpoint ? { [rowKey]: dl.open } : null) : null;
+  const recQ = useQuery({
+    queryKey: ["thing", cfg.id, "record", dl.open],
+    enabled: !!openRow, gcTime: 0, refetchOnWindowFocus: false, retry: false,
+    queryFn: async () => {
+      let full: Row = openRow!;
+      if (rec!.endpoint) full = await api(rec!.endpoint(openRow!));
+      if (rec!.enrich) full = { ...full, ...(await rec!.enrich(full)) };
+      return full;
+    },
+  });
+  const recFailed = recQ.error;
+  useEffect(() => {
+    if (!recFailed) return;
+    toast(tr.errorText((recFailed as any)?.error ?? { message: "unexpected" }), { error: true });
+    go({ open: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recFailed]);
+  const opened = openRow && recQ.data ? { row: openRow, full: recQ.data } : null;
+
+  if (!view || !vs) return <EmptyState title={L("لا تملك صلاحية هذه الصفحة", "You do not have access to this page")} />;
 
   // A page-display form takes the whole workspace
   const pageForm = form && cfg.forms?.[form.id]?.display === "page" ? cfg.forms[form.id] : null;
   if (pageForm) {
-    return <div className="thing-root" style={{ position: "relative" }}><FormPage thingTitle={cfg.title} form={pageForm} row={form!.row} onClose={() => setForm(null)} onSaved={() => { set({ page: 1 }); reload(); }} /><ToastHost /></div>;
+    return <div className="thing-root" style={{ position: "relative" }}><FormPage thingTitle={cfg.title} form={pageForm} row={form!.row} onClose={closeForm} onOpen={openRecord} onSaved={() => { set({ page: 1 }); reload(); }} /><ToastHost /></div>;
   }
 
-  const creates = (view.create ?? cfg.create ?? []).filter((c) => seen(c.keys ?? cfg.keys));
   const actions = (view.actions ?? []).filter((a) => seen(a.keys ?? view.keys ?? cfg.keys));
   const chips = (view.chips ?? []).filter((c) => seen(c.keys) && (!c.superOnly || isSuper));
   const sheetForm = form && !pageForm ? cfg.forms![form.id] : null;
@@ -88,13 +146,14 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   return (
     <div className="thing-root fill" style={{ position: "relative", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
       <Header cfg={cfg} creates={creates} actions={actions} view={view} vs={vs} onCreate={(id) => openForm(id)} reload={reload} />
-      {views.length > 1 && <Seg className="page" label={L("العرض", "View")} items={views.map((v) => ({ id: v.id, label: v.label }))} value={view.id} onChange={(id) => { pickView(cfg.id, id); bump((n) => n + 1); }} />}
-      <ViewBody key={view.id} cfg={cfg} view={view} vs={vs} set={set} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm} />
+      {views.length > 1 && <Seg className="page" label={L("العرض", "View")} items={views.map((v) => ({ id: v.id, label: v.label }))} value={view.id} onChange={(id) => { pickView(cfg.id, id); bump((n) => n + 1); go({ view: id }, true); }} />}
+      <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm}
+        jump={(j) => go({ view: j.view, ...Object.fromEntries(Object.entries(j.filters ?? {}).map(([k, v]) => [k, v === undefined || v === null ? null : String(v)])) }, true)} />
       {opened && cfg.record && (
-        <RecordSheet rec={cfg.record} full={opened.full} row={opened.row} onClose={() => setOpened(null)} reload={reload} openForm={openForm} />
+        <RecordSheet rec={cfg.record} full={opened.full} row={opened.row} onClose={closeRecord} reload={reload} openForm={openForm} />
       )}
       {sheetForm && (
-        <FormSheet key={form!.id + String(form!.row?.id ?? "")} thingTitle={cfg.title} form={sheetForm} row={form!.row} onClose={() => setForm(null)}
+        <FormSheet key={form!.id + String(form!.row?.id ?? "")} thingTitle={cfg.title} form={sheetForm} row={form!.row} onClose={closeForm} onOpen={openRecord}
           onSaved={(answer) => {
             set({ page: 1 }); reload();
             const id = answer?.id ?? answer?.[view.rowKey ?? "id"];
@@ -121,9 +180,9 @@ function Header({ cfg, creates, actions, view, vs, onCreate, reload }: { cfg: Th
   );
 }
 
-function ViewBody({ cfg, view, vs, set, chips, unit, flashId, onRow, openForm }: {
+function ViewBody({ cfg, view, vs, set, chips, unit, flashId, onRow, openForm, jump }: {
   cfg: ThingConfig; view: ViewConfig; vs: ViewState; set: (p: Partial<ViewState>) => void; chips: NonNullable<ViewConfig["chips"]>;
-  unit: string; flashId: string | null; onRow: (row: Row) => void; openForm: (id: string, row?: Row | null) => void;
+  unit: string; flashId: string | null; onRow: (row: Row) => void; openForm: (id: string, row?: Row | null) => void; jump: (j: RowJump) => void;
 }) {
   const tr = useT();
   const { L, errorText } = tr;
@@ -218,7 +277,11 @@ function ViewBody({ cfg, view, vs, set, chips, unit, flashId, onRow, openForm }:
             </EmptyState>
           ) : <Table view={view} rows={rows} vs={vs} answer={answer} unit={unit} flashId={flashId}
               onSort={(k) => set({ sort: { key: k, dir: vs.sort?.key === k && vs.sort.dir === "asc" ? "desc" : "asc" }, page: 1 })}
-              onRow={(r) => (typeof view.onRow === "function" ? view.onRow(r, { open: onRow, openForm }) : onRow(r))} />}
+              onRow={(r) => {
+                if (typeof view.onRow !== "function") return onRow(r);
+                const j = view.onRow(r, { open: onRow, openForm, filters: vs.filters });
+                if (j && typeof j === "object" && j.view) jump(j);
+              }} />}
       </div>
 
       {paging && answer && rows.length > 0 && Number.isFinite(total) && (
