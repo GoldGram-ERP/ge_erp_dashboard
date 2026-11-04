@@ -2,12 +2,13 @@ import type { E2EConfig } from 'e2e';
 import { web } from '@e2e-dev/web';
 
 // The app under test runs on 3100 (the local backend on 8100 allows exactly this origin). Start the stack first: node scripts/local-stack.mjs up
-const APP = 'http://localhost:3100';
+const PORT = process.env.E2E_PORT ?? '3100';
+const APP = `http://localhost:${PORT}`;
 const app = {
   url: APP,
   command: {
     executable: 'node',
-    args: ['node_modules/next/dist/bin/next', 'dev', '--webpack', '--port', '3100'],
+    args: ['node_modules/next/dist/bin/next', 'dev', '--webpack', '--port', PORT],
     cwd: '..',
     env: { API_URL: 'http://localhost:8100' },
     log: '.e2e/logs/app.log',
