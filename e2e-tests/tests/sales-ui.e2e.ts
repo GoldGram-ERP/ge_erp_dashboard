@@ -14,9 +14,10 @@ async function openForm(go: any, browser: any, screen: any, lang: 'en' | 'ar', c
     acc.acc = (await S.api('POST', '/bank-accounts', { accountName: acc.name, bankId: b.body.id, commission: '1.00' })).body.id;
   }
   await go('superadmin', '/sales/invoices?new=create', lang);
-  await browser.locator('.seg button').first().tap(); // Sale
-  await browser.locator('[role=combobox]').first().tap();
+  await browser.locator('[data-type=sale]').tap(); // the sidebar language switch is also a .seg
+  await browser.locator('[data-k=branchId] [role=combobox]').tap();
   await screen.getByRole('option', 'Main branch').tap();
+  await expect(browser.locator('#pc')).toBeVisible();
   await browser.locator('#pc').fill(code);
   await browser.locator('#addPiece').tap();
   await expect(browser.locator('#lineRows tr').first()).toBeVisible();
@@ -37,7 +38,7 @@ for (const [i, kind] of (['cash', 'bank', 'mixed'] as const).entries()) {
       const total = await openForm(go, browser, screen, lang, code, shot, `sales-${kind}-${lang}`);
       const bankPay = async (amount: number, idx = 0) => {
         await browser.locator('[data-addbank]').tap();
-        await browser.locator(`#ba${idx}`).tap();
+        await browser.locator(`[data-k=bank${idx}Account] [role=combobox]`).tap();
         await screen.getByRole('option', acc.name!).tap();
         await browser.locator(`#bm${idx}`).fill((amount / 100).toFixed(2));
       };
