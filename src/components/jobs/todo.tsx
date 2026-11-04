@@ -1,10 +1,11 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { api, newSaveKey } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Link } from "@/i18n/navigation";
 import { Icon } from "@/components/shell/icon";
 import { findJob, firstShownStep, isVisible, jobName, runHref, type Lang } from "@/nav/jobs";
+import { handOverDone } from "@/lib/jobs/hand-over";
 import type { Me } from "@/stores/ui";
 
 // Port of jobs/todo.js. OWNER RULE: the gold price is always the latest saved price, so there is no "today's price is missing" line.
@@ -22,9 +23,9 @@ export async function loadTodo(me: Me) {
     if (!value || !job || (key === "lockedAccounts" && alerts.length) || !isVisible(job, me.screens, me.jobs)) return [];
     return [{ key, count: typeof value === "number" ? value : 1, jobId, href: runHref(job, firstShownStep(job, me.screens)) }];
   });
-  const handOvers = ((todo?.handOvers ?? []) as { id: string; jobId: string; step: number; from: string }[]).flatMap((row) => {
+  const handOvers = ((todo?.handOvers ?? []) as { id: string; jobId: string; step: number; from: string; carried?: Record<string, string> }[]).flatMap((row) => {
     const job = findJob(row.jobId);
-    return job ? [{ row, jobId: row.jobId, href: runHref(job, row.step) }] : [];
+    return job ? [{ row, jobId: row.jobId, href: runHref(job, row.step, row.carried) }] : [];
   });
   return { hasData: !!todo, alerts, lines, handOvers, count: alerts.length + lines.length + handOvers.length };
 }
@@ -42,7 +43,7 @@ export function TodoPanel({ me, always }: { me: Me; always?: boolean }) {
   if (!data) return always ? <div className="skeleton" aria-busy="true"><i /><i /></div> : null;
   if (!data.hasData && data.alerts.length === 0 && !always) return null;
   const empty = !data.lines.length && !data.alerts.length && !data.handOvers.length;
-  const done = async (id: string) => { await api(`/access/me/todo/hand-overs/${id}/done`, { method: "POST", saveKey: newSaveKey() }).catch(() => {}); q.refetch(); };
+  const done = async (id: string) => { await handOverDone(id).catch(() => {}); q.refetch(); };
   return (
     <section className="bubble b-todo" aria-labelledby="todo-title">
       <h2 className="pill" id="todo-title">{t("todo.title")}</h2>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { api, SESSION_ENDED } from "@/lib/api";
@@ -7,6 +7,7 @@ import { isSuper, useForgetMe, useMe } from "@/lib/session";
 import { NAV, allLeaves, canOpen } from "@/nav/tree";
 import { useUi, type Me } from "@/stores/ui";
 import { useTodo } from "@/components/jobs/todo";
+import { JobBar } from "@/components/jobs/job-bar";
 import { ChangePassword } from "./change-password";
 import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
@@ -129,6 +130,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
       </div></aside>
       <div className="main">
         <div className="topbar"><button className="ic-btn" id="trigger" type="button" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></button></div>
+        {me.mustChangePassword ? null : <Suspense><JobBar /></Suspense>}
         <section className="ws" id="ws" aria-live="polite">
           {me.mustChangePassword ? <ChangePassword forced /> : children}
         </section>

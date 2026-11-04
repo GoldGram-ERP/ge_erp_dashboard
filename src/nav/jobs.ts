@@ -19,7 +19,7 @@ export const firstShownStep = (job: any, screens: string[]) => {
   const shown = job.steps.findIndex((s: any, i: number) => i >= from && screens.includes(s.screen) && !needsRecord(s));
   return shown < 0 ? from : shown;
 };
-export const runHref = (job: any, index: number) => `/jobs/run/${encodeURIComponent(job.id)}?step=${index + 1}`;
+export const runHref = (job: any, index: number, carried: Record<string, string> = {}) => `/jobs/run/${encodeURIComponent(job.id)}?${new URLSearchParams({ step: String(index + 1), ...carried })}`;
 
 // Arabic typed many ways reads as one: no diacritics or tatweel, one alef, ة as ه, ى as ي.
 export const normalise = (text: unknown) =>

@@ -2042,7 +2042,8 @@
    "lockedTitle": "This step is not yours",
    "lockedBody": "Press Next to go on. When you finish, it goes to the to-do of whoever holds this screen.",
    "waitingTitle": "This step waits for an earlier one",
-   "waitingBody": "It needs what {names} gives. When you finish, that goes to whoever holds it, and this step comes back in your to-do with its record."
+   "waitingBody": "It needs what {names} gives. When you finish, that goes to whoever holds it, and this step comes back in your to-do with its record.",
+   "noScreen": "This screen is not available yet"
   },
   "home": {
    "title": "What do you want to do?",
@@ -2081,6 +2082,13 @@
    "openReservations": "{count, plural, one {One reservation is} other {# reservations are}} open",
    "handOver": "{job}, left by {from}",
    "handOverDone": "Done"
+  },
+  "run": {
+   "unavailable": "This job is not available to you",
+   "noScreen": "This screen is not available yet"
+  },
+  "ask": {
+   "unavailable": "This question is not available to you"
   }
  },
  "shell": {
