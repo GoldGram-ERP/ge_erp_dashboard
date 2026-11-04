@@ -96,7 +96,7 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
   const password = f.type === "password";
   const input = (
     <input id={id} type={password && !shown ? "password" : "text"} value={String(value)} disabled={f.disabled} maxLength={f.maxLength}
-      {...(numeric ? { inputMode: "decimal" as const, dir: "ltr", style: { textAlign: "end" as const } } : {})}
+      {...(numeric ? { inputMode: "decimal" as const, dir: "ltr" } : {})}
       placeholder={f.placeholder} autoComplete={f.autocomplete ?? "off"} aria-invalid={!!err || undefined} aria-describedby={describedBy}
       onBlur={onBlur} onChange={(e) => onChange(e.target.value)} />
   );

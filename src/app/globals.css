@@ -651,3 +651,11 @@ dialog.palette{width:min(860px,96vw);max-height:88vh;margin:5vh auto auto;border
 dialog.palette .pal-in{padding:18px 22px;font-size:18px}
 dialog.palette .pal-in input{font-size:19px}
 dialog.palette .pal-list{max-height:calc(88vh - 90px)}
+
+/* Left-to-right content (numbers, codes, emails) inside a field: the value starts on the page's own start side,
+   so English fields start on the left and Arabic fields on the right, whatever the content's own direction. */
+html[dir=ltr] input[dir=ltr],html[dir=ltr] textarea[dir=ltr]{text-align:left !important}
+html[dir=rtl] input[dir=ltr],html[dir=rtl] textarea[dir=ltr]{text-align:right !important}
+html[dir=ltr] input:not([dir=ltr]),html[dir=ltr] textarea:not([dir=ltr]){text-align:left !important}
+html[dir=rtl] input:not([dir=ltr]),html[dir=rtl] textarea:not([dir=ltr]){text-align:right !important}
+html[dir=ltr] .field input[type=checkbox],html[dir=rtl] .field input[type=checkbox]{text-align:initial}
