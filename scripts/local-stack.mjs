@@ -6,7 +6,7 @@ import { existsSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
-const backend = path.resolve(root, "../ge_erp_backend");
+const backend = path.resolve(root, "../../worktrees/e2e-backend");
 const pidFile = path.join(root, ".e2e-backend.pid");
 const PORT = 8100, WEB = process.env.WEB_ORIGIN ?? "http://localhost:3100";
 const env = {
@@ -31,7 +31,7 @@ if (process.argv[2] === "down") {
   if (!existsSync(keepFile)) { const k = spawn("wsl", ["-d", "Ubuntu", "-u", "root", "--", "sleep", "infinity"], { detached: true, stdio: "ignore" }); writeFileSync(keepFile, String(k.pid)); k.unref(); }
   console.log(wsl("service postgresql start; service redis-server start").stdout);
   if (!(await alive())) {
-    const child = spawn(process.execPath, ["dist-e2e/main.js"], { cwd: backend, env, detached: true, stdio: ["ignore", "ignore", "ignore"] });
+    const child = spawn(process.execPath, ["dist/main.js"], { cwd: backend, env, detached: true, stdio: ["ignore", "ignore", "ignore"] });
     writeFileSync(pidFile, String(child.pid)); child.unref();
     for (let i = 0; i < 60 && !(await alive()); i++) await new Promise((r) => setTimeout(r, 1000));
   }

@@ -3,11 +3,11 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-const backend = path.resolve(import.meta.dirname, "../../ge_erp_backend");
+const backend = path.resolve(import.meta.dirname, "../../../worktrees/e2e-backend");
 const env = { ...process.env, DATABASE_URL: "postgresql://ge:ge_e2e@localhost:5433/ge_erp_e2e", REDIS_URL: "redis://localhost:6391",
   BETTER_AUTH_SECRET: "e2e-local-secret-e2e-local-secret-0123456789", ALLOWED_EMAIL_DOMAIN: "example.com", API_PUBLIC_URL: "http://localhost:8100", DASHBOARD_ORIGIN: "http://localhost:3100", PORT: "8100" };
 for (const [u, name] of [["e2eadmin", "E2E Admin"], ["e2euser", "E2E User"]]) {
-  const r = spawnSync(process.execPath, ["dist-e2e/modules/access/create-user.cli.js", u, `${u}@example.com`, "E2e-Local-Pass-1234", name], { cwd: backend, env, encoding: "utf8" });
+  const r = spawnSync(process.execPath, ["dist/modules/access/create-user.cli.js", u, `${u}@example.com`, "E2e-Local-Pass-1234", name], { cwd: backend, env, encoding: "utf8" });
   console.log((r.stdout + r.stderr).trim().split("\n").slice(-2).join(" | "));
 }
 const sql = `UPDATE "user" SET user_type='admin' WHERE username='e2eadmin';`;
