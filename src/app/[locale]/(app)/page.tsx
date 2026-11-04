@@ -9,6 +9,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   setRequestLocale((await params).locale);
   const cookie = (await cookies()).toString();
   const qc = new QueryClient();
-  await qc.prefetchQuery({ queryKey: ["gold-price-today"], queryFn: () => api("/gold-prices/today", { cookie }) }).catch(() => {});
+  await qc.prefetchQuery({ queryKey: ["gold-price-today"], queryFn: () => api("/gold-prices/today", { cookie }).then((r) => r ?? null, (e) => { if (e instanceof ApiFailure && e.status === 404) return null; throw e; }) }).catch(() => {});
   return <HydrationBoundary state={dehydrate(qc)}><HomeView /></HydrationBoundary>;
 }
