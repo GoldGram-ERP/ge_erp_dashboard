@@ -9,7 +9,7 @@
 // A dirty tree is refused: a build must name a commit, or the number after the plus means nothing.
 // Pass --allow-dirty to pack anyway, and the stamp then ends in -dirty.
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,6 +26,16 @@ const dirty = git(["status", "--porcelain"]) !== "";
 
 if (dirty && !allowDirty) {
   console.error("The tree has uncommitted changes. Commit them, or pass --allow-dirty.");
+  process.exit(1);
+}
+
+// Every new build carries a new version (0.0.1 more than the last): HEAD must be the release commit tagged v<version>,
+// which `npm run release` makes (it bumps, commits and tags). --no-version-check is for a local trial pack only.
+const pkgVersion = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
+let tagged = "";
+try { tagged = git(["describe", "--exact-match", "--tags", "HEAD"]); } catch { /* HEAD has no tag */ }
+if (tagged !== `v${pkgVersion}` && !args.includes("--no-version-check")) {
+  console.error(`HEAD is not the release commit of ${pkgVersion} (tag v${pkgVersion}). Run "npm run release" (bumps by 0.0.1, commits, tags), push with tags, then pack.`);
   process.exit(1);
 }
 

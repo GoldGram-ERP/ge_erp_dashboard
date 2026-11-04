@@ -21,5 +21,8 @@ const { version } = JSON.parse(readFileSync("package.json", "utf8"));
 
 run("git", ["add", "package.json", "package-lock.json"]);
 run("git", ["commit", "-q", "-m", `Version ${version}`]);
+// The release commit is tagged v<version>: pack-hostinger.mjs only packs a commit that carries exactly this tag,
+// so no build goes out without its bump (0.0.1 per build).
+run("git", ["tag", "-a", `v${version}`, "-m", `Version ${version}`]);
 
 console.log(version);
