@@ -17,19 +17,21 @@ plain('sales invoice API: cash, bank and mixed payment bodies, totals, delete', 
   bank.accId = a.body.id;
   const [p1, p2, p3] = S.pieces;
   const sale = (lines: any[], pay: any) => api('POST', '/sales-invoices', { branchId: (S as any).inv.branchId, invoiceType: 'sale', ...cust, lines, ...pay });
+  const totalOf = async (code: string) => (await sale([{ pieceCode: code }], { cash: 1 })).body.values.total as number; // the refusal tells the exact total (gold value + making charge)
   expect((await sale([{ pieceCode: p1.pieceCode }], {})).status).toBe(400); // nothing paid for
-  const cash = await sale([{ pieceCode: p1.pieceCode }], { cash: 190000 });
+  const T1 = await totalOf(p1.pieceCode), T2 = await totalOf(p2.pieceCode), T3 = await totalOf(p3.pieceCode);
+  const cash = await sale([{ pieceCode: p1.pieceCode }], { cash: T1 });
   expect(cash.status).toBe(201);
   S.created.invoices.push(cash.body.id);
   expect(cash.body.totals.total).toBe(cash.body.totals.paid);
-  const bankInv = await sale([{ pieceCode: p2.pieceCode }], { bankPayments: [{ bankAccountId: bank.accId, amount: 190000 }] });
+  const bankInv = await sale([{ pieceCode: p2.pieceCode }], { bankPayments: [{ bankAccountId: bank.accId, amount: T2 }] });
   expect(bankInv.status).toBe(201);
   S.created.invoices.push(bankInv.body.id);
-  const mixed = await sale([{ pieceCode: p3.pieceCode }], { cash: 100000, bankPayments: [{ bankAccountId: bank.accId, amount: 90000 }] });
+  const mixed = await sale([{ pieceCode: p3.pieceCode }], { cash: 100000, bankPayments: [{ bankAccountId: bank.accId, amount: T3 - 100000 }] });
   expect(mixed.status).toBe(201);
   S.created.invoices.push(mixed.body.id);
-  expect(mixed.body.totals.paid).toBe(190000);
-  expect((await sale([{ pieceCode: p3.pieceCode }], { cash: 190000 })).status).toBeGreaterThanOrEqual(400); // piece already sold
+  expect(mixed.body.totals.paid).toBe(T3);
+  expect((await sale([{ pieceCode: p3.pieceCode }], { cash: T3 })).status).toBeGreaterThanOrEqual(400); // piece already sold
 });
 
 test('sales invoice record sheet opens in the UI with print layouts and delete, no edit (en, ar)', { tags: ['e2e', 'sales'], requires: ['browser'] }, async ({ go, screen, browser, shot }) => {
