@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // The config contract passes backend rows and answers whose shape each page knows; they are typed `any` on purpose.
+  { files: ["src/lib/**", "src/components/engine/**", "src/components/fields/**", "src/things/**"], rules: { "@typescript-eslint/no-explicit-any": "off" } },
 ]);
 
 export default eslintConfig;
