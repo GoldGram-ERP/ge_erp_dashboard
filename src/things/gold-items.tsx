@@ -56,7 +56,7 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
   const statusCol = (): Column => ({ key: "deletedAt", label: c("recordStatus"), type: "status", get: (r) => (r.deletedAt ? "deleted" : "active"), statuses: { active: [c("active"), "good"], deleted: [m("categories.deletedBadge"), "off"] } });
   // An item's Active column: deleted, inactive or active, as words (never color alone).
   const activeCol = (): Column => ({ key: "isActive", label: m("items.status"), type: "status", get: (r) => (r.deletedAt ? "deleted" : r.isActive === false ? "inactive" : "active"), statuses: { active: [m("items.active"), "good"], inactive: [m("items.inactive"), "warn"], deleted: [m("categories.deletedBadge"), "off"] } });
-  const charge = (mode: unknown, value: unknown) => (mode && value != null ? <Ltr>{m(`items.shown.${mode}`, { value: String(value) })}</Ltr> : "");
+  const charge = (mode: unknown, value: unknown) => (mode && value != null ? <bdi>{m(`items.shown.${mode}`, { value: String(value) })}</bdi> : "")   // value then unit, in the page's own direction;
   const codeCol = (label: string, key: string): Column => ({ key, label, render: (r) => <Ltr>{code6(r[key])}</Ltr> });
   const categoryFilter = (): FilterConfig[] => [{ name: "categoryId", label: m("itemNames.categoryId"), type: "select", options: catOptions, placeholder: m("items.allCategories") }];
 

@@ -5,8 +5,8 @@ import { NAV, canOpen } from '../../src/nav/tree.ts';
 export { NAV, canOpen };
 const require = createRequire(import.meta.url);
 export const WEB = `http://localhost:${process.env.E2E_PORT ?? '3100'}`;
-export const API = 'http://localhost:8100';
-export const PASSWORD = 'E2e-Local-Pass-1234'; // local test accounts only (seeded by scripts/seed-users.mjs)
+export const API = process.env.E2E_API ?? 'http://localhost:8100';
+export const PASSWORD = process.env.E2E_PASSWORD ?? 'E2e-Local-Pass-1234'; // local test accounts only (seeded by scripts/seed-users.mjs)
 export type Role = 'superadmin' | 'e2eadmin' | 'e2euser';
 export type Lang = 'ar' | 'en';
 export const LANGS: Lang[] = ['ar', 'en'];

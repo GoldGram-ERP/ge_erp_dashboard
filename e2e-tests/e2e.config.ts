@@ -10,7 +10,7 @@ const app = {
     executable: 'node',
     args: ['node_modules/next/dist/bin/next', 'dev', '--webpack', '--port', PORT],
     cwd: '..',
-    env: { API_URL: 'http://localhost:8100' },
+    env: { API_URL: process.env.E2E_API ?? 'http://localhost:8100' },
     log: '.e2e/logs/app.log',
     startupTimeout: 180_000,
     reuseExisting: true,
