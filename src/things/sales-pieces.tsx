@@ -111,7 +111,8 @@ export const makeConfigWith = (treasuries: Treasury[], scan?: () => void): MakeC
     transform: (rows) => rows.map((r) => ({ ...r, _k: `${r.branchId}|${r.karat}` })),
     runLabel: rep("run"), filters: stockFilters(),
     sort: { default: { key: "branch", dir: "asc" } }, paging: { sizes: [10, 25, 50, 100], size: 25 },
-    columns: totalsCols, onRow: false, footer: totalOf(totalsCols), actions: stockActions(false),
+    // A branch and karat row opens exactly its pieces: the pieces view with the same filters, narrowed to that branch and karat.
+    columns: totalsCols, onRow: (row, h) => ({ view: "pieces", filters: { ...h.filters, branchId: row.branchId, karat: row.karat } }), footer: totalOf(totalsCols), actions: stockActions(false),
   };
   const stockPiecesView: ViewConfig = {
     id: "pieces", label: `${gs("title")} · ${gs("views.pieces")}`, keys: ["gold-sales/gold-stock"],
