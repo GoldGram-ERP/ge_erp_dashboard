@@ -10,12 +10,12 @@ import type { Tr } from "@/lib/t";
 import { Ltr, ThingPage } from "@/components/engine";
 import { useAccess } from "./sales-access";
 import { useJobIntent } from "./job-intent";
-import { KARATS, branchSpec, categorySpec, code6, footerOf, itemSpec, useGoldTreasuries, type GoldTreasury } from "./stocktake-shared";
+import { KARATS, code6, footerOf, useGoldTreasuries, useLists, type GoldTreasury, type Lists } from "./stocktake-shared";
 
 let lastQuery: Record<string, string> = {};      // the filters of the last stock run: the pieces of an item are asked with them
 const PIECES = 100;
 
-export const makeConfigWith = (treasuries: GoldTreasury[]): MakeConfig => (tr: Tr): ThingConfig => {
+export const makeConfigWith = (treasuries: GoldTreasury[], lists: Lists): MakeConfig => (tr: Tr): ThingConfig => {
   const { t, L } = tr;
   const m = (k: string, v?: Record<string, string | number>) => t("gold-stocktake", k, v);
   const rep = (k: string) => t("common", `report.${k}`);
@@ -24,14 +24,14 @@ export const makeConfigWith = (treasuries: GoldTreasury[]): MakeConfig => (tr: T
   const codeField = (name: string, label: string): FilterConfig => ({ name, label, type: "number", min: 1, max: 999999999999999, positive: true });
 
   const stockFilters = (): FilterConfig[] => [
-    { name: "branchId", label: m("branchStock.branchId"), type: "select", optionsFrom: branchSpec, placeholder: ALL },
+    { name: "branchId", label: m("branchStock.branchId"), type: "select", options: lists.branches, placeholder: ALL },
     { name: "treasuryId", label: m("branchStock.treasuryId"), type: "select", options: treasuries.map((x) => [x.id, `${x.branchName} · ${x.treasuryName}`]), placeholder: ALL },
     { name: "karat", label: m("branchStock.karat"), type: "select", options: KARATS.slice().reverse().map((k) => [k, karatName(k)]), placeholder: ALL },
     { name: "untilDate", label: m("branchStock.untilDate"), type: "date", placeholder: m("branchStock.today") },
     codeField("fromCode", m("branchStock.fromCode")),
     { ...codeField("toCode", m("branchStock.toCode")), validate: (v, all) => (v !== "" && all.fromCode !== "" && v < all.fromCode ? m("branchStock.toCodeBelowFrom") : null) },
-    { name: "categoryId", label: m("branchStock.categoryId"), type: "select", optionsFrom: categorySpec, placeholder: ALL },
-    { name: "itemId", label: m("branchStock.itemId"), type: "select", optionsFrom: itemSpec, placeholder: ALL },
+    { name: "categoryId", label: m("branchStock.categoryId"), type: "select", options: lists.categories, placeholder: ALL },
+    { name: "itemId", label: m("branchStock.itemId"), type: "select", options: lists.items, placeholder: ALL },
   ];
 
   // ───── stock by category / by item ─────
@@ -90,7 +90,7 @@ export const makeConfigWith = (treasuries: GoldTreasury[]): MakeConfig => (tr: T
       transform: (rows) => rows.map((r) => ({ ...r, _k: `${r.itemName}|${r.karat}` })),   // grouped by item name and karat
       runLabel: rep("run"),
       filters: [
-        { name: "branchId", label: m("salesByItem.branchId"), type: "select", optionsFrom: branchSpec, placeholder: ALL },
+        { name: "branchId", label: m("salesByItem.branchId"), type: "select", options: lists.branches, placeholder: ALL },
         { name: "fromDate", label: m("salesByItem.fromDate"), type: "date" },
         { name: "toDate", label: m("salesByItem.toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) },
         invoice("fromInvoice", m("salesByItem.fromInvoice")),
@@ -135,6 +135,7 @@ export const makeConfigWith = (treasuries: GoldTreasury[]): MakeConfig => (tr: T
 export default function Page() {
   const treasuries = useGoldTreasuries();
   const initial = useJobIntent();
-  const make = useMemo(() => makeConfigWith(treasuries), [treasuries]);
+  const lists = useLists();
+  const make = useMemo(() => makeConfigWith(treasuries, lists), [treasuries, lists]);
   return <ThingPage make={make} access={useAccess()} initial={initial} />;
 }

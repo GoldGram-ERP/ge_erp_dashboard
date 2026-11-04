@@ -11,10 +11,9 @@ import { backendFieldErrors } from "@/lib/fields";
 import { today } from "@/lib/format";
 import { toast } from "@/components/engine";
 import { Select } from "@/components/fields/Select";
-import { useLookup } from "@/components/fields/useLookup";
-import { branchSpec, categorySpec, code6 } from "./stocktake-shared";
+import { code6, useOptions, type Lists } from "./stocktake-shared";
 
-export function StartForm({ tr, close, onStarted }: CustomFormProps & { onStarted: (count: Row) => void }) {
+export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { lists: Lists; onStarted: (count: Row) => void }) {
   const { t, L } = tr;
   const m = (k: string, v?: Record<string, string>) => t("gold-stocktake", `stockCount.${k}`, v);
   const [branchId, setBranchId] = useState("");
@@ -26,9 +25,8 @@ export function StartForm({ tr, close, onStarted }: CustomFormProps & { onStarte
   const saveKey = useRef(newSaveKey());
   useEffect(() => { saveKey.current = newSaveKey(); }, [branchId, categoryId, itemId, karat]);   // edited: a new attempt, a new key
 
-  const branches = useLookup(branchSpec).options ?? [];
-  const categories = useLookup(categorySpec).options ?? [];
-  const items = useLookup({ path: "/items", query: categoryId ? { categoryId } : undefined, value: "id", label: "itemName" }).options ?? [];
+  const { branches, categories } = lists;
+  const items = useOptions("/items", "itemName", categoryId ? { categoryId } : undefined);
   const next = useQuery({ queryKey: ["next-number", "stock_count", branchId], retry: false, queryFn: () => api<{ next: number }>("/document-numbers/next", { query: { documentType: "stock_count", branchId: branchId || undefined } }) });
   const numberHelp = next.data ? t("common", "upcomingNumber") : branchId ? m("filledBySystem") : t("common", "chooseBranchForNumber");
 

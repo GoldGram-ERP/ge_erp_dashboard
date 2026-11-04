@@ -1,9 +1,10 @@
 "use client";
 // Small helpers the stocktake pages share (Branch stock, Stock count).
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Column } from "@/lib/engine-types";
+import type { Column, Option, Row } from "@/lib/engine-types";
+import { rowsOf } from "@/lib/fields";
 import type { Tr } from "@/lib/t";
 import { cellNode } from "@/components/engine";
 
@@ -11,9 +12,27 @@ export const code6 = (n: unknown) => String(n ?? "").padStart(6, "0");
 export const nameOf = (path: string, id: string | null | undefined, key: string): Promise<string> => (id ? api(`${path}/${id}`).then((r) => r[key] as string).catch(() => "") : Promise.resolve(""));
 export const KARATS = ["24", "21", "18", "999"];     // the order the design draws the karat columns
 
-export const branchSpec = { path: "/branches", value: "id", label: "branchName" };
-export const categorySpec = { path: "/categories", value: "id", label: "categoryName" };
-export const itemSpec = { path: "/items", value: "id", label: "itemName" };
+// The pick lists. The lists page at 20 and refuse the lookup's `limit` param (categories, items answer 400), so every page is read here with `page` only.
+export async function allPages(path: string, query: Record<string, string> = {}): Promise<Row[]> {
+  const out: Row[] = [];
+  for (let page = 1; page <= 100; page++) {
+    const r = await api(path, { query: { ...query, page } });
+    const got = rowsOf(r);
+    out.push(...got);
+    if (!got.length || out.length >= (r?.total ?? got.length)) break;
+  }
+  return out;
+}
+const NO_OPTIONS: Option[] = [];
+export function useOptions(path: string, label: string, query?: Record<string, string>): Option[] {
+  const q = useQuery({ queryKey: ["stocktake-options", path, query], staleTime: 5 * 60_000, queryFn: () => allPages(path, query).then((rows) => rows.map((r) => [r.id, String(r[label])] as Option)) });
+  return q.data ?? NO_OPTIONS;
+}
+export type Lists = { branches: Option[]; categories: Option[]; items: Option[] };
+export function useLists(): Lists {
+  const branches = useOptions("/branches", "branchName"), categories = useOptions("/categories", "categoryName"), items = useOptions("/items", "itemName");
+  return useMemo(() => ({ branches, categories, items }), [branches, categories, items]);
+}
 
 export type GoldTreasury = { id: string; kind: string; treasuryName: string; branchName?: string };
 /** /treasuries answers the whole list and takes no filter: the reports ask for gold treasuries only, so the list is read here. */

@@ -14,11 +14,11 @@ import { useAccess } from "./sales-access";
 import { useJobIntent } from "./job-intent";
 import { ScanPage } from "./stocktake-count-scan";
 import { StartForm } from "./stocktake-count-start";
-import { branchSpec, categorySpec, code6, footerOf, itemSpec, nameOf } from "./stocktake-shared";
+import { code6, footerOf, nameOf, useLists, type Lists } from "./stocktake-shared";
 
 const CHIPS_MAX = 1000;
 
-export const makeConfigWith = (onScan: (id: string) => void): MakeConfig => (tr: Tr): ThingConfig => {
+export const makeConfigWith = (onScan: (id: string) => void, lists: Lists): MakeConfig => (tr: Tr): ThingConfig => {
   const { t, L } = tr;
   const m = (k: string, v?: Record<string, string | number>) => t("gold-stocktake", k, v);
   const rep = (k: string) => t("common", `report.${k}`);
@@ -64,7 +64,7 @@ export const makeConfigWith = (onScan: (id: string) => void): MakeConfig => (tr:
       keys: ["gold-stocktake/previous-counts"],
       rowKey: "karat",
       runLabel: m("previousCounts.lookUp"),
-      filters: [{ name: "branchId", label: m("previousCounts.branch"), type: "select", optionsFrom: branchSpec, required: true, placeholder: m("previousCounts.needBranch") }, countNo(m("previousCounts.countNumber"), true)],
+      filters: [{ name: "branchId", label: m("previousCounts.branch"), type: "select", options: lists.branches, required: true, placeholder: m("previousCounts.needBranch") }, countNo(m("previousCounts.countNumber"), true)],
       paging: false,
       columns: cols,
       onRow: false,
@@ -100,11 +100,11 @@ export const makeConfigWith = (onScan: (id: string) => void): MakeConfig => (tr:
       transform: (rows) => rows.map((r) => ({ ...r, _k: `${r.branchId}|${r.countNumber}|${r.id}` })),   // a piece missing from two counts shows twice
       runLabel: rep("run"),
       filters: [
-        countNo(m("missingPieces.countNumber"), prev), { name: "branchId", label: m("missingPieces.branchId"), type: "select", optionsFrom: branchSpec, placeholder: ALL },
+        countNo(m("missingPieces.countNumber"), prev), { name: "branchId", label: m("missingPieces.branchId"), type: "select", options: lists.branches, placeholder: ALL },
         { name: "karat", label: m("missingPieces.karat"), type: "select", options: ["18", "21", "24", "999"].map((k) => [k, karatName(k)]), placeholder: ALL },
         { name: "itemType", label: m("missingPieces.itemType"), type: "select", options: ["gold", "other_or_silver"].map((k) => [k, t("gold-accounts", `items.itemTypes.${k}`)]), placeholder: ALL },
-        { name: "categoryId", label: m("missingPieces.categoryId"), type: "select", optionsFrom: categorySpec, placeholder: ALL },
-        { name: "itemId", label: m("missingPieces.itemId"), type: "select", optionsFrom: itemSpec, placeholder: ALL },
+        { name: "categoryId", label: m("missingPieces.categoryId"), type: "select", options: lists.categories, placeholder: ALL },
+        { name: "itemId", label: m("missingPieces.itemId"), type: "select", options: lists.items, placeholder: ALL },
         from("missingPieces"), to("missingPieces"),
       ],
       sort: { default: { key: "countNumber", dir: "desc" } },
@@ -160,14 +160,15 @@ export const makeConfigWith = (onScan: (id: string) => void): MakeConfig => (tr:
     keys: ["gold-stocktake/stock-count", "gold-stocktake/previous-counts", "gold-stocktake/missing-pieces", "gold-stocktake/missing-pieces-previous"],
     views: [history, previous(), missing(false), missing(true)],
     record,
-    forms: { start: { title: m("stockCount.add"), display: "page", fields: [], path: () => "/stock-counts", method: "POST", custom: (p: CustomFormProps) => <StartForm {...p} onStarted={(count) => onScan(count.id)} /> } },
+    forms: { start: { title: m("stockCount.add"), display: "page", fields: [], path: () => "/stock-counts", method: "POST", custom: (p: CustomFormProps) => <StartForm {...p} lists={lists} onStarted={(count) => onScan(count.id)} /> } },
   };
 };
 
 export default function Page() {
   const [scan, setScan] = useState<string | null>(null);   // the open count being worked on
   const qc = useQueryClient();
-  const make = useMemo(() => makeConfigWith(setScan), []);
+  const lists = useLists();
+  const make = useMemo(() => makeConfigWith(setScan, lists), [lists]);
   const initial = useJobIntent();
   const access = useAccess();
   if (scan) return <ScanPage id={scan} onClose={() => { setScan(null); qc.invalidateQueries({ queryKey: ["thing", "count"] }); }} />;
