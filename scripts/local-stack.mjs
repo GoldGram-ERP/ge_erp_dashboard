@@ -8,7 +8,7 @@ import path from "node:path";
 const root = path.resolve(import.meta.dirname, "..");
 const backend = path.resolve(root, "../../worktrees/e2e-backend");
 const pidFile = path.join(root, ".e2e-backend.pid");
-const PORT = 8100, WEB = process.env.WEB_ORIGIN ?? "http://localhost:3100";
+const PORT = 8100, WEB = process.env.WEB_ORIGIN ?? "http://localhost:3100,http://localhost:3101,http://localhost:3102";
 const env = {
   ...process.env,
   PORT: String(PORT), DASHBOARD_ORIGIN: WEB, API_PUBLIC_URL: `http://localhost:${PORT}`,
