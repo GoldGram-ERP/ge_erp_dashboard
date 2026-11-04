@@ -743,3 +743,9 @@ dialog.palette .pal-item{contain:layout paint;content-visibility:auto;contain-in
 .st-main>.grp-block .grp-title,.st-prev .grp-title{text-align:start}
 .st-prev{display:flex;flex-direction:column;align-items:stretch}
 .st-prev .grp-title{align-self:flex-start;margin-inline-start:2px}
+
+/* No visible jump on reload: until the saved sidebar state is applied, nothing animates and the sidebar content waits (it fades in once, in place). */
+html:not([data-ready]) *,html:not([data-ready]) *::before,html:not([data-ready]) *::after{transition:none!important;animation:none!important}
+html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-ready]) #usearch{opacity:0}
+#nav,.side-foot,#usearch{transition:opacity .14s ease-out}
+@media (prefers-reduced-motion:reduce){#nav,.side-foot,#usearch{transition:none}}

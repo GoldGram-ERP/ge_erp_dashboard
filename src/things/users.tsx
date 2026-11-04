@@ -82,7 +82,7 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
       ],
       rowClass: (r) => (r.deletedAt ? "deleted" : ""),
     }, {
-      id: "jobs", label: a("title"), keys: ["administration/users"], create: [],
+      id: "jobs", label: a("title"), keys: ["administration/users"],
       load: async () => ({ items: ((await api("/users/jobs")).jobs ?? []).map((j: Row) => ({ id: j.id, screens: j.screens })) }),
       paging: false,
       onRow: (row, h) => h.openForm("holders", row),
@@ -98,6 +98,8 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
       render: (r) => <UserRecord r={r} tr={tr} />,
       actions: [
         { id: "edit", label: t("common", "edit"), icon: "edit", when: can, run: (r, h) => { h.close(); h.openForm("edit", r); } },
+        { id: "screens", label: L("تحديد الشاشات", "Assign screens"), icon: "key", when: (r) => can(r) && r.userType === "user", run: (r, h) => { h.close(); h.openForm("edit", { ...r, openTab: "screen" }); } },
+        { id: "jobs", label: L("تحديد الوظائف", "Assign jobs"), icon: "key", when: (r) => can(r) && r.userType === "user", run: (r, h) => { h.close(); h.openForm("edit", { ...r, openTab: "job" }); } },
         { id: "print", label: t("common", "print"), icon: "print", run: () => window.print() },
         { id: "unlock", label: u("unlock"), icon: "key", when: (r) => can(r) && !!r.locked, run: async (r, h) => { await api(`/users/${r.id}/unlock`, { method: "POST" }); h.close(); h.toast(u("unlocked")); h.reload(); } },
       ],

@@ -45,6 +45,12 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const collapsedNow = () => document.documentElement.classList.contains("sb-collapsed");
   // The collapsed state lives on <html> (set before paint by the head script) and in the saved interface state.
   useEffect(() => { document.documentElement.classList.toggle("sb-collapsed", ui.collapsed); }, [ui.collapsed]);
+  // The server draws the sidebar with default open groups; the saved ones are applied right after load. Until then the content is hidden and
+  // does not animate (see html:not([data-ready]) in globals.css), so it appears once, already in the saved state.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.setAttribute("data-ready", "1")));
+    return () => cancelAnimationFrame(id);
+  }, []);
   useEffect(() => { document.body.classList.toggle("sb-open", drawer); }, [drawer]);
   const toggleSidebar = () => { if (narrow()) setDrawer((d) => !d); else ui.setCollapsed(!collapsedNow()); };
   useEffect(() => {

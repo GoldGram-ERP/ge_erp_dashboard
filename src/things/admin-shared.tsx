@@ -140,7 +140,7 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   const [screens, setScreens] = useState<Set<string>>(new Set(row?.screens ?? []));
   const [jobs, setJobs] = useState<Set<string>>(new Set());
   const [jobsInit, setJobsInit] = useState("[]");
-  const [tab, setTab] = useState<"job" | "screen">("job");
+  const [tab, setTab] = useState<"job" | "screen">((row as Row | null)?.openTab === "screen" ? "screen" : "job");
   const [openShort, setOpenShort] = useState(false);
   const [q, setQ] = useState("");
   const [permErr, setPermErr] = useState(""), [shortErr, setShortErr] = useState(""), [alert, setAlert] = useState(""), [note, setNote] = useState(""), [saving, setSaving] = useState(false);
