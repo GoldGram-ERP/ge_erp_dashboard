@@ -11,7 +11,7 @@ export const APP = {
   "nav.item.expense-types": ["أنواع المصروفات", "Expense types"], "nav.item.expenses": ["المصروفات", "Expenses"],
   "nav.item.users": ["المستخدمين", "Users"], "nav.item.branches": ["الفروع", "Branches"], "nav.item.karats": ["العيارات", "Karats"], "nav.item.gold-prices": ["أسعار الذهب", "Gold prices"], "nav.item.settings": ["الإعدادات", "Settings"],
   "nav.item.accounts": ["الحسابات والجلسات", "Accounts and sessions"], "nav.item.security": ["الأمان والبيانات", "Security and data"],
- "app.search": ["بحث", "Search"], "app.searchPlaceholder": ["ابحث عن صفحة أو مهمة أو سؤال أو رقم فاتورة أو كود قطعة…", "Search pages, jobs, questions, an invoice number or a piece code…"], "app.searchNone": ["لا توجد نتائج.", "No results."],
+ "app.searchSheet": ["بحث بملء الشاشة", "Open full search"], "app.search": ["بحث", "Search"], "app.searchPlaceholder": ["ابحث عن صفحة أو مهمة أو سؤال أو رقم فاتورة أو كود قطعة…", "Search pages, jobs, questions, an invoice number or a piece code…"], "app.searchNone": ["لا توجد نتائج.", "No results."],
   "app.searchGroup.pages": ["الصفحات", "Pages"], "app.searchGroup.jobs": ["المهام", "Jobs"], "app.searchGroup.questions": ["الأسئلة", "Questions"], "app.searchGroup.find": ["بحث مباشر", "Find directly"],
   "app.searchFindInvoice": ["فاتورة: {text}", "Invoice: {text}"], "app.searchFindPiece": ["قطعة: {text}", "Piece: {text}"],
   "app.pin": ["تثبيت", "Pin"], "app.unpin": ["إلغاء التثبيت", "Unpin"], "app.pinHint": ["اضغط على الدبوس بجانب أي صفحة لتثبيتها هنا.", "Press the pin next to any page to pin it here."],

@@ -11,7 +11,7 @@ import { JobBar } from "@/components/jobs/job-bar";
 import { ChangePassword } from "./change-password";
 import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
-import { SearchPalette } from "./search-palette";
+import { SearchPalette, SidebarSearch } from "./search-palette";
 
 const JOBS_ITEMS = [["", "jobsHome"], ["questions", "jobsQuestions"], ["todo", "jobsTodo"]] as const;
 const narrow = () => matchMedia("(max-width:900px)").matches;
@@ -107,7 +107,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           <button className="ic-btn" id="fold-all" type="button" title={allOpen ? t("app.foldAll") : t("app.unfoldAll")} aria-label={allOpen ? t("app.foldAll") : t("app.unfoldAll")} onClick={() => ui.setGroups(allOpen ? [] : allIds)}><Icon name={allOpen ? "fold" : "unfold"} /></button>
           <button className="ic-btn" id="collapse" type="button" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></button>
         </div>
-        <button className="usearch" id="usearch" type="button" aria-label={t("app.search")} title={`${t("app.search")} (Ctrl+K)`} onClick={() => setPalette(true)}><Icon name="search" size={17} /><span className="name">{t("app.search")}</span><kbd>Ctrl K</kbd></button>
+        <SidebarSearch me={me} onOpenSheet={() => setPalette(true)} />
         <nav id="nav" aria-label="GoldGram">
           <div className={`sec ${pathname === "/" ? "has-active" : ""}`}>
             <Link className="sec-head" href="/" aria-current={pathname === "/" ? "page" : undefined} title={t("nav.home")}><span className="ico"><Icon name="home" size={19} /></span><span className="name">{t("nav.home")}</span></Link>

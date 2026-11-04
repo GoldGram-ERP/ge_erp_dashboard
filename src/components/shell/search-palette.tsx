@@ -9,27 +9,13 @@ import { isSuper } from "@/lib/session";
 import type { Me } from "@/stores/ui";
 import { Icon, jobIconName } from "./icon";
 
-type Hit = { key: string; group: "pages" | "jobs" | "questions" | "find"; label: string; hint?: string; icon: string; href: string };
+export type Hit = { key: string; group: "pages" | "jobs" | "questions" | "find"; label: string; hint?: string; icon: string; href: string };
 const MAX = 6;
 
-// Universal search: pages, jobs and questions the person may open, plus a direct find of a piece or an invoice by what was typed.
-export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; onClose: () => void }) {
+export function useSearchHits(me: Me, q: string): Hit[] {
   const t = useTranslations();
   const lang = useLocale() === "ar" ? "ar" : "en";
-  const router = useRouter();
-  const ref = useRef<HTMLDialogElement>(null);
-  const input = useRef<HTMLInputElement>(null);
-  const [q, setQ] = useState("");
-  const [at, setAt] = useState(0);
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) { setQ(""); setAt(0); d.showModal(); input.current?.focus(); }
-    if (!open && d.open) d.close();
-  }, [open]);
-
-  const hits = useMemo<Hit[]>(() => {
+  return useMemo<Hit[]>(() => {
     const word = q.trim();
     const out: Hit[] = [];
     const screens = me.screens;
@@ -48,9 +34,28 @@ export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; on
     }
     return out;
   }, [q, me, lang, t]);
+}
+
+// Universal search: pages, jobs and questions the person may open, plus a direct find of a piece or an invoice by what was typed.
+export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; onClose: () => void }) {
+  const t = useTranslations();
+  const router = useRouter();
+  const ref = useRef<HTMLDialogElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const [q, setQ] = useState("");
+  const [at, setAt] = useState(0);
+
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) { setQ(""); setAt(0); d.showModal(); input.current?.focus(); }
+    if (!open && d.open) d.close();
+  }, [open]);
+
+  const hits = useSearchHits(me, q);
 
   const go = (h?: Hit) => { if (!h) return; onClose(); router.push(h.href as never); };
-  const groups = (["pages", "jobs", "questions", "find"] as const).map((g) => ({ g, items: hits.filter((h) => h.group === g) })).filter((x) => x.items.length);
+  const groups = groupHits(hits);
 
   return (
     <dialog ref={ref} className="palette" aria-label={t("app.search")} onClose={onClose} onClick={(e) => { if (e.target === ref.current) onClose(); }}>
@@ -73,5 +78,54 @@ export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; on
           </div>))}
       </div>
     </dialog>
+  );
+}
+
+export const groupHits = (hits: Hit[]) => (["pages", "jobs", "questions", "find"] as const).map((g) => ({ g, items: hits.filter((h) => h.group === g) })).filter((x) => x.items.length);
+
+// The field in the sidebar: type and the results open right under it; Enter opens the first, arrows move, Esc closes. Ctrl K opens the full-screen sheet.
+export function SidebarSearch({ me, onOpenSheet }: { me: Me; onOpenSheet: () => void }) {
+  const t = useTranslations();
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [focus, setFocus] = useState(false);
+  const [at, setAt] = useState(0);
+  const box = useRef<HTMLDivElement>(null);
+  const hits = useSearchHits(me, q).slice(0, 12);
+  const show = focus && q.trim() !== "";
+  useEffect(() => {
+    const off = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setFocus(false); };
+    document.addEventListener("pointerdown", off);
+    return () => document.removeEventListener("pointerdown", off);
+  }, []);
+  const go = (h?: Hit) => { if (!h) return; setQ(""); setFocus(false); router.push(h.href as never); };
+  return (
+    <div className="usearch-box" ref={box}>
+      <div className="usearch" id="usearch">
+        <Icon name="search" size={17} />
+        <input id="usearch-input" value={q} role="combobox" aria-expanded={show} aria-controls="usearch-list" aria-label={t("app.search")} placeholder={t("app.search")} autoComplete="off"
+          onFocus={() => setFocus(true)}
+          onChange={(e) => { setQ(e.target.value); setAt(0); setFocus(true); }}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") { e.preventDefault(); setAt((a) => Math.min(a + 1, hits.length - 1)); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); setAt((a) => Math.max(a - 1, 0)); }
+            else if (e.key === "Enter") { e.preventDefault(); go(hits[at]); }
+            else if (e.key === "Escape") { setQ(""); setFocus(false); (e.target as HTMLElement).blur(); }
+          }} />
+        <button type="button" className="kbd-btn" title={t("app.searchSheet")} aria-label={t("app.searchSheet")} onClick={onOpenSheet}><kbd>Ctrl K</kbd></button>
+      </div>
+      {show ? (
+        <div className="usearch-pop" id="usearch-list" role="listbox" aria-label={t("app.search")}>
+          {hits.length === 0 ? <div className="pal-empty">{t("app.searchNone")}</div> : groupHits(hits).map(({ g, items }) => (
+            <div key={g}><div className="pal-grp">{t(`app.searchGroup.${g}`)}</div>
+              {items.map((h) => { const idx = hits.indexOf(h); return (
+                <button key={h.key} className="pal-item" role="option" aria-selected={idx === at} onMouseMove={() => setAt(idx)} onClick={() => go(h)}>
+                  <span className="ico"><Icon name={h.icon} size={17} /></span><span><b>{h.label}</b>{h.hint ? <small>{h.hint}</small> : null}</span>
+                </button>); })}
+            </div>))}
+          <button className="pal-more" type="button" onClick={onOpenSheet}>{t("app.searchSheet")} · Ctrl K</button>
+        </div>
+      ) : null}
+    </div>
   );
 }
