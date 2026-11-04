@@ -1,9 +1,9 @@
 import { test, expect } from 'e2e';
-import { apiAs, stamp, MAIN_BRANCH } from './lib.ts';
+import { apiAs, cairoDay, stamp, MAIN_BRANCH } from './lib.ts';
 
 // Money API on the logic target (no browser). Own run-stamped records, deleted through the normal Delete path.
 const P = { platforms: ['node'] };
-const day = () => new Date().toISOString().slice(0, 10);
+const day = cairoDay;
 const bad = (r: { status: number }) => expect(r.status).toBe(400);
 
 // A branch needs its own admin (one branch per admin), so each run makes a throwaway admin user.

@@ -1,5 +1,5 @@
 import { test, expect } from 'e2e';
-import { apiAs, stamp, PASSWORD, signInApi, unlock } from './lib.ts';
+import { apiAs, cairoDay, stamp, PASSWORD, signInApi, unlock } from './lib.ts';
 
 // API-level checks on the logic target (no browser). Records are created with a run stamp and deleted through the normal Delete path.
 const P = { platforms: ['node'] };
@@ -35,7 +35,7 @@ test('banks API: create, edit, account create/edit, validation, delete both', { 
 
 test('gold prices API: validation and newest price is always served', { ...P, tags: ['api', 'gold-prices'] }, async () => {
   const api = await apiAs('superadmin');
-  const day = new Date().toISOString().slice(0, 10);
+  const day = cairoDay();
   for (const bad of [{ sellPrice: 0, buyPrice: 1, silverPrice: 1 }, { sellPrice: 1, buyPrice: 0, silverPrice: 1 }, { sellPrice: 1, buyPrice: 1, silverPrice: 0 }, { sellPrice: 1, buyPrice: 1 }])
     expect((await api('POST', '/gold-prices', { date: day, ...bad })).status).toBe(400);
   const t = await api('GET', '/gold-prices/today');

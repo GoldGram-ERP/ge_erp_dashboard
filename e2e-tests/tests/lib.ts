@@ -73,22 +73,27 @@ export async function capture(browser: any, re: RegExp, methods = ['POST', 'PATC
   return seen;
 }
 
+/** Today in Cairo (the business day), not the UTC date: they differ between midnight and 2 or 3 a.m. Cairo time. */
+export const cairoDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
 export const MAIN_BRANCH = process.env.E2E_MAIN_BRANCH ?? 'a2deabe8-31a9-448e-95e5-04e74efceaee'; // seeded "Main branch" (no admin, so the superadmin can use it)
 /** Goods for the gold tests, all through the real API as superadmin; remove() deletes what can be deleted, in order. */
 export async function seed(tag = stamp()) {
   const api = await apiAs('superadmin');
-  const day = new Date().toISOString().slice(0, 10);
+  const day = cairoDay();
   const must = async (p: Promise<{ status: number; body: any }>) => { const r = await p; if (r.status >= 300) throw new Error(`seed failed ${r.status} ${JSON.stringify(r.body)}`); return r.body; };
   const cat = await must(api('POST', '/categories', { categoryName: `E2E Cat ${tag}`, qrLabel: false }));
   // the name is typed with the item (the backend adds it to the category), as the item form does
-  const item = await must(api('POST', '/items', {
+  const itemForm = {
     itemName: `E2E Ring ${tag}`, isCoded: true, itemType: 'gold', categoryId: cat.id, karat: '21', weight: 5000,
     workmanshipMode: 'per_gram', workmanshipValue: '50.00', cashbackMode: 'per_gram', cashbackValue: '0.00',
-  }));
+  };
+  const item = await must(api('POST', '/items', itemForm));
+  /** Switches the seeded item on or off through the Items edit (the whole form, as the Items screen sends it). */
+  const setItemActive = async (isActive: boolean) => { await must(api('PATCH', `/items/${item.id}`, { ...itemForm, isActive })); };
   const name = { id: item.itemNameId as string, itemName: item.itemName as string };
-  const inv = await must(api('POST', '/purchase-invoices', { date: day, branchId: MAIN_BRANCH, lines: [{ itemId: item.id, quantity: 4, weight: 20000 }] }));
+  const inv = await must(api('POST', '/purchase-invoices', { date: day, branchId: MAIN_BRANCH, lines: [{ itemId: item.id, quantity: 4 }] }));
   const coding = await must(api('GET', `/purchase-coding/invoices/${inv.id}`));
-  const piece = { weight: 5000, makingChargePerGram: 5000, tagPrice: 200000, salePrice: 190000 };
+  const piece = { tagPrice: 200000, salePrice: 190000 }; // weight and workmanship come from the item (5 g, 50.00 per gram)
   await must(api('POST', `/purchase-coding/invoices/${inv.id}`, { lines: [{ lineId: coding.lines[0].lineId, pieces: [piece, piece, piece, piece] }] }));
   const pieces = (await must(api('GET', `/pieces?invoiceId=${inv.id}`))).items as { id: string; pieceCode: string }[];
   const created = { invoices: [] as string[], returns: [] as string[], reservations: [] as string[], counts: [] as string[] };
@@ -100,5 +105,5 @@ export async function seed(tag = stamp()) {
     await api('DELETE', `/purchase-invoices/${inv.id}`); // refused (invoiceCoded) once coded: reported as a leftover
     await api('DELETE', `/items/${item.id}`); await api('DELETE', `/item-names/${name.id}`); await api('DELETE', `/categories/${cat.id}`);
   };
-  return { api, tag, cat, name, item, inv, pieces, created, remove, day };
+  return { api, tag, cat, name, item, inv, pieces, created, remove, day, setItemActive };
 }
