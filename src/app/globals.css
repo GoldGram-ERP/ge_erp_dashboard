@@ -146,6 +146,7 @@ tr.flash td{animation:flash 1.6s ease-out}
 .card h3{font-size:15px;margin-bottom:12px}
 .lines{width:100%}
 .lines td,.lines th{height:46px}
+.lines td .err{white-space:normal}   /* a refusal under a line box wraps instead of being cut off by the cell ellipsis */
 .lines input,.lines select{height:34px!important;min-width:90px}
 .totals{display:grid;gap:6px;max-width:360px;margin-inline-start:auto}
 .totals .kv{border-bottom:0;padding:4px 0}
