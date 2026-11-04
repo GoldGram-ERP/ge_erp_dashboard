@@ -17,7 +17,7 @@ export const APP = {
   "app.pin": ["تثبيت", "Pin"], "app.unpin": ["إلغاء التثبيت", "Unpin"], "app.pinHint": ["اضغط على الدبوس بجانب أي صفحة لتثبيتها هنا.", "Press the pin next to any page to pin it here."],
   "app.language": ["اللغة", "Language"], "app.myAccount": ["حسابي", "My account"], "app.signOut": ["تسجيل الخروج", "Sign out"],
   "app.collapse": ["طي القائمة", "Collapse the menu"], "app.expand": ["توسيع القائمة", "Expand the menu"], "app.foldAll": ["طي كل الأقسام", "Fold all sections"], "app.unfoldAll": ["فتح كل الأقسام", "Unfold all sections"],
-  "app.statusOk": ["متصل بالنظام الفعلي", "Connected to the live system"], "app.statusBad": ["تعذّر الاتصال بالخادم", "The server is not reachable"], "app.statusChecking": ["جارٍ فحص الاتصال…", "Checking the connection…"],
+  "app.statusOk": ["متصل", "Connected"], "app.statusBad": ["غير متصل", "Disconnected"], "app.statusChecking": ["جارٍ الاتصال…", "Connecting…"],
   "app.noAccess": ["لا تملك صلاحية هذه الصفحة", "You do not have access to this page"], "app.comingSoon": ["هذه الصفحة قيد البناء", "This page is being built"],
   "app.mustChange": ["يجب تغيير كلمة المرور أولًا", "You must change your password first"], "app.sessionEnded": ["انتهت الجلسة. سجّل الدخول من جديد.", "Your session ended. Sign in again."],
   "app.loading": ["جارٍ التحميل…", "Loading…"], "app.close": ["إغلاق", "Close"],
