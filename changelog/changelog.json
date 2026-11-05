@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Tables: the header row is no longer fixed, it scrolls away with the rows.",
+    "ar": "الجداول: صف العناوين مبقاش ثابت، بيتحرك مع الصفوف وإنت بتنزل."
+   }
+  ]
+ },
+ {
   "version": "1.0.25",
   "date": "2026-11-05",
   "changes": [
@@ -8,11 +18,6 @@
     "en": "Items: the Item names tab is hidden for now. You still add a name by typing it on the item form.",
     "ar": "الأصناف: تبويب أسماء الأصناف اتشال دلوقتي. لسه بتكتب الاسم على فورم الصنف وخلاص.",
     "route": "/buy/items"
-   },
-   {
-    "kind": "better",
-    "en": "Tables: the header row now stays at the top while you scroll the rows.",
-    "ar": "الجداول: صف العناوين بقى ثابت فوق وإنت بتنزل في الصفوف."
    },
    {
     "kind": "better",
