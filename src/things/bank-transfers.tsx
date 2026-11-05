@@ -67,7 +67,7 @@ export function buildConfig(tr: Tr, me?: Me | null): ThingConfig {
     forms: {
       create: {
         title: m("new"), path: () => "/bank-transfers", method: "POST",
-        load: () => ({ branchId: me?.userType === "user" ? me.branchId ?? "" : "", date: today() }),
+        load: () => ({ branchId: me?.branchId ?? "", date: today() }),
         toPayload: (v) => ({ branchId: v.branchId, date: v.date, fromAccountId: v.fromAccountId, toAccountId: v.toAccountId, amount: typedPiastres(v.amount), note: v.note ?? "" }),
         fields: [
           { name: "documentNumber", label: m("documentNumber"), type: "code", documentType: "bank_transfer", branchField: "branchId", dateField: "date", hint: m("autoHint") },

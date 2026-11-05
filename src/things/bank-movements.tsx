@@ -96,8 +96,8 @@ export function buildConfig(tr: Tr, me?: Me | null): ThingConfig {
     forms: {
       create: {
         title: m("new"), path: () => "/bank-movements", method: "POST",
-        // A User starts on their own branch; date starts today.
-        load: () => ({ branchId: me?.userType === "user" ? me.branchId ?? "" : "", date: today() }),
+        // A User or an Admin starts on their own branch (the Super admin picks one); date starts today.
+        load: () => ({ branchId: me?.branchId ?? "", date: today() }),
         toPayload: (v) => ({ branchId: v.branchId, bankAccountId: v.bankAccountId, movementType: v.movementType, date: v.date, amount: typedPiastres(v.amount), note: v.note }),
         fields: [
           { name: "documentNumber", label: m("documentNumber"), type: "code", documentType: "bank_movement", branchField: "branchId", dateField: "date", hint: m("autoHint") },

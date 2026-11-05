@@ -9,6 +9,7 @@ import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
 import { today } from "@/lib/format";
+import { useMe } from "@/lib/session";
 import { toast } from "@/components/engine";
 import { Select } from "@/components/fields/Select";
 import { code6, useOptions, type Lists } from "./stocktake-shared";
@@ -16,7 +17,8 @@ import { code6, useOptions, type Lists } from "./stocktake-shared";
 export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { lists: Lists; onStarted: (count: Row) => void }) {
   const { t, L } = tr;
   const m = (k: string, v?: Record<string, string>) => t("gold-stocktake", `stockCount.${k}`, v);
-  const [branchId, setBranchId] = useState("");
+  const { data: me } = useMe();
+  const [branchId, setBranchId] = useState(me?.branchId ?? "");   // own branch first; the Super admin picks one
   const [categoryId, setCategoryId] = useState("");
   const [itemId, setItemId] = useState("");
   const [karat, setKarat] = useState("");

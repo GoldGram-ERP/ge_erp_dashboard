@@ -26,7 +26,7 @@ export function ExpenseForm({ kind, close, reload, tr }: CustomFormProps & { kin
   const [types, setTypes] = useState<Row[]>([]);
   const [accounts, setAccounts] = useState<Row[]>([]);
   const [date, setDate] = useState(today());
-  const [branchId, setBranchId] = useState(me?.userType === "user" ? (me.branchId ?? "") : "");   // a User starts on their own branch
+  const [branchId, setBranchId] = useState(me?.branchId ?? "");   // a User or an Admin starts on their own branch; the Super admin has none and picks one
   const [code, setCode] = useState("");
   const [typeId, setTypeId] = useState("");
   const [note, setNote] = useState("");
