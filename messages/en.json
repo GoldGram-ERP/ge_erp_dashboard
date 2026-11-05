@@ -1307,6 +1307,7 @@
    "pieceNumber": "Piece {number}",
    "codeAuto": "Given by the system",
    "moreUnits": "+ {count} more pieces, each with the same weight and workmanship. Codes are given when you save.",
+   "moreUnitsTo": "+ {count} more pieces, up to code {last}, each with the same weight and workmanship.",
    "pieceCode": "Code",
    "weight": "Weight (g)",
    "makingChargePerGram": "Workmanship per gram (EGP)",

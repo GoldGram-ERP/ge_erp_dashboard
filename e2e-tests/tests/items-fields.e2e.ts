@@ -1,7 +1,7 @@
 import { afterAll } from 'e2e';
 import { test, expect, apiAs, signInApi, stamp, capture, M, LANGS, WEB, type Lang } from './lib.ts';
 
-// Items (issue #1, owner 2026-11-04): the item name is typed on the item form (the Item names tab adds nothing), weight, karat
+// Items (issue #1, owner 2026-11-04): the item name is typed on the item form (the Item names tab is hidden), weight, karat
 // following the type, workmanship always per gram and cashback with its three settings, each with the example box at today's
 // price, the taken name refused under its field, the Active switch (Admin yes, normal User disabled and never sent), the
 // Active / Inactive chips, and the Karats screen.
@@ -70,11 +70,9 @@ for (const lang of LANGS) {
     const pick = async (field: string, label: string) => { await browser.locator(`#f-${field}-btn`).tap(); await screen.getByRole('option', label).tap(); };
     const save = () => browser.locator('#save').tap();
 
-    // the Item names tab is a list only: no add button (the Items tab has its own, checked next, so this is not an empty check)
-    await screen.getByRole('button', M(lang, 'gold-accounts', 'itemNames.title')).tap();
-    await expect(browser.locator('#q')).toBeVisible();
-    expect((await buttons(browser)).filter((b) => b.includes(lang === 'ar' ? 'إضافة اسم صنف' : 'Add item name'))).toEqual([]);
-    await shot(`items-fields-${lang}-0-names-no-add`);
+    // the Item names tab is hidden (owner, 2026-11-05): no tab of that name; the Items tab is next
+    expect((await buttons(browser)).filter((b) => b === M(lang, 'gold-accounts', 'itemNames.title'))).toEqual([]);
+    await shot(`items-fields-${lang}-0-no-names-tab`);
 
     await screen.getByRole('button', M(lang, 'gold-accounts', 'items.title')).tap();
     await screen.getByRole('button', g(lang, 'add')).tap();

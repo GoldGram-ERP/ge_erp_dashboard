@@ -1,7 +1,7 @@
 import { afterAll } from 'e2e';
 import { test, expect, apiAs, stamp, capture, M, LANGS, type Lang } from './lib.ts';
 
-// Items page (buy/items): category through the real UI, the Item names list (nothing to add there), the item form; bodies captured on the wire.
+// Items page (buy/items): category through the real UI, the item form (the Item names tab is hidden); bodies captured on the wire.
 const g = (l: Lang, k: string) => M(l, 'gold-accounts', k);
 const created: { cat?: string; item?: string } = {};
 
@@ -30,12 +30,10 @@ for (const lang of LANGS) {
     created.cat = c.id;
     await shot(`items-${lang}-4-category-saved`);
 
-    // item names: a list only, no add button (a name is typed on the item form)
-    await screen.getByRole('button', g(lang, 'itemNames.title')).tap();
-    await expect(browser.locator('#q')).toBeVisible();
+    // the Item names tab is hidden (owner, 2026-11-05): only the Categories and Items tabs are left; a name is typed on the item form
     const texts: string[] = await browser.evaluate(() => [...document.querySelectorAll('button')].map((b) => b.textContent?.trim() ?? ''));
-    expect(texts.filter((b) => b.includes(lang === 'ar' ? 'إضافة اسم صنف' : 'Add item name'))).toEqual([]);
-    await shot(`items-${lang}-5-names-list`);
+    expect(texts.filter((b) => b === g(lang, 'itemNames.title'))).toEqual([]);
+    await shot(`items-${lang}-5-tabs-without-names`);
 
     // a wrong karat is refused by the backend (400) and adds nothing, not even the typed name - API level
     expect((await api('POST', '/items', { itemName: nm, isCoded: true, itemType: 'gold', categoryId: c.id, karat: '19' })).status).toBe(400);

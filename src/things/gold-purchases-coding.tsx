@@ -6,10 +6,11 @@
 // Coding closes the invoice for editing, for everyone. Deleting the last live piece of a line opens it again (backend).
 // Then the labels of the pieces just made are offered, and every coded piece can be printed again or deleted.
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { dateText, milligramsText, piastresText, typedPiastres } from "@/lib/format";
+import { comparePieceCodes, unitsBefore } from "@/lib/piece-code";
 import { Icon, toast, useConfirm } from "@/components/engine";
 import { LabelsCard, labelOf } from "./purchases-labels";
 import { itemsById } from "./gold-purchases-invoice";
@@ -24,6 +25,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
   const m = (k: string, v?: Record<string, string | number>) => t("gold-accounts", `purchaseCoding.${k}`, v);
   const c = (k: string) => t("common", k);
   const [confirm, dialog] = useConfirm();
+  const qc = useQueryClient();
   const [coding, setCoding] = useState<Row | null>(null);
   const [items, setItems] = useState<Map<string, Row>>(new Map());
   const [loadError, setLoadError] = useState("");
@@ -33,8 +35,10 @@ export function CodingForm({ row, tr }: CustomFormProps) {
   const [busy, setBusy] = useState(false);
   const saveKey = useRef(newSaveKey());
 
+  // The pieces of each line in code order: 74, 75, 76, 77 (the backend sends them so; this keeps the page right whatever arrives).
+  const ordered = (d: Row): Row => ({ ...d, lines: (d.lines as Row[]).map((l) => ({ ...l, pieces: [...((l.pieces ?? []) as Row[])].sort((a, b) => comparePieceCodes(a.pieceCode, b.pieceCode)) })) });
   const start = (data: Row) => {
-    setCoding(data);
+    setCoding(ordered(data));
     itemsById((data.lines as Row[]).filter((l) => !l.coded).map((l) => l.itemId)).then(setItems).catch(() => {});
   };
   const read = async () => { const d = await api(`/purchase-coding/invoices/${row!.invoiceId}`); start(d); return d; };
@@ -43,6 +47,8 @@ export function CodingForm({ row, tr }: CustomFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const openLines = ((coding?.lines ?? []) as Row[]).filter((l) => !l.coded);
+  // The code each unit will probably get: the next code, then one more for every unit, line after line (all units count, drawn or not).
+  const offsets = unitsBefore(openLines.map((l) => Number(l.quantity)));
   const nextCode = useQuery({ enabled: openLines.length > 0, retry: false, queryKey: ["next-number", "piece_code"], queryFn: () => api<{ next: number }>("/document-numbers/next", { query: { documentType: "piece_code" } }) });
 
   if (loadError) return <div className="empty"><Icon name="alert" size={36} /><strong>{loadError}</strong></div>;
@@ -57,8 +63,9 @@ export function CodingForm({ row, tr }: CustomFormProps) {
       const body = { lines: openLines.map((l) => ({ lineId: l.lineId, pieces: Array.from({ length: l.quantity }, () => ({})) })) };
       const sent = new Set(body.lines.map((l) => l.lineId));
       const data = await api(`/purchase-coding/invoices/${coding!.id}`, { method: "POST", body, saveKey: saveKey.current });
-      const pieces = (data.lines as Row[]).filter((l) => sent.has(l.lineId)).flatMap((l) => l.pieces as Row[]);
+      const pieces = (data.lines as Row[]).filter((l) => sent.has(l.lineId)).flatMap((l) => l.pieces as Row[]).sort((a, b) => comparePieceCodes(a.pieceCode, b.pieceCode));
       setMade(pieces); setShown([]); saveKey.current = newSaveKey(); start(data);
+      qc.invalidateQueries({ queryKey: ["next-number", "piece_code"] });   // the numbers are used: the preview moves on
       toast(`${tr.L("تم الحفظ", "Saved")}: ${m("labelCount", { count: pieces.length })}`);
     } catch (e) {
       setBanner(tr.errorText(e instanceof ApiFailure ? e.error : { message: "serverUnreachable" }));   // itemInactive, lineCoded, pieceCodeTaken ...
@@ -71,7 +78,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
     try {
       await api(`/pieces/${p.id}`, { method: "DELETE" });   // pieceSold / pieceNotAvailable refuse
       toast(m("pieceDeleted"));
-      await read(); setMade([]); setShown([]);   // a line left with no live piece is open again
+      await read(); setMade([]); setShown([]); qc.invalidateQueries({ queryKey: ["next-number", "piece_code"] });   // a line left with no live piece is open again
     } catch (e) { toast(tr.errorText(e instanceof ApiFailure ? e.error : { message: "unexpected" }), { error: true }); }
   }
 
@@ -108,15 +115,15 @@ export function CodingForm({ row, tr }: CustomFormProps) {
                 {Array.from({ length: Math.min(open.quantity, ROWS_SHOWN) }, (_, j) => (
                   <div role="group" className="formgrid" key={j} style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, marginTop: 10 }} aria-label={m("pieceNumber", { number: j + 1 })}>
                     <div className="field"><label htmlFor={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`}>{m("pieceCode")}</label>
-                      <input id={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`} disabled dir="ltr" style={{ textAlign: "start" }} readOnly value={i === 0 && j === 0 && nextCode.data ? String(nextCode.data.next) : m("codeAuto")} />
-                      {i === 0 && j === 0 && !nextCode.data && <div className="help">{m("codeAuto")}</div>}</div>
+                      <input id={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`} disabled dir="ltr" style={{ textAlign: "start" }} readOnly value={nextCode.data ? String(nextCode.data.next + offsets[i] + j) : m("codeAuto")} />
+                      {!nextCode.data && <div className="help">{m("codeAuto")}</div>}</div>
                     <div className="field"><label htmlFor={`w-${i}-${j}`}>{m("weight")}</label>
                       <input id={`w-${i}-${j}`} data-f="weight" dir="ltr" readOnly placeholder="—" value={weight} /></div>
                     <div className="field"><label htmlFor={`m-${i}-${j}`}>{m("makingChargePerGram")}</label>
                       <input id={`m-${i}-${j}`} data-f="makingChargePerGram" dir="ltr" readOnly placeholder="—" value={making} /></div>
                   </div>
                 ))}
-                {open.quantity > ROWS_SHOWN && <p className="help" data-more={i}>{m("moreUnits", { count: open.quantity - ROWS_SHOWN })}</p>}
+                {open.quantity > ROWS_SHOWN && <p className="help" data-more={i}>{nextCode.data ? m("moreUnitsTo", { count: open.quantity - ROWS_SHOWN, last: nextCode.data.next + offsets[i] + open.quantity - 1 }) : m("moreUnits", { count: open.quantity - ROWS_SHOWN })}</p>}
               </div>
             );
           })}

@@ -1005,6 +1005,12 @@ div.table{display:block}
 html[dir=rtl] .bpr.card .kv span:last-child{text-align:right}
 html[dir=ltr] .bpr.card .kv span:last-child{text-align:left}
 
+/* The header row of a table stays at the top of its card while the rows scroll under it (owner, 2026-11-05). It was already sticky,
+   but the card's top padding pushed it down and its background was transparent, so rows showed through. */
+.table{padding-top:0}
+.table > table > thead th{position:sticky;top:0;z-index:2;background:#f6f4ee;box-shadow:0 1px 0 rgba(60,45,10,.10)}
+.grp-panel .table:not(:only-child) > table > thead th{background:var(--surface)}
+
 /* Dropdowns, small and calm (apple-design section 18): compact rows, a 1px ring with a soft halo instead of a heavy 2px border. */
 .sel-btn:focus-visible,.sel-btn[aria-expanded=true]{box-shadow:inset 0 0 0 1px var(--gold),0 0 0 3px color-mix(in srgb,var(--gold) 16%,transparent)}
 .sel-search{padding:2px 2px 4px}
@@ -1044,3 +1050,4 @@ input[role=switch]:disabled{opacity:.5;cursor:not-allowed}
 .disc-head svg{flex:none;transform:rotate(-90deg);transition:transform .18s var(--calm)}
 .disc-head[aria-expanded=true] svg{transform:rotate(90deg)}
 .disc-body{padding:4px 8px 0}
+
