@@ -161,7 +161,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
         {data && <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <p style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
-              {m("recordNo")} <span dir="ltr" style={{ fontFamily: "monospace", fontSize: "1.2em" }}>{code6(data.countNumber)}</span>
+              {m("recordNo")} <span dir="ltr" style={{ fontFamily: "monospace" }}>{code6(data.countNumber)}</span>
               <CopyButton text={code6(data.countNumber)} />
               <span className={`st ${open ? "good" : "off"}`}><i />{data.deletedAt ? t("gold-sales", "salesInvoices.deletedBadge") : open ? m("statusOpen") : m("statusClosed")}</span>
             </p>

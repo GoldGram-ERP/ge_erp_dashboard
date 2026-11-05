@@ -179,7 +179,7 @@ export async function layoutAudit(browser: any, root = 'body'): Promise<string[]
     const scale = (sel: string, label: string, hLo: number, hHi: number, fs?: number) => {
       for (const e of Array.from(base.querySelectorAll(sel)).filter(shown)) {
         const h = R(e).height;
-        if (h < hLo - 0.6 || h > hHi + 0.6) out.push(`size scale: ${label} height ${Math.round(h * 10) / 10}px, scale ${hLo}..${hHi}px: ${name(e)}`);
+        if (h < hLo - 0.6 || h > hHi + 0.6) out.push(`size scale: ${label} height ${Math.round(h * 10) / 10}px (css ${getComputedStyle(e).height}), scale ${hLo}..${hHi}px: ${name(e)} in ${e.closest("table")?.id ?? ""}`);
         if (fs !== undefined && off(fsz(e), fs)) out.push(`size scale: ${label} font ${fsz(e)}px, scale ${fs}px: ${name(e)}`);
       }
     };
@@ -192,7 +192,7 @@ export async function layoutAudit(browser: any, root = 'body'): Promise<string[]
     const walker = document.createTreeWalker(base, NodeFilter.SHOW_TEXT); const stray = new Set<string>();
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const p = n.parentElement; if (!p || !(n.nodeValue ?? '').trim() || !shown(p) || p.closest('h1, .price, .brand, .sc-tile-n, .sc-last-code')) continue;
-      if (fsz(p) > S.fsBase + 0.6) stray.add(`${name(p)} ${fsz(p)}px`);
+      if (fsz(p) > S.fsBase + 0.6) stray.add(`${name(p)} ${fsz(p)}px "${(n.nodeValue ?? "").trim().slice(0, 20)}" in ${p.parentElement ? name(p.parentElement) : ""}`);
     }
     for (const s of Array.from(stray).slice(0, 5)) out.push(`size scale: text bigger than ${S.fsBase}px: ${s}`);
     return out;

@@ -64,18 +64,18 @@ nav::-webkit-scrollbar{width:6px} nav::-webkit-scrollbar-thumb{background:transp
 h1{font-size:24px;line-height:1.3;font-weight:700;text-wrap:balance}
 .sub{color:var(--mute);font-size:13.5px;margin-top:2px;font-variant-numeric:tabular-nums}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 16px;border-radius:10px;font-weight:600;transition:transform .1s ease-out,background .15s,box-shadow .15s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--h-btn);padding:0 16px;border-radius:10px;font-weight:600;transition:transform .1s ease-out,background .15s,box-shadow .15s;white-space:nowrap}
 .btn:active:not(:disabled){transform:scale(.97)}
 .btn.primary{background:var(--gold);color:var(--gold-ink)}
 .btn.primary:hover:not(:disabled){background:#5d430c}
 .btn.quiet{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .btn.quiet:hover:not(:disabled){background:var(--gold-wash)}
 .btn.danger{color:var(--warn)}
-.btn.sm{height:32px;padding:0 12px;font-size:13.5px}
+.btn.sm{height:var(--h-btn-sm);padding:0 12px;font-size:13.5px}
 
 /* ───── Filters and view controls ───── */
 .tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.search{display:flex;align-items:center;gap:8px;flex:1;min-width:240px;max-width:420px;height:38px;padding:0 12px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--mute);transition:box-shadow .15s}
+.search{display:flex;align-items:center;gap:8px;flex:1;min-width:240px;max-width:420px;height:var(--h-search);padding:0 12px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--mute);transition:box-shadow .15s}
 .search:focus-within{box-shadow:inset 0 0 0 2px var(--gold)}
 .search input{flex:1;border:0;outline:0;background:none;min-width:0;color:var(--ink)}
 .search input::placeholder{color:var(--mute)}
@@ -96,11 +96,11 @@ h1{font-size:24px;line-height:1.3;font-weight:700;text-wrap:balance}
 /* ───── Table ───── */
 .table{flex:1;min-height:120px;overflow:auto;background:var(--surface);border-radius:14px;box-shadow:0 0 0 1px var(--line)}
 table{width:100%;border-collapse:separate;border-spacing:0}
-th{background:#fbf9f2;text-align:start;padding:0 16px;height:40px;font-weight:600;font-size:12.5px;color:var(--mute);border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:#fbf9f2;text-align:start;padding:0 16px;height:var(--h-th);font-weight:600;font-size:12.5px;color:var(--mute);border-bottom:1px solid var(--line);white-space:nowrap}
 th[data-sort]{cursor:pointer;user-select:none}
 th[data-sort]:hover{color:var(--ink)}
 th .arr{margin-inline-start:4px;opacity:.7}
-td{padding:0 16px;height:50px;border-bottom:1px solid var(--line-soft);white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis}
+td{padding:0 16px;height:var(--h-row);border-bottom:1px solid var(--line-soft);white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis}
 tbody tr:last-child td{border-bottom:0}
 tr.row{cursor:pointer;transition:background .12s}
 tr.row:hover{background:#fbf8ee}
@@ -113,9 +113,9 @@ tr.row:focus-visible{outline-offset:-2px}
 .st{display:inline-flex;align-items:center;gap:7px}
 .st i{width:8px;height:8px;border-radius:50%;background:var(--off)}
 .st.good i{background:var(--good)} .st.warn i{background:var(--warn)} .st.info i{background:var(--info)}
-tr.grp td{height:38px;background:#f6f1e3;font-weight:600;color:var(--ink-2);border-bottom:1px solid var(--line)}
+tr.grp td{height:var(--h-row);background:#f6f1e3;font-weight:600;color:var(--ink-2);border-bottom:1px solid var(--line)}
 tr.grp .cnt{color:var(--mute);font-weight:400;margin-inline-start:8px}
-tr.foot td{height:44px;background:#fbf9f2;font-weight:700;border-top:1px solid var(--line);border-bottom:0}
+tr.foot td{height:var(--h-row);background:#fbf9f2;font-weight:700;border-top:1px solid var(--line);border-bottom:0}
 tr.flash td{animation:flash 1.6s ease-out}
 @keyframes flash{from{background:var(--gold-tint)}to{background:transparent}}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 4px 0;color:var(--mute);font-size:13px}
@@ -129,7 +129,7 @@ tr.flash td{animation:flash 1.6s ease-out}
 
 /* ───── Forms ───── */
 .field label,.field .flabel{display:block;font-size:12.5px;color:var(--mute);margin-bottom:5px;font-weight:600}
-.field input:not([type=checkbox]):not([type=radio]),.field select,.field textarea{width:100%;height:42px;padding:0 12px;border-radius:10px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);outline:0;transition:box-shadow .15s}
+.field input:not([type=checkbox]):not([type=radio]),.field select,.field textarea{width:100%;height:var(--h-field);padding:0 12px;border-radius:10px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);outline:0;transition:box-shadow .15s}
 .field textarea{height:auto;min-height:84px;padding:10px 12px;resize:vertical}
 .field input:focus,.field select:focus,.field textarea:focus{box-shadow:inset 0 0 0 2px var(--gold)}
 /* one disabled look for every control: faded, like the disabled select. The :not() chain gives the input rule the same weight as the base input rule above, which used to win and left a disabled input (an item code, a next number) white */
@@ -293,7 +293,7 @@ ody.sb-collapsed .status{justify-content:center;padding:10px 0;margin-inline:12p
 
 /* components: select + datepicker */
 .sel{position:relative;min-width:0}
-.sel-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:42px;padding:0 12px;border:0;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink);text-align:start;cursor:pointer;outline:0;transition:box-shadow .15s var(--calm),background .15s var(--calm)}
+.sel-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:var(--h-field);padding:0 12px;border:0;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink);text-align:start;cursor:pointer;outline:0;transition:box-shadow .15s var(--calm),background .15s var(--calm)}
 .sel-btn:hover:not(:disabled){box-shadow:inset 0 0 0 1px var(--line-strong)}
 .sel-btn:focus-visible,.sel-btn[aria-expanded=true]{box-shadow:inset 0 0 0 2px var(--gold)}
 .sel-btn:disabled{background:#f3efe3;color:var(--mute);cursor:not-allowed}
@@ -516,16 +516,16 @@ aside::-webkit-scrollbar-thumb{background:#cfc4a6;border-radius:10px;border:2px 
    totals: a gold-tint bar. No grid lines anywhere. */
 .table{background:#f6f4ee;padding:10px 14px 12px}
 .table table{border-collapse:separate;border-spacing:0 8px}
-.table th{background:transparent;border:0;height:34px;padding:0 18px;color:#6a6048;font-weight:700;font-size:12.5px;letter-spacing:0}
-.table td{border:0;height:54px;padding:0 18px;background:#fff;transition:background .15s var(--calm)}
+.table th{background:transparent;border:0;height:var(--h-th);padding:0 18px;color:#6a6048;font-weight:700;font-size:12.5px;letter-spacing:0}
+.table td{border:0;height:var(--h-row);padding:0 18px;background:#fff;transition:background .15s var(--calm)}
 .table td:first-child{border-start-start-radius:16px;border-end-start-radius:16px}
 .table td:last-child{border-start-end-radius:16px;border-end-end-radius:16px}
 .table tbody tr:last-child td{border:0}
 .table tr.row:hover td{background:#fffaf0}
 .table tr.row[aria-selected=true] td{background:var(--gold-tint)}
 .table tr.row.deleted td{background:#f3efe6}
-.table tr.grp td{height:40px;background:var(--gold-wash);color:var(--gold);font-weight:700}
-.table tr.foot td{height:50px;background:var(--gold-tint);color:var(--ink);font-weight:700}
+.table tr.grp td{height:var(--h-row);background:var(--gold-wash);color:var(--gold);font-weight:700}
+.table tr.foot td{height:var(--h-row);background:var(--gold-tint);color:var(--ink);font-weight:700}
 .table tr.foot td:first-child{color:var(--gold)}
 .table th[data-sort]:hover{color:var(--ink)}
 .table .empty{background:transparent}
@@ -605,7 +605,7 @@ a.tile b{color:var(--ink)}
 .tile>b,.tile>span:not(.ico){min-width:0}
 
 /* Universal search: a field in the sidebar head that opens a palette (Ctrl K or /). */
-.usearch{display:flex;align-items:center;gap:8px;width:calc(100% - 24px);margin:2px 12px 8px;height:38px;padding:0 10px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--mute);text-align:start;font-size:14px;transition:box-shadow .15s}
+.usearch{display:flex;align-items:center;gap:8px;width:calc(100% - 24px);margin:2px 12px 8px;height:var(--h-search);padding:0 10px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--mute);text-align:start;font-size:14px;transition:box-shadow .15s}
 .usearch:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
 .usearch .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .usearch kbd{font:600 11px/1 inherit;padding:3px 6px;border-radius:6px;background:var(--gold-tint);color:var(--gold)}
@@ -821,7 +821,7 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .price-btn{font:inherit;font-weight:600;font-variant-numeric:tabular-nums;color:var(--gold);padding:2px 6px;margin:-2px -6px;border-radius:6px;text-decoration:underline dotted;text-underline-offset:3px;cursor:help;transition:background .15s}
 .price-btn:hover,.price-btn[aria-expanded=true]{background:var(--gold-wash)}
 .price-btn:active{transform:scale(.97)}
-.price-out{display:flex;align-items:center;min-height:42px;padding:0 12px;border-radius:10px;background:var(--side);justify-content:flex-end}
+.price-out{display:flex;align-items:center;min-height:var(--h-field);padding:0 12px;border-radius:10px;background:var(--side);justify-content:flex-end}
 .breakdown{margin-top:8px;padding:10px 14px;border-radius:12px;background:var(--gold-wash);font-size:13px;line-height:1.6;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:normal}
 @media (prefers-reduced-motion:reduce){.price-btn,.price-btn:active{transition:none;transform:none}}
 @media (prefers-contrast:more){.totals-bar,.pay-sum,.breakdown,.price-out{box-shadow:inset 0 0 0 1px var(--ink-2)}}
@@ -957,13 +957,12 @@ div.table{display:block}
 @keyframes sc-fade{from{opacity:.4}to{opacity:1}}
 
 /* Stock count screen sizes (owner, 2026-11-05, apple-design section 18): small calm controls; the phone is at most 4 px taller, hit areas come from padding */
-#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:32px}
+#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:var(--h-field)}
 #sc-code,.sc-search{padding-block:0}
 .sc-table td{height:var(--h-row);padding:0 12px}
-.sc-table th{height:28px;padding:0 12px}
+.sc-table th{height:var(--h-th);padding:0 12px}
 .sc-table table{border-spacing:0 3px}
 .sc-code .copy-btn{min-width:28px;height:28px;border-radius:8px}
-@media (max-width:520px){#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:var(--h-field)}}
 @media (pointer:coarse){.sc-code .copy-btn::before{content:"";position:absolute;inset:-8px}}
 @media (max-width:520px){.sc-tools .seg{max-width:100%}.sc-tools .seg button{padding:0 9px;font-size:12.5px}}
 
@@ -1057,16 +1056,12 @@ input[role=switch]:disabled{opacity:.5;cursor:not-allowed}
 :root{--fs-base:14px;--fs-table:13.5px;--fs-title:20px;--h-field:32px;--h-btn:32px;--h-btn-sm:28px;--h-row:38px;--h-th:32px;--h-search:32px}
 @media (max-width:640px){:root{--h-field:34px;--h-btn:34px;--h-row:40px}}
 h1{font-size:var(--fs-title)}
-.btn{height:var(--h-btn);padding:0 14px;font-size:13.5px}
-.btn.sm{height:var(--h-btn-sm);padding:0 10px;font-size:13px}
+.btn{padding:0 14px;font-size:13.5px}
+.btn.sm{padding:0 10px;font-size:13px}
 .formbar .btn,.jobbar .btn.sm{height:var(--h-btn)}
-.search,.usearch{height:var(--h-search)}
-.field input:not([type=checkbox]):not([type=radio]),.field select{height:var(--h-field);font-size:var(--fs-base)}
-.sel-btn{height:var(--h-field);font-size:var(--fs-base)}
-.price-out{min-height:var(--h-field)}
+.field input:not([type=checkbox]):not([type=radio]),.field select{font-size:var(--fs-base)}
+.sel-btn{font-size:var(--fs-base)}
 .bank-row .bank-rm .btn{height:var(--h-field)}
-th,.table th{height:var(--h-th)}
-td,.table td{height:var(--h-row);font-size:var(--fs-table)}
+td,.table td{font-size:var(--fs-table)}
 .table td{padding:0 14px}.table th{padding:0 14px}
-.table tr.grp td{height:30px}.table tr.foot td{height:38px}
 .lines td,.lines th{height:var(--h-row)}

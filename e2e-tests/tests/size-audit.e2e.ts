@@ -1,5 +1,6 @@
 import { writeFileSync } from 'node:fs';
-import { test, expect, LANGS, NAV, layoutAudit } from './lib.ts';
+import { afterAll } from 'e2e';
+import { test, expect, LANGS, NAV, layoutAudit, seed } from './lib.ts';
 
 // Size scale: opens every page of the nav tree as the superadmin and records the real CSS sizes of its text and controls,
 // so the size scale is set from numbers. Output: e2e-tests/.shots/size-audit-<lang>-<width>.json and asserts, through layoutAudit (check 6), that every page follows the scale in globals.css (desktop and phone, ar and en).
@@ -7,13 +8,30 @@ import { test, expect, LANGS, NAV, layoutAudit } from './lib.ts';
 // Local and headless only (owner rule): this test only runs on the local stack.
 const ROUTES = ['/', '/account', ...NAV.flatMap((g) => g.items.map((i) => i.route))];
 
+// Rows for the lists: two sales invoices and one return, made through the API and removed after (a list with no rows shows no table to measure).
+let S: Awaited<ReturnType<typeof seed>> | undefined;
+async function rows() {
+  if (S) return;
+  S = await seed();
+  const sale = async (code: string) => {
+    const mk = (pay: object) => S!.api('POST', '/sales-invoices', { branchId: S!.inv.branchId, invoiceType: 'sale', customerName: 'E2E Customer', customerPhone: '01012345678', lines: [{ pieceCode: code }], ...pay });
+    const total = (await mk({ cash: 1 })).body.values.total as number; // the refusal tells the exact total
+    const r = await mk({ cash: total }); expect(r.status).toBe(201); S!.created.invoices.push(r.body.id);
+  };
+  await sale(S.pieces[0].pieceCode); await sale(S.pieces[1].pieceCode);
+  const ret = await S.api('POST', '/returns', { branchId: S.inv.branchId, date: S.day, pieceCode: S.pieces[0].pieceCode, cashRefund: 100 });
+  expect(ret.status).toBe(201); S.created.returns.push(ret.body.id);
+}
+afterAll(async () => { if (S) await S.remove(); });
+
 for (const lang of LANGS) {
   test(`size audit of every page (${lang})`, { tags: ['audit'], requires: ['browser'] }, async ({ go, browser }) => {
+    await rows();
     const out: Record<string, unknown>[] = [], bad: string[] = [];
     for (const r of ROUTES) {
       await go('superadmin', r, lang);
       await browser.locator('h1, h2').first().waitFor({ timeout: 20_000 }).catch(() => {});
-      await browser.locator('.table th, .empty').first().waitFor({ timeout: 4_000 }).catch(() => {}); // the list loads after the title
+      await browser.locator('.table th').first().waitFor({ timeout: 2_500 }).catch(() => {}); // the list loads after the title
       const m = await browser.evaluate(() => {
         const vis = (e: Element) => { const b = (e as HTMLElement).getBoundingClientRect(); const cs = getComputedStyle(e); return b.width > 0 && b.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
         const px = (e: Element) => Math.round((e as HTMLElement).getBoundingClientRect().height * 10) / 10;
