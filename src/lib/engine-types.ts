@@ -117,6 +117,7 @@ export type FormConfig = {
   method?: string;
   path: (row: Row | null) => string;
   display?: "sheet" | "page";
+  byId?: boolean;                                         // an edit of a row that custom fetches itself by row.id: the id goes in the address (?new=&open=) so a reload reopens it
   custom?: ComponentType<CustomFormProps>;                // own UI for a big flow (display "page")
   note?: ReactNode;
   /** Runs after the form is on screen; `watch` follows live raw values, `setValue` writes a raw (typed-text) value. */

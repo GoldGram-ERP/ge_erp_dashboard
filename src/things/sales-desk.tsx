@@ -45,7 +45,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       { form: "open", label: d("openByNumber"), keys: KEYS },
     ],
     forms: {
-      draft: { title: (r) => (r ? d("draftNumber", { number: r.draftNumber }) : d("newDraft")), display: "page", fields: [], path: () => "/sales-drafts", custom: DraftForm },
+      draft: { byId: true, title: (r) => (r ? d("draftNumber", { number: r.draftNumber }) : d("newDraft")), display: "page", fields: [], path: () => "/sales-drafts", custom: DraftForm },
       open: { title: d("openByNumber"), display: "page", fields: [], path: () => "/sales-drafts", custom: OpenByNumber },
     },
   };

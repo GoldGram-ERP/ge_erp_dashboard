@@ -126,6 +126,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       const saved = await api(isNew ? "/sales-drafts" : `/sales-drafts/${draft!.id}`, { method: isNew ? "POST" : "PUT", body, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
       fill(saved);
+      // the address names the draft, so a reload reopens it instead of an empty form
+      if (isNew) { const u = new URL(window.location.href); u.searchParams.set("new", "draft"); u.searchParams.set("open", String(saved.id)); window.history.replaceState(null, "", u); }
       toast(d("saved", { number: saved.draftNumber }));
       requestAnimationFrame(() => document.getElementById("sd-head")?.scrollIntoView({ block: "start", behavior: "auto" }));
     } catch (err) { refusal(err); } finally { setSaving(false); }

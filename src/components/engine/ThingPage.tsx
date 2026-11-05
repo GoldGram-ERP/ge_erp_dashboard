@@ -100,11 +100,11 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   const allCreates = [...(cfg.create ?? []), ...cfg.views.flatMap((v) => v.create ?? [])].filter((c) => seen(c.keys ?? cfg.keys));
   // ?new=<form id>; anything else (a view id, "1") means this view's first create button
   const newId = !dl.newForm ? undefined : allCreates.some((c) => c.form === dl.newForm) ? dl.newForm : cfg.forms?.[dl.newForm] ? undefined : creates[0]?.form;
-  const form = editing ?? (newId && cfg.forms?.[newId] ? { id: newId, row: null as Row | null } : null);
+  const form = editing ?? (newId && cfg.forms?.[newId] ? { id: newId, row: (cfg.forms[newId].byId && dl.open ? { id: dl.open } : null) as Row | null } : null);
 
   const openForm = (id: string, row: Row | null = null) => {
     if (!cfg.forms?.[id]) throw new Error(`Unknown form ${id} in ${cfg.id}`);
-    if (row) { setEditing({ id, row }); go({ open: null, new: null }); } else go({ open: null, new: id });
+    if (row) { setEditing({ id, row }); go(cfg.forms[id].byId && row.id ? { open: String(row.id), new: id } : { open: null, new: null }); } else go({ open: null, new: id });
   };
   const closeForm = () => { setEditing(null); edit((s) => pruneParams(s, filterNames)); };
   const closeRecord = () => go({ open: null });

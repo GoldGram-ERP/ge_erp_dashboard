@@ -65,9 +65,13 @@ for (const lang of LANGS) {
     expect(seen[1].body.branchId).toBeUndefined();
     expect(seen[1].body.lines[0].quantity).toBe(3);
     await shot(`desk-${lang}-4-edited`);
+    // a reload reopens the same draft (the address names it), not an empty form
+    await app.open((await browser.evaluate(() => location.pathname + location.search)) as string);
+    await expect.poll(() => browser.locator(`#sd [data-draft-number="${num}"]`).count(), { timeout: 30000 }).toBe(1);
+    await shot(`desk-${lang}-4b-reloaded`);
     // force the lock: created a day earlier
     sql(`UPDATE sales_draft SET created_at = created_at - interval '1 day' WHERE id='${id}'`);
-    await app.open(`/${lang}/sales/desk`);
+    await app.open(`/${lang}/sales/desk?q=${encodeURIComponent(name)}`);
     await browser.locator(`text=${name}`).first().tap();
     await expect(browser.locator('#sd #sd-lock')).toBeVisible();
     expect(await browser.locator('#sd #sd-lock').getAttribute('data-lock')).toBe('locked');
