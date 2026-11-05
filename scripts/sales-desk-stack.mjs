@@ -26,10 +26,10 @@ const alive = async () => { try { return (await fetch(`http://localhost:${PORT}/
     console.log("sales desk backend down (shared stack and WSL left running)");
   } else {
     // WSL stops its services when its last session ends: keep one session open (the shared stack's keeper if it exists)
-    if (!existsSync(keepFile)) { const k = spawn("wsl", ["-d", "Ubuntu", "-u", "root", "--", "sleep", "infinity"], { detached: true, stdio: "ignore" }); writeFileSync(keepFile, String(k.pid)); k.unref(); }
+    if (!existsSync(keepFile)) { const k = spawn("wsl", ["-d", "Ubuntu", "-u", "root", "--", "sleep", "infinity"], { detached: true, windowsHide: true, stdio: "ignore" }); writeFileSync(keepFile, String(k.pid)); k.unref(); }
     wsl("service postgresql start; service redis-server start");
     if (!(await alive())) {
-      const child = spawn(process.execPath, ["dist/main.js"], { cwd: backend, env: { ...process.env, ...sdEnv }, detached: true, stdio: ["ignore", "ignore", "ignore"] });
+      const child = spawn(process.execPath, ["dist/main.js"], { cwd: backend, env: { ...process.env, ...sdEnv }, detached: true, windowsHide: true, stdio: ["ignore", "ignore", "ignore"] });
       writeFileSync(pidFile, String(child.pid)); child.unref();
       for (let i = 0; i < 60 && !(await alive()); i++) await new Promise((r) => setTimeout(r, 1000));
     }

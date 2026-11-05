@@ -28,10 +28,10 @@ if (process.argv[2] === "down") {
   console.log("stack down (run `wsl --shutdown` when no other session uses WSL)");
 } else {
   // WSL stops its services when its last session ends: keep one session open while the stack is up
-  if (!existsSync(keepFile)) { const k = spawn("wsl", ["-d", "Ubuntu", "-u", "root", "--", "sleep", "infinity"], { detached: true, stdio: "ignore" }); writeFileSync(keepFile, String(k.pid)); k.unref(); }
+  if (!existsSync(keepFile)) { const k = spawn("wsl", ["-d", "Ubuntu", "-u", "root", "--", "sleep", "infinity"], { detached: true, windowsHide: true, stdio: "ignore" }); writeFileSync(keepFile, String(k.pid)); k.unref(); }
   console.log(wsl("service postgresql start; service redis-server start").stdout);
   if (!(await alive())) {
-    const child = spawn(process.execPath, ["dist/main.js"], { cwd: backend, env, detached: true, stdio: ["ignore", "ignore", "ignore"] });
+    const child = spawn(process.execPath, ["dist/main.js"], { cwd: backend, env, detached: true, windowsHide: true, stdio: ["ignore", "ignore", "ignore"] });
     writeFileSync(pidFile, String(child.pid)); child.unref();
     for (let i = 0; i < 60 && !(await alive()); i++) await new Promise((r) => setTimeout(r, 1000));
   }
