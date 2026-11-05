@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Smaller, cleaner controls on every screen: checkboxes, switches, dialogs and dropdowns look and line up the same everywhere, and table columns line up in Arabic too.",
+    "ar": "عناصر أصغر وأنضف في كل الشاشات: الـ checkbox والـ switch والنوافذ والقوايم شكلها واحد ومتظبطة، وأعمدة الجداول ماشية مع بعض في العربي كمان."
+   }
+  ]
+ },
+ {
   "version": "1.0.23",
   "date": "2026-11-05",
   "changes": [
