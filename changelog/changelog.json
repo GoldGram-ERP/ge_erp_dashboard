@@ -1,5 +1,27 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Items: the Item names tab is hidden for now. You still add a name by typing it on the item form.",
+    "ar": "الأصناف: تبويب أسماء الأصناف اتشال دلوقتي. لسه بتكتب الاسم على فورم الصنف وخلاص.",
+    "route": "/buy/items"
+   },
+   {
+    "kind": "better",
+    "en": "Tables: the header row now stays at the top while you scroll the rows.",
+    "ar": "الجداول: صف العناوين بقى ثابت فوق وإنت بتنزل في الصفوف."
+   },
+   {
+    "kind": "better",
+    "en": "Coding: every piece now shows the code it will get (74, 75, 76 ...), and the pieces are listed from the smallest code to the largest.",
+    "ar": "التكويد: كل قطعة بقت بتظهر الكود اللي هتاخده (74 و75 و76 ...)، والقطع بتتعرض من الأصغر للأكبر.",
+    "route": "/buy/purchases"
+   }
+  ]
+ },
+ {
   "version": "1.0.23",
   "date": "2026-11-05",
   "changes": [

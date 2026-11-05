@@ -11,6 +11,9 @@ const boxes = (browser: any) => browser.evaluate(() => ({
   making: [...document.querySelectorAll('#ws [data-line] input[data-f=makingChargePerGram]')].map((x) => (x as HTMLInputElement).value),
 }));
 
+// The code box of every unit (read only): before Save each shows the code it will probably get, one after the other.
+const codeBoxes = (browser: any): Promise<string[]> => browser.evaluate(() => [...document.querySelectorAll('#ws [data-line] input[id^="pc-"]')].map((x) => (x as HTMLInputElement).value));
+
 for (const lang of LANGS) {
   test(`purchase coding UI (${lang}): weight and workmanship from the item, nothing typed, inactive item refused`, { tags: ['e2e', 'purchases'], requires: ['browser'] }, async ({ go, browser, screen, shot }) => {
     S ??= await seed();
@@ -28,6 +31,8 @@ for (const lang of LANGS) {
       made.push(inv.id);
       await openCoding(inv);
       await expect.poll(() => boxes(browser)).toEqual({ typed: 0, weights: ['5.000', '5.000'], making: ['50.00', '50.00'] });
+      // every unit shows its expected code: n, n + 1 (not only the first)
+      await expect.poll(async () => { const c = (await codeBoxes(browser)).map(Number); return c.length === 2 && Number.isInteger(c[0]) && c[1] === c[0] + 1; }).toBe(true);
       await expect(browser.locator('#cd-form')).toContainText(pc(lang, 'fromItem'));
       await shot(`coding-${lang}-1-from-item`);
       await browser.locator('#cd-save').tap();
@@ -38,6 +43,8 @@ for (const lang of LANGS) {
       await expect(browser.locator('#cd-made')).toBeVisible();
       const coded = (await S.api('GET', `/purchase-coding/invoices/${inv.id}`)).body.lines[0];
       expect(coded.coded).toBe(true);
+      const codes = coded.pieces.map((p: any) => Number(p.pieceCode));
+      expect(codes).toEqual([...codes].sort((a, b) => a - b));   // ascending: 74, 75, never 75, 74
       expect(coded.pieces.map((p: any) => [p.weight, p.makingChargePerGram])).toEqual([[5000, 5000], [5000, 5000]]);
       await shot(`coding-${lang}-2-coded`);
       for (const p of coded.pieces) await S.api('DELETE', `/pieces/${p.id}`);   // the line opens again, the invoice can go

@@ -1,6 +1,6 @@
 "use client";
-// الأصناف: buy/items (gold-accounts/categories, item-names, items + their -list screens). ONE page, three tabs:
-// المجموعات الرئيسية (category) -> أسماء الأصناف (item name, one category) -> مجموعات الأصناف (item, one per name).
+// الأصناف: buy/items (gold-accounts/categories, item-names, items + their -list screens). ONE page, two tabs now (the third, أسماء الأصناف / item names, is hidden, see `views`):
+// المجموعات الرئيسية (category) -> مجموعات الأصناف (item, one per name).
 // Ported from docs/nav-preview/app/things/gold-items.js. Codes come from the backend (the form shows the upcoming one, a preview).
 // Lists take only search / page (fixed 20) / order / deleted (+ categoryId on names and items): no pageSize, no limit.
 // Category and name forms are engine sheets (a name only edited: it is created by typing it on the item form, which is a page form, custom).
@@ -132,6 +132,10 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
         { key: "createdAt", label: L("تاريخ الإضافة", "Created"), type: "date" },
         statusCol(),
       ]),
+      // The Item names tab is hidden (owner, 2026-11-05) until further notice. A name is still made by typing it on the item form;
+      // the name forms, their messages and permission keys stay. To bring the tab back, remove the comment markers around it.
+      // (Until then an existing name cannot be renamed or deleted from the screen.)
+      /*
       tab("name", m("itemNames.title"), [
         codeCol(m("itemNames.itemNameCode"), "itemNameCode"),
         { key: "itemName", label: m("itemNames.itemName") },
@@ -139,6 +143,7 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
         { key: "liveItemId", label: m("itemNames.hasItem"), render: (r) => yesNo(r.liveItemId) },
         statusCol(),
       ], true),
+      */
       tab("item", m("items.title"), [
         codeCol(m("items.cols.itemCode"), "itemCode"),
         { key: "itemName", label: m("items.cols.itemName") },
