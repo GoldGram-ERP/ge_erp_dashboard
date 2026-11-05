@@ -2035,7 +2035,42 @@
     "payment": "طرق الدفع",
     "cash": "نقداً",
     "bank": "حساب بنكي"
-   }
+   },
+   "day": "اليوم",
+   "total": "الإجمالي",
+   "customerCol": "العميل",
+   "phoneCol": "الهاتف",
+   "all": "الكل",
+   "statusLabel": "الحالة",
+   "openNotFound": "لا توجد مسودة بهذا الرقم.",
+   "openNumberLabel": "رقم المسودة",
+   "priceAfterSave": "يظهر السعر بعد حفظ المسودة.",
+   "pricesStale": "غيّرتَ البنود: احفظ لتتحدّث الأسعار والإجماليات.",
+   "lineN": "الصنف {number}",
+   "plannedOver": "المبلغ المخطط أكبر من الإجمالي.",
+   "plannedLeft": "المتبقي بعد المخطط: {left}",
+   "readOnly": "المسودة للقراءة فقط.",
+   "saving": "جارٍ الحفظ…",
+   "codeLabel": "كود القطعة",
+   "codeAdd": "إضافة",
+   "codeNotFound": "لا توجد قطعة بهذا الكود.",
+   "codeUnavailable": "هذه القطعة غير متاحة للبيع.",
+   "codeDuplicate": "هذا الكود مضاف بالفعل.",
+   "codeNotOnDraft": "هذه القطعة ليست من أصناف المسودة ({item}، عيار {karat}).",
+   "codeItemFull": "مسحتَ كل قطع {item}.",
+   "codeRemove": "إزالة {code}",
+   "scannedList": "القطع الممسوحة",
+   "completePay": "الدفع الفعلي",
+   "completePayHelp": "الدفعة المخطّطة أعلاه معبّأة مسبقاً؛ عدّلها إلى ما استلمته.",
+   "completing": "جارٍ إنشاء الفاتورة…",
+   "payRefused": "المدفوع {paid} لا يساوي إجمالي الفاتورة {total}.",
+   "openInvoice": "فتح الفاتورة",
+   "deleteTitle": "حذف المسودة",
+   "backToList": "المسودات",
+   "waNote": "هذا هو النص الذي يُنسخ بالضبط.",
+   "typeLabel": "نوع الفاتورة",
+   "goldNone": "لا يوجد سعر ذهب محفوظ.",
+   "lockedNote": "مغلقة"
   }
  },
  "gold-stocktake": {
@@ -2837,9 +2872,9 @@
     "close": "إغلاق"
   },
   "copy": {
-    "copy": "نسخ",
-    "copied": "تم النسخ",
-    "failed": "تعذر النسخ"
+   "copy": "نسخ",
+   "copied": "تم النسخ",
+   "failed": "تعذر النسخ"
   },
   "whatsNew": {
     "title": "المستجدات",

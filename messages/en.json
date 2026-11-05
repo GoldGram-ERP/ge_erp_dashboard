@@ -2035,7 +2035,42 @@
     "payment": "Payment methods",
     "cash": "Cash",
     "bank": "Bank account"
-   }
+   },
+   "day": "Day",
+   "total": "Total",
+   "customerCol": "Customer",
+   "phoneCol": "Phone",
+   "all": "All",
+   "statusLabel": "Status",
+   "openNotFound": "There is no draft with this number.",
+   "openNumberLabel": "Draft number",
+   "priceAfterSave": "The price appears once the draft is saved.",
+   "pricesStale": "You changed the items: save to update the prices and totals.",
+   "lineN": "Item {number}",
+   "plannedOver": "The planned payment is more than the total.",
+   "plannedLeft": "Left after the planned payment: {left}",
+   "readOnly": "This draft is read only.",
+   "saving": "Saving…",
+   "codeLabel": "Piece code",
+   "codeAdd": "Add",
+   "codeNotFound": "No piece has this code.",
+   "codeUnavailable": "This piece is not available for sale.",
+   "codeDuplicate": "This code is already added.",
+   "codeNotOnDraft": "This piece is not one of the draft's items ({item}, karat {karat}).",
+   "codeItemFull": "All pieces of {item} are scanned.",
+   "codeRemove": "Remove {code}",
+   "scannedList": "Scanned pieces",
+   "completePay": "The real payment",
+   "completePayHelp": "The planned payment above is filled in; change it to what you took.",
+   "completing": "Creating the invoice…",
+   "payRefused": "The payment {paid} does not equal the invoice total {total}.",
+   "openInvoice": "Open the invoice",
+   "deleteTitle": "Delete the draft",
+   "backToList": "Drafts",
+   "waNote": "This is exactly the text that is copied.",
+   "typeLabel": "Invoice type",
+   "goldNone": "There is no saved gold price.",
+   "lockedNote": "Locked"
   }
  },
  "gold-stocktake": {
@@ -2837,9 +2872,9 @@
     "close": "Close"
   },
   "copy": {
-    "copy": "Copy",
-    "copied": "Copied",
-    "failed": "Could not copy"
+   "copy": "Copy",
+   "copied": "Copied",
+   "failed": "Could not copy"
   },
   "whatsNew": {
     "title": "What's new",
