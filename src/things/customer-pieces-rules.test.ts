@@ -5,6 +5,14 @@ const tr = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (key 
 const ok = { categoryId: "c1", itemId: "i1", description: " ring with a red stone ", customerName: " Mona ", customerPhone: "٠١٠١٢٣٤٥٦٧٨" };
 
 describe("returned piece form", () => {
+  it('when the branch must be chosen (Super admin, Admin) it is required and sent; for a plain User none is sent', () => {
+    const form = { categoryId: 'c1', itemId: 'i1', description: 'ring', customerName: 'Sara', customerPhone: '12345678' };
+    expect(readPiece(form, true).errors).toEqual({ branchId: 'required' });
+    expect(readPiece({ ...form, branchId: '' }, true).payload).toBeUndefined();
+    expect(readPiece({ ...form, branchId: 'b1' }, true).payload).toEqual({ branchId: 'b1', ...form });
+    expect(readPiece({ ...form, branchId: 'b1' }, false).payload).toEqual(form);
+  });
+
   it("sends the five fields only, trimmed, the phone in Latin digits; never a karat, weight or code", () => {
     expect(readPiece(ok)).toEqual({ errors: {}, payload: { categoryId: "c1", itemId: "i1", description: "ring with a red stone", customerName: "Mona", customerPhone: "01012345678" } });
   });

@@ -1359,6 +1359,8 @@
    "fromItem": "Each piece takes the item's weight and workmanship. They are changed on the Items screen only."
   },
   "customerPieces": {
+   "branch": "Branch",
+   "branchChooseAnother": "This branch no longer exists. Choose another.",
    "title": "Returned pieces (not from us)",
    "add": "Enter a returned piece",
    "intro": "A piece a customer brought that we did not sell: it enters our stock with its item, then its label prints. After that it is sold like any piece.",

@@ -8,6 +8,7 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { esc, milligramsText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
+import { useMe } from "@/lib/session";
 import { Choice, ErrBox, TextBox, allPages, code6, fe } from "./sales-form-parts";
 import { itemProblem } from "./purchases-rules";
 import { TEXT_MAX, customerLabelHtml, readPiece, type CustomerLabel, type PieceForm } from "./customer-pieces-rules";
@@ -39,12 +40,17 @@ export async function openLabelPrint(tr: Tr, label: CustomerLabel | Promise<Cust
   }
 }
 
-const blank: PieceForm = { categoryId: "", itemId: "", description: "", customerName: "", customerPhone: "" };
+const blank: PieceForm = { branchId: "", categoryId: "", itemId: "", description: "", customerName: "", customerPhone: "" };
 const itemText = (it: Row) => `${code6(it.itemCode)} · ${it.itemName}`;
 
 export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   const { t, L } = tr;
   const c = (k: string) => t("common", k);
+  const { data: me } = useMe();
+  // The Super admin has every branch (and every future one); an Admin is assigned one but may oversee the others and change it. Both choose
+  // the branch, as on an expense (an Admin starts on their own). A plain User has one, which the backend uses.
+  const needsBranch = !!me && me.userType !== "user";
+  const [branches, setBranches] = useState<[string, string][]>([]);
   const [v, setV] = useState<PieceForm>(blank);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState("");
@@ -56,6 +62,10 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   const saveKey = useRef(newSaveKey());
   const set = (k: keyof PieceForm, val: string) => { saveKey.current = newSaveKey(); setV((o) => ({ ...o, [k]: val })); setErrs((e) => { const n = { ...e }; delete n[k]; return n; }); };
 
+  useEffect(() => {
+    if (!needsBranch) return;
+    allPages("/branches").then((r) => { setBranches(r.map((x) => [x.id, x.branchName])); setV((o) => (o.branchId ? o : { ...o, branchId: r.length === 1 ? r[0].id : String(me?.branchId ?? "") })); }).catch(() => { /* the field says required */ });
+  }, [needsBranch, me?.branchId]);
   useEffect(() => { allPages("/categories").then((r) => setCategories(r.map((x) => [x.id, x.categoryName]))).catch(() => { /* the field says required */ }); }, []);
   // The items of the category: only those switched on and complete are offered (the backend refuses the others with itemInactive).
   useEffect(() => {
@@ -76,7 +86,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       else if (f.field === "itemId") out.itemId = f.message === "inactive" ? cp(tr, "itemInactive", { item: itemName }) : f.message === "incomplete" ? cp(tr, "itemIncomplete", { item: itemName }) : cp(tr, "itemInvalid");
       else if (f.field === "customerPhone") out.customerPhone = cp(tr, "phoneInvalid");
       else if (f.field === "description" || f.field === "customerName") out[f.field] = fe(tr, f.message === "maxLength" ? "tooLong" : "required");
-      else if (f.field === "branch") setBanner(cp(tr, "branchInvalid"));
+      else if (f.field === "branch") { if (needsBranch) out.branchId = cp(tr, "branchChooseAnother"); else setBanner(cp(tr, "branchInvalid")); }
     }
     if (Object.keys(out).length) setErrs(out);
     else if (!fields.some((f) => f.field === "branch")) setBanner(tr.errorText(err.error));
@@ -85,7 +95,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   function save() {
     if (saving) return;
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
-    const r = readPiece(v);
+    const r = readPiece(v, needsBranch);
     setBanner("");
     setErrs(Object.fromEntries(Object.entries(r.errors).map(([k, key]) => [k, key === "phoneInvalid" ? cp(tr, "phoneInvalid") : fe(tr, key)])));
     if (!r.payload) return;
@@ -127,6 +137,8 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       {banner && <div className="note warn" role="alert" id="cp-alert">{banner}</div>}
       <p className="help" style={{ marginTop: 0, marginBottom: 16 }}>{cp(tr, "intro")}</p>
       <div className="formgrid">
+        {needsBranch && <div className="field" data-k="branchId"><label htmlFor="branchId">{cp(tr, "branch")} *</label>
+          <Choice tr={tr} id="branchId" options={branches} value={v.branchId ?? ""} onChange={(x) => set("branchId", x)} />{err("branchId")}</div>}
         <div className="field" data-k="categoryId"><label htmlFor="categoryId">{cp(tr, "category")} *</label>
           <Choice tr={tr} id="categoryId" options={categories} value={v.categoryId} onChange={(x) => { set("categoryId", x); set("itemId", ""); }} />{err("categoryId")}</div>
         <div className="field" data-k="itemId"><label htmlFor="itemId">{cp(tr, "item")} *</label>
