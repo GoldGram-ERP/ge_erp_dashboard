@@ -226,6 +226,8 @@ dialog .row{display:flex;gap:8px;justify-content:flex-start}
 .scrim{position:fixed;inset:0;background:rgba(43,37,25,.35);z-index:14;animation:fade .2s}
 @keyframes fade{from{opacity:0}}
 .sec-head,.thing{white-space:nowrap}
+/* a long menu name (Returned pieces (not from us)) wraps inside its row instead of running on under the pin button */
+.thing{white-space:normal;height:auto;min-height:38px;padding-block:6px;line-height:1.3;overflow-wrap:anywhere}
 .status{display:flex;align-items:flex-start;gap:10px;margin:0 10px 8px;padding:10px 12px;border-radius:12px;background:rgba(111,81,16,.07);font-size:12.5px;line-height:1.5;color:var(--ink-2)}
 .status i{flex-shrink:0;width:9px;height:9px;margin-top:6px;border-radius:50%;background:var(--off)}
 .status.ok i{background:var(--good);box-shadow:0 0 0 3px rgba(42,111,69,.18)}
