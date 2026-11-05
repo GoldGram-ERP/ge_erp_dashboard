@@ -126,7 +126,7 @@ export function CustomerPieceForm({ close, reload, tr }: CustomFormProps) {
   return (
     <form id="cp" className="card" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); save(); }}>
       {banner && <div className="note warn" role="alert" id="cp-alert">{banner}</div>}
-      <p className="help" style={{ marginTop: 0 }}>{cp(tr, "intro")}</p>
+      <p className="help" style={{ marginTop: 0, marginBottom: 16 }}>{cp(tr, "intro")}</p>
       <div className="formgrid">
         <div className="field" data-k="categoryId"><label htmlFor="categoryId">{cp(tr, "category")} *</label>
           <Choice tr={tr} id="categoryId" options={categories} value={v.categoryId} onChange={(x) => { set("categoryId", x); set("itemId", ""); }} />{err("categoryId")}</div>
