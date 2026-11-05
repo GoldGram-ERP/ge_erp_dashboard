@@ -49,6 +49,8 @@ article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8m
 .pre .pay{margin:8px 0 0;color:#555}.pre .pay .tick{margin-inline-start:12px;white-space:nowrap}
 .pre .sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}.pre .sigs i{display:block;border-top:1.5px solid #1b2a5a;margin-bottom:4px}.pre .sigs span{color:#777;font-size:9.5px}
 .pre .pfoot{margin-top:18px;padding-top:6px;border-top:1px solid #c9b27c;font-size:8.5px;color:#777}.pre .pfoot b{display:block;color:#1b2a5a;font-size:9.5px}.pre .pfoot span{display:block}
+/* Print the colours as drawn (the blue table head has white text: without its background the head reads blank), whatever the "Background graphics" option of the print window says. */
+article.pre,article.pre *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media print{article.pre{width:auto;min-height:0;padding:0 12mm}.bar{display:none}body{background:#fff}main{padding:0;overflow:visible}article{box-shadow:none}article.a4{width:auto;padding:0}article.narrow{width:100%;padding:0}}`;
 
 function payments(d: any) {
