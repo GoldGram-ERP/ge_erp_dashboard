@@ -27,7 +27,8 @@ plain('sales invoice API: cash, bank and mixed payment bodies, totals, delete', 
   const bankInv = await sale([{ pieceCode: p2.pieceCode }], { bankPayments: [{ bankAccountId: bank.accId, amount: T2 }] });
   expect(bankInv.status).toBe(201);
   S.created.invoices.push(bankInv.body.id);
-  const mixed = await sale([{ pieceCode: p3.pieceCode }], { cash: 100000, bankPayments: [{ bankAccountId: bank.accId, amount: T3 - 100000 }] });
+  const half = Math.floor(T3 / 2);   // whatever the day's gold price
+  const mixed = await sale([{ pieceCode: p3.pieceCode }], { cash: half, bankPayments: [{ bankAccountId: bank.accId, amount: T3 - half }] });
   expect(mixed.status).toBe(201);
   S.created.invoices.push(mixed.body.id);
   expect(mixed.body.totals.paid).toBe(T3);
@@ -52,9 +53,14 @@ test('sales invoice record sheet opens in the UI with print layouts and delete, 
 plain('reservation create/cancel and return create/delete; pieces look-up and stock reports answer', { ...P, tags: ['api', 'sales'] }, async () => {
   await need();
   const { api, item } = S;
-  const res = await api('POST', '/reservations', { branchId: S.inv.branchId, date: S.day, employeeId: (await api('GET', '/access/me')).body.id, ...cust, lines: [{ itemId: item.id, quantity: 1, linePrice: 100000 }], cash: 50000 });
-  expect([201, 400]).toContain(res.status);
-  if (res.status === 201) { S.created.reservations.push(res.body.id); expect((await api('GET', `/reservations/${res.body.id}`)).body.totals.paid).toBe(50000); }
+  const rsv = { branchId: S.inv.branchId, date: S.day, employeeId: (await api('GET', '/access/me')).body.id, ...cust };
+  // the system prices the line (#166): a typed price is refused, the reservation pays the price of the day in full
+  expect((await api('POST', '/reservations', { ...rsv, lines: [{ itemId: item.id, quantity: 1, linePrice: 100000 }], cash: 100000 })).status).toBe(400);
+  const price = (await api('GET', `/reservations/line-price?itemId=${item.id}&quantity=1&date=${S.day}`)).body.linePrice as number;
+  const res = await api('POST', '/reservations', { ...rsv, lines: [{ itemId: item.id, quantity: 1 }], cash: price });
+  expect(res.status).toBe(201);
+  S.created.reservations.push(res.body.id);
+  expect((await api('GET', `/reservations/${res.body.id}`)).body.totals).toMatchObject({ grossTotal: price, paid: price, remaining: 0 });
   const ret = await api('POST', '/returns', { branchId: S.inv.branchId, date: S.day, pieceCode: S.pieces[0].pieceCode, cashRefund: 100 });
   if (ret.status === 201) S.created.returns.push(ret.body.id);
   expect([201, 400, 409]).toContain(ret.status);

@@ -1,10 +1,11 @@
 import { afterAll } from 'e2e';
 import { test, expect, seed, capture } from './lib.ts';
 
-// Reservation through the real form, then converted to an invoice (?new=create&reservation=<id>); bodies captured; everything deleted in cleanup.
+// Reservation through the real form (the line priced by the system, paid in full), then converted to an invoice (?new=create&reservation=<id>);
+// bodies captured; everything deleted in cleanup.
 let S: Awaited<ReturnType<typeof seed>>;
 
-test('reservation UI: create with a cash deposit, then convert to a sales invoice', { tags: ['e2e', 'sales'], requires: ['browser'] }, async ({ go, browser, screen, shot }) => {
+test('reservation UI: create paid in cash, then convert to a sales invoice', { tags: ['e2e', 'sales'], requires: ['browser'] }, async ({ go, browser, screen, shot }) => {
   S ??= await seed();
   const seenR = await capture(browser, /\/reservations(\?|$)/, ['POST']);
   await go('superadmin', '/sales/reservations?new=create', 'en');
@@ -15,12 +16,13 @@ test('reservation UI: create with a cash deposit, then convert to a sales invoic
   await browser.locator('#ws [data-k=line0Item] [role=combobox]').tap();
   await screen.getByRole('option', `E2E Ring ${S.tag} · 21`).tap();
   await browser.locator('#ws #iq0').fill('1');
-  await browser.locator('#ws #ip0').fill('1000.00');
-  await browser.locator('#ws #f-cash').fill('1000.00');
+  await expect(browser.locator('#ws #ip0 .price-btn')).toBeVisible();
+  const price = (await S.api('GET', `/reservations/line-price?itemId=${S.item.id}&quantity=1&date=${S.day}`)).body.linePrice as number;
+  await browser.locator('#ws #f-cash').fill(`${Math.trunc(price / 100)}.${String(price % 100).padStart(2, '0')}`);
   await shot('reservation-1-filled');
   await browser.locator('#ws #sec-save button[type=submit]').tap();
   await expect.poll(() => seenR.length).toBe(1);
-  expect(seenR[0].body).toMatchObject({ customerPhone: '01012345678', customerName: 'E2E Customer', lines: [{ itemId: S.item.id, quantity: 1, linePrice: 100000 }], cash: 100000 });
+  expect(seenR[0].body).toMatchObject({ customerPhone: '01012345678', customerName: 'E2E Customer', lines: [{ itemId: S.item.id, quantity: 1 }], cash: price });
   await shot('reservation-2-saved');
   const rs = (await S.api('GET', '/reservations?search=01012345678')).body.items as any[];
   expect(rs.length).toBeGreaterThan(0);

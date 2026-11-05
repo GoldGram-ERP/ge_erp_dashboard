@@ -210,9 +210,10 @@ test('expense types, expenses and refunds', { ...P, tags: ['api', 'money'] }, as
     const cash = await api('POST', '/expenses', e);
     expect(cash.status).toBe(201); ex.push(cash.body.id);
     expect(cash.body).toMatchObject({ cash: 2_500, total: 2_500, expenseTypeName: `E2E Type ${tag} v2` });
-    const mixed = await api('POST', '/expenses', { ...e, bankAccountId: acc.body.id, bankAmount: 700 });
+    expect((await api('POST', '/expenses', { ...e, bankAccountId: acc.body.id, bankAmount: 700 })).status).toBe(400);   // the one-bank fields are gone (#166)
+    const mixed = await api('POST', '/expenses', { ...e, bankPayments: [{ bankAccountId: acc.body.id, amount: 700 }] });
     expect(mixed.status).toBe(201); ex.push(mixed.body.id);
-    expect(mixed.body).toMatchObject({ cash: 2_500, bankAmount: 700, total: 3_200 });
+    expect(mixed.body).toMatchObject({ cash: 2_500, bankPayments: [{ bankAccountId: acc.body.id, amount: 700 }], bankAmount: 700, total: 3_200 });
     expect((await api('GET', `/expenses?branchId=${br.id}`)).body.total).toBe(2);
     bad(await api('POST', '/expense-refunds', { ...e, cash: 1.5 }));
     const r = await api('POST', '/expense-refunds', { ...e, cash: 500 });

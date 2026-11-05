@@ -24,8 +24,7 @@ async function openForm(go: any, browser: any, screen: any, lang: 'en' | 'ar', c
   await browser.locator('#f-customerPhone').fill('01012345678');
   await browser.locator('#f-customerName').fill('E2E Customer');
   await shot(`${label}-1-piece-added`);
-  const tot = await browser.evaluate(() => (document.querySelector('#tot') as HTMLElement).innerText);
-  return money(tot.match(/[\d,]+\.\d\d/)![0]);
+  return money(await browser.evaluate(() => document.querySelector('#tot [data-cell=gross] b')?.textContent ?? ''));   // the total with workmanship
 }
 
 for (const [i, kind] of (['cash', 'bank', 'mixed'] as const).entries()) {
@@ -44,7 +43,8 @@ for (const [i, kind] of (['cash', 'bank', 'mixed'] as const).entries()) {
       };
       if (kind === 'cash') await browser.locator('#f-cash').fill((total / 100).toFixed(2));
       if (kind === 'bank') await bankPay(total);
-      if (kind === 'mixed') { await browser.locator('#f-cash').fill('1000.00'); await bankPay(total - 100000); }
+      const half = Math.floor(total / 2);   // whatever the day's gold price
+      if (kind === 'mixed') { await browser.locator('#f-cash').fill((half / 100).toFixed(2)); await bankPay(total - half); }
       await shot(`sales-${kind}-${lang}-2-paid`);
       await browser.locator('#sec-save button[type=submit]').tap();
       await expect.poll(() => seen.length).toBe(1);
@@ -52,7 +52,7 @@ for (const [i, kind] of (['cash', 'bank', 'mixed'] as const).entries()) {
       expect(b).toMatchObject({ invoiceType: 'sale', customerPhone: '01012345678', customerName: 'E2E Customer', lines: [{ pieceCode: code }] });
       if (kind === 'cash') expect(b.cash).toBe(total);
       if (kind === 'bank') expect(b.bankPayments).toEqual([{ bankAccountId: acc.acc, amount: total }]);
-      if (kind === 'mixed') { expect(b.cash).toBe(100000); expect(b.bankPayments).toEqual([{ bankAccountId: acc.acc, amount: total - 100000 }]); }
+      if (kind === 'mixed') { expect(b.cash).toBe(half); expect(b.bankPayments).toEqual([{ bankAccountId: acc.acc, amount: total - half }]); }
       await shot(`sales-${kind}-${lang}-3-saved`);
       const list = (await S.api('GET', '/sales-invoices?search=01012345678')).body.items as any[];
       const mine = list.find((x) => x.lines?.some?.((l: any) => l.pieceCode === code) || true);

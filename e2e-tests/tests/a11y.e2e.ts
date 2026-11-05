@@ -1,24 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { test, expect, LANGS, type Lang, type Role } from './lib.ts';
+import { test, expect, LANGS, scan, type Lang, type Role } from './lib.ts';
 
-// WCAG 2.2 AA scan with axe-core on each kind of screen, in ar and en. Fails on serious/critical violations.
-const AXE = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
-// Allow-list for third-party false positives. Empty on purpose: every finding so far was ours and was fixed.
-const ALLOW: { rule: string; target: RegExp; why: string }[] = [];
+// WCAG 2.2 AA scan with axe-core (lib.ts scan) on each kind of screen, in ar and en. Fails on serious/critical violations.
 
-type Hit = { id: string; impact: string; targets: string[] };
-async function scan(browser: any): Promise<string[]> {
-  await browser.evaluate((src: string) => { (0, eval)(src); return null; }, AXE);
-  const hits: Hit[] = await browser.evaluate(() => (globalThis as any).axe
-    .run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] })
-    .then((r: any) => r.violations.map((v: any) => ({ id: v.id, impact: v.impact, targets: v.nodes.map((n: any) => n.target.join(' ')) }))));
-  return hits
-    .filter((h) => h.impact === 'serious' || h.impact === 'critical')
-    .flatMap((h) => h.targets.map((t) => ({ id: h.id, impact: h.impact, t })))
-    .filter((x) => !ALLOW.some((a) => a.rule === x.id && a.target.test(x.t)))
-    .map((x) => `${x.impact} ${x.id} ${x.t}`);
-}
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const press = (b: any, k: string) => b.keyboard.press(k);
 
@@ -30,6 +13,7 @@ const SCREENS: Screen[] = [
   { name: 'record-sheet', role: 'superadmin', path: '/setup/users', act: async (b) => { await b.locator('tbody tr').first().tap(); await sleep(800); } },
   { name: 'create-invoice', role: 'superadmin', path: '/sales/invoices?new=create' },
   { name: 'create-return', role: 'superadmin', path: '/sales/returns?new=create' },
+  { name: 'create-expense', role: 'superadmin', path: '/expenses/expenses?new=createExpense' },   // the payment block: cash and bank rows
   { name: 'settings-account', role: 'superadmin', path: '/account' },
   { name: 'search-sheet-ctrl-k', role: 'superadmin', path: '', act: async (b) => { await press(b, 'Control+k'); await sleep(600); } },
   { name: 'sidebar-collapsed', role: 'superadmin', path: '/setup/users', act: async (b) => { await b.locator('#collapse').tap(); await sleep(500); } },

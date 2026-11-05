@@ -1,5 +1,6 @@
 import { test as base } from '@e2e-dev/web';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { NAV, canOpen } from '../../src/nav/tree.ts';
 
 export { NAV, canOpen };
@@ -106,4 +107,22 @@ export async function seed(tag = stamp()) {
     await api('DELETE', `/items/${item.id}`); await api('DELETE', `/item-names/${name.id}`); await api('DELETE', `/categories/${cat.id}`);
   };
   return { api, tag, cat, name, item, inv, pieces, created, remove, day, setItemActive };
+}
+
+// WCAG 2.2 AA scan with axe-core: the serious and critical violations on the page, as text. Used by a11y.e2e.ts and the flow tests.
+const AXE = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
+// Allow-list for third-party false positives. Empty on purpose: every finding so far was ours and was fixed.
+const ALLOW: { rule: string; target: RegExp; why: string }[] = [];
+
+type Hit = { id: string; impact: string; targets: string[] };
+export async function scan(browser: any): Promise<string[]> {
+  await browser.evaluate((src: string) => { (0, eval)(src); return null; }, AXE);
+  const hits: Hit[] = await browser.evaluate(() => (globalThis as any).axe
+    .run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] })
+    .then((r: any) => r.violations.map((v: any) => ({ id: v.id, impact: v.impact, targets: v.nodes.map((n: any) => n.target.join(' ')) }))));
+  return hits
+    .filter((h) => h.impact === 'serious' || h.impact === 'critical')
+    .flatMap((h) => h.targets.map((t) => ({ id: h.id, impact: h.impact, t })))
+    .filter((x) => !ALLOW.some((a) => a.rule === x.id && a.target.test(x.t)))
+    .map((x) => `${x.impact} ${x.id} ${x.t}`);
 }
