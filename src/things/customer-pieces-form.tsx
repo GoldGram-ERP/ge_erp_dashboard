@@ -42,7 +42,7 @@ export async function openLabelPrint(tr: Tr, label: CustomerLabel | Promise<Cust
 const blank: PieceForm = { categoryId: "", itemId: "", description: "", customerName: "", customerPhone: "" };
 const itemText = (it: Row) => `${code6(it.itemCode)} · ${it.itemName}`;
 
-export function CustomerPieceForm({ close, reload, tr }: CustomFormProps) {
+export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   const { t, L } = tr;
   const c = (k: string) => t("common", k);
   const [v, setV] = useState<PieceForm>(blank);
@@ -96,8 +96,7 @@ export function CustomerPieceForm({ close, reload, tr }: CustomFormProps) {
     answer.then((x) => {
       saveKey.current = newSaveKey();
       setSaved(x);
-      toast(cp(tr, "saved", { code: x.code }));
-      reload();
+      toast(cp(tr, "saved", { code: x.code }));      // the page stays on the saved piece (print again, enter another); Done goes back to the list
     }, (err) => {
       // a refusal ends the attempt (the next Save is a new one); a lost or failed answer keeps its key, so a retry cannot save twice
       if (err instanceof ApiFailure && !err.unreachable && err.status < 500) { saveKey.current = newSaveKey(); refusal(err); }
