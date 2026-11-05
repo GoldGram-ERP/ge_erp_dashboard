@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "A segmented switch inside a form field is now as wide as its buttons, with no empty strip at its end.",
+    "ar": "السويتش اللي جوه خانة الفورم بقى بعرض أزراره بس، من غير شريط فاضي في آخره.",
+    "route": "/setup/item-fees"
+   }
+  ]
+ },
+ {
   "version": "1.0.28",
   "date": "2026-11-05",
   "changes": [
