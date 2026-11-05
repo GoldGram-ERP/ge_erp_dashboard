@@ -6,7 +6,7 @@ import { useT } from "@/lib/t";
 
 // One stroke width and style for every icon (lucide-like geometry).
 const I: Record<string, ReactNode> = {
-  plus: <path d="M12 5v14M5 12h14" />, x: <path d="M18 6 6 18M6 6l12 12" />,
+  plus: <path d="M12 5v14M5 12h14" />, check: <path d="M5 12.5l4.5 4.5L19 7" />, x: <path d="M18 6 6 18M6 6l12 12" />,
   camera: <><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></>,
   search: <><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></>,
   trash: <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />, edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></>,
@@ -40,13 +40,13 @@ export function ToastHost() {
 }
 
 // ───── Confirm dialog: const [confirm, dialog] = useConfirm(); if (await confirm({title, text, danger})) ... ─────
-export type ConfirmOptions = { title: string; text?: string; ok?: string; cancel?: string; danger?: boolean };
+export type ConfirmOptions = { title: string; text?: string; body?: ReactNode; ok?: string; cancel?: string; danger?: boolean };
 export function useConfirm(): [(o: ConfirmOptions) => Promise<boolean>, ReactNode] {
   const [state, setState] = useState<(ConfirmOptions & { resolve: (v: boolean) => void }) | null>(null);
   const confirm = (o: ConfirmOptions) => new Promise<boolean>((resolve) => setState({ ...o, resolve }));
   return [confirm, state && <ConfirmDialog key={state.title} {...state} onDone={(v) => { state.resolve(v); setState(null); }} />];
 }
-export function ConfirmDialog({ title, text, ok, cancel, danger, onDone }: ConfirmOptions & { onDone: (v: boolean) => void }) {
+export function ConfirmDialog({ title, text, body, ok, cancel, danger, onDone }: ConfirmOptions & { onDone: (v: boolean) => void }) {
   const { L } = useT();
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { const d = ref.current; if (d && !d.open) d.showModal(); }, []);
@@ -54,6 +54,7 @@ export function ConfirmDialog({ title, text, ok, cancel, danger, onDone }: Confi
     <dialog ref={ref} aria-labelledby="confirm-title" onCancel={(e) => { e.preventDefault(); onDone(false); }}>
       <h2 id="confirm-title">{title}</h2>
       {text && <p>{text}</p>}
+      {body}
       <div className="row">
         <button type="button" className={`btn ${danger ? "quiet danger" : "primary"}`} autoFocus={!danger} onClick={() => onDone(true)}>{ok ?? L("تأكيد", "Confirm")}</button>
         <button type="button" className="btn quiet" autoFocus={danger} onClick={() => onDone(false)}>{cancel ?? L("إلغاء", "Cancel")}</button>

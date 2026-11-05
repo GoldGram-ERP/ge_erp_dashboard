@@ -2,12 +2,16 @@
 // The page of one stock count: details, scan box (typed / hand scanner + Enter / camera), scanned pieces, Save and close, Delete.
 // Open = scan more; Save closes it for good; Delete only marks it. Ported from docs/nav-preview/app/things/stocktake-count-scan.js.
 // Writes: POST /stock-counts/:id/scan, POST /stock-counts/:id/save (one key per attempt, renewed after a failure), DELETE /stock-counts/:id.
-// Refusals (alreadyCounted, pieceOutsideCount, pieceNotInBranch, inTransit, pieceNotFound, countClosed) show as a toast; the typed text stays.
+// The live board (stocktake-count-board.tsx) sits under the scan box: the last scan big, the summary, the breakdowns, the pieces.
+// Refusals (alreadyCounted, pieceOutsideCount, pieceNotInBranch, inTransit, pieceNotFound, countClosed) show in the last-scan card; the typed text stays.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { Row } from "@/lib/engine-types";
 import { Icon, Kv, Ltr, Section, ToastHost, toast, useConfirm } from "@/components/engine";
 import { useT } from "@/lib/t";
+import { Breakdown, MissingPreview, PieceLists, ScanFeedback, Summary, useLive, type BoardPiece, type LastScan, type Live } from "./stocktake-count-board";
+import { CopyButton } from "@/components/shell/copy-button";
 import { CameraBox } from "./stocktake-count-camera";
 import { code6, nameOf } from "./stocktake-shared";
 
@@ -19,20 +23,6 @@ export function readPieceCode(raw: string): { code?: string; problem?: "arabicLa
 }
 
 const gone = (e: unknown) => e instanceof ApiFailure && e.status === 404;
-
-function Chips({ codes, red }: { codes: string[]; red?: boolean }) {
-  const { L } = useT();
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-      {codes.map((c) => (
-        <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
-          <span dir="ltr" className={`st ${red ? "warn" : "off"}`}><i />{c}</span>
-          <button type="button" className="btn quiet sm" aria-label={`${L("نسخ", "Copy")} ${c}`} style={{ padding: "0 4px" }} onClick={() => navigator.clipboard?.writeText(c).catch(() => {})}>{L("نسخ", "Copy")}</button>
-        </span>
-      ))}
-    </div>
-  );
-}
 
 export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
   const tr = useT();
@@ -52,7 +42,13 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
   const saveKey = useRef(newSaveKey());
   const input = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
+  const [last, setLast] = useState<LastScan | null>(null);
+  const [refused, setRefused] = useState<LastScan[]>([]);
+  const qc = useQueryClient();
   const open = data?.status === "open" && !data.deletedAt;
+  const live = useLive(id, !!open);
+  const board = live.data as Live | undefined;
+  const fresh = () => qc.invalidateQueries({ queryKey: ["stock-count", id] });
 
   useEffect(() => {
     const sync = () => setOnline(navigator.onLine);
@@ -76,6 +72,8 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
   }, [id, leaveGone]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(true); }, [load]);
   useEffect(() => { if (data && !open) setCamera(false); }, [data, open]);
+  // Saved or deleted on another device: the board says so first; read the count again.
+  useEffect(() => { if (board && data && board.status !== data.status) load(false); }, [board?.status]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   async function scanCode(raw: string) {
     const r = readPieceCode(raw);
@@ -83,22 +81,42 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
     if (!r.code || busy.current || !navigator.onLine) return;
     busy.current = true; setScanning(true);
     try {
-      setData(await api(`/stock-counts/${id}/scan`, { method: "POST", body: { pieceCode: r.code } }));
-      toast(m("countedOnce", { code: r.code }));
+      const answer = await api(`/stock-counts/${id}/scan`, { method: "POST", body: { pieceCode: r.code } });
+      setData(answer);
+      setLast({ at: Date.now(), code: r.code, kind: "ok", piece: answer.piece as BoardPiece });
+      navigator.vibrate?.(30);
       setCode(""); input.current?.focus();
+      fresh();
     } catch (e) {
       if (gone(e)) return leaveGone();
-      toast(e instanceof ApiFailure ? tr.errorText(e.error) : generic, { error: true });
+      if (!(e instanceof ApiFailure) || e.status !== 409) { toast(e instanceof ApiFailure ? tr.errorText(e.error) : generic, { error: true }); return; }
+      navigator.vibrate?.([60, 60, 60]);
+      if (e.error?.message === "alreadyCounted") {
+        // Show when and by whom it was counted: the counted list, searched by the code.
+        const found = await api(`/stock-counts/${id}/pieces`, { query: { list: "counted", search: r.code } }).catch(() => null);
+        const piece = (found?.items as BoardPiece[] | undefined)?.find((p) => p.pieceCode === r.code) ?? null;
+        setLast({ at: Date.now(), code: r.code, kind: "already", piece });
+        setCode(""); input.current?.focus();
+        return;
+      }
+      const miss: LastScan = { at: Date.now(), code: r.code, kind: "refused", reason: tr.errorText(e.error) };
+      setLast(miss); setRefused((list) => [miss, ...list].slice(0, 20));
+      if (e.error?.message === "countClosed") load(false);
     } finally { busy.current = false; setScanning(false); }
   }
 
   async function save() {
     if (!navigator.onLine) { toast(t("common", "offline"), { error: true }); return; }
-    if (saving) return;
+    if (saving || !data) return;
+    // The confirmation lists what will be recorded as missing, read now (the same rule as Save).
+    const now = await qc.fetchQuery({ queryKey: ["stock-count", id, "live"], queryFn: () => api(`/stock-counts/${id}/live`) as Promise<Live>, staleTime: 0 }).catch(() => board);
+    if (!now) { toast(generic, { error: true }); return; }
+    if (!(await confirm({ title: m("saveTitle", { code: code6(data.countNumber) }), body: <MissingPreview live={now} />, ok: m("save"), cancel: t("common", "cancel") }))) return;
     setSaving(true);
     try {
       setData(await api(`/stock-counts/${id}/save`, { method: "POST", saveKey: saveKey.current }));
       toast(m("saved"));
+      fresh();
     } catch (e) {
       saveKey.current = newSaveKey();
       if (gone(e)) return leaveGone();
@@ -131,7 +149,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <p style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
               {m("recordNo")} <span dir="ltr" style={{ fontFamily: "monospace", fontSize: "1.2em" }}>{code6(data.countNumber)}</span>
-              <button type="button" className="btn quiet sm" aria-label={L("نسخ", "Copy")} onClick={() => navigator.clipboard?.writeText(code6(data.countNumber)).catch(() => {})}>{L("نسخ", "Copy")}</button>
+              <CopyButton text={code6(data.countNumber)} />
               <span className={`st ${open ? "good" : "off"}`}><i />{data.deletedAt ? t("gold-sales", "salesInvoices.deletedBadge") : open ? m("statusOpen") : m("statusClosed")}</span>
             </p>
             {!data.deletedAt && <button type="button" className="btn quiet danger" id="sc-del" onClick={remove}><Icon name="trash" />{m("delete")}</button>}
@@ -165,10 +183,19 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
               </form>
             </div>
           )}
-          <Section title={m("scannedCodes")}>
-            {(data.scannedPieceCodes as string[]).length ? <Chips codes={data.scannedPieceCodes} /> : <p className="help">{m("noScans")}</p>}
-          </Section>
-          {!open && (data.missingPieceCodes as string[]).length > 0 && <Section title={m("missingCodes")}><Chips codes={data.missingPieceCodes} red /></Section>}
+          {last && open && <ScanFeedback last={last} />}
+          {open && refused.length > 0 && (
+            <details className="sc-refused" id="sc-refused">
+              <summary>{m("refusedList")} ({refused.length})</summary>
+              <ul>{refused.map((x) => <li key={x.at}><span dir="ltr">{x.code}</span> · {x.reason}</li>)}</ul>
+            </details>
+          )}
+          {board && <>
+            <Summary live={board} updatedAt={live.dataUpdatedAt} paused={!online && !!open} />
+            <Breakdown live={board} />
+            <PieceLists id={id} live={board} />
+          </>}
+          {!board && live.isError && <div className="err" role="alert">{t("common", "couldNotLoad")}</div>}
           {open && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderTop: "1px solid var(--line,#ddd)", marginTop: 16, paddingTop: 12 }}>
               <button type="button" className="btn primary" id="sc-savebtn" disabled={saving} onClick={save}>{m("save")}</button>

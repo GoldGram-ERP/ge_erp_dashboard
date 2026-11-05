@@ -1,6 +1,6 @@
 "use client";
 // جرد الذهب: stock/count (stock-count, previous-counts, missing-pieces, missing-pieces-previous). Ported from docs/nav-preview/app/things/stocktake-count.js.
-// Views: the history of counts (button "Start a count"; an OPEN count opens its scan page, a closed or deleted one its record sheet), the look-up of one previous
+// Views: the history of counts (button "Start a count"; an open or closed count opens its board (scan page; a closed one frozen), a deleted one its record sheet), the look-up of one previous
 // count (counters per karat), and the two missing-pieces reports (read only). Writes: start (stocktake-count-start), scan / camera / Save and close / Delete
 // (stocktake-count-scan), and Delete from the record sheet (soft; no stock moves). The stock-counts list takes search, fromDate, toDate, page, deleted (size fixed at 20).
 import { useMemo, useState } from "react";
@@ -51,7 +51,7 @@ export const makeConfigWith = (onScan: (id: string) => void, lists: Lists): Make
     ],
     rowClass: (r) => (r.deletedAt ? "deleted" : ""),
     create: [{ form: "start", label: m("stockCount.add") }],
-    onRow: (row, h) => (row.status === "open" && !row.deletedAt ? onScan(row.id) : h.open(row)),
+    onRow: (row, h) => (!row.deletedAt ? onScan(row.id) : h.open(row)),   // open or closed: the live board (a closed one frozen)
   };
 
   // ───── one previous count (counters per karat) ─────
