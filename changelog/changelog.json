@@ -13,6 +13,12 @@
     "en": "Purchases: the pieces list now shows the largest code first, so the newest pieces are on top.",
     "ar": "المشتريات: سجل القطع بقى بيعرض الكود الأكبر الأول، يعني أحدث القطع فوق.",
     "route": "/buy/purchases"
+   },
+   {
+    "kind": "fixed",
+    "en": "Dropdown lists now open right under their field on the phone, in Arabic too (they used to land off to the side).",
+    "ar": "القوايم المنسدلة بقت بتفتح تحت الخانة بالظبط على الموبايل، وبالعربي كمان (كانت بتفتح على الجنب).",
+    "route": "/sales/desk"
    }
   ]
  },
