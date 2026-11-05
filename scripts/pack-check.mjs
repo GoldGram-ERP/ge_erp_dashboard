@@ -12,7 +12,7 @@ const zip = resolve(process.argv[2] ?? join(root, `app-${version}.zip`));
 if (!existsSync(zip)) { console.error(`No ${zip}. Run: npm run pack:hostinger`); process.exit(1); }
 
 const dir = mkdtempSync(join(tmpdir(), "pack-check-"));
-if (process.platform === "win32") execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${zip}' -DestinationPath '${dir}'`], { stdio: "inherit" });
+if (process.platform === "win32") execFileSync("powershell", ["-NoProfile", "-Command", `Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('${zip}','${dir}')`], { stdio: "inherit" });
 else execFileSync("unzip", ["-q", zip, "-d", dir], { stdio: "inherit" });
 
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
