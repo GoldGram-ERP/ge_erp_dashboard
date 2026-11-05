@@ -869,6 +869,7 @@
   "exportOutOfMemory": "This file is too large to make. Choose a shorter period.",
   "exportInterrupted": "The file was interrupted. Please try again.",
   "itemInactive": "Not coded: {itemName} is inactive or missing its weight, workmanship or cashback. Fix it on the Items screen, then code again.",
+  "lineWeightChanged": "Not coded: {itemName} now weighs a different amount than when this invoice line was saved. Edit and save the purchase invoice again so it takes the item weight, then code it.",
   "incomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
   "aboveMakingCharge": "The cash discount cannot be more than the workmanship."
  },
@@ -1304,6 +1305,8 @@
    "gram": "g",
    "pieceNumber": "Piece {number}",
    "codeAuto": "Given by the system",
+
+   "moreUnits": "+ {count} more pieces, each with the same weight and workmanship. Codes are given when you save.",
    "pieceCode": "Code",
    "weight": "Weight (g)",
    "makingChargePerGram": "Workmanship per gram (EGP)",

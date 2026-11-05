@@ -17,6 +17,8 @@ import { itemProblem } from "./purchases-rules";
 
 const code6 = (n: unknown) => String(n).padStart(6, "0");
 
+const ROWS_SHOWN = 20;   // pieces drawn per line
+
 export function CodingForm({ row, tr }: CustomFormProps) {
   const { t } = tr;
   const m = (k: string, v?: Record<string, string | number>) => t("gold-accounts", `purchaseCoding.${k}`, v);
@@ -60,7 +62,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
       toast(`${tr.L("تم الحفظ", "Saved")}: ${m("labelCount", { count: pieces.length })}`);
     } catch (e) {
       setBanner(tr.errorText(e instanceof ApiFailure ? e.error : { message: "serverUnreachable" }));   // itemInactive, lineCoded, pieceCodeTaken ...
-      if (e instanceof ApiFailure && e.error.message === "itemInactive") itemsById(openLines.map((l) => l.itemId)).then(setItems).catch(() => {});   // re-read the items: the refused line then says why
+      if (e instanceof ApiFailure && e.error.message === "itemInactive") itemsById(openLines.map((l) => l.itemId), true).then(setItems).catch(() => {});   // re-read the items: the refused line then says why
     } finally { setBusy(false); }
   }
 
@@ -102,7 +104,8 @@ export function CodingForm({ row, tr }: CustomFormProps) {
                 <h3>{m("lineNumber", { number: open.lineNumber })} · {open.itemName} <span className="sub" dir="ltr">{code6(open.itemCode)}</span></h3>
                 <p className="sub">{m("lineQuantity", { count: open.quantity })} · {m("lineWeight")} <span dir="ltr">{milligramsText(open.weight)} {gram}</span></p>
                 {problem && <div className="note warn" role="alert" data-item-problem={i}>{t("gold-accounts", `purchaseInvoices.${problem === "inactive" ? "itemInactive" : "itemIncomplete"}`, { item: label })}</div>}
-                {Array.from({ length: open.quantity }, (_, j) => (
+                {/* Every unit is the same piece; past ROWS_SHOWN a line (up to 100,000 units) says so in one sentence instead of drawing thousands of boxes. */}
+                {Array.from({ length: Math.min(open.quantity, ROWS_SHOWN) }, (_, j) => (
                   <div role="group" className="formgrid" key={j} style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, marginTop: 10 }} aria-label={m("pieceNumber", { number: j + 1 })}>
                     <div className="field"><label htmlFor={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`}>{m("pieceCode")}</label>
                       <input id={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`} disabled dir="ltr" style={{ textAlign: "start" }} readOnly value={i === 0 && j === 0 && nextCode.data ? String(nextCode.data.next) : m("codeAuto")} />
@@ -113,6 +116,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
                       <input id={`m-${i}-${j}`} data-f="makingChargePerGram" dir="ltr" readOnly placeholder="—" value={making} /></div>
                   </div>
                 ))}
+                {open.quantity > ROWS_SHOWN && <p className="help" data-more={i}>{m("moreUnits", { count: open.quantity - ROWS_SHOWN })}</p>}
               </div>
             );
           })}

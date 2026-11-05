@@ -14,7 +14,7 @@ export const fe = (tr: Tr, k: string) => tr.t("common", `fieldErrors.${k}`);
 export const code6 = (n: unknown) => String(n).padStart(6, "0");
 export const PIECE_CODE = /^[A-Za-z0-9 .]{1,20}$/;   // the backend's pattern for a piece code
 
-export const ErrBox = ({ children }: { children: ReactNode }) => <div className="err" role="alert" style={{ color: "var(--warn)", fontSize: 12.5, marginTop: 4 }}>{children}</div>;
+export const ErrBox = ({ children, id }: { children: ReactNode; id?: string }) => <div className="err" id={id} role="alert" style={{ color: "var(--warn)", fontSize: 12.5, marginTop: 4 }}>{children}</div>;
 /** Style for inputs that hold numbers/codes: left-to-right, text at the end. */
 export const ltrStyle = { direction: "ltr", textAlign: "end" } as const;
 
@@ -40,8 +40,8 @@ export async function latestPrice(day: string): Promise<Row | null> {
 }
 
 /** A choice box (no native select): id/name `id`, value is the picked key or "". */
-export function Choice({ id, options, value, onChange, tr, placeholder, searchable = true, disabled }: { id: string; options: [string | number, string][]; value: string; onChange: (v: string) => void; tr: Tr; placeholder?: string; searchable?: boolean; disabled?: boolean }) {
-  return <Select id={id} name={id} value={value} onChange={onChange} options={options} placeholder={placeholder ?? sg(tr, "choose")} searchable={searchable} disabled={disabled} />;
+export function Choice({ id, options, value, onChange, tr, placeholder, searchable = true, disabled, invalid, describedBy }: { id: string; options: [string | number, string][]; value: string; onChange: (v: string) => void; tr: Tr; placeholder?: string; searchable?: boolean; disabled?: boolean; invalid?: boolean; describedBy?: string }) {
+  return <Select id={id} name={id} value={value} onChange={onChange} options={options} placeholder={placeholder ?? sg(tr, "choose")} searchable={searchable} disabled={disabled} invalid={invalid} describedBy={describedBy} />;
 }
 
 // ── customer ──
@@ -90,10 +90,10 @@ export function TextBox({ name, label, value, onChange, error, help, maxLength, 
   return (
     <div className="field" data-k={name}>
       <label htmlFor={`f-${name}`}>{label}</label>
-      <input id={`f-${name}`} name={name} value={value} maxLength={maxLength} disabled={disabled} autoComplete="off" aria-invalid={!!error} dir={ltr ? "ltr" : undefined} style={ltr ? { textAlign: "end" } : undefined}
+      <input id={`f-${name}`} name={name} value={value} maxLength={maxLength} disabled={disabled} autoComplete="off" aria-invalid={!!error} aria-describedby={[help ? `f-${name}-help` : "", error ? `f-${name}-err` : ""].filter(Boolean).join(" ") || undefined} dir={ltr ? "ltr" : undefined} style={ltr ? { textAlign: "end" } : undefined}
         onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
-      {help && <div className="help">{help}</div>}
-      {error && <ErrBox>{error}</ErrBox>}
+      {help && <div className="help" id={`f-${name}-help`}>{help}</div>}
+      {error && <ErrBox id={`f-${name}-err`}>{error}</ErrBox>}
     </div>
   );
 }

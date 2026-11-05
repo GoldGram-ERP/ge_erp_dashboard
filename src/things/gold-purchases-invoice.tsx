@@ -22,8 +22,18 @@ type Line = { itemId: string; label: string; quantity: string; itemWeight: numbe
 const blank = (): Line => ({ itemId: "", label: "", quantity: "1", itemWeight: null });
 
 /** The items of these ids, read in full (weight, workmanship, Active), by id. One that fails to load is left out. */
-export async function itemsById(ids: string[]): Promise<Map<string, Row>> {
-  const rows = await Promise.all([...new Set(ids)].map((id) => api(`/items/${id}`).catch(() => null)));
+// Items read a moment ago are reused (the coding page re-reads them after every save); `fresh` reads them again, for when the answer must be current.
+const ITEM_CACHE_MS = 20_000;
+const itemCache = new Map<string, { at: number; row: Row }>();
+export async function itemsById(ids: string[], fresh = false): Promise<Map<string, Row>> {
+  const now = Date.now();
+  const rows = await Promise.all([...new Set(ids)].map(async (id) => {
+    const hit = itemCache.get(id);
+    if (!fresh && hit && now - hit.at < ITEM_CACHE_MS) return hit.row;
+    const row = await api(`/items/${id}`).catch(() => null);
+    if (row) itemCache.set(id, { at: Date.now(), row }); else itemCache.delete(id);
+    return row;
+  }));
   return new Map(rows.filter((r): r is Row => !!r).map((r) => [r.id, r]));
 }
 const milligramsOrEmpty = (mg: number | undefined) => (mg === undefined ? "" : milligramsText(mg));
@@ -64,7 +74,7 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
   // Editing: the weight follows the item as it is now (the backend works it out the same way on Save).
   useEffect(() => {
     if (!editing) return;
-    itemsById((row!.lines as Row[]).map((l) => l.itemId)).then((items) => {
+    itemsById((row!.lines as Row[]).map((l) => l.itemId), true).then((items) => {
       setLines((ls) => ls.map((l) => { const it = items.get(l.itemId); return it ? { ...l, itemWeight: it.weight ?? null } : l; }));
       (row!.lines as Row[]).forEach((l, i) => problemText(i, itemLabel(l.itemCode, l.itemName), items.get(l.itemId)));
     }).catch(() => {});

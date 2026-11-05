@@ -3,7 +3,8 @@
 // The form sends category, item, description, customer name and phone (POST /customer-pieces, backend #167); karat, weight and workmanship
 // per gram are the item's, shown read only. Save opens the print window straight from the click and fills it with the label the answer holds.
 import { useEffect, useRef, useState } from "react";
-import { api, ApiFailure, newSaveKey } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { api, ApiFailure, keepsKey, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { esc, milligramsText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
@@ -44,6 +45,7 @@ const blank: PieceForm = { branchId: "", categoryId: "", itemId: "", description
 const itemText = (it: Row) => `${code6(it.itemCode)} · ${it.itemName}`;
 
 export function CustomerPieceForm({ close, tr }: CustomFormProps) {
+  const qc = useQueryClient();
   const { t, L } = tr;
   const c = (k: string) => t("common", k);
   const { data: me } = useMe();
@@ -71,7 +73,9 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   useEffect(() => {
     const categoryId = v.categoryId;
     if (!categoryId) return;
-    allPages("/items", { categoryId, active: "true" }).then((r) => r.filter((it) => !itemProblem(it)), () => [] as Row[]).then((list) => setLoaded({ categoryId, items: list }));
+    let stale = false;   // a slower answer for an earlier category must not overwrite the current one
+    allPages("/items", { categoryId, active: "true" }).then((r) => r.filter((it) => !itemProblem(it)), () => [] as Row[]).then((list) => { if (!stale) setLoaded({ categoryId, items: list }); });
+    return () => { stale = true; };
   }, [v.categoryId]);
   const item = items?.find((it) => it.id === v.itemId);
 
@@ -106,10 +110,13 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
     answer.then((x) => {
       saveKey.current = newSaveKey();
       setSaved(x);
+      // The page stays on the saved piece, so `reload` (which closes it) is not used: refresh the cached lists and the next piece code by hand.
+      qc.invalidateQueries({ queryKey: ["thing"] });
+      qc.invalidateQueries({ queryKey: ["next-number"] });
       toast(cp(tr, "saved", { code: x.code }));      // the page stays on the saved piece (print again, enter another); Done goes back to the list
     }, (err) => {
-      // a refusal ends the attempt (the next Save is a new one); a lost or failed answer keeps its key, so a retry cannot save twice
-      if (err instanceof ApiFailure && !err.unreachable && err.status < 500) { saveKey.current = newSaveKey(); refusal(err); }
+      // a refusal ends the attempt (the next Save is a new one); a lost or failed answer, or a 409 saveInProgress, keeps its key, so a retry cannot save twice
+      if (err instanceof ApiFailure && !keepsKey(err)) { saveKey.current = newSaveKey(); refusal(err); }
       else setBanner(tr.errorText(err instanceof ApiFailure && !err.unreachable ? err.error : { message: "serverUnreachable" }));
     }).finally(() => setSaving(false));
   }
@@ -140,9 +147,9 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
         {needsBranch && <div className="field" data-k="branchId"><label htmlFor="branchId">{cp(tr, "branch")} *</label>
           <Choice tr={tr} id="branchId" options={branches} value={v.branchId ?? ""} onChange={(x) => set("branchId", x)} />{err("branchId")}</div>}
         <div className="field" data-k="categoryId"><label htmlFor="categoryId">{cp(tr, "category")} *</label>
-          <Choice tr={tr} id="categoryId" options={categories} value={v.categoryId} onChange={(x) => { set("categoryId", x); set("itemId", ""); }} />{err("categoryId")}</div>
+          <Choice tr={tr} id="categoryId" invalid={!!errs.categoryId} options={categories} value={v.categoryId} onChange={(x) => { set("categoryId", x); set("itemId", ""); }} />{err("categoryId")}</div>
         <div className="field" data-k="itemId"><label htmlFor="itemId">{cp(tr, "item")} *</label>
-          <Choice tr={tr} id="itemId" options={itemOptions} value={v.itemId} disabled={!v.categoryId} placeholder={!v.categoryId ? cp(tr, "chooseCategoryFirst") : undefined} onChange={(x) => set("itemId", x)} />
+          <Choice tr={tr} id="itemId" invalid={!!errs.itemId} options={itemOptions} value={v.itemId} disabled={!v.categoryId} placeholder={!v.categoryId ? cp(tr, "chooseCategoryFirst") : undefined} onChange={(x) => set("itemId", x)} />
           {v.categoryId && items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
           {err("itemId")}</div>
       </div>
