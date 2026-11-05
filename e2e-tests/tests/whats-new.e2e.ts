@@ -5,12 +5,15 @@ import { test, expect, LANGS, M } from './lib.ts';
 const SEEN = 'ge-erp:whats-new-seen';
 const text = (b: any) => b.evaluate(() => document.body.innerText) as Promise<string>;
 const path = (b: any) => b.evaluate(() => location.pathname) as Promise<string>;
+// On a phone the side menu is a drawer, closed after every page: open it to reach the version label.
+const menu = async (b: any) => { if (await b.evaluate(() => window.innerWidth <= 900)) { await b.locator('#trigger').tap(); await new Promise((r) => setTimeout(r, 700)); } };
 
 for (const lang of LANGS) {
   test(`What's new: the Super admin reads it from the version, the dot goes, and a change opens its screen (${lang})`, { tags: ['e2e', 'whats-new'], requires: ['browser'] }, async ({ go, browser, shot }) => {
     await go('superadmin', '', lang);
     await browser.evaluate((k: string) => { localStorage.removeItem(k); return null; }, SEEN);
     await go('superadmin', '', lang);
+    await menu(browser);
     await expect(browser.locator('a#app-version')).toBeVisible();
     await expect(browser.locator('#app-version .wn-dot')).toBeVisible();   // a version nobody has looked at
     await shot(`whats-new-${lang}-1-version-with-dot`);
@@ -30,6 +33,7 @@ for (const lang of LANGS) {
 
     // back to Home: the dot is gone for good
     await go('superadmin', '', lang);
+    await menu(browser);
     await expect(browser.locator('a#app-version')).toBeVisible();
     await expect(browser.locator('#app-version .wn-dot')).toHaveCount(0);
 
@@ -44,12 +48,14 @@ for (const lang of LANGS) {
   test(`What's new: an Admin sees it too (${lang})`, { tags: ['e2e', 'whats-new'], requires: ['browser'] }, async ({ go, browser, shot }) => {
     await go('e2eadmin', '/whats-new', lang);
     await expect(browser.locator('#whats-new')).toBeVisible();
+    await menu(browser);
     await expect(browser.locator('a#app-version')).toBeVisible();
     await shot(`whats-new-${lang}-4-admin`);
   });
 
   test(`What's new: a plain User has no link, and the address goes Home (${lang})`, { tags: ['e2e', 'whats-new'], requires: ['browser'] }, async ({ go, browser, shot }) => {
     await go('e2euser', '', lang);
+    await menu(browser);
     await expect(browser.locator('span#app-version')).toBeVisible();
     await expect(browser.locator('a#app-version')).toHaveCount(0);
     await go('e2euser', '/whats-new', lang);
