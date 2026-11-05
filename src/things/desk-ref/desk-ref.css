@@ -1,0 +1,263 @@
+/* The sales desk screen: the reference calculator's CSS (sales.css, then theme.css, same order) with every selector under .desk-ref, so nothing leaks.
+   Documented exception to the app's library-only rule, for this one screen (docs/specs/sales-desk-reference.md section 5). Generated from the reference's files, then trimmed to what the desk uses. */
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 400; src: url('/fonts/ibm-plex-sans-arabic-arabic-400-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC,U+102E0-102FB,U+10E60-10E7E,U+10EC2-10EC4,U+10EFC-10EFF,U+1EE00-1EE03,U+1EE05-1EE1F,U+1EE21-1EE22,U+1EE24,U+1EE27,U+1EE29-1EE32,U+1EE34-1EE37,U+1EE39,U+1EE3B,U+1EE42,U+1EE47,U+1EE49,U+1EE4B,U+1EE4D-1EE4F,U+1EE51-1EE52,U+1EE54,U+1EE57,U+1EE59,U+1EE5B,U+1EE5D,U+1EE5F,U+1EE61-1EE62,U+1EE64,U+1EE67-1EE6A,U+1EE6C-1EE72,U+1EE74-1EE77,U+1EE79-1EE7C,U+1EE7E,U+1EE80-1EE89,U+1EE8B-1EE9B,U+1EEA1-1EEA3,U+1EEA5-1EEA9,U+1EEAB-1EEBB,U+1EEF0-1EEF1;}
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 400; src: url('/fonts/ibm-plex-sans-arabic-latin-400-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 500; src: url('/fonts/ibm-plex-sans-arabic-arabic-500-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC,U+102E0-102FB,U+10E60-10E7E,U+10EC2-10EC4,U+10EFC-10EFF,U+1EE00-1EE03,U+1EE05-1EE1F,U+1EE21-1EE22,U+1EE24,U+1EE27,U+1EE29-1EE32,U+1EE34-1EE37,U+1EE39,U+1EE3B,U+1EE42,U+1EE47,U+1EE49,U+1EE4B,U+1EE4D-1EE4F,U+1EE51-1EE52,U+1EE54,U+1EE57,U+1EE59,U+1EE5B,U+1EE5D,U+1EE5F,U+1EE61-1EE62,U+1EE64,U+1EE67-1EE6A,U+1EE6C-1EE72,U+1EE74-1EE77,U+1EE79-1EE7C,U+1EE7E,U+1EE80-1EE89,U+1EE8B-1EE9B,U+1EEA1-1EEA3,U+1EEA5-1EEA9,U+1EEAB-1EEBB,U+1EEF0-1EEF1;}
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 500; src: url('/fonts/ibm-plex-sans-arabic-latin-500-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 600; src: url('/fonts/ibm-plex-sans-arabic-arabic-600-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC,U+102E0-102FB,U+10E60-10E7E,U+10EC2-10EC4,U+10EFC-10EFF,U+1EE00-1EE03,U+1EE05-1EE1F,U+1EE21-1EE22,U+1EE24,U+1EE27,U+1EE29-1EE32,U+1EE34-1EE37,U+1EE39,U+1EE3B,U+1EE42,U+1EE47,U+1EE49,U+1EE4B,U+1EE4D-1EE4F,U+1EE51-1EE52,U+1EE54,U+1EE57,U+1EE59,U+1EE5B,U+1EE5D,U+1EE5F,U+1EE61-1EE62,U+1EE64,U+1EE67-1EE6A,U+1EE6C-1EE72,U+1EE74-1EE77,U+1EE79-1EE7C,U+1EE7E,U+1EE80-1EE89,U+1EE8B-1EE9B,U+1EEA1-1EEA3,U+1EEA5-1EEA9,U+1EEAB-1EEBB,U+1EEF0-1EEF1;}
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 600; src: url('/fonts/ibm-plex-sans-arabic-latin-600-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 700; src: url('/fonts/ibm-plex-sans-arabic-arabic-700-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC,U+102E0-102FB,U+10E60-10E7E,U+10EC2-10EC4,U+10EFC-10EFF,U+1EE00-1EE03,U+1EE05-1EE1F,U+1EE21-1EE22,U+1EE24,U+1EE27,U+1EE29-1EE32,U+1EE34-1EE37,U+1EE39,U+1EE3B,U+1EE42,U+1EE47,U+1EE49,U+1EE4B,U+1EE4D-1EE4F,U+1EE51-1EE52,U+1EE54,U+1EE57,U+1EE59,U+1EE5B,U+1EE5D,U+1EE5F,U+1EE61-1EE62,U+1EE64,U+1EE67-1EE6A,U+1EE6C-1EE72,U+1EE74-1EE77,U+1EE79-1EE7C,U+1EE7E,U+1EE80-1EE89,U+1EE8B-1EE9B,U+1EEA1-1EEA3,U+1EEA5-1EEA9,U+1EEAB-1EEBB,U+1EEF0-1EEF1;}
+@font-face { font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 700; src: url('/fonts/ibm-plex-sans-arabic-latin-700-normal-v5.3.0.woff2') format('woff2'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+
+/* The app's global resets (globals.css, Tailwind preflight) must not reach the desk: put back the browser defaults the reference relies on. */
+.desk-ref p{margin:1em 0}
+.desk-ref button{font-size:13.3333px;line-height:normal;font-weight:400}
+/* sales.css */
+.desk-ref{font-family:Tahoma,Arial,sans-serif;color:#222;background:#f6f6f3}
+.desk-ref *{box-sizing:border-box}
+.desk-ref{margin:0}
+.desk-ref .layout{max-width:1450px;margin:22px auto;padding:0 15px;display:grid;grid-template-columns:minmax(280px,1fr) minmax(390px,1.3fr) minmax(290px,1fr);gap:16px}
+.desk-ref .panel{background:#fff;border:1px solid #eae7e0;border-radius:16px;padding:20px;box-shadow:0 5px 20px #1a1a1a0a;margin-bottom:16px}
+.desk-ref h2{font-size:17px;margin:0 0 18px}
+.desk-ref h3{font-size:14px;margin:16px 0 10px}
+.desk-ref .dr-field{margin-bottom:13px}
+.desk-ref label{display:block;font-size:12px;color:#666;margin-bottom:6px}
+.desk-ref input,.desk-ref select{width:100%;border:1px solid #ddd;border-radius:9px;padding:11px 10px;font:inherit;font-size:14px;background:white;min-width:0;color:#222}
+.desk-ref input:focus,.desk-ref select:focus{outline:2px solid #dfc37c;border-color:#ba8c27}
+.desk-ref .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.desk-ref .toggle{display:flex;gap:8px;margin-bottom:14px}
+.desk-ref .toggle button{flex:1;padding:12px;background:#f5f4f1;color:#333;border:1px solid #e8e5df;border-radius:9px;cursor:pointer;font:inherit}
+.desk-ref .toggle button.dr-active{background:#b98d2b;color:white;border-color:#b98d2b}
+.desk-ref .dr-row{display:grid;grid-template-columns:1fr 78px 35px;gap:7px;align-items:end;margin:0 0 10px}
+.desk-ref .itemlabel{font-size:11px}
+.desk-ref .button{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:bold;cursor:pointer}
+.desk-ref .secondary{background:#faf4e7;color:#966d11;border:1px solid #e9d8ad;width:100%}
+.desk-ref .dark{background:#161616;color:#fff;width:100%;font-size:15px}
+.desk-ref .dark:disabled{background:#a2a2a2;cursor:not-allowed}
+.desk-ref .remove{color:#b22;background:#fff1f1;border:none;height:40px;border-radius:8px;cursor:pointer}
+.desk-ref .dr-status{border-radius:10px;padding:12px;font-size:13px;background:#f8f3e5;color:#896614;margin:0 0 15px}
+.desk-ref .dr-status.ok{background:#eaf7ec;color:#17642b}
+.desk-ref .dr-status.bad{background:#fdeced;color:#a11}
+.desk-ref .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.desk-ref .dr-price{background:#f8f8f6;border-radius:12px;padding:14px;text-align:center}
+.desk-ref .dr-price b{display:block;font-size:25px;margin-top:5px;direction:ltr}
+.desk-ref .dr-price small{font-size:11px;color:#666}
+.desk-ref .summary{background:#fff7e5;border-radius:12px;padding:15px;margin-top:13px}
+.desk-ref .summary strong{font-size:26px;color:#946c11;display:block;margin-top:6px}
+.desk-ref .preview{white-space:pre-wrap;overflow-wrap:anywhere;background:#e8f7e0;border-radius:13px;padding:15px;font-size:13px;line-height:1.85;min-height:300px;direction:rtl}
+.desk-ref .muted{font-size:11px;color:#777;line-height:1.6}
+.desk-ref .payment-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.desk-ref .topline{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.desk-ref .dr-pill{background:#eee8d8;color:#805d10;padding:6px 9px;border-radius:30px;font-size:11px}
+.desk-ref #toast{position:fixed;bottom:20px;left:20px;max-width:90%;background:#202020;color:white;padding:12px 16px;border-radius:10px;display:none;z-index:30}
+@media (max-width:1100px){
+ .desk-ref .layout{grid-template-columns:1fr 1fr}
+ .desk-ref .preview-col{grid-column:1/-1}
+}
+@media (max-width:680px){
+ .desk-ref .layout{display:block;margin:15px auto}
+ .desk-ref .panel{padding:15px}
+}
+.desk-ref .layout{max-width:1320px;margin:12px auto;gap:10px;grid-template-columns:minmax(250px,1fr) minmax(340px,1.3fr) minmax(270px,1fr)}
+.desk-ref .panel{padding:13px;border-radius:12px;margin-bottom:10px;box-shadow:0 2px 12px #00000009}
+.desk-ref h2{font-size:15px;margin-bottom:12px}
+.desk-ref h3{margin:11px 0 8px}
+.desk-ref .dr-field{margin-bottom:8px}
+.desk-ref input,.desk-ref select{padding:8px 9px;font-size:13px;border-radius:8px}
+.desk-ref .toggle{margin-bottom:10px}
+.desk-ref .toggle button{padding:9px}
+.desk-ref .dr-price{padding:10px}
+.desk-ref .dr-price b{font-size:21px}
+.desk-ref .summary{padding:11px;margin-top:9px}
+.desk-ref .summary strong{font-size:24px}
+.desk-ref .preview{padding:12px;font-size:12.5px;line-height:1.65;min-height:210px}
+.desk-ref .dr-status{padding:9px;margin-bottom:9px}
+.desk-ref .button{padding:9px 12px}
+.desk-ref .dr-row{margin-bottom:6px}
+.desk-ref .remove{height:35px}
+.desk-ref .discount{margin-top:12px;background:#faf7ed;border:1px solid #e9dfc5;border-radius:10px;padding:9px}
+.desk-ref .discount-toggle{display:flex;align-items:center;gap:8px;font-weight:bold;margin-bottom:4px;color:#634b18;cursor:pointer}
+.desk-ref .discount-toggle input{width:17px;height:17px;accent-color:#b18b32}
+.desk-ref .discount select{margin-top:5px}
+@media (max-width:850px){
+ .desk-ref .layout{grid-template-columns:1fr 1fr}
+ .desk-ref .preview-col{grid-column:1/-1}
+}
+@media (max-width:620px){
+ .desk-ref .layout{display:flex;flex-direction:column;gap:0;margin:9px auto;padding:0 9px}
+ .desk-ref .panel{padding:12px}
+ .desk-ref .preview{min-height:150px}
+ .desk-ref .two{gap:6px}
+}
+.desk-ref .dr-price .override-label{margin:8px 0 4px;text-align:right;font-size:11px;color:#745516}
+.desk-ref .manual-price{padding:7px 8px;background:#fff;border:1px solid #d8c99e;border-radius:8px;text-align:center;font-size:13px;direction:ltr}
+.desk-ref .dr-price small[id$="Mode"]{display:block;margin-top:5px;color:#8a6c20}
+.desk-ref .dr-price small[id$="Mode"].manual-active{color:#166534;font-weight:700}
+.desk-ref .dr-price small[id$="Mode"].manual-error{color:#b42318;font-weight:700}
+.desk-ref .field-hint{font-size:11px;line-height:1.5;margin-top:4px;min-height:0;color:#ac351d}
+.desk-ref .field-hint:empty{display:none}
+.desk-ref .field-invalid{border-color:#cb4d40!important;background:#fff9f8}
+.desk-ref .payment-remaining{display:flex;align-items:center;justify-content:space-between;background:#f7f5ed;padding:8px 10px;border-radius:8px;margin-top:7px;font-size:12px}
+.desk-ref .payment-remaining strong{font-size:14px;color:#73510c;direction:ltr}
+.desk-ref .clear-all{margin-top:8px;background:#fff5f4;border:1px solid #e9bbb5;color:#a2392b;width:100%;font-size:12px;padding:8px}
+.desk-ref .mobile-bar{display:none}
+@media (max-width:620px){
+ .desk-ref{padding-bottom:100px}
+ .desk-ref .mobile-bar{position:fixed;display:flex;align-items:center;justify-content:center;gap:16px;bottom:calc(13px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 24px);max-width:420px;z-index:25;background:#181818;color:#fff;padding:8px 13px;border-radius:13px;box-shadow:0 4px 18px #0003;min-height:54px;direction:rtl}
+ .desk-ref .mobile-total{min-width:0;flex:0 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+ .desk-ref .mobile-total span{font-size:10px;color:#d8c290}
+ .desk-ref .mobile-total strong{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:center}
+ .desk-ref .mobile-copy{border:none;border-radius:8px;background:#d8b052;color:#1b1b1b;font-weight:bold;font-size:12px;min-height:36px;padding:6px 15px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+ .desk-ref .mobile-copy:disabled{opacity:.6}
+ .desk-ref .mobile-copy-only{background:transparent;color:#f0d58e;border:1px solid #d8b052;padding-inline:13px}
+}
+.desk-ref .fee-small{display:flex;gap:6px;align-items:center;justify-content:space-between;min-width:0;margin-top:4px;font-size:10px;color:#777;line-height:1.4}
+.desk-ref #feesWeights{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.desk-ref #feesAfterDiscount{color:#846112;font-weight:bold;white-space:nowrap;flex:none}
+.desk-ref #feesDisplay{font-size:12px;padding:8px 9px}
+.desk-ref .sales-identity{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:10px}
+.desk-ref .sales-identity .dr-field{min-width:0}
+.desk-ref .sales-identity select{min-width:0;width:100%;padding-inline:8px;font-size:14px}
+.desk-ref .operation-switches .dr-field{margin-bottom:5px}
+.desk-ref .operation-switches .toggle{margin-bottom:5px}
+.desk-ref .operation-switches .toggle button{padding:5px 8px;min-height:34px}
+.desk-ref .operation-switches label{margin-bottom:3px}
+.desk-ref .wrapping-controls{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
+.desk-ref .wrapping-controls[hidden]{display:none}
+.desk-ref .wrapping-controls .toggle{flex:1;margin:0}
+.desk-ref .wrapping-controls button{padding:5px 8px;min-height:32px;font-size:12px}
+.desk-ref .dr-row.silver-row{grid-template-columns:minmax(0,1fr) 48px 52px 28px;align-items:center}
+.desk-ref .line-wrap{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;min-height:40px;font:inherit;font-size:11px;cursor:pointer}
+.desk-ref .copy-state{background:var(--successbg);color:var(--success);padding:8px 12px;border-radius:9px;font-size:12px}
+.desk-ref .mobile-copy{min-width:100px}
+.desk-ref .dr-row select{font-size:13px}
+.desk-ref .operation-switches .metal-field{margin-bottom:9px}
+@media (max-width:620px){
+ .desk-ref #toast{bottom:calc(100px + env(safe-area-inset-bottom))}
+ .desk-ref .dr-row.silver-row{grid-template-columns:minmax(0,1fr) 48px 52px 28px;gap:6px}
+}
+.desk-ref .operation-switches .toggle button.dr-active,.desk-ref .wrapping-controls .toggle button.dr-active{background:var(--softgold);border-color:var(--gold);color:var(--goldtext);box-shadow:0 2px 5px #00000008;font-weight:600}
+.desk-ref .dr-row .line-wrap{display:grid;place-items:center;background:var(--softgold);color:var(--goldtext);border-color:var(--border);cursor:default;user-select:none}
+.desk-ref .operation-switches .toggle button:focus-visible,.desk-ref .wrapping-controls button:focus-visible,.desk-ref .button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){
+ .desk-ref .operation-switches .toggle button:hover,.desk-ref .wrapping-controls .toggle button:hover,.desk-ref .button:not(:disabled):hover,.desk-ref .mobile-copy:hover{border-color:var(--gold);filter:brightness(1.04);box-shadow:0 3px 12px #c5a04922}
+ .desk-ref .sales-identity select:hover,.desk-ref .dr-row select:hover,.desk-ref input:not(:disabled):hover{border-color:var(--gold)}
+}
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+ .desk-ref .toggle button,.desk-ref .button,.desk-ref .mobile-copy,.desk-ref select,.desk-ref input{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+ .desk-ref .operation-switches .toggle button:hover,.desk-ref .wrapping-controls .toggle button:hover,.desk-ref .button:not(:disabled):hover{transform:translateY(-1px)}
+ .desk-ref .button:not(:disabled):active,.desk-ref .toggle button:active{transform:translateY(0)}
+}
+/* theme.css */
+.desk-ref{font-family:'IBM Plex Sans Arabic', sans-serif;font-synthesis:none;color-scheme:light;--bg:#f3f5f8;--surface:#ffffff;--surface2:#f7f8fa;--text:#202a38;--muted:#6b7687;--border:#e2e7ee;--gold:#c5a049;--goldtext:#826222;--softgold:#f9f4e8;--success:#287654;--successbg:#edf7f2;--danger:#b44c4c;--dangerbg:#fcf1f0;--shadow:0 4px 24px #15233305;--yellow:#fff1c9;--yellowtext:#5b461b}
+.desk-ref[data-theme='dark']{color-scheme:dark;--bg:#101722;--surface:#182231;--surface2:#1e2a3b;--text:#eef2f8;--muted:#a7b3c4;--border:#2c3a4d;--gold:#d6b35b;--goldtext:#e5c986;--softgold:#302e26;--success:#91d8b4;--successbg:#1b352f;--danger:#edaaa6;--dangerbg:#3a2931;--shadow:0 4px 24px #0000000c;--yellow:#3b3220;--yellowtext:#f3d794}
+.desk-ref *{box-sizing:border-box}
+.desk-ref{margin:0;background:var(--bg);color:var(--text);font:400 15px/1.65 'IBM Plex Sans Arabic', sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.desk-ref button,.desk-ref input,.desk-ref select,.desk-ref textarea{font-family:inherit}
+.desk-ref button{touch-action:manipulation}
+.desk-ref h1,.desk-ref h2,.desk-ref h3,.desk-ref strong,.desk-ref b{font-weight:600}
+.desk-ref h1,.desk-ref h2,.desk-ref h3{color:var(--text);line-height:1.5}
+.desk-ref .layout{max-width:1480px;margin:20px auto;padding:0 24px;gap:16px;grid-template-columns:minmax(260px,1fr) minmax(330px,1.2fr) minmax(280px,1fr)}
+.desk-ref .layout > section{min-width:0}
+.desk-ref .panel{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.desk-ref h2{font-size:17px;margin:0 0 19px}
+.desk-ref h3{font-size:15px;margin:19px 0 12px}
+.desk-ref .topline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.desk-ref .topline h2{margin-bottom:0}
+.desk-ref .dr-field{margin-bottom:15px}
+.desk-ref label{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:7px;line-height:1.55}
+.desk-ref input,.desk-ref select,.desk-ref textarea{width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:400;line-height:1.5;padding:10px 12px;min-height:44px;min-width:0;transition:border-color .15s, box-shadow .15s}
+.desk-ref input::placeholder,.desk-ref textarea::placeholder{color:var(--muted);opacity:.72}
+.desk-ref input:focus,.desk-ref select:focus,.desk-ref textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 16%, transparent)}
+.desk-ref input[readonly]{background:var(--surface2);font-variant-numeric:tabular-nums}
+.desk-ref input[type='checkbox']{min-height:0;width:18px;height:18px;margin:0;padding:0;flex:none;accent-color:var(--gold)}
+.desk-ref .two{gap:12px}
+.desk-ref .toggle{padding:4px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);gap:4px;margin-bottom:12px}
+.desk-ref .toggle button{padding:8px 14px;min-height:38px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:14px;font-weight:500}
+.desk-ref .toggle button.dr-active{background:var(--surface);border-color:var(--border);color:var(--text);box-shadow:0 2px 5px #00000008}
+.desk-ref #types button.dr-active{background:var(--softgold);color:var(--goldtext);border-color:color-mix(in srgb,var(--gold) 30%,transparent)}
+.desk-ref .button{min-height:43px;padding:9px 15px;border-radius:10px;font-size:14px;font-weight:600;line-height:1.6;transition:filter .15s, border-color .15s}
+.desk-ref .button:hover{filter:brightness(.98)}
+.desk-ref .secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.desk-ref .secondary:hover{border-color:var(--gold)}
+.desk-ref .dark{background:var(--gold);color:#20242b;border:1px solid transparent;font-size:15px}
+.desk-ref .dark:disabled{background:var(--gold);opacity:.5;cursor:not-allowed}
+.desk-ref button:disabled{opacity:.55;cursor:not-allowed}
+.desk-ref .dr-pill{display:inline-flex;align-items:center;background:var(--surface2);color:var(--muted);border:1px solid var(--border);padding:4px 9px;border-radius:6px;font-size:11px;font-weight:500;white-space:nowrap}
+.desk-ref .price-grid{gap:12px}
+.desk-ref .dr-price{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:13px}
+.desk-ref .dr-price small{color:var(--muted);font-size:12px;line-height:1.7}
+.desk-ref .dr-price b{color:var(--text);font-size:27px;font-weight:600;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin:3px 0}
+.desk-ref .dr-price .override-label{color:var(--muted);margin:13px 0 6px;font-size:11px}
+.desk-ref .manual-price{background:var(--surface);border-color:var(--border);font-family:inherit;font-size:15px;font-weight:500;padding:8px}
+.desk-ref #sellMode,.desk-ref #buyMode{font-size:11px;line-height:1.65;margin-top:7px;color:var(--muted)}
+.desk-ref #sellMode.manual-active,.desk-ref #buyMode.manual-active{color:var(--success);font-weight:500}
+.desk-ref #sellMode.manual-error,.desk-ref #buyMode.manual-error{color:var(--danger);font-weight:500}
+.desk-ref .dr-row{grid-template-columns:minmax(0,1fr) 67px 36px;align-items:center;gap:7px;margin-bottom:10px}
+.desk-ref .dr-row select{width:100%;font-size:14px}
+.desk-ref .dr-row input{text-align:center;font-variant-numeric:tabular-nums;padding-inline:6px}
+.desk-ref .remove{min-height:36px;height:36px;border:1px solid var(--border);color:var(--muted);background:var(--surface2);border-radius:8px;font-size:18px}
+.desk-ref .remove:hover{background:var(--dangerbg);color:var(--danger)}
+.desk-ref .clear-all{color:var(--muted);background:transparent;border-color:var(--border);margin-top:8px;font-size:12px}
+.desk-ref .clear-all:hover{background:var(--dangerbg);color:var(--danger)}
+.desk-ref .discount{background:var(--surface2);border-color:var(--border);border-radius:11px;margin:16px 0 0;padding:13px}
+.desk-ref .discount-toggle{color:var(--text);font-size:12px;font-weight:500;line-height:1.7;gap:9px}
+.desk-ref .summary{background:var(--softgold);border:1px solid color-mix(in srgb,var(--gold) 25%,var(--border));color:var(--goldtext);border-radius:12px;padding:17px;margin-top:14px}
+.desk-ref .summary > span{font-size:13px;font-weight:500}
+.desk-ref .summary strong{color:var(--text);font-size:32px;font-weight:600;line-height:1.4;margin:7px 0 4px;font-variant-numeric:tabular-nums;letter-spacing:-.7px}
+.desk-ref .summary small{font-size:11px;color:var(--muted)}
+.desk-ref .preview{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:11px;padding:16px;font:400 14px/1.9 'IBM Plex Sans Arabic',sans-serif;min-height:230px}
+.desk-ref .muted,.desk-ref .fee-small{color:var(--muted);font-size:12px;line-height:1.75}
+.desk-ref #feesAfterDiscount{color:var(--goldtext)}
+.desk-ref #feesDisplay{font-size:14px;padding:10px 12px}
+.desk-ref .fee-small{margin-top:7px;gap:8px;font-size:11px}
+.desk-ref .dr-status{padding:10px 12px;font-size:12px;border-radius:9px;margin-bottom:15px;background:var(--softgold);color:var(--goldtext)}
+.desk-ref .dr-status.ok{background:var(--successbg);color:var(--success)}
+.desk-ref .dr-status.bad{background:var(--dangerbg);color:var(--danger)}
+.desk-ref .field-hint{margin-top:6px;font-size:11px;line-height:1.65;color:var(--muted)}
+.desk-ref .field-hint.is-error{color:var(--danger)}
+.desk-ref .field-invalid{background:var(--surface);border-color:var(--danger)!important}
+.desk-ref .payment-remaining{background:var(--surface2);border:1px solid var(--border);padding:9px 11px;border-radius:9px}
+.desk-ref .payment-remaining strong{color:var(--text);font-variant-numeric:tabular-nums}
+.desk-ref .notice{color:var(--goldtext);background:var(--softgold);border:1px solid color-mix(in srgb,var(--gold) 18%,var(--border));border-radius:9px;padding:10px 13px;font-size:12px;line-height:1.8}
+.desk-ref #draftState{font-size:11px;margin-block:10px 18px}
+.desk-ref #retryClipboard{margin-top:8px}
+.desk-ref #toast{z-index:200;background:var(--text);color:var(--bg);border-radius:11px;padding:12px 17px;font-size:13px;box-shadow:0 6px 25px #0002}
+.desk-ref .mobile-bar{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:0 8px 40px #0002}
+.desk-ref .mobile-total span{color:var(--muted)}
+.desk-ref .mobile-total strong{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.desk-ref .mobile-copy{font-family:inherit;background:var(--gold);color:#20242b;font-size:14px;font-weight:600;min-height:43px;border-radius:9px;padding:8px 20px}
+@media (max-width: 1180px){
+ .desk-ref .layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .desk-ref .preview-col{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+}
+@media (max-width: 720px){
+ .desk-ref .layout{display:block;margin:14px auto;padding-inline:12px}
+ .desk-ref .preview-col{display:block}
+ .desk-ref .panel{padding:17px;margin-bottom:12px;border-radius:13px}
+ .desk-ref h2{font-size:17px;margin-bottom:16px}
+ .desk-ref h3{font-size:15px}
+ .desk-ref label{font-size:13px}
+ .desk-ref input,.desk-ref select,.desk-ref textarea,.desk-ref .manual-price{font-size:16px;min-height:44px}
+ .desk-ref .dr-field{margin-bottom:14px}
+ .desk-ref .two,.desk-ref .price-grid{gap:9px}
+ .desk-ref .dr-row{grid-template-columns:minmax(0,1fr) 60px 34px;gap:6px}
+ .desk-ref .dr-row select{font-size:15px;padding-inline:9px}
+ .desk-ref .dr-price{padding:12px}
+ .desk-ref .dr-price b{font-size:26px}
+ .desk-ref .dr-price small{font-size:12px}
+ .desk-ref .summary strong{font-size:31px}
+ .desk-ref .preview{font-size:14px;min-height:180px}
+ .desk-ref .dr-pill{font-size:10px}
+ .desk-ref .button{font-size:14px;min-height:44px}
+ .desk-ref .mobile-bar{gap:18px;padding:9px 13px;min-height:64px;border-radius:14px}
+}
+@media (max-width: 420px){
+ .desk-ref .dr-price .override-label{font-size:10px}
+}
+@media (prefers-reduced-motion: reduce){
+ .desk-ref *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+/* globals.css forces text-align on every input with !important; the reference's own alignment wins here (the extra :not()s only raise the specificity above those rules). */
+html[dir] .desk-ref input:not([dir=zz]):not([dir=yy]){text-align:start!important}
+html[dir] .desk-ref .dr-row input:not([dir=zz]):not([dir=yy]),html[dir] .desk-ref .manual-price:not([dir=zz]):not([dir=yy]){text-align:center!important}
