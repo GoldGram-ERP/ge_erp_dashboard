@@ -42,8 +42,8 @@ if (tagged !== `v${pkgVersion}` && !args.includes("--no-version-check")) {
 
 // Everything git tracks, minus what the host never builds: a new folder the build imports can never be forgotten.
 const EXCLUDE = /^(e2e-tests|docs|\.github|\.claude|\.proof|worktrees)\//;
-const tracked = git(["ls-files"]).split(/?
-/).filter(Boolean).filter((f) => !EXCLUDE.test(f) && existsSync(join(root, f)));
+const tracked = git(["ls-files"]).split("
+").filter(Boolean).filter((f) => !EXCLUDE.test(f) && existsSync(join(root, f)));
 
 const stage = join(root, ".pack");
 rmSync(stage, { recursive: true, force: true });
