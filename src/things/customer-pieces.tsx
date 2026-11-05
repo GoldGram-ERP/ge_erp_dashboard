@@ -1,6 +1,6 @@
 "use client";
-// قطع مرتجعة (ليست من مبيعاتنا): buy/returned-pieces (issue #4, backend #167). A piece a customer brought that we did not sell enters our stock
-// at no cost, with a category and its item's karat, weight and workmanship, and its label prints in the same step. It is then sold like any piece.
+// قطع مرتجعة (ليست من مبيعاتنا): buy/returned-pieces (issue #4, backend #167). A piece a customer brings back is BOUGHT from them (owner, 2026-11-05):
+// one purchase document of N pieces of an item, paid in full, each piece in stock with its label. It is then sold like any piece.
 // Open to whoever holds the Purchase coding screen (the backend's screen map: Purchase coding owns customer-pieces).
 // The backend has no list of all of them: a piece is found by its code (GET /customer-pieces?code=) or by the customer's phone
 // (GET /customer-pieces/by-phone, 20 at most, newest first); the branch goes to the backend, category and karat narrow what came back.
@@ -18,6 +18,16 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
   const { t, L } = tr;
   const cp = (k: string, v?: Record<string, string>) => t("gold-accounts", `customerPieces.${k}`, v);
   const reprint = (r: Row) => { openLabelPrint(tr, r.label).catch(() => {}); };
+  const removal = async (r: Row, h: { close: () => void; toast: (m: string, o?: { error?: boolean }) => void; reload: () => void }, path: string) => {
+    try {
+      await api(path, { method: "DELETE", saveKey: newSaveKey() });
+    } catch (e) {
+      const m = e instanceof ApiFailure ? e.error.message : "";
+      if (m === "pieceSold" || m === "pieceNotAvailable" || m === "pieceInPurchase") { h.toast(cp(m), { error: true }); return; }
+      throw e;
+    }
+    h.close(); h.toast(cp("deletedToast", { code: r.code })); h.reload();
+  };
 
   const findView: ViewConfig = {
     id: "find", label: cp("listTitle"), keys: KEYS, rowKey: "id", runLabel: cp("findRun"), paging: false,
@@ -78,18 +88,12 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       ),
       actions: [
         { id: "reprint", label: cp("reprint"), icon: "print", when: (r) => !r.deletedAt, run: (r) => reprint(r) },
-        // Delete marks the record and its stock piece; the backend refuses a sold piece or one on a treasury transfer, said here in this screen's words
-        { id: "delete", label: L("حذف", "Delete"), icon: "trash", danger: true, when: (r) => !r.deletedAt, confirm: { title: cp("deleteTitle"), text: cp("deleteBody") },
-          run: async (r, h) => {
-            try {
-              await api(`/customer-pieces/${r.id}`, { method: "DELETE", saveKey: newSaveKey() });
-            } catch (e) {
-              const m = e instanceof ApiFailure ? e.error.message : "";
-              if (m === "pieceSold" || m === "pieceNotAvailable") { h.toast(cp(m), { error: true }); return; }
-              throw e;
-            }
-            h.close(); h.toast(cp("deletedToast", { code: r.code })); h.reload();
-          } },
+        // Delete marks the record and its stock piece; the backend refuses a sold piece or one on a treasury transfer, said here in this screen's words.
+        // A piece that was bought leaves only with its whole purchase (the money goes back in the same step): pieceInPurchase says so.
+        { id: "delete", label: L("حذف", "Delete"), icon: "trash", danger: true, when: (r) => !r.deletedAt && !r.purchaseId, confirm: { title: cp("deleteTitle"), text: cp("deleteBody") },
+          run: async (r, h) => removal(r, h, `/customer-pieces/${r.id}`) },
+        { id: "deletePurchase", label: cp("deletePurchase"), icon: "trash", danger: true, when: (r) => !r.deletedAt && !!r.purchaseId, confirm: { title: cp("deletePurchaseTitle"), text: cp("deletePurchaseBody") },
+          run: async (r, h) => removal(r, h, `/customer-pieces/purchases/${r.purchaseId}`) },
       ],
     },
     forms: { create: { display: "page", title: cp("add"), fields: [], path: () => "/customer-pieces", custom: (p: CustomFormProps) => <CustomerPieceForm {...p} /> } },

@@ -1,14 +1,14 @@
 import { afterAll } from 'e2e';
-import { test, expect, seed, capture, stamp, apiAs, M, LANGS } from './lib.ts';
+import { test, expect, seed, capture, stamp, apiAs, M, LANGS, cairoDay, MAIN_BRANCH, type Lang } from './lib.ts';
 
-// Returned pieces, not from us (issue #4, backend #167), through the real page as an Admin of the seeded branch: category and item required,
-// an item of another category is never offered, karat/weight/workmanship read only from the item, Save sends five fields and the label
-// (code, category, karat, weight; no name, phone or price) fills the print window; find by phone and by code with the filters; Reprint;
-// the piece is in stock (the sales invoice adds it, and it sells); Delete is refused while sold, then marks it.
-// The print window: window.open is swapped for an iframe on the page (the engine does not follow new tabs), so the label can be read and seen.
+// Returned pieces are BOUGHT from the customer (owner, 2026-11-05), through the real page as an Admin (who picks the Branch): the form takes the
+// branch, the item and the count only (no category, karat, weight, code or price box); a read-only price preview shows the buy price per gram,
+// the cashback per gram, one piece and the total (checked here against the rule, with BigInt, not copied from the screen); the payment (cash +
+// bank rows) must equal the total; Save sends item, quantity and the payment (never a price); the saved page shows the purchase number and the
+// pieces with code, Copy and Print label; the label holds code, category, karat and weight only; the purchase is deleted through the screen
+// (a bought piece has no plain Delete). The print window: window.open is swapped for an iframe on the page (the engine does not follow new tabs).
 let S: Awaited<ReturnType<typeof seed>>;
-const cp = (lang: (typeof LANGS)[number], k: string) => M(lang, 'gold-accounts', `customerPieces.${k}`);
-const arabicDigits = (s: string) => s.replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
+const cp = (lang: Lang, k: string) => M(lang, 'gold-accounts', `customerPieces.${k}`);
 const PRINT_FRAME = () => {
   window.open = () => {
     document.getElementById('e2e-print')?.remove();
@@ -17,148 +17,176 @@ const PRINT_FRAME = () => {
     f.style.cssText = 'position:fixed;bottom:16px;inset-inline-end:16px;width:340px;height:150px;z-index:99999;border:2px solid #7a5710;background:#fff';
     document.body.appendChild(f);
     const w = f.contentWindow!;
-    w.close = () => f.remove();      // a refused Save closes the print window
+    w.close = () => f.remove();
     return w;
   };
 };
 const labelHtml = (browser: any) => browser.evaluate(() => (document.querySelector('#e2e-print') as HTMLIFrameElement | null)?.contentDocument?.body?.innerHTML ?? '');
-const optionTexts = (browser: any) => browser.evaluate(() => [...document.querySelectorAll('[role=listbox] [role=option]')].map((o) => (o.textContent ?? '').trim()));
 const code6 = (n: unknown) => String(n).padStart(6, '0');
+/** Money text as the screen writes it (piastres -> "53,484.39"), by integer maths only. */
+const money = (p: number) => `${Math.trunc(p / 100).toString().replace(/\B(?=(\d{3})+$)/g, ',')}.${String(p % 100).padStart(2, '0')}`;
+const plain = (p: number) => `${Math.trunc(p / 100)}.${String(p % 100).padStart(2, '0')}`;
+/** The rule: ((buy + cashback) per gram x weight in mg / 1000) half up to the piastre = one piece. */
+const onePieceOf = (perGram: number, weightMg: number) => Number((BigInt(perGram) * BigInt(weightMg) * 2n + 1000n) / 2000n);
+const WEIGHT_MG = 4375;                                  // 4.375 g
+const texts = (browser: any, sel: string) => browser.evaluate((s: string) => [...document.querySelectorAll(s)].map((e) => (e.textContent ?? '').trim()), sel);
+
+const made = { purchases: [] as string[], item: undefined as any, bank: '' as string, accounts: [] as { id: string; label: string }[], price: '' as string };
+
+async function setup() {
+  S ??= await seed();
+  if (made.item) return;
+  const form = { itemName: `E2E Returned ${S.tag}`, isCoded: true, itemType: 'gold', categoryId: S.cat.id, karat: '21', weight: WEIGHT_MG, workmanshipMode: 'per_gram', workmanshipValue: '50.00', cashbackMode: 'per_gram', cashbackValue: '25.00' };
+  made.item = (await S.api('POST', '/items', form)).body;
+  const bn = `E2E Bank ${stamp()}`;
+  made.bank = (await S.api('POST', '/banks', { bankName: bn })).body.id;
+  for (let i = 0; i < 2; i++) {
+    const name = `E2E Acc${i} ${stamp()}`;
+    made.accounts.push({ id: (await S.api('POST', '/bank-accounts', { accountName: name, bankId: made.bank, commission: '0.00' })).body.id, label: `${name} · ${bn}` });
+  }
+  // a gold price with a buy price for today, when the database has none
+  const probe = await S.api('GET', `/customer-pieces/buy-price?itemId=${made.item.id}&quantity=1`);
+  if (probe.status === 409 && probe.body?.message === 'noGoldPriceToday') {
+    made.price = (await S.api('POST', '/gold-prices', { date: cairoDay(), sellPrice: 430000, buyPrice: 405000, silverPrice: 5000 })).body.id;
+  }
+}
+const pickItem = async (browser: any, screen: any) => {
+  await browser.locator('#itemId-btn').tap();
+  await screen.getByRole('option', `${code6(made.item.itemCode)} · ${made.item.itemName}`).tap();
+};
 
 for (const lang of LANGS) {
-  test(`returned pieces UI (${lang}): category required, item of its category only, save and print the label, find, reprint, sell, delete`, { tags: ['e2e', 'purchases', 'returned-pieces'], requires: ['browser'] }, async ({ go, browser, screen, shot }) => {
-    S ??= await seed();
+  test(`returned pieces bought (${lang}): item and count only, price preview, paid in full, save, pieces with Copy and Print label, delete the purchase`, { tags: ['e2e', 'purchases', 'returned-pieces'], requires: ['browser'] }, async ({ go, browser, screen, shot }) => {
+    await setup();
     const admin = await apiAs('e2eadmin');
     const tag = stamp();
-    const other = (await S.api('POST', '/categories', { categoryName: `E2E Other ${tag}`, qrLabel: false })).body;
-    const otherItem = (await S.api('POST', '/items', { itemName: `E2E Other item ${tag}`, isCoded: true, itemType: 'gold', categoryId: other.id, karat: '18', weight: 3000, workmanshipMode: 'per_gram', workmanshipValue: '40.00', cashbackMode: 'per_gram', cashbackValue: '0.00' })).body;
     const name = `E2E Mona ${tag}`;
     const phone = `010${Date.now().toString().slice(-8)}`;
-    const itemLabel = `${code6(S.item.itemCode)} · ${S.item.itemName}`;
-    const made: { piece?: any; invoice?: string } = {};
     await browser.addInitScript(PRINT_FRAME);
     const seen = await capture(browser, /\/customer-pieces(\?|$)/, ['POST']);
     try {
-      // 1. Nothing chosen: category and item say required, nothing is sent
+      // 1. The form: branch, item, quantity; nothing about category, karat, weight, code or price to type
       await go('e2eadmin', '/sales/returns?view=returned-pieces&new=createReturnedPiece', lang);
       await expect(browser.locator('#cp-save')).toBeVisible();
-      await expect(browser.locator('#itemId-btn')).toBeDisabled();
+      await expect(browser.locator('#branchId-btn')).toBeVisible();
+      for (const gone of ['#categoryId-btn', '#cp-karat', '#cp-weight', '#f-code', '#f-pieceCode', '#f-price', '#f-tagPrice', '#f-weight']) await expect(browser.locator(gone)).toHaveCount(0);
+      await shot(`returned-${lang}-1-form`);
+
+      // 2. Nothing chosen: the item says required, nothing is sent
       await browser.locator('#cp-save').tap();
-      await expect(browser.locator('[data-k=categoryId] .err')).toBeVisible();
       await expect(browser.locator('[data-k=itemId] .err')).toBeVisible();
       expect(seen.length).toBe(0);
-      await shot(`returned-${lang}-1-category-required`);
 
-      // 2. The category offers its own items only; the chosen item shows its karat, weight and workmanship, read only
-      await browser.locator('#categoryId-btn').tap();
-      await screen.getByRole('option', S.cat.categoryName).tap();
-      await browser.locator('#itemId-btn').tap();
-      await expect.poll(() => optionTexts(browser)).toContain(itemLabel);
-      expect((await optionTexts(browser)).some((t: string) => t.includes(otherItem.itemName))).toBe(false);
-      await screen.getByRole('option', itemLabel).tap();
-      await expect(browser.locator('#cp-karat')).toHaveValue('21');
-      await expect(browser.locator('#cp-weight')).toHaveValue('5.000');
-      await expect(browser.locator('#cp-workmanship')).toHaveValue('50.00');
-      expect(await browser.evaluate(() => ['#cp-karat', '#cp-weight', '#cp-workmanship'].every((s) => (document.querySelector(s) as HTMLInputElement).readOnly))).toBe(true);
-      await browser.locator('#f-description').fill('E2E ring with a red stone');
+      // 3. Branch (the Admin picks it), item, quantity 3: the preview follows the rule, to the piastre
+      await browser.locator('#branchId-btn').tap();
+      await screen.getByRole('option', 'Main branch').tap();
+      await pickItem(browser, screen);
+      await browser.locator('#f-quantity').fill('3');
+      await expect(browser.locator('[data-preview=total]')).toBeVisible();
+      const q = (await admin('GET', `/customer-pieces/buy-price?itemId=${made.item.id}&quantity=3`)).body;
+      const one = onePieceOf(q.buyPricePerGram + q.cashbackPerGram, WEIGHT_MG);
+      expect(q.cashbackPerGram).toBe(2500);
+      expect(q.onePiece).toBe(one);
+      expect(q.total).toBe(one * 3);
+      const shown = async (k: string) => (await texts(browser, `[data-preview=${k}]`))[0];
+      await expect.poll(() => shown('total')).toBe(money(q.total));
+      expect(await shown('buyPerGram')).toBe(money(q.buyPricePerGram));
+      expect(await shown('cashbackPerGram')).toBe(money(q.cashbackPerGram));
+      expect(await shown('onePiece')).toBe(money(one));
+      await expect(browser.locator('[data-left]')).toHaveText(money(q.total));
+      await shot(`returned-${lang}-2-preview`);
+
+      // 4. Paying one piastre short is refused on the page (the sum box says what is due and what was typed), nothing is sent
+      await browser.locator('#f-cash').fill(plain(q.total - 1));
+      await expect(browser.locator('[data-left]')).toHaveText('0.01');
+      await browser.locator('#cp-save').tap();
+      await expect(browser.locator('#paySumErr .err')).toContainText(cp(lang, 'payMismatch').split('{total}')[0].trim());
+      expect(seen.length).toBe(0);
+      await shot(`returned-${lang}-3-short`);
+
+      // 5. Cash in full + the optional customer fields: Save sends item, quantity and the payment, never a price, category, karat, weight or code
+      await browser.locator('#f-cash').fill(plain(q.total));
+      await expect(browser.locator('[data-left]')).toHaveText('0.00');
       await browser.locator('#f-customerName').fill(name);
-      await browser.locator('#f-customerPhone').fill(arabicDigits(phone));
-      await shot(`returned-${lang}-2-filled`);
-
-      // 3. The item switched off after it was chosen: refused, and the item box names it
-      await S.setItemActive(false);
+      await browser.locator('#f-customerPhone').fill(phone);
       await browser.locator('#cp-save').tap();
       await expect.poll(() => seen.length).toBe(1);
-      await expect(browser.locator('[data-k=itemId] .err')).toContainText(cp(lang, 'itemInactive').replace('{item}', S.item.itemName));
-      await expect(browser.locator('#e2e-print')).toHaveCount(0);
-      await shot(`returned-${lang}-3-item-inactive`);
-      await S.setItemActive(true);
-
-      // 4. Save: five fields, the phone in Latin digits; the label holds code, category, karat and weight, never the name, phone or a price
-      await browser.locator('#cp-save').tap();
-      await expect.poll(() => seen.length).toBe(2);
-      expect(seen[1].body).toEqual({ categoryId: S.cat.id, itemId: S.item.id, description: 'E2E ring with a red stone', customerName: name, customerPhone: phone });
+      expect(seen[0].body).toEqual({ branchId: MAIN_BRANCH, itemId: made.item.id, quantity: 3, cash: q.total, bankPayments: [], customerName: name, customerPhone: phone });
       await expect(browser.locator('#cp-saved')).toBeVisible();
-      made.piece = (await admin('GET', `/customer-pieces/by-phone?phone=${phone}`)).body.items[0];
-      expect(made.piece).toMatchObject({ categoryId: S.cat.id, itemId: S.item.id, karat: '21', weight: 5000, customerPhone: phone });
+      const docNo = await browser.evaluate(() => document.querySelector('[data-doc-number]')?.textContent ?? '');
+      const codes: string[] = await browser.evaluate(() => [...document.querySelectorAll('#cp-pieces [data-piece-code]')].map((e) => (e as HTMLElement).dataset.pieceCode!));
+      expect(codes.length).toBe(3);
+      await expect(browser.locator('[data-saved-total]')).toHaveText(money(q.total));
+      const first = (await admin('GET', `/customer-pieces?code=${codes[0]}`)).body;
+      const doc = (await admin('GET', `/customer-pieces/purchases/${first.purchaseId}`)).body;
+      made.purchases.push(doc.id);
+      expect(code6(doc.documentNumber)).toBe(docNo);
+      expect(doc).toMatchObject({ quantity: 3, total: q.total, cash: q.total, bankPayments: [], itemId: made.item.id, branchId: MAIN_BRANCH });
+      expect(doc.pieces.map((p: any) => p.code)).toEqual(codes);
+      for (const c of codes) await expect(browser.locator(`[data-piece-code="${c}"] .copy-btn`)).toBeVisible();
+      await shot(`returned-${lang}-4-saved`);
+
+      // 6. Print label: code, category, karat and weight; never the name, phone or any money
+      await browser.locator(`[data-print="${codes[0]}"]`).tap();
       await expect.poll(() => labelHtml(browser)).toContain('data-label-code');
       const html = await labelHtml(browser);
-      expect(html).toContain(`>${made.piece.code}<`);
+      expect(html).toContain(`>${codes[0]}<`);
       expect(html).toContain(S.cat.categoryName);
-      expect(html).toContain('5.000');
-      expect(html).toContain(M(lang, 'gold-accounts', 'purchaseCoding.karatValue').replace('{karat}', '21'));
-      for (const leak of [name, 'Mona', phone, phone.slice(3), 'EGP', 'ج.م']) expect(html).not.toContain(leak);
-      await shot(`returned-${lang}-4-saved-and-label`);
+      expect(html).toContain('4.375');
+      for (const leak of [name, 'Mona', phone, money(q.total), money(one), 'EGP', 'ج.م']) expect(html).not.toContain(leak);
+      await shot(`returned-${lang}-5-label`);
 
-      // 5. Find by the phone, then narrow by karat and category; find by the code; Reprint from the row
+      // 7. A second purchase paid by cash and a bank row: cash 100.00, the bank account takes the rest to the piastre
+      await browser.evaluate(() => document.getElementById('e2e-print')?.remove());   // the stand-in print window covers the buttons on a phone
+      await browser.locator('#cp-another').tap();
+      await pickItem(browser, screen);
+      await browser.locator('#f-quantity').fill('1');
+      const one1 = (await admin('GET', `/customer-pieces/buy-price?itemId=${made.item.id}&quantity=1`)).body.total as number;
+      await expect.poll(() => shown('total')).toBe(money(one1));
+      await browser.locator('#f-cash').fill('100.00');
+      await browser.locator('[data-k=bank0Account] [role=combobox]').tap();
+      await screen.getByRole('option', made.accounts[0].label).tap();
+      await browser.locator('#bm0').fill(plain(one1 - 10000));
+      await expect(browser.locator('[data-left]')).toHaveText('0.00');
+      await shot(`returned-${lang}-6-cash-and-bank`);
+      await browser.locator('#cp-save').tap();
+      await expect.poll(() => seen.length).toBe(2);
+      expect(seen[1].body).toEqual({ branchId: MAIN_BRANCH, itemId: made.item.id, quantity: 1, cash: 10000, bankPayments: [{ bankAccountId: made.accounts[0].id, amount: one1 - 10000 }] });
+      await expect(browser.locator('#cp-saved')).toBeVisible();
+      const code2 = await browser.evaluate(() => (document.querySelector('#cp-pieces [data-piece-code]') as HTMLElement).dataset.pieceCode!);
+      const doc2 = (await admin('GET', `/customer-pieces/purchases/${(await admin('GET', `/customer-pieces?code=${code2}`)).body.purchaseId}`)).body;
+      made.purchases.push(doc2.id);
+      expect(doc2).toMatchObject({ quantity: 1, total: one1, cash: 10000, bankPayments: [{ bankAccountId: made.accounts[0].id, amount: one1 - 10000 }] });
+      await shot(`returned-${lang}-7-saved-bank`);
+
+      // 8. Clean up through the screen: find the piece, open it, a bought piece has no plain Delete, only Delete the purchase
       await go('e2eadmin', '/sales/returns?view=returned-pieces', lang);
-      await browser.locator('#f-find').fill(arabicDigits(phone));
+      await browser.locator('#f-find').fill(codes[0]);
       await browser.locator('#run').tap();
-      await expect(browser.locator(`[data-reprint="${made.piece.code}"]`)).toBeVisible();
-      await expect(browser.locator('#tbl')).toContainText(name);
-      await shot(`returned-${lang}-5-found-by-phone`);
-      await browser.locator('#f-karat-btn').tap();
-      await screen.getByRole('option', '18').tap();
-      await browser.locator('#run').tap();
-      await expect(browser.locator(`[data-reprint="${made.piece.code}"]`)).toHaveCount(0);
-      await browser.locator('#f-karat-btn').tap();
-      await screen.getByRole('option', '21').tap();
-      await browser.locator('#f-categoryId-btn').tap();
-      await screen.getByRole('option', other.categoryName).tap();
-      await browser.locator('#run').tap();
-      await expect(browser.locator(`[data-reprint="${made.piece.code}"]`)).toHaveCount(0);
-      await go('e2eadmin', '/sales/returns?view=returned-pieces', lang);
-      await browser.locator('#f-find').fill(made.piece.code);
-      await browser.locator('#run').tap();
-      await expect(browser.locator('#tbl tbody tr')).toHaveCount(1);
-      await browser.evaluate(() => document.getElementById('e2e-print')?.remove());
-      await browser.locator(`[data-reprint="${made.piece.code}"]`).tap();
-      await expect.poll(() => labelHtml(browser)).toContain(`>${made.piece.code}<`);
-      expect(await labelHtml(browser)).not.toContain(name);
-      await shot(`returned-${lang}-6-found-by-code-reprint`);
-
-      // 6. In stock: the sales invoice finds it by its code, and it sells like any piece
-      await go('e2eadmin', '/sales/invoices?new=create', lang);
-      await browser.locator('#ws [data-type=sale]').tap();
-      await browser.locator('#pc').fill(made.piece.code);
-      await browser.locator('#addPiece').tap();
-      await expect(browser.locator('#lineRows tr').first()).toContainText(made.piece.code);
-      await shot(`returned-${lang}-7-in-sales-invoice`);
-      const sale = (cash: number) => admin('POST', '/sales-invoices', { invoiceType: 'sale', customerName: 'E2E Buyer', customerPhone: '01055443322', lines: [{ pieceCode: made.piece.code }], cash });
-      const total = (await sale(1)).body.values.total as number;
-      const sold = await sale(total);
-      expect(sold.status).toBe(201);
-      made.invoice = sold.body.id;
-
-      // 7. Delete: refused while sold (in this screen's words), then marks the record once the sale is gone
-      const openRecord = async () => {
-        await go('e2eadmin', '/sales/returns?view=returned-pieces', lang);
-        await browser.locator('#f-find').fill(made.piece.code);
-        await browser.locator('#run').tap();
-        await browser.locator('#tbl tbody tr').first().tap();
-        await browser.locator('.sheet footer button.danger').tap();
-        await expect(browser.locator('dialog[open]')).toContainText(cp(lang, 'deleteTitle'));
-        await browser.locator('dialog[open] button.danger').tap();
-      };
-      await openRecord();
-      await expect(browser.locator('body')).toContainText(cp(lang, 'pieceSold'));
-      await shot(`returned-${lang}-8-delete-refused-sold`);
-      expect((await admin('DELETE', `/sales-invoices/${made.invoice}`)).status).toBeLessThan(300);
-      made.invoice = undefined;
-      await openRecord();
-      await expect(browser.locator('body')).toContainText(cp(lang, 'deletedToast').replace('{code}', made.piece.code));
-      expect((await admin('GET', `/customer-pieces/${made.piece.id}`)).status).toBe(404);
+      await browser.locator('#tbl tbody tr').first().tap();
+      await expect(browser.locator('.sheet footer button.danger')).toHaveCount(1);
+      await expect(browser.locator('.sheet footer button.danger')).toContainText(cp(lang, 'deletePurchase'));
+      await shot(`returned-${lang}-8-record`);
+      await browser.locator('.sheet footer button.danger').tap();
+      await expect(browser.locator('dialog[open]')).toContainText(cp(lang, 'deletePurchaseTitle'));
+      await browser.locator('dialog[open] button.danger').tap();
+      await expect(browser.locator('body')).toContainText(cp(lang, 'deletedToast').replace('{code}', codes[0]));
+      expect((await admin('GET', `/customer-pieces/purchases/${doc.id}`)).status).toBe(404);
+      expect((await admin('GET', `/customer-pieces?code=${codes[1]}`)).status).toBe(404);
+      made.purchases = made.purchases.filter((id) => id !== doc.id);
       await shot(`returned-${lang}-9-deleted`);
-      made.piece = undefined;
     } finally {
-      await S.setItemActive(true);
-      if (made.invoice) await admin('DELETE', `/sales-invoices/${made.invoice}`);
-      if (made.piece) await admin('DELETE', `/customer-pieces/${made.piece.id}`);
-      await S.api('DELETE', `/items/${otherItem.id}`);
-      if (otherItem.itemNameId) await S.api('DELETE', `/item-names/${otherItem.itemNameId}`);
-      await S.api('DELETE', `/categories/${other.id}`);
+      for (const id of made.purchases) await admin('DELETE', `/customer-pieces/purchases/${id}`);
+      made.purchases = [];
     }
   });
 }
 
-afterAll(async () => { if (S) await S.remove(); });
+afterAll(async () => {
+  if (!S) return;
+  if (made.item) { await S.api('DELETE', `/items/${made.item.id}`); if (made.item.itemNameId) await S.api('DELETE', `/item-names/${made.item.itemNameId}`); }
+  for (const a of made.accounts) await S.api('DELETE', `/bank-accounts/${a.id}`);
+  if (made.bank) await S.api('DELETE', `/banks/${made.bank}`);
+  if (made.price) await S.api('DELETE', `/gold-prices/${made.price}`);
+  await S.remove();
+});

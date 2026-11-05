@@ -1,29 +1,61 @@
-// Pure rules of the Returned pieces screen (issue #4): the form read, the find box, and the label HTML.
-// The form sends category, item, description, customer name and phone only: karat, weight and workmanship come from the item (backend #167).
-import { esc, latinNumber, milligramsText } from "@/lib/format";
+// Pure rules of the Returned pieces screen: the form read, the price preview lines, the find box, and the label HTML.
+// The shop BUYS the returned piece (owner, 2026-11-05): the form sends branch, item, quantity, the payment (cash + bank rows) and the optional
+// description, customer name and phone. Karat, weight, code and price are never sent: the backend works them out (GET /customer-pieces/buy-price).
+import { esc, latinNumber, milligramsText, piastresText, typedPiastres } from "@/lib/format";
 import type { Row } from "@/lib/engine-types";
 import type { Tr } from "@/lib/t";
+import { bankPaid, cashPaid, paymentErrors, sentBanks, type Bank } from "./sales-invoices-math";
 
 export const TEXT_MAX = 100;
+export const QUANTITY_MAX = 100;
 const PHONE = /^\d{8,15}$/;                       // the sales invoice's phone rule
 const CODE = /^[A-Za-z0-9 .]{1,20}$/;             // the backend's pattern for a piece code
 
-export type PieceForm = { branchId?: string; categoryId: string; itemId: string; description: string; customerName: string; customerPhone: string };
+export type PieceForm = { branchId?: string; itemId: string; quantity: string; description: string; customerName: string; customerPhone: string; cash: string; banks: Bank[] };
 
-/** The form as the backend takes it, or the error key of each bad field ("required", "tooLong", "phoneInvalid"). */
-/** `needsBranch`: the Super admin (every branch) and an Admin (who may oversee and change branches) choose it; the backend uses a plain User's own. */
-export function readPiece(v: PieceForm, needsBranch = false): { payload?: PieceForm; errors: Record<string, string> } {
+/** The count typed: a whole number from 1 to 100, Arabic digits read as Latin. null = not valid (the preview waits). */
+export function readQuantity(typed: unknown): number | null {
+  const s = latinNumber(typed).trim();
+  if (!/^\d{1,3}$/.test(s)) return null;
+  const n = Number(s);
+  return n >= 1 && n <= QUANTITY_MAX ? n : null;
+}
+
+/** What is still to pay out: total minus cash and every bank row, in piastres (negative = too much). */
+export const remainingToPay = (total: number, cash: string, banks: Bank[]) => total - cashPaid(cash) - bankPaid(banks);
+
+/** The form as the backend takes it, or the error key of each bad field ("required", "tooLong", "phoneInvalid", "quantityInvalid", "noPrice",
+ *  and for the payment block the keys of paymentErrors plus sum = "mismatch"). `total` = the previewed total in piastres (null = no price yet).
+ *  `needsBranch`: the Super admin and an Admin choose the branch; the backend uses a plain User's own. */
+export function readPiece(v: PieceForm, needsBranch: boolean, total: number | null): { payload?: Record<string, unknown>; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
   if (needsBranch && !v.branchId) errors.branchId = "required";
-  const text = (k: "description" | "customerName") => { const s = v[k].trim(); if (!s) errors[k] = "required"; else if (s.length > TEXT_MAX) errors[k] = "tooLong"; return s; };
-  if (!v.categoryId) errors.categoryId = "required";
   if (!v.itemId) errors.itemId = "required";
+  const quantity = readQuantity(v.quantity);
+  if (quantity === null) errors.quantity = "quantityInvalid";
+  const text = (k: "description" | "customerName") => { const s = v[k].trim(); if (s.length > TEXT_MAX) errors[k] = "tooLong"; return s; };
   const description = text("description"), customerName = text("customerName");
-  const customerPhone = latinNumber(v.customerPhone);
-  if (!customerPhone) errors.customerPhone = "required";
-  else if (!PHONE.test(customerPhone)) errors.customerPhone = "phoneInvalid";
+  const customerPhone = latinNumber(v.customerPhone).trim();
+  if (customerPhone && !PHONE.test(customerPhone)) errors.customerPhone = "phoneInvalid";
+  Object.assign(errors, paymentErrors(v.cash, v.banks, "any"));
+  if (!errors.sum && !Object.keys(errors).some((k) => /^(cash|bank)/.test(k))) {
+    if (total === null) errors.sum = "noPrice";
+    else if (remainingToPay(total, v.cash, v.banks) !== 0) errors.sum = "mismatch";
+  }
   if (Object.keys(errors).length) return { errors };
-  return { errors, payload: { ...(needsBranch ? { branchId: v.branchId } : {}), categoryId: v.categoryId, itemId: v.itemId, description, customerName, customerPhone } };
+  const cash = v.cash.trim();
+  return { errors, payload: {
+    ...(needsBranch ? { branchId: v.branchId } : {}), itemId: v.itemId, quantity,
+    ...(cash !== "" ? { cash: typedPiastres(cash) } : {}), bankPayments: sentBanks(v.banks),
+    ...(description ? { description } : {}), ...(customerName ? { customerName } : {}), ...(customerPhone ? { customerPhone } : {}),
+  } };
+}
+
+export type BuyPrice = { priceDate: string; buyPricePerGram: number; cashbackPerGram: number; onePiece: number; total: number };
+
+/** The preview block's lines as text: buy price and cashback per gram, one piece, the total (EGP, 2 decimals) and the price date. */
+export function previewLines(p: BuyPrice): { buyPerGram: string; cashbackPerGram: string; onePiece: string; total: string; priceDate: string } {
+  return { buyPerGram: piastresText(p.buyPricePerGram), cashbackPerGram: piastresText(p.cashbackPerGram), onePiece: piastresText(p.onePiece), total: piastresText(p.total), priceDate: String(p.priceDate).slice(0, 10) };
 }
 
 /** What the find box holds: a code, and also a phone when it is 8 to 15 digits (a code can be all digits too). null = neither. */

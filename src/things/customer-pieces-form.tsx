@@ -1,18 +1,21 @@
 "use client";
-// Enter a returned piece (issue #4): a piece a customer brought that we did not sell enters our stock at no cost and gets its label in one step.
-// The form sends category, item, description, customer name and phone (POST /customer-pieces, backend #167); karat, weight and workmanship
-// per gram are the item's, shown read only. Save opens the print window straight from the click and fills it with the label the answer holds.
+// Buy a returned piece (owner, 2026-11-05): a piece a customer brings back is BOUGHT from them. The form takes the branch, the item and the
+// count; the price is the backend's (GET /customer-pieces/buy-price, shown as a preview: nobody types a price, a weight or a karat) and is
+// paid in full by cash and any number of bank rows (POST /customer-pieces). The answer is one purchase document with its pieces and labels.
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, keepsKey, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
-import { esc, milligramsText } from "@/lib/format";
+import { esc, milligramsText, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
+import { CopyButton } from "@/components/shell/copy-button";
 import { useMe } from "@/lib/session";
 import { Choice, ErrBox, TextBox, allPages, code6, fe } from "./sales-form-parts";
 import { itemProblem } from "./purchases-rules";
-import { TEXT_MAX, customerLabelHtml, readPiece, type CustomerLabel, type PieceForm } from "./customer-pieces-rules";
+import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
+import { paymentKeyOf } from "./sales-invoices-math";
+import { TEXT_MAX, customerLabelHtml, previewLines, readPiece, readQuantity, remainingToPay, type BuyPrice, type CustomerLabel, type PieceForm } from "./customer-pieces-rules";
 
 const LAYOUT_KEY = "ge-erp.labelLayout";        // the layout the other label prints remember on this device
 const cp = (tr: Pick<Tr, "t">, k: string, v?: Record<string, string>) => tr.t("gold-accounts", `customerPieces.${k}`, v);
@@ -41,8 +44,11 @@ export async function openLabelPrint(tr: Tr, label: CustomerLabel | Promise<Cust
   }
 }
 
-const blank: PieceForm = { branchId: "", categoryId: "", itemId: "", description: "", customerName: "", customerPhone: "" };
+const blank: PieceForm = { branchId: "", itemId: "", quantity: "1", description: "", customerName: "", customerPhone: "", cash: "", banks: [blankBank()] };
 const itemText = (it: Row) => `${code6(it.itemCode)} · ${it.itemName}`;
+type Preview = { state: "none" } | { state: "loading" } | { state: "ok"; price: BuyPrice } | { state: "refused"; text: string };
+type Answer = { key: string; result: Exclude<Preview, { state: "none" | "loading" }> };
+const PAY_KEY = /^(cash|bank\d+(Account|Amount))$/;
 
 export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   const qc = useQueryClient();
@@ -53,43 +59,63 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   // the branch, as on an expense (an Admin starts on their own). A plain User has one, which the backend uses.
   const needsBranch = !!me && me.userType !== "user";
   const [branches, setBranches] = useState<[string, string][]>([]);
+  const [accounts, setAccounts] = useState<Row[]>([]);
+  const [items, setItems] = useState<Row[] | null>(null);
   const [v, setV] = useState<PieceForm>(blank);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Row | null>(null);
-  const [categories, setCategories] = useState<[string, string][]>([]);
-  const [loaded, setLoaded] = useState<{ categoryId: string; items: Row[] } | null>(null);
-  const items = loaded && loaded.categoryId === v.categoryId ? loaded.items : null;       // null = no category yet, or its items still loading
+  const [answer, setAnswer] = useState<Answer | null>(null);
   const saveKey = useRef(newSaveKey());
-  const set = (k: keyof PieceForm, val: string) => { saveKey.current = newSaveKey(); setV((o) => ({ ...o, [k]: val })); setErrs((e) => { const n = { ...e }; delete n[k]; return n; }); };
+  const set = (patch: Partial<PieceForm>) => {
+    saveKey.current = newSaveKey();
+    setV((o) => ({ ...o, ...patch }));
+    setErrs((e) => { const n = withoutPayErrors(e); delete n.sum; for (const k of Object.keys(patch)) delete n[k]; return n; });
+  };
 
   useEffect(() => {
     if (!needsBranch) return;
     allPages("/branches").then((r) => { setBranches(r.map((x) => [x.id, x.branchName])); setV((o) => (o.branchId ? o : { ...o, branchId: r.length === 1 ? r[0].id : String(me?.branchId ?? "") })); }).catch(() => { /* the field says required */ });
   }, [needsBranch, me?.branchId]);
-  useEffect(() => { allPages("/categories").then((r) => setCategories(r.map((x) => [x.id, x.categoryName]))).catch(() => { /* the field says required */ }); }, []);
-  // The items of the category: only those switched on and complete are offered (the backend refuses the others with itemInactive).
+  useEffect(() => { allPages("/bank-accounts").then(setAccounts).catch(() => { /* the bank rows stay empty */ }); }, []);
+  // Only the items switched on and complete are offered (the backend refuses the others with itemInactive).
+  useEffect(() => { allPages("/items", { active: "true" }).then((r) => setItems(r.filter((it) => !itemProblem(it))), () => setItems([])); }, []);
+
+  // The price preview follows the item and the count (the same code as the save). A slower answer for an earlier choice must not overwrite the current one.
+  const quantity = readQuantity(v.quantity);
+  const askKey = v.itemId && quantity !== null ? `${v.itemId}|${quantity}` : "";
+  const preview: Preview = !askKey ? { state: "none" } : answer?.key === askKey ? answer.result : { state: "loading" };
   useEffect(() => {
-    const categoryId = v.categoryId;
-    if (!categoryId) return;
-    let stale = false;   // a slower answer for an earlier category must not overwrite the current one
-    allPages("/items", { categoryId, active: "true" }).then((r) => r.filter((it) => !itemProblem(it)), () => [] as Row[]).then((list) => { if (!stale) setLoaded({ categoryId, items: list }); });
+    if (!askKey) return;
+    let stale = false;
+    api("/customer-pieces/buy-price", { query: { itemId: v.itemId, quantity } }).then((price) => { if (!stale) setAnswer({ key: askKey, result: { state: "ok", price: price as BuyPrice } }); }, (err) => {
+      if (stale) return;
+      const e = err instanceof ApiFailure ? err.error : { message: "serverUnreachable" };
+      const field = (Array.isArray(e.fields) ? e.fields : []).find((f: { field: string }) => f.field === "itemId") as { message?: string } | undefined;
+      const name = String(e.values?.itemName ?? items?.find((it) => it.id === v.itemId)?.itemName ?? "");
+      const text = e.message === "noGoldPriceToday" ? cp(tr, "noGoldPrice") : e.message === "itemInactive" ? cp(tr, field?.message === "incomplete" ? "itemIncomplete" : "itemInactive", { item: name }) : tr.errorText(e);
+      setAnswer({ key: askKey, result: { state: "refused", text } });
+    });
     return () => { stale = true; };
-  }, [v.categoryId]);
-  const item = items?.find((it) => it.id === v.itemId);
+  }, [askKey]);   // eslint-disable-line react-hooks/exhaustive-deps -- the item, the count, tr and items only build the request and word the refusal
+  const total = preview.state === "ok" ? preview.price.total : null;
 
   // A refusal goes under its field, in words; anything else is the banner.
   const refusal = (err: ApiFailure) => {
     const fields = (Array.isArray(err.error.fields) ? err.error.fields : []) as { field: string; message: string }[];
-    const named = items?.find((it) => it.id === v.itemId);
-    const itemName = String(err.error.values?.itemName ?? named?.itemName ?? "");
+    const itemName = String(err.error.values?.itemName ?? items?.find((it) => it.id === v.itemId)?.itemName ?? "");
     const out: Record<string, string> = {};
+    if (err.error.message === "noGoldPriceToday") { setBanner(cp(tr, "noGoldPrice")); return; }
+    if (err.error.message === "itemInactive") out.itemId = cp(tr, fields.some((f) => f.message === "incomplete") ? "itemIncomplete" : "itemInactive", { item: itemName });
     for (const f of fields) {
-      if (f.field === "categoryId") out.categoryId = cp(tr, "categoryInvalid");
-      else if (f.field === "itemId") out.itemId = f.message === "inactive" ? cp(tr, "itemInactive", { item: itemName }) : f.message === "incomplete" ? cp(tr, "itemIncomplete", { item: itemName }) : cp(tr, "itemInvalid");
+      const pay = paymentKeyOf(f.field, v.banks);
+      if (pay && err.error.values?.total !== undefined) out.sum = cp(tr, "payMismatch", { total: piastresText(err.error.values.total), paid: piastresText(err.error.values.paid) });
+      else if (pay) out[pay] = fe(tr, f.message === "duplicateAccount" ? "duplicateAccount" : f.message === "required" ? "required" : "invalid");
+      else if (f.field === "itemId") { if (!out.itemId) out.itemId = cp(tr, "itemInvalid"); }
+      else if (f.field === "quantity") out.quantity = cp(tr, "quantityInvalid");
       else if (f.field === "customerPhone") out.customerPhone = cp(tr, "phoneInvalid");
-      else if (f.field === "description" || f.field === "customerName") out[f.field] = fe(tr, f.message === "maxLength" ? "tooLong" : "required");
+      else if (f.field === "description" || f.field === "customerName") out[f.field] = fe(tr, "tooLong");
       else if (f.field === "branch") { if (needsBranch) out.branchId = cp(tr, "branchChooseAnother"); else setBanner(cp(tr, "branchInvalid")); }
     }
     if (Object.keys(out).length) setErrs(out);
@@ -99,21 +125,22 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   function save() {
     if (saving) return;
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
-    const r = readPiece(v, needsBranch);
+    const r = readPiece(v, needsBranch, total);
     setBanner("");
-    setErrs(Object.fromEntries(Object.entries(r.errors).map(([k, key]) => [k, key === "phoneInvalid" ? cp(tr, "phoneInvalid") : fe(tr, key)])));
+    // the payment block's own codes get its words; the sum says what is due and what was typed
+    const payCodes = Object.fromEntries(Object.entries(r.errors).filter(([k, key]) => PAY_KEY.test(k) || (k === "sum" && key === "required")));
+    const paid = total === null ? 0 : total - remainingToPay(total, v.cash, v.banks);
+    const words = (k: string, key: string) => (k === "sum" ? cp(tr, key === "noPrice" ? "payNoPrice" : "payMismatch", { total: piastresText(total), paid: piastresText(paid) }) : key === "phoneInvalid" ? cp(tr, "phoneInvalid") : key === "quantityInvalid" ? cp(tr, "quantityInvalid") : fe(tr, key));
+    setErrs({ ...Object.fromEntries(Object.entries(r.errors).filter(([k]) => !(k in payCodes)).map(([k, key]) => [k, words(k, key)])), ...payErrorTexts(tr, payCodes, cp(tr, "amountsRequired")) });
     if (!r.payload) return;
     setSaving(true);
-    const answer = api("/customer-pieces", { method: "POST", body: r.payload, saveKey: saveKey.current });
-    // the window opens now, inside the click; it shows the label once the answer is in
-    openLabelPrint(tr, answer.then((x) => x.label as CustomerLabel)).catch(() => { /* said below */ });
-    answer.then((x) => {
+    api("/customer-pieces", { method: "POST", body: r.payload, saveKey: saveKey.current }).then((x) => {
       saveKey.current = newSaveKey();
       setSaved(x);
-      // The page stays on the saved piece, so `reload` (which closes it) is not used: refresh the cached lists and the next piece code by hand.
+      // The page stays on the saved purchase, so `reload` (which closes it) is not used: refresh the cached lists and the next code by hand.
       qc.invalidateQueries({ queryKey: ["thing"] });
       qc.invalidateQueries({ queryKey: ["next-number"] });
-      toast(cp(tr, "saved", { code: x.code }));      // the page stays on the saved piece (print again, enter another); Done goes back to the list
+      toast(cp(tr, "saved", { number: code6(x.documentNumber) }));
     }, (err) => {
       // a refusal ends the attempt (the next Save is a new one); a lost or failed answer, or a 409 saveInProgress, keeps its key, so a retry cannot save twice
       if (err instanceof ApiFailure && !keepsKey(err)) { saveKey.current = newSaveKey(); refusal(err); }
@@ -123,51 +150,79 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
 
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
   if (saved) {
+    const pieces = (saved.pieces ?? []) as Row[];
     return (
       <div className="card" id="cp-saved" role="status">
-        <h3>{cp(tr, "saved", { code: saved.code })}</h3>
-        <div className="kv"><span>{cp(tr, "category")}</span><span>{saved.categoryName}</span></div>
+        <h3>{cp(tr, "saved", { number: code6(saved.documentNumber) })}</h3>
+        <div className="kv"><span>{cp(tr, "purchaseNumber")}</span><span dir="ltr" data-doc-number>{code6(saved.documentNumber)}</span></div>
         <div className="kv"><span>{cp(tr, "item")}</span><span>{saved.itemName}</span></div>
         <div className="kv"><span>{cp(tr, "karat")}</span><span dir="ltr">{saved.karat}</span></div>
         <div className="kv"><span>{cp(tr, "weight")}</span><span dir="ltr">{milligramsText(saved.weight)}</span></div>
+        <div className="kv"><span>{cp(tr, "quantity")}</span><span dir="ltr">{saved.quantity}</span></div>
+        <div className="kv"><span>{cp(tr, "total")}</span><span dir="ltr"><b data-saved-total>{piastresText(saved.total)}</b></span></div>
+        <h4 style={{ marginBottom: 8 }}>{cp(tr, "piecesTitle")}</h4>
+        <ul id="cp-pieces" style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
+          {pieces.map((p) => (
+            <li key={p.code} data-piece-code={p.code} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <b dir="ltr">{p.code}</b><CopyButton text={String(p.code)} />
+              <span className="help" dir="ltr">{p.categoryName} · {p.karat} · {milligramsText(p.weight)}</span>
+              <button type="button" className="btn quiet sm" data-print={p.code} aria-label={cp(tr, "reprintCode", { code: p.code })} onClick={() => { openLabelPrint(tr, p.label).catch(() => {}); }}>{cp(tr, "printLabel")}</button>
+            </li>
+          ))}
+        </ul>
         <div className="formbar">
-          <button type="button" className="btn primary" id="cp-print" onClick={() => { openLabelPrint(tr, saved.label).catch(() => {}); }}>{cp(tr, "printAgain")}</button>
-          <button type="button" className="btn quiet" id="cp-another" onClick={() => { setSaved(null); setV(blank); }}>{cp(tr, "another")}</button>
-          <button type="button" className="btn quiet" id="cp-done" onClick={close}>{L("تم", "Done")}</button>
+          <button type="button" className="btn quiet" id="cp-another" onClick={() => { setSaved(null); setV({ ...blank, branchId: v.branchId, banks: [blankBank()] }); }}>{cp(tr, "another")}</button>
+          <button type="button" className="btn primary" id="cp-done" onClick={close}>{L("تم", "Done")}</button>
         </div>
       </div>
     );
   }
   const itemOptions: [string, string][] = (items ?? []).map((it) => [it.id, itemText(it)]);
+  const left = total === null ? null : remainingToPay(total, v.cash, v.banks);
+  const pv = preview.state === "ok" ? previewLines(preview.price) : null;
   return (
-    <form id="cp" className="card" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); save(); }}>
+    <form id="cp" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); save(); }}>
       {banner && <div className="note warn" role="alert" id="cp-alert">{banner}</div>}
-      <p className="help" style={{ marginTop: 0, marginBottom: 16 }}>{cp(tr, "intro")}</p>
-      <div className="formgrid">
-        {needsBranch && <div className="field" data-k="branchId"><label htmlFor="branchId">{cp(tr, "branch")} *</label>
-          <Choice tr={tr} id="branchId" options={branches} value={v.branchId ?? ""} onChange={(x) => set("branchId", x)} />{err("branchId")}</div>}
-        <div className="field" data-k="categoryId"><label htmlFor="categoryId">{cp(tr, "category")} *</label>
-          <Choice tr={tr} id="categoryId" invalid={!!errs.categoryId} options={categories} value={v.categoryId} onChange={(x) => { set("categoryId", x); set("itemId", ""); }} />{err("categoryId")}</div>
-        <div className="field" data-k="itemId"><label htmlFor="itemId">{cp(tr, "item")} *</label>
-          <Choice tr={tr} id="itemId" invalid={!!errs.itemId} options={itemOptions} value={v.itemId} disabled={!v.categoryId} placeholder={!v.categoryId ? cp(tr, "chooseCategoryFirst") : undefined} onChange={(x) => set("itemId", x)} />
-          {v.categoryId && items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
-          {err("itemId")}</div>
+      <div className="card">
+        <p className="help" style={{ marginTop: 0, marginBottom: 16 }}>{cp(tr, "intro")}</p>
+        <div className="formgrid">
+          {needsBranch && <div className="field" data-k="branchId"><label htmlFor="branchId">{cp(tr, "branch")} *</label>
+            <Choice tr={tr} id="branchId" invalid={!!errs.branchId} options={branches} value={v.branchId ?? ""} onChange={(x) => set({ branchId: x })} />{err("branchId")}</div>}
+          <div className="field" data-k="itemId"><label htmlFor="itemId">{cp(tr, "item")} *</label>
+            <Choice tr={tr} id="itemId" invalid={!!errs.itemId} options={itemOptions} value={v.itemId} onChange={(x) => set({ itemId: x })} />
+            {items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
+            {err("itemId")}</div>
+          <TextBox name="quantity" label={`${cp(tr, "quantity")} *`} value={v.quantity} maxLength={3} ltr error={errs.quantity} onChange={(x) => set({ quantity: x })} />
+        </div>
       </div>
-      <div className="formgrid" id="cp-from-item">
-        <div className="field"><label htmlFor="cp-karat">{cp(tr, "karat")}</label><input id="cp-karat" dir="ltr" readOnly aria-describedby="cp-from-item-help" placeholder="—" value={item?.karat ?? ""} /></div>
-        <div className="field"><label htmlFor="cp-weight">{cp(tr, "weight")}</label><input id="cp-weight" dir="ltr" readOnly aria-describedby="cp-from-item-help" placeholder="—" value={item ? milligramsText(item.weight) : ""} /></div>
-        <div className="field"><label htmlFor="cp-workmanship">{cp(tr, "workmanship")}</label><input id="cp-workmanship" dir="ltr" readOnly aria-describedby="cp-from-item-help" placeholder="—" value={item?.workmanshipValue ?? ""} /></div>
+      <div className="card" id="cp-preview" data-state={preview.state} aria-live="polite">
+        <h3>{cp(tr, "priceTitle")}</h3>
+        {preview.state === "none" && <div className="help">{cp(tr, "pricePending")}</div>}
+        {preview.state === "loading" && <div className="help">{L("جارٍ التحميل…", "Loading…")}</div>}
+        {preview.state === "refused" && <div className="note warn" role="alert" id="cp-preview-error">{preview.text}</div>}
+        {pv && <>
+          <div className="kv"><span>{cp(tr, "buyPerGram")}</span><span dir="ltr" data-preview="buyPerGram">{pv.buyPerGram}</span></div>
+          <div className="kv"><span>{cp(tr, "cashbackPerGram")}</span><span dir="ltr" data-preview="cashbackPerGram">{pv.cashbackPerGram}</span></div>
+          <div className="kv"><span>{cp(tr, "onePiece")}</span><span dir="ltr" data-preview="onePiece">{pv.onePiece}</span></div>
+          <div className="kv"><span>{cp(tr, "total")}</span><span dir="ltr"><b data-preview="total">{pv.total}</b></span></div>
+          <div className="help">{cp(tr, "priceDate", { date: pv.priceDate })}</div>
+        </>}
       </div>
-      <div className="help" id="cp-from-item-help">{cp(tr, "fromItem")}</div>
-      <div className="formgrid" style={{ marginTop: 12 }}>
-        <TextBox name="description" label={`${cp(tr, "description")} *`} help={cp(tr, "descriptionHelp")} value={v.description} maxLength={TEXT_MAX} error={errs.description} onChange={(x) => set("description", x)} />
-        <TextBox name="customerName" label={`${cp(tr, "customerName")} *`} value={v.customerName} maxLength={TEXT_MAX} error={errs.customerName} onChange={(x) => set("customerName", x)} />
-        <TextBox name="customerPhone" label={`${cp(tr, "customerPhone")} *`} help={cp(tr, "phoneHelp")} value={v.customerPhone} maxLength={15} ltr error={errs.customerPhone} onChange={(x) => set("customerPhone", x)} />
+      <div className="card" id="sec-payment">
+        <h3>{cp(tr, "payTitle")}</h3>
+        <PaymentBlock tr={tr} cash={v.cash} sumLabel={cp(tr, "paid")} onCash={(x) => set({ cash: x })} banks={v.banks} onBanks={(b) => set({ banks: b })} accounts={accountOptions(accounts)} errors={errs} />
+        {left !== null && <div className="pay-sum"><span className="help">{cp(tr, "leftToPay")}</span><b dir="ltr" id="payLeft" data-left>{piastresText(left)}</b></div>}
       </div>
-      <div className="note" style={{ marginTop: 12 }}>{cp(tr, "noCost")}</div>
-      <div className="formbar">
-        <button type="submit" className="btn primary" id="cp-save" disabled={saving}>{saving ? c("saving") : cp(tr, "saveAndPrint")}</button>
-        <button type="button" className="btn quiet" id="cp-cancel" onClick={close}>{c("cancel")}</button>
+      <div className="card">
+        <div className="formgrid">
+          <TextBox name="customerName" label={cp(tr, "customerName")} value={v.customerName} maxLength={TEXT_MAX} error={errs.customerName} onChange={(x) => set({ customerName: x })} />
+          <TextBox name="customerPhone" label={cp(tr, "customerPhone")} help={cp(tr, "phoneHelp")} value={v.customerPhone} maxLength={15} ltr error={errs.customerPhone} onChange={(x) => set({ customerPhone: x })} />
+          <TextBox name="description" label={cp(tr, "description")} help={cp(tr, "descriptionHelp")} value={v.description} maxLength={TEXT_MAX} error={errs.description} onChange={(x) => set({ description: x })} />
+        </div>
+        <div className="formbar">
+          <button type="submit" className="btn primary" id="cp-save" disabled={saving}>{saving ? c("saving") : cp(tr, "buy")}</button>
+          <button type="button" className="btn quiet" id="cp-cancel" onClick={close}>{c("cancel")}</button>
+        </div>
       </div>
     </form>
   );
