@@ -1,6 +1,7 @@
 "use client";
 // The gift invoice (backend #169, dashboard #7): a switch on the new invoice that reveals the recipient, and a print box on the
 // invoice view. The printed invoice carries the recipient and never the real buyer or the seller; the buyer stays on the screens.
+import { SwitchInput } from "@/components/ui";
 import { useState } from "react";
 import type { Row } from "@/lib/engine-types";
 import { latinNumber } from "@/lib/format";
@@ -26,7 +27,7 @@ export function GiftFields({ tr, on, onToggle, value, onChange, errors }: { tr: 
   return (
     <div id="gift" style={{ marginTop: 16 }}>
       <label className="field check" data-k="isGift">
-        <input id="f-isGift" type="checkbox" role="switch" checked={on} onChange={(e) => onToggle(e.target.checked)} />
+        <SwitchInput id="f-isGift" checked={on} onChange={onToggle} />
         <span><b>{sg(tr, "giftSwitch")}</b> <span className="help">{sg(tr, "giftSwitchHint")}</span></span>
       </label>
       {on && (
@@ -59,7 +60,7 @@ export function GiftPrintBox({ row, tr }: { row: Row; tr: Tr }) {
           <TextBox name="printRecipientName" label={`${sg(tr, "recipientName")} *`} value={rec.name} maxLength={100} error={errors.name} onChange={(name) => setRec({ ...rec, name })} />
         </div>
         <label className="field check" style={{ marginTop: 8 }}>
-          <input id="f-showPrices" type="checkbox" role="switch" checked={prices} onChange={(e) => setPrices(e.target.checked)} />
+          <SwitchInput id="f-showPrices" checked={prices} onChange={setPrices} />
           <span><b>{sg(tr, "showPrices")}</b> <span className="help">{sg(tr, "showPricesHint")}</span></span>
         </label>
         <button type="button" className="btn primary" id="print-gift" style={{ marginTop: 10 }} onClick={print}>{tr.t("gold-sales", "prints.layouts.gift")}</button>

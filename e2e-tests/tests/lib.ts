@@ -126,3 +126,46 @@ export async function scan(browser: any): Promise<string[]> {
     .filter((x) => !ALLOW.some((a) => a.rule === x.id && a.target.test(x.t)))
     .map((x) => `${x.impact} ${x.id} ${x.t}`);
 }
+
+// The machine eye of the e2ev "Eyes" mechanism: measures the rendered page and returns one text line per defect (empty = clean).
+// Run it on every state a UI test screenshots, on both targets and both languages, and `expect(await layoutAudit(browser, '#root')).toEqual([])`.
+export async function layoutAudit(browser: any, root = 'body'): Promise<string[]> {
+  return (await browser.evaluate((rootSel: string) => {
+    const out: string[] = [];
+    const base = document.querySelector(rootSel) ?? document.body;
+    const R = (e: Element) => e.getBoundingClientRect();
+    const name = (e: Element) => `${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}${e.getAttribute('class') ? '.' + (e.getAttribute('class') ?? '').trim().split(/\s+/).join('.') : ''}`;
+    // 1 scroll: a control that scrolls shows a bar
+    for (const e of Array.from(base.querySelectorAll('.seg, button, input, select, .sel-btn'))) {
+      const cs = getComputedStyle(e);
+      if ((/auto|scroll/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 1) || (/auto|scroll/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 1)) out.push(`scrolls: ${name(e)}`);
+    }
+    // 2 page wider than the screen
+    if (document.documentElement.scrollWidth > window.innerWidth + 1) out.push(`page wider than the screen: ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
+    // 3 raw native controls left in the browser's default look
+    for (const e of Array.from(base.querySelectorAll('input[type=checkbox]:not([role=switch]), input[type=radio], select'))) {
+      if (getComputedStyle(e).appearance !== 'none' && !e.closest('[class*=sel], .sel')) out.push(`raw native control: ${name(e)}`);
+    }
+    // 4 pinned or floating elements that should be in the flow
+    for (const e of Array.from(base.querySelectorAll('.wn-kind, .copy-btn, .chk, .field label'))) if (getComputedStyle(e).position === 'fixed') out.push(`position:fixed on ${name(e)}`);
+    // 5 table alignment: each header's text starts on the same side as its cells' text
+    for (const table of Array.from(base.querySelectorAll('table'))) {
+      const head = Array.from(table.querySelectorAll('thead tr:last-child th'));
+      const row = table.querySelector('tbody tr');
+      if (!row || head.length === 0) continue;
+      const cells = Array.from(row.children);
+      const rtl = getComputedStyle(table).direction === 'rtl';
+      let col = 0;
+      for (const th of head) {
+        const span = (th as HTMLTableCellElement).colSpan || 1;
+        const cell = cells[col]; col += span;
+        if (!cell || span !== 1 || !(th.textContent ?? '').trim() || !(cell.textContent ?? '').trim()) continue;
+        const text = (el: Element) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+        const a = text(th), b = text(cell);
+        const hdrEnd = Math.abs((rtl ? a.left : a.right) - (rtl ? b.left : b.right)) <= 2, hdrStart = Math.abs((rtl ? a.right : a.left) - (rtl ? b.right : b.left)) <= 2;
+        if (!hdrEnd && !hdrStart) { const tr = R(th), cr = R(cell), tcs = getComputedStyle(th), ccs = getComputedStyle(cell); out.push(`table column not aligned: "${(th.textContent ?? '').trim().slice(0, 18)}" header text x=${Math.round(a.left)}..${Math.round(a.right)} (box ${Math.round(tr.left)}..${Math.round(tr.right)}, ${tcs.textAlign}/${tcs.direction}) cell text x=${Math.round(b.left)}..${Math.round(b.right)} (box ${Math.round(cr.left)}..${Math.round(cr.right)}, ${ccs.textAlign}/${ccs.direction}, ${cell.tagName}.${cell.className})`); }
+      }
+    }
+    return out;
+  }, root)) as string[];
+}

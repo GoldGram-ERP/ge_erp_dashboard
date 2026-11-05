@@ -4,6 +4,7 @@
 // and GET /stock-counts/:id/pieces (counted, remaining, no longer in stock; paged, searched on the server).
 // Live: every few seconds while the page is visible and online (react-query pauses the interval when the tab is hidden and
 // when offline), and at once after each scan (the scan invalidates ["stock-count", id]). A closed count is frozen: no polling.
+import { Checkbox } from "@/components/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -138,7 +139,7 @@ export function Breakdown({ live }: { live: Live }) {
             <input id="sc-bd-search" type="search" value={search} placeholder={m("searchBreakdown")} aria-label={m("searchBreakdown")} onChange={(e) => setSearch(e.target.value)} />
           </label>
         )}
-        <label className="sc-check"><input type="checkbox" id="sc-bd-notdone" checked={notDoneFirst} onChange={(e) => setNotDoneFirst(e.target.checked)} />{m("notDoneFirst")}</label>
+        <Checkbox id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={setNotDoneFirst}>{m("notDoneFirst")}</Checkbox>
       </div>
       <div className="table sc-table">
         <table id="sc-bd-table">

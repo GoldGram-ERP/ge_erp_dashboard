@@ -1,6 +1,6 @@
 import { afterAll } from 'e2e';
 import { execSync } from 'node:child_process';
-import { test, expect, signInApi, apiAs, capture, M, stamp, LANGS, WEB, type Lang } from './lib.ts';
+import { test, expect, signInApi, apiAs, capture, M, stamp, LANGS, WEB, layoutAudit, type Lang } from './lib.ts';
 
 // Sales desk (issue #6) on its OWN local stack: dashboard 3104, backend 8104 (E2E_PORT=3104 E2E_API=http://localhost:8104), seeded by scripts/sales-desk-seed.mjs.
 // agent1 (sales agent) saves, edits and sees the lock; agent2 never sees agent1's draft; deskadmin completes with the real pieces.
@@ -10,7 +10,7 @@ const sql = (q: string) => execSync(`wsl -d Ubuntu -u postgres -- psql -p 5433 -
 const d = (l: Lang, k: string, v?: Record<string, string>) => { let s = M(l, 'gold-sales', `salesDesk.${k}`) as string; for (const [a, b] of Object.entries(v ?? {})) s = s.replace(`{${a}}`, b); return s; };
 
 async function as(user: string, browser: any) {
-  const s = await signInApi(user, user === 'superadmin' ? ROOT : PASS);
+  const s = await signInApi(user, user === 'superadmin' ? (process.env.E2E_PASSWORD ?? ROOT) : PASS);
   await browser.setCookies([{ url: WEB, name: s.name, value: s.value, httpOnly: true, sameSite: 'Lax' }]);
 }
 const ringId = async () => (await (await apiAs('superadmin', ROOT))('GET', '/items?search=Desk%20ring')).body.items.find((i: any) => i.itemName === 'Desk ring').id as string;
@@ -168,3 +168,35 @@ for (const lang of LANGS) {
 afterAll(async () => {
   for (const m of made) await (await apiAs(m.by, PASS))('DELETE', `/sales-drafts/${m.id}`).catch(() => {});
 });
+
+// Layout, not only presence (e2ev "Ship nothing broken"): no control scrolls, a row's labels and controls line up, and sizes stay on the apple-design scale.
+for (const lang of LANGS) {
+  test(`sales desk layout: no scrollbar on a control, count and price aligned, sizes on the scale (${lang})`, { tags: ['e2e', 'desk', 'layout'], requires: ['browser'] }, async ({ app, browser, shot }) => {
+    await as('superadmin', browser);
+    await app.open(`/${lang}/sales/desk?new=draft`);
+    await browser.locator('#sd [data-line="0"]').waitFor();
+    await shot(`desk-${lang}-layout`);
+    const r = await browser.evaluate(() => {
+      const rect = (e: Element) => e.getBoundingClientRect();
+      const segs = Array.from(document.querySelectorAll('#sd .seg')).map((e) => { const cs = getComputedStyle(e); return { scrollX: /auto|scroll/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 1, scrollY: /auto|scroll/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 1 }; });
+      const row = document.querySelector('#sd [data-line="0"]')!;
+      const count = row.querySelector('[data-k="line0Count"]')!, price = row.querySelector('.price-out')!.parentElement!;
+      const cl = rect(count.querySelector('label')!), pl = rect(price.querySelector('.flabel')!);
+      const ci = rect(count.querySelector('input')!), po = rect(price.querySelector('.price-out')!);
+      const tall = (sel: string) => Array.from(document.querySelectorAll(sel)).filter((e) => rect(e).height > 36).map((e) => `${e.tagName.toLowerCase()}.${(e.getAttribute('class') ?? '').replace(/ /g, '.')}#${e.id}:${Math.round(rect(e).height)}`);
+      return { segs, labelTopDiff: Math.abs(cl.top - pl.top), controlTopDiff: Math.abs(ci.top - po.top), controlHeightDiff: Math.abs(ci.height - po.height),
+        fields: tall('#sd .field input:not([type=checkbox]):not([type=radio]), #sd .sel-btn'), buttons: tall('#sd .seg button, #sd .btn:not(.primary)'), primary: Array.from(document.querySelectorAll('#sd .btn.primary')).filter((e) => rect(e).height > 40).map((e) => `${e.id}:${Math.round(rect(e).height)}`), wide: Array.from(document.querySelectorAll('#sd .sel-btn')).filter((e) => rect(e).width > 360).map((e) => e.id || 'sel-btn'), pageWide: document.documentElement.scrollWidth > window.innerWidth + 1 };
+    }) as { segs: { scrollX: boolean; scrollY: boolean }[]; labelTopDiff: number; controlTopDiff: number; controlHeightDiff: number; fields: string[]; buttons: string[]; primary: string[]; wide: string[]; pageWide: boolean };
+    expect(r.segs.length).toBeGreaterThan(0);
+    for (const s of r.segs) expect(s).toEqual({ scrollX: false, scrollY: false });
+    expect(r.labelTopDiff).toBeLessThanOrEqual(1);
+    expect(r.controlTopDiff).toBeLessThanOrEqual(1);
+    expect(r.controlHeightDiff).toBeLessThanOrEqual(1);
+    expect(r.fields, 'fields/selects above 36px').toEqual([]);
+    expect(r.buttons, 'buttons/tabs above 36px').toEqual([]);
+    expect(r.primary, 'the primary action above 40px').toEqual([]);
+    expect(r.wide, 'dropdowns wider than 360px (stretch slop)').toEqual([]);
+    expect(r.pageWide).toBe(false);
+    expect(await layoutAudit(browser, '#sd'), 'layoutAudit').toEqual([]);
+  });
+}

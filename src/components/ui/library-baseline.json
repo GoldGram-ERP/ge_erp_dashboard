@@ -1,0 +1,194 @@
+{
+ "src/app/[locale]/sign-in/page.tsx": {
+  "rawInput": 2,
+  "rawButton": 3,
+  "inlineStyle": 2
+ },
+ "src/things/admin-shared.tsx": {
+  "rawInput": 1,
+  "rawButton": 9,
+  "inlineStyle": 7,
+  "localComponent": 7
+ },
+ "src/things/banks.tsx": {
+  "localComponent": 1
+ },
+ "src/things/cash-movement-form.tsx": {
+  "rawButton": 2,
+  "inlineStyle": 3,
+  "localComponent": 5
+ },
+ "src/things/control-accounts.tsx": {
+  "localComponent": 2
+ },
+ "src/things/control-security.tsx": {
+  "rawInput": 4,
+  "rawButton": 3,
+  "inlineStyle": 3,
+  "localComponent": 4
+ },
+ "src/things/customer-pieces-form.tsx": {
+  "rawButton": 6,
+  "inlineStyle": 4,
+  "localComponent": 1
+ },
+ "src/things/customer-pieces.tsx": {
+  "rawButton": 1,
+  "localComponent": 1
+ },
+ "src/things/expense-form.tsx": {
+  "rawButton": 2,
+  "inlineStyle": 1,
+  "localComponent": 2
+ },
+ "src/things/expenses.tsx": {
+  "inlineStyle": 1
+ },
+ "src/things/gold-items.tsx": {
+  "rawButton": 2,
+  "localComponent": 6
+ },
+ "src/things/gold-prices.tsx": {
+  "localComponent": 1
+ },
+ "src/things/gold-purchases-coding.tsx": {
+  "rawInput": 3,
+  "rawButton": 4,
+  "inlineStyle": 6,
+  "localComponent": 1
+ },
+ "src/things/gold-purchases-invoice.tsx": {
+  "rawInput": 5,
+  "rawButton": 4,
+  "inlineStyle": 3,
+  "localComponent": 3
+ },
+ "src/things/gold-purchases.tsx": {
+  "inlineStyle": 1
+ },
+ "src/things/money-shared.tsx": {
+  "localComponent": 1
+ },
+ "src/things/payment-block.tsx": {
+  "rawInput": 1,
+  "rawButton": 3,
+  "inlineStyle": 2,
+  "localComponent": 5
+ },
+ "src/things/piece-scanner.tsx": {
+  "rawButton": 1,
+  "localComponent": 1
+ },
+ "src/things/purchases-labels.tsx": {
+  "rawButton": 3,
+  "inlineStyle": 13,
+  "localComponent": 4
+ },
+ "src/things/sales-desk-form.tsx": {
+  "rawInput": 2,
+  "rawButton": 14,
+  "inlineStyle": 25,
+  "localComponent": 2
+ },
+ "src/things/sales-desk.tsx": {
+  "localComponent": 1
+ },
+ "src/things/sales-form-parts.tsx": {
+  "rawInput": 4,
+  "rawButton": 1,
+  "inlineStyle": 5,
+  "localComponent": 5
+ },
+ "src/things/sales-gift.tsx": {
+  "rawButton": 1,
+  "inlineStyle": 4,
+  "localComponent": 2
+ },
+ "src/things/sales-invoices-form.tsx": {
+  "rawInput": 2,
+  "rawButton": 6,
+  "inlineStyle": 9,
+  "localComponent": 2
+ },
+ "src/things/sales-invoices.tsx": {
+  "inlineStyle": 1
+ },
+ "src/things/sales-piece-story.tsx": {
+  "inlineStyle": 1,
+  "localComponent": 2
+ },
+ "src/things/sales-reprint-form.tsx": {
+  "rawInput": 1,
+  "rawButton": 2,
+  "inlineStyle": 15,
+  "localComponent": 3
+ },
+ "src/things/sales-reservation-form.tsx": {
+  "rawInput": 2,
+  "rawButton": 4,
+  "inlineStyle": 5,
+  "localComponent": 2
+ },
+ "src/things/sales-reservations.tsx": {
+  "inlineStyle": 1
+ },
+ "src/things/sales-returns-form.tsx": {
+  "rawInput": 1,
+  "rawButton": 3,
+  "inlineStyle": 3,
+  "localComponent": 2
+ },
+ "src/things/settings.tsx": {
+  "rawButton": 4,
+  "inlineStyle": 2,
+  "localComponent": 3
+ },
+ "src/things/stocktake-branch.tsx": {
+  "inlineStyle": 1,
+  "localComponent": 1
+ },
+ "src/things/stocktake-count-board.tsx": {
+  "rawInput": 2,
+  "rawButton": 5,
+  "inlineStyle": 1,
+  "localComponent": 6
+ },
+ "src/things/stocktake-count-camera.tsx": {
+  "rawButton": 2,
+  "inlineStyle": 4,
+  "localComponent": 1
+ },
+ "src/things/stocktake-count-scan.tsx": {
+  "rawInput": 1,
+  "rawButton": 6,
+  "inlineStyle": 10,
+  "localComponent": 1
+ },
+ "src/things/stocktake-count-start.tsx": {
+  "rawInput": 2,
+  "rawButton": 2,
+  "inlineStyle": 2,
+  "localComponent": 1
+ },
+ "src/things/stocktake-count.tsx": {
+  "inlineStyle": 1
+ },
+ "src/things/stocktake-shared.tsx": {
+  "localComponent": 1
+ },
+ "src/things/treasury-transfer-send.tsx": {
+  "rawInput": 3,
+  "rawButton": 5,
+  "localComponent": 2
+ },
+ "src/things/treasury-transfers.tsx": {
+  "rawInput": 1,
+  "inlineStyle": 1,
+  "localComponent": 3
+ },
+ "src/things/users.tsx": {
+  "rawInput": 1,
+  "rawButton": 2,
+  "localComponent": 3
+ }
+}

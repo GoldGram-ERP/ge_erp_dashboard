@@ -19,7 +19,7 @@ import { FormPage, FormSheet } from "./FormView";
 import { RecordSheet } from "./RecordSheet";
 import { Table } from "./Table";
 import { exportActions } from "@/things/report-export";
-import { EmptyState, Icon, Seg, Skeleton, ToastHost, toast } from "./ui";
+import { EmptyState, Icon, Seg, Skeleton, ToastHost, toast, useConfirm } from "./ui";
 
 export type Access = { canOpen?: (keys?: string[]) => boolean; isSuper?: boolean };
 type Memory = { view: string; per: Record<string, ViewState>; applied?: string };
@@ -169,14 +169,16 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
 
 function Header({ cfg, creates, actions, view, vs, onCreate, reload }: { cfg: ThingConfig; creates: { form: string; label: string }[]; actions: NonNullable<ViewConfig["actions"]>; view: ViewConfig; vs: ViewState; onCreate: (id: string) => void; reload: () => void }) {
   const sub = useRef<HTMLDivElement>(null);
+  const [confirm, confirmDialog] = useConfirm();
   return (
     <div className="head">
       <div><h1>{cfg.title}</h1><div className="sub" id="sub" ref={sub} aria-live="polite">&nbsp;</div></div>
       <div className="actions">
         {creates.map((c) => <button key={c.form + c.label} type="button" className="btn primary" onClick={() => onCreate(c.form)}><Icon name="plus" />{c.label}</button>)}
         {actions.map((a) => (
-          <button key={a.label} type="button" className="btn quiet" onClick={() => a.run({ query: buildQuery(view, vs), rows: [], reload, toast })}>{a.icon && <Icon name={a.icon} />}{a.label}</button>
+          <button key={a.label} type="button" className="btn quiet" onClick={() => a.run({ query: buildQuery(view, vs), rows: [], reload, toast, confirm })}>{a.icon && <Icon name={a.icon} />}{a.label}</button>
         ))}
+        {confirmDialog}
       </div>
     </div>
   );

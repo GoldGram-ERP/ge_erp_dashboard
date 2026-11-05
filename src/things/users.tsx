@@ -2,6 +2,7 @@
 // المستخدمين: administration/users (add / edit), administration/users-list (list + record) and "assign jobs" (PUT /users/job-holders/{jobId}).
 // Ported from docs/nav-preview/app/things/users.js. List sends only: search, page, order=newest, type, locked=only, deleted=only (Super admin). Page size is the backend's 20.
 // Admin: reads every user, manages plain Users only (mayManage). Delete refusals (ownAccount, lastSuperAdmin, isBranchAdmin, notAllowed) show their errors.json text.
+import { Checkbox } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
@@ -40,7 +41,7 @@ function Holders({ row, close, reload, tr }: CustomFormProps) {
           : <>
             <input id="hp-q" placeholder={a("searchUser")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={a("searchUser")} autoComplete="off" />
             <p dir="ltr" aria-live="polite">{a("count", { on: on.size, all: people.length })}</p>
-            {list.map((p) => <label key={p.id} className="field check"><input type="checkbox" checked={on.has(p.id)} onChange={(e) => { const n = new Set(on); e.target.checked ? n.add(p.id) : n.delete(p.id); setOn(n); key.current = newSaveKey(); }} /><span>{p.name} <bdi dir="ltr" className="mute">{p.username}</bdi></span></label>)}
+            {list.map((p) => <Checkbox key={p.id} checked={on.has(p.id)} onChange={(v) => { const n = new Set(on); v ? n.add(p.id) : n.delete(p.id); setOn(n); key.current = newSaveKey(); }}>{p.name} <bdi dir="ltr" className="mute">{p.username}</bdi></Checkbox>)}
           </>}
       </div>
       <div className="formbar"><button type="button" className="btn primary" id="hp-save" disabled={!people || saving} onClick={save}>{a("save")}</button><button type="button" className="btn quiet" onClick={close}>{t("common", "cancel")}</button></div>

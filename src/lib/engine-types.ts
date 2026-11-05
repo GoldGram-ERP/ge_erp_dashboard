@@ -1,6 +1,7 @@
 // The config contract of the screen engine, mirroring docs/nav-preview/app/things/*.js so a page config ports nearly verbatim.
 // A page builds its config from `tr` (see lib/t.ts): `export const makeConfig = (tr: Tr): ThingConfig => ({...})`,
 // and the page component is `export default function Page() { return <ThingPage make={makeConfig} /> }`.
+import type { ConfirmOptions } from "@/components/engine/ui";
 import type { ComponentType, ReactNode } from "react";
 import type { Tr } from "./t";
 
@@ -59,7 +60,7 @@ export type Column = {
 export type PagingConfig = { param?: string; sizeParam?: string | null; sizes?: number[]; size?: number };
 export type SumConfig = { key: string; label: string; type: "money" | "weight" | "int" };
 export type ViewAction = { label: string; icon?: string; keys?: string[]; run: (c: ActionCtx) => void | Promise<void> };
-export type ActionCtx = { query: Query; rows: Row[]; reload: () => void; toast: (msg: string, o?: { error?: boolean }) => void };
+export type ActionCtx = { query: Query; rows: Row[]; reload: () => void; toast: (msg: string, o?: { error?: boolean }) => void; confirm: (o: ConfirmOptions) => Promise<boolean> };
 export type RowJump = { view: string; filters?: Record<string, string | number | undefined | null> };
 export type CreateButton = { form: string; label: string; keys?: string[] };
 

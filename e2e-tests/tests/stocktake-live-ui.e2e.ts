@@ -1,5 +1,5 @@
 import { afterAll } from 'e2e';
-import { test, expect, apiAs, stamp, cairoDay, M, type Lang } from './lib.ts';
+import { test, expect, apiAs, stamp, cairoDay, M, layoutAudit, type Lang } from './lib.ts';
 
 // The live stock count board (owner, 2026-11-05) through the real UI, in both languages: start a count on a new branch,
 // scan, see the summary, last scan, breakdown and lists move (grams too), see a scan made on another device arrive by
@@ -111,6 +111,7 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     expect(await text('#sc-pct')).toContain('20');
     await audit(browser, `${lang} 2-scanned`);
     await shot(`live-${lang}-2-scanned`);
+    expect(await layoutAudit(browser), 'layoutAudit 2-scanned').toEqual([]);
 
     // The same piece again: already counted, when and by whom. An unknown code: refused, with the reason.
     await scan(w.rings[0]);
@@ -135,11 +136,13 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     await expect.poll(() => text('#sc-pl-table')).toContain(w.chains[0]);
     await audit(browser, `${lang} 4-breakdown`);
     await shot(`live-${lang}-4-breakdown`);
+    expect(await layoutAudit(browser), 'layoutAudit 4-breakdown').toEqual([]);
     await browser.locator('#ws #sc-pl-remaining').tap();
     await expect.poll(() => text('#sc-pl-table')).toContain(w.rings[1]);
     expect(await browser.evaluate(() => [...document.querySelectorAll('#sc-pl-table tbody tr td:first-child')].map((c) => c.textContent?.trim()).join(' '))).not.toContain(w.rings[0]);   // by the code cell only: short codes also look like karats
     await audit(browser, `${lang} 5-remaining`);
     await shot(`live-${lang}-5-remaining`);
+    expect(await layoutAudit(browser), 'layoutAudit 5-remaining').toEqual([]);
 
     // Save: the confirmation lists what will be recorded as missing (3 pieces, 13.250 g) before it is confirmed.
     await browser.locator('#ws #sc-savebtn').tap();
