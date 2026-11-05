@@ -106,3 +106,19 @@
  .desk-ref .btn.mobile-copy{background:var(--gold);color:#20242b;min-width:100px;border-color:transparent}
 }
 @media (prefers-reduced-motion:reduce){.desk-ref *{animation:none!important;transition:none!important}}
+
+/* the dropdown lists are drawn on the page, outside .desk-ref: while the desk is open and dark they follow it */
+html[data-desk-theme=dark] .pop{background:#182231;color:#eef2f8;box-shadow:0 0 0 1px #2c3a4d,0 12px 32px #0008}
+html[data-desk-theme=dark] .sel-search input{background:#1e2a3b;color:#eef2f8;box-shadow:inset 0 0 0 1px #2c3a4d}
+html[data-desk-theme=dark] .sel-pop li.active{background:#302e26}
+html[data-desk-theme=dark] .sel-pop li .tick{color:#d6b35b}
+html[data-desk-theme=dark] .sel-empty{color:#a7b3c4}
+.desk-ref .fee-small{display:flex;gap:6px;justify-content:space-between;min-width:0;margin-top:7px;font-size:11px;color:var(--muted);line-height:1.4}
+.desk-ref .fee-small:empty{display:none}
+.desk-ref .dr-price b+small{display:block}
+.desk-ref input::placeholder{color:var(--muted);opacity:.72}
+.desk-ref .card h3,.desk-ref .panel h3{background:none!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;display:block;color:var(--text)!important;font-size:17px;font-weight:600;margin:0 0 19px}
+.desk-ref .topline h3{margin:0}
+.desk-ref .card .kv span:first-child{color:var(--muted)}
+.desk-ref .card .kv span:last-child{color:var(--text)}
+.desk-ref .btn.sm,.desk-ref #sd-theme{color:var(--text)}

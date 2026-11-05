@@ -2,7 +2,8 @@ import { test, expect, signInApi, LANGS, WEB } from './lib.ts';
 
 // The desk's price is the backend quote (docs/specs/sales-desk-reference.md): the total appears and moves with the discount, Visa and a typed price,
 // the WhatsApp text carries the quoted numbers, and the endpoint's errors show. Seeded by scripts/desk-d2b-seed.mjs: gold sell 5,125.50, "Desk gold bar 21" 10 g, workmanship 50.
-const total = async (browser: any) => ((await browser.locator('#sd-total').textContent()) as string).replace(/,/g, '').trim();
+// '' while the page is (re)loading, so a poll can ride out a dev-server recompile
+const total = async (browser: any) => ((await browser.locator('#sd-total').count()) ? (((await browser.locator('#sd-total').textContent()) as string) ?? '') : '').replace(/,/g, '').trim();
 
 for (const lang of LANGS) {
   test(`sales desk quote: total follows discount, Visa and typed price; WhatsApp text matches; errors show (${lang})`, { tags: ['e2e', 'desk'], requires: ['browser'] }, async ({ app, browser, shot }) => {
@@ -10,7 +11,7 @@ for (const lang of LANGS) {
     await browser.setCookies([{ url: WEB, name: s.name, value: s.value, httpOnly: true, sameSite: 'Lax' }]);
     await app.open(`/${lang}/sales/desk?new=draft`);
     await expect.poll(() => browser.locator('#sd-total').count(), { timeout: 60000 }).toBe(1);
-    expect(await total(browser)).toBe('—');
+    await expect.poll(() => total(browser), { timeout: 30000 }).toBe('—');
     await expect.poll(async () => { await browser.locator('#it0-btn').tap(); return browser.locator('[role=option]:has-text("Desk gold bar 21")').count(); }, { timeout: 30000 }).toBeGreaterThan(0);
     await browser.locator('[role=option]:has-text("Desk gold bar 21")').first().tap();
     // 10 g x 5,125.50 + 10 g x 50 = 51,755.00 (the backend's number, rounded the reference way)

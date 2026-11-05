@@ -21,6 +21,7 @@ import { LINES_MAX, lockNote, plannedAgainst, readCustomer, readLines, type Desk
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { DISCOUNTS, PAYMENT_NAMES, karatFits, manualPrice, messageInput, paymentChoices, quoteBody, secondChoices, splitProblem, type Metal, type Operation, type Payment, type Quote, type Wrapping } from "./sales-desk-quote";
 
+const trimZeros = (t: string) => t.replace(/\.0+$|(\.\d*?)0+$/, "$1");
 const INVOICES_KEY = "gold-sales/sales-invoices";
 const blank = (): DeskLine => ({ itemId: "", count: "1" });
 const banksOf = (d: Row | null): Bank[] => (d?.bankPayments ?? []).map((b: Row) => ({ bankAccountId: b.bankAccountId, amount: piastresInput(b.amount) }));
@@ -59,6 +60,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [readAt, setReadAt] = useState("");
   const [tick, setTick] = useState(0);
   const [dark, setDark] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("ge-erp:desk-theme") === "dark");
+  useEffect(() => { document.documentElement.dataset.deskTheme = dark ? "dark" : "light"; return () => { delete document.documentElement.dataset.deskTheme; }; }, [dark]);
   const flipTheme = () => setDark((x) => { window.localStorage.setItem("ge-erp:desk-theme", x ? "light" : "dark"); return !x; });
   const [branchId, setBranchId] = useState("");
   const [cust, setCust] = useState({ customerName: "", customerPhone: "", nationalId: "" });
@@ -330,9 +332,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                 options={isUser || draft ? [["me", sellerName]] : sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])}
                 value={isUser || draft ? "me" : sellerId} onChange={(v) => setSellerId(v)} /></div>
           </div>
-          <TextBox name="customerName" label={d("customerName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
-          <TextBox name="nationalId" label={d("nationalId")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
-          <TextBox name="customerPhone" label={d("customerPhone")} value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
+          <TextBox name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
+          <TextBox name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
+          <TextBox name="customerPhone" label={d("customerPhone")} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
           <div className="field"><label htmlFor="payment">{d("desk.payment")}</label>
             <Choice tr={tr} id="payment" searchable={false} options={paymentChoices(operation).map((k) => [k, d(`desk.pay.${k}`)])} value={payment}
               onChange={(k) => pick(() => { setPayment((k || "cash") as Payment); if (k === "visa" || k === payment2) { setPayment2(""); setSplit(""); } })} /></div>
@@ -369,16 +371,17 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             })}
           </div>
           {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
-          <Button className="secondary-full" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}>{d("addLine")}</Button>
+          <Button className="secondary-full" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}>+ {d("addLine")}</Button>
           <Button className="clear-all" id="sd-clear" onClick={() => { touch(); setLines([blank()]); setPct(0); setManual({ sell: "", buy: "" }); setSplit(""); setPayment2(""); }}>{d("desk.clear")}</Button>
           <h4>{d("desk.calc")}</h4>
           {quoteMsg && <div className="note warn" role="alert" id="sd-quotemsg"><b>{quoteMsg}</b></div>}
           {typedManual.invalid && <div className="note warn" role="alert" id="sd-manualmsg"><b>{d("desk.manualInvalid")}</b></div>}
           <div className="field"><label htmlFor="sd-fees">{d("desk.fees", { kind: d(buy ? "desk.cashback" : "desk.workmanship") })}</label>
-            <Input id="sd-fees" readOnly dir="rtl" value={quote ? [...new Set(quote.q.lines.map((x) => piastresText(x.feePerGram)))].join(" + ") : "—"} /></div>
+            <Input id="sd-fees" readOnly dir="rtl" value={quote ? `${[...new Set(quote.q.lines.map((x) => trimZeros(piastresText(x.feePerGram))))].join(" + ")} = ${trimZeros(piastresText(quote.q.feeTotalPiastres))} ${d("desk.egp")}` : "—"} />
+            <div className="fee-small" id="sd-feeweights">{quote ? quote.q.lines.map((x) => `${trimZeros(milligramsText(x.weightMg))} ${d("desk.gram")} × ${x.quantity}`).join(" ، ") : ""}</div></div>
           <div className="two">
-            <div className="dr-price"><small>{d("desk.weight")}</small><b id="sd-weight">{quote ? milligramsText(quote.q.weightMg) : "0"}</b></div>
-            <div className="dr-price"><small>{d("desk.units")}</small><b id="sd-units">{quote ? quote.q.units : "0"}</b></div>
+            <div className="dr-price"><small>{d("desk.weight")}</small><b id="sd-weight">{quote ? trimZeros(milligramsText(quote.q.weightMg)) : "0"}</b><small>{d("desk.gram")}</small></div>
+            <div className="dr-price"><small>{d("desk.units")}</small><b id="sd-units">{quote ? quote.q.units : "0"}</b><small>{d("desk.piece")}</small></div>
           </div>
           {!buy && <div className="discount">
             <Checkbox checked={pct > 0} onChange={(on) => pick(() => setPct(on ? 5 : 0))} id="sd-disc-on">{d("desk.discountOn")}</Checkbox>
@@ -406,7 +409,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             ))}
           </div>
           <p className="muted" id="sd-readat">{readAt ? d("desk.readAt", { time: readAt }) : d("desk.noRead")}</p>
-          <Button className="secondary-full" id="sd-refresh" onClick={readPrice}>{d("desk.refresh")}</Button>
+          <Button className="secondary-full" id="sd-refresh" onClick={readPrice}>↻ {d("desk.refresh")}</Button>
         </div>
         <div className="card panel" id="sec-wa"><div className="topline"><h3>{d("wa.title")}</h3><span className="dr-pill">{d("desk.live")}</span></div>
           <pre id="wa-text" className="preview" dir="rtl">{waText || d("desk.waEmpty")}</pre>

@@ -1990,6 +1990,10 @@
   },
   "salesDesk": {
    "desk": {
+    "phName": "Customer name",
+    "phNid": "14 digits",
+    "gram": "g",
+    "piece": "pieces",
     "autoFees": "Workmanship and cashback are automatic",
     "clear": "Clear the whole operation",
     "discountOn": "Discount on the workmanship total only",

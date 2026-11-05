@@ -26,6 +26,11 @@ export const csp = [
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // dev only: the e2e screenshots and traces are written inside the project; they must not make the dev server rebuild mid-test.
+  webpack(config, { dev }) {
+    if (dev) config.watchOptions = { ...config.watchOptions, ignored: ["**/node_modules/**", "**/.git/**", "**/e2e-tests/.shots/**", "**/e2e-tests/.e2e/**", "**/.shots/**"] };
+    return config;
+  },
   async rewrites() {
     return apiUrl ? [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }] : [];
   },

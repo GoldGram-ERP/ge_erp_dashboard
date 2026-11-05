@@ -1,6 +1,6 @@
 // Same-input screenshots of the reference calculator and of our desk (headless), for the visual diff of docs/specs/sales-desk-reference.md section 5.
 //   node scripts/desk-d2b-shots.mjs   (our dashboard on 3110 and backend on 8110 must be up, seeded by scripts/desk-d2b-seed.mjs)
-// Inputs: Sell, Gold, cash, one 10 g gold bar, typed sell price 6255 (the reference's own sample); light, then dark. Output: .shots/desk-d2b/<name>.png
+// Our desktop window is 270 px wider (the app's sidebar), so the desk is as wide as the reference page. Inputs: Sell, Gold, cash, one 10 g gold bar, typed sell price 6255 (the reference's own sample); light, then dark. Output: .shots/desk-d2b/<name>.png
 import { createRequire } from "node:module";
 import { mkdirSync } from "node:fs";
 const require = createRequire(import.meta.url);
@@ -32,6 +32,7 @@ for (const [size, vp] of Object.entries(SIZES).filter(([k]) => !process.env.SIZE
     await ref.fill("#manualSell", "6255");
     await ref.evaluate(() => document.fonts.ready);
     await ref.screenshot({ path: new URL(`ref-${size}-${theme}.png`, OUT).pathname.slice(1), fullPage: true });
+    const refCols = ref.locator(".layout");
 
     await ctx.addCookies([{ name: c.name, value: c.value, url: WEB }]);
     await ctx.addInitScript((t) => localStorage.setItem("ge-erp:desk-theme", t), theme);
@@ -46,9 +47,11 @@ for (const [size, vp] of Object.entries(SIZES).filter(([k]) => !process.env.SIZE
     await ours.fill("#f-manualsell", "6255");
     await ours.locator("#sd-total").filter({ hasNotText: "—" }).waitFor();
     await ours.evaluate(() => document.fonts.ready);
-    await ours.setViewportSize({ width: vp.width, height: 3400 }); // the app scrolls inside its shell: a tall window shows the whole desk
+    await ours.setViewportSize({ width: size === "desktop" ? vp.width + 270 : vp.width, height: 4200 }); // the app scrolls inside its shell: a tall window shows the whole desk
     await ours.waitForTimeout(500);
     await ours.locator("#sd .desk-ref").screenshot({ path: new URL(`ours-${size}-${theme}.png`, OUT).pathname.slice(1) });
+    await ours.locator("#sd .desk-cols").screenshot({ path: new URL(`cols-ours-${size}-${theme}.png`, OUT).pathname.slice(1) });
+    await refCols.screenshot({ path: new URL(`cols-ref-${size}-${theme}.png`, OUT).pathname.slice(1) });
     await ctx.close();
   }
 }

@@ -132,10 +132,9 @@ for (const lang of LANGS) {
 
 // Size and layout (apple-design section 18, e2ev rule 11): small, calm controls on desktop and phone, nothing wider than the screen.
 // The phone is never above the desktop by more than 4 px: the caps below are the desktop cap + 4 for the phone, and the same visuals are used.
-// The desk's sizes are the reference calculator's (owner-approved exception to the app-wide small scale, docs/specs/sales-desk-reference.md section 5):
-// these two small-scale audits do not apply to it any more; the quote test and the screenshots cover the layout.
-const SMALL_SCALE = false;
-for (const lang of SMALL_SCALE ? LANGS : []) {
+// The desk (.desk-ref: the three columns, planned payment and save bar) uses the reference calculator's sizes (owner-approved exception, docs/specs/sales-desk-reference.md section 5);
+// anything outside .desk-ref keeps the app-wide small scale. So the audit measures the two zones apart.
+for (const lang of LANGS) {
   test(`sales desk: controls are small and nothing overflows, new and saved draft (${lang})`, { tags: ['e2e', 'desk'], requires: ['browser'] }, async ({ app, browser, shot }) => {
     await as('agent1', browser);
     const name = `Desk size ${stamp()}`;
@@ -147,26 +146,31 @@ for (const lang of SMALL_SCALE ? LANGS : []) {
       await shot(`desk-${lang}-size-${path.includes('new=draft') ? 'new' : 'saved'}`);
       await expect.poll(() => browser.evaluate(() => !!document.querySelector('#sd #sd-save'))).toBe(true);
       const m = await browser.evaluate(() => {
-        const phone = window.innerWidth <= 520, root = document.querySelector('#sd')!;
-        const max = (sel: string, f = (b: DOMRect) => b.height) => { let r = 0; root.querySelectorAll(sel).forEach((e) => { const b = e.getBoundingClientRect(); if (b.width && b.height) r = Math.max(r, f(b)); }); return Math.round(r * 10) / 10; };
+        const phone = window.innerWidth <= 520;
+        const all = (sel: string, zone: 'desk' | 'rest') => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => (!!e.closest('.desk-ref')) === (zone === 'desk') && !e.closest('#sd-mobilebar'));
+        const max = (sel: string, zone: 'desk' | 'rest', f = (b: DOMRect) => b.height) => { let r = 0; all(sel, zone).forEach((e) => { const b = e.getBoundingClientRect(); if (b.width && b.height) r = Math.max(r, f(b)); }); return Math.round(r * 10) / 10; };
         const save = document.querySelector('#sd-save')?.getBoundingClientRect().height ?? 0;
+        const fieldSel = 'input:not([type=hidden]):not([type=checkbox]),select,.sel-btn', btnSel = 'button:not(.sel-btn):not(.seg button):not(#sd-save)';
         return {
-          phone, fields: max('input:not([type=hidden]):not([type=checkbox]),select,.sel-btn'), save,
-          buttons: Math.max(0, ...Array.from(root.querySelectorAll('button:not(.sel-btn):not(.seg button):not(#sd-save)')).map((e) => e.getBoundingClientRect().height)),
-          seg: max('.seg button'), segBox: max('.seg'), icons: max('svg', (b) => Math.max(b.width, b.height)), badges: max('.badge,.card h3'),
-          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-          pinned: Array.from(root.querySelectorAll('*')).filter((e) => e.id !== 'sec-save' && !e.closest('#sec-save') && getComputedStyle(e).position === 'fixed').length,
+          phone, save, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          deskFields: max(fieldSel, 'desk'), deskButtons: max(btnSel, 'desk'), deskSeg: max('.seg button', 'desk'), deskIcons: max('svg', 'desk', (b) => Math.max(b.width, b.height)),
+          restFields: max(fieldSel, 'rest'), restButtons: max(btnSel, 'rest'), restSeg: max('.seg button', 'rest'), restIcons: max('svg', 'rest', (b) => Math.max(b.width, b.height)),
+          pinned: Array.from(document.querySelectorAll('#sd *')).filter((e) => e.id !== 'sd-mobilebar' && !e.closest('#sd-mobilebar') && !e.closest('#sec-save') && getComputedStyle(e).position === 'fixed').length,
         };
       });
       expect(m.overflow).toBe(0);
       expect(m.pinned).toBe(0);
-      expect(m.fields).toBeLessThanOrEqual(m.phone ? 36 : 34);
-      expect(m.buttons).toBeLessThanOrEqual(m.phone ? 36 : 34);
-      expect(m.save).toBeLessThanOrEqual(m.phone ? 40 : 34);
-      expect(m.seg).toBeLessThanOrEqual(30);
-      expect(m.segBox).toBeLessThanOrEqual(32);
-      expect(m.icons).toBeLessThanOrEqual(m.phone ? 18 : 20);
-      expect(m.badges).toBeLessThanOrEqual(22);
+      // the desk columns: the reference's own sizes (44 px controls, 38 px toggles, plus borders)
+      expect(m.deskFields).toBeLessThanOrEqual(48);
+      expect(m.deskButtons).toBeLessThanOrEqual(48);
+      expect(m.deskSeg).toBeLessThanOrEqual(42);
+      expect(m.deskIcons).toBeLessThanOrEqual(20);
+      // the rest of the page: the app-wide small scale
+      expect(m.restFields).toBeLessThanOrEqual(m.phone ? 36 : 34);
+      expect(m.restButtons).toBeLessThanOrEqual(m.phone ? 36 : 34);
+      expect(m.save).toBeLessThanOrEqual(48);
+      expect(m.restSeg).toBeLessThanOrEqual(30);
+      expect(m.restIcons).toBeLessThanOrEqual(m.phone ? 18 : 20);
     }
   });
 }
@@ -176,7 +180,7 @@ afterAll(async () => {
 });
 
 // Layout, not only presence (e2ev "Ship nothing broken"): no control scrolls, a row's labels and controls line up, and sizes stay on the apple-design scale.
-for (const lang of SMALL_SCALE ? LANGS : []) {
+for (const lang of LANGS) {
   test(`sales desk layout: no scrollbar on a control, count and price aligned, sizes on the scale (${lang})`, { tags: ['e2e', 'desk', 'layout'], requires: ['browser'] }, async ({ app, browser, shot }) => {
     await as('superadmin', browser);
     await app.open(`/${lang}/sales/desk?new=draft`);
@@ -185,23 +189,24 @@ for (const lang of SMALL_SCALE ? LANGS : []) {
     const r = await browser.evaluate(() => {
       const rect = (e: Element) => e.getBoundingClientRect();
       const segs = Array.from(document.querySelectorAll('#sd .seg')).map((e) => { const cs = getComputedStyle(e); return { scrollX: /auto|scroll/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 1, scrollY: /auto|scroll/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 1 }; });
-      const row = document.querySelector('#sd [data-line="0"]')!;
-      const count = row.querySelector('[data-k="line0Count"]')!, price = row.querySelector('.price-out')!.parentElement!;
-      const cl = rect(count.querySelector('label')!), pl = rect(price.querySelector('.flabel')!);
-      const ci = rect(count.querySelector('input')!), po = rect(price.querySelector('.price-out')!);
-      const tall = (sel: string) => Array.from(document.querySelectorAll(sel)).filter((e) => rect(e).height > 36).map((e) => `${e.tagName.toLowerCase()}.${(e.getAttribute('class') ?? '').replace(/ /g, '.')}#${e.id}:${Math.round(rect(e).height)}`);
-      return { segs, labelTopDiff: Math.abs(cl.top - pl.top), controlTopDiff: Math.abs(ci.top - po.top), controlHeightDiff: Math.abs(ci.height - po.height),
-        fields: tall('#sd .field input:not([type=checkbox]):not([type=radio]), #sd .sel-btn'), buttons: tall('#sd .seg button, #sd .btn:not(.primary)'), primary: Array.from(document.querySelectorAll('#sd .btn.primary')).filter((e) => rect(e).height > 40).map((e) => `${e.id}:${Math.round(rect(e).height)}`), wide: Array.from(document.querySelectorAll('#sd .sel-btn')).filter((e) => rect(e).width > 360).map((e) => e.id || 'sel-btn'), pageWide: document.documentElement.scrollWidth > window.innerWidth + 1 };
-    }) as { segs: { scrollX: boolean; scrollY: boolean }[]; labelTopDiff: number; controlTopDiff: number; controlHeightDiff: number; fields: string[]; buttons: string[]; primary: string[]; wide: string[]; pageWide: boolean };
+      const row = document.querySelector('#sd [data-line="0"] .dr-row')!;
+      const kids = Array.from(row.children).map((e) => rect(e));
+      const rowTopDiff = Math.max(...kids.map((k) => Math.abs((k.top + k.height / 2) - (kids[0].top + kids[0].height / 2))));
+      const inDesk = (sel: string) => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => !!e.closest('.desk-ref'));
+      const outDesk = (sel: string) => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => !e.closest('.desk-ref') && !e.closest('#sd-mobilebar'));
+      const tall = (els: Element[], max: number) => els.filter((e) => rect(e).height > max).map((e) => `${e.tagName.toLowerCase()}.${(e.getAttribute('class') ?? '').replace(/ /g, '.')}#${e.id}:${Math.round(rect(e).height)}`);
+      const fieldSel = '.field input:not([type=checkbox]):not([type=radio]), .sel-btn', btnSel = '.seg button, .btn:not(.primary)';
+      return { segs, rowTopDiff, fields: tall(outDesk(fieldSel), 36), buttons: tall(outDesk(btnSel), 36), deskFields: tall(inDesk(fieldSel), 48), deskButtons: tall(inDesk(btnSel), 48),
+        wide: Array.from(document.querySelectorAll('#sd .sel-btn')).filter((e) => rect(e).width > 700).map((e) => e.id), pageWide: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+    }) as { segs: { scrollX: boolean; scrollY: boolean }[]; rowTopDiff: number; fields: string[]; buttons: string[]; deskFields: string[]; deskButtons: string[]; wide: string[]; pageWide: boolean };
     expect(r.segs.length).toBeGreaterThan(0);
     for (const s of r.segs) expect(s).toEqual({ scrollX: false, scrollY: false });
-    expect(r.labelTopDiff).toBeLessThanOrEqual(1);
-    expect(r.controlTopDiff).toBeLessThanOrEqual(1);
-    expect(r.controlHeightDiff).toBeLessThanOrEqual(1);
-    expect(r.fields, 'fields/selects above 36px').toEqual([]);
-    expect(r.buttons, 'buttons/tabs above 36px').toEqual([]);
-    expect(r.primary, 'the primary action above 40px').toEqual([]);
-    expect(r.wide, 'dropdowns wider than 360px (stretch slop)').toEqual([]);
+    expect(r.rowTopDiff, 'item, count and remove centred on one line').toBeLessThanOrEqual(1);
+    expect(r.deskFields, 'desk fields above 48px').toEqual([]);
+    expect(r.deskButtons, 'desk buttons above 48px').toEqual([]);
+    expect(r.fields, 'fields/selects outside the desk columns above 36px').toEqual([]);
+    expect(r.buttons, 'buttons/tabs outside the desk columns above 36px').toEqual([]);
+    expect(r.wide, 'dropdowns wider than 700px (stretch slop)').toEqual([]);
     expect(r.pageWide).toBe(false);
     expect(await layoutAudit(browser, '#sd'), 'layoutAudit').toEqual([]);
   });
