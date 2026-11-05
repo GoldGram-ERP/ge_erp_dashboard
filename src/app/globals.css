@@ -872,3 +872,5 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 #sd #sd-head{scroll-margin-top:12px}
 #sd .price-out{display:inline-block;min-width:110px;padding:10px 12px;border-radius:10px}
 #sd .kv{gap:12px;align-items:baseline}
+/* the engine table card is a block that scrolls: Tailwind has a .table utility (display:table) that made it as wide as its table, so on a phone the whole page scrolled sideways (worst in Arabic) */
+div.table{display:block}
