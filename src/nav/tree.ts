@@ -36,7 +36,8 @@ export const NAV: NavGroup[] = [
     "screens": [
      "gold-sales/returns",
      "gold-sales/returns-list",
-     "gold-sales/find-return"
+     "gold-sales/find-return",
+     "gold-accounts/purchase-coding"
     ]
    },
    {
@@ -74,13 +75,6 @@ export const NAV: NavGroup[] = [
      "gold-accounts/purchase-invoices-list",
      "gold-accounts/purchase-coding",
      "gold-accounts/pieces-list"
-    ]
-   },
-   {
-    "id": "returned-pieces",
-    "route": "/buy/returned-pieces",
-    "screens": [
-     "gold-accounts/purchase-coding"
     ]
    }
   ]

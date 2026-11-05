@@ -8,9 +8,12 @@ import { Kv, Ltr, Section, ThingPage } from "@/components/engine";
 import { ReturnForm } from "./sales-returns-form";
 import { useAccess } from "./sales-access";
 import { BankKvs, bankNamesOf } from "./payment-block";
+import { makeConfig as makeReturnedPieces } from "./customer-pieces";
 
 const code6 = (n: unknown) => String(n).padStart(6, "0");
 const branchSpec = { path: "/branches", value: "id", label: "branchName", query: { pageSize: undefined } };
+
+const RETURNED_PIECES_KEYS = ["gold-accounts/purchase-coding"];
 
 export const makeConfig: MakeConfig = (tr): ThingConfig => {
   const { t, L } = tr;
@@ -53,14 +56,23 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     columns: columns(),
   };
 
+  // The third tab: a customer's piece we did not sell (the Returned pieces screen), composed whole from its own config: its list, its record sheet, its form.
+  // Only people holding the screen the backend gates it under (Purchase coding) see it. Its Add button replaces the page's Add return on that tab.
+  const returnedPieces = makeReturnedPieces(tr);
+  const piecesView: ViewConfig = {
+    ...returnedPieces.views[0], id: "returned-pieces", label: t("nav", "item.returned-pieces"), keys: RETURNED_PIECES_KEYS,
+    record: returnedPieces.record,
+    create: (returnedPieces.create ?? []).map((c) => ({ ...c, form: "createReturnedPiece" })),
+  };
+
   return {
     id: "returns",
     title: m("title"),
     unit: L("مرتجع", "return"),
-    keys: ["gold-sales/returns", "gold-sales/returns-list", "gold-sales/find-return"],
-    views: [history, find],
+    keys: ["gold-sales/returns", "gold-sales/returns-list", "gold-sales/find-return", ...RETURNED_PIECES_KEYS],
+    views: [history, find, piecesView],
     create: [{ form: "create", label: m("add"), keys: ["gold-sales/returns"] }],
-    forms: { create: { title: m("new"), display: "page", fields: [], path: () => "/returns", custom: ReturnForm } },
+    forms: { create: { title: m("new"), display: "page", fields: [], path: () => "/returns", custom: ReturnForm }, createReturnedPiece: returnedPieces.forms!.create },
     record: {
       title: (r) => `${m("recordNo")} ${r.returnNumber === undefined ? "" : code6(r.returnNumber)}`,
       endpoint: (r) => `/returns/${r.id}`,

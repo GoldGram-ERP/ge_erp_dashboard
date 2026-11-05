@@ -86,6 +86,7 @@ export type ViewConfig = {
   rowClass?: (row: Row) => string;
   actions?: ViewAction[];
   create?: CreateButton[];
+  record?: RecordConfig;                // this view's own record sheet (else the page's)
 };
 
 export type RecordAction = {

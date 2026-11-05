@@ -14,7 +14,6 @@ things["sales/reservations"] = { load: () => import("./sales-reservations") };
 things["sales/pieces"] = { load: () => import("./sales-pieces") };
 things["buy/items"] = { load: () => import("./gold-items") };
 things["buy/purchases"] = { load: () => import("./gold-purchases") };
-things["buy/returned-pieces"] = { load: () => import("./customer-pieces") };
 things["stock/count"] = { load: () => import("./stocktake-count") };
 things["stock/branch-stock"] = { load: () => import("./stocktake-branch") };
 things["money/cash"] = { load: () => import("./cash") };

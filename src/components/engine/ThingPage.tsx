@@ -108,10 +108,10 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   };
   const closeForm = () => { setEditing(null); edit((s) => pruneParams(s, filterNames)); };
   const closeRecord = () => go({ open: null });
-  const openRecord = (row: Row) => { if (cfg.record) { setPicked(row); go({ open: String(row[view?.rowKey ?? "id"] ?? "") }); } };
+  const openRecord = (row: Row) => { if (view?.record ?? cfg.record) { setPicked(row); go({ open: String(row[view?.rowKey ?? "id"] ?? "") }); } };
 
   // the record sheet: its id is in the address; the full record is fetched fresh each time it opens
-  const rec = cfg.record;
+  const rec = view?.record ?? cfg.record;   // a view may carry its own record sheet (a tab of another kind of row)
   const rowKey = view?.rowKey ?? "id";
   const openRow = dl.open && rec && !form ? (picked && String(picked[rowKey]) === dl.open ? picked : rec.endpoint ? { [rowKey]: dl.open } : null) : null;
   const recQ = useQuery({
@@ -151,8 +151,8 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
       {views.length > 1 && <Seg className="page" label={L("العرض", "View")} items={views.map((v) => ({ id: v.id, label: v.label }))} value={view.id} onChange={(id) => { pickView(cfg.id, id); bump((n) => n + 1); go({ view: id }, true); }} />}
       <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm}
         jump={(j) => go({ view: j.view, ...Object.fromEntries(Object.entries(j.filters ?? {}).map(([k, v]) => [k, v === undefined || v === null ? null : String(v)])) }, true)} />
-      {opened && cfg.record && (
-        <RecordSheet rec={cfg.record} full={opened.full} row={opened.row} onClose={closeRecord} reload={reload} openForm={openForm} />
+      {opened && rec && (
+        <RecordSheet rec={rec} full={opened.full} row={opened.row} onClose={closeRecord} reload={reload} openForm={openForm} />
       )}
       {sheetForm && (
         <FormSheet key={form!.id + String(form!.row?.id ?? "")} thingTitle={cfg.title} form={sheetForm} row={form!.row} onClose={closeForm} onOpen={openRecord}

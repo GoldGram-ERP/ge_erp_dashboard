@@ -40,7 +40,7 @@ for (const lang of LANGS) {
     const seen = await capture(browser, /\/customer-pieces(\?|$)/, ['POST']);
     try {
       // 1. Nothing chosen: category and item say required, nothing is sent
-      await go('e2eadmin', '/buy/returned-pieces?new=create', lang);
+      await go('e2eadmin', '/sales/returns?view=returned-pieces&new=createReturnedPiece', lang);
       await expect(browser.locator('#cp-save')).toBeVisible();
       await expect(browser.locator('#itemId-btn')).toBeDisabled();
       await browser.locator('#cp-save').tap();
@@ -91,7 +91,7 @@ for (const lang of LANGS) {
       await shot(`returned-${lang}-4-saved-and-label`);
 
       // 5. Find by the phone, then narrow by karat and category; find by the code; Reprint from the row
-      await go('e2eadmin', '/buy/returned-pieces', lang);
+      await go('e2eadmin', '/sales/returns?view=returned-pieces', lang);
       await browser.locator('#f-find').fill(arabicDigits(phone));
       await browser.locator('#run').tap();
       await expect(browser.locator(`[data-reprint="${made.piece.code}"]`)).toBeVisible();
@@ -107,7 +107,7 @@ for (const lang of LANGS) {
       await screen.getByRole('option', other.categoryName).tap();
       await browser.locator('#run').tap();
       await expect(browser.locator(`[data-reprint="${made.piece.code}"]`)).toHaveCount(0);
-      await go('e2eadmin', '/buy/returned-pieces', lang);
+      await go('e2eadmin', '/sales/returns?view=returned-pieces', lang);
       await browser.locator('#f-find').fill(made.piece.code);
       await browser.locator('#run').tap();
       await expect(browser.locator('#tbl tbody tr')).toHaveCount(1);
@@ -132,7 +132,7 @@ for (const lang of LANGS) {
 
       // 7. Delete: refused while sold (in this screen's words), then marks the record once the sale is gone
       const openRecord = async () => {
-        await go('e2eadmin', '/buy/returned-pieces', lang);
+        await go('e2eadmin', '/sales/returns?view=returned-pieces', lang);
         await browser.locator('#f-find').fill(made.piece.code);
         await browser.locator('#run').tap();
         await browser.locator('#tbl tbody tr').first().tap();
