@@ -18,7 +18,7 @@ export const newSaveKey = () => crypto.randomUUID();
 // in-flight request (a double click sends once) and keeps its key while the answer is lost or still running (unreachable, saveInProgress, 5xx),
 // so a retry is a repeat the backend answers with the first result. Any definite answer (done or refused) ends the attempt.
 const attempts = new Map<string, { key: string; inflight?: Promise<any> }>();
-const keepsKey = (e: unknown) => e instanceof ApiFailure && (e.unreachable || e.status >= 500 || e.error.message === "saveInProgress");
+export const keepsKey = (e: unknown) => e instanceof ApiFailure && (e.unreachable || e.status >= 500 || e.error.message === "saveInProgress");
 
 type Query = Record<string, string | number | boolean | undefined | null | (string | number)[]>;
 export type Call = { method?: string; body?: unknown; query?: Query; saveKey?: string; signal?: AbortSignal; blob?: boolean; cookie?: string };

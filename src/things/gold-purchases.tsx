@@ -14,7 +14,8 @@ import { LabelsCard } from "./purchases-labels";
 import { useJobIntent } from "./job-intent";
 import { useAccess } from "./sales-access";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+// A returned customer piece has no purchase invoice (invoiceNumber null since #167): show a dash, never "00null".
+const code6 = (n: unknown) => (n === null || n === undefined || n === "" ? "—" : String(n).padStart(6, "0"));
 const isPiece = (r: Row) => r.pieceCode !== undefined;
 
 // The invoice a typed number names: the backend searches the user's branch, newest first; the first exact match.
