@@ -234,6 +234,14 @@ export const NAV: NavGroup[] = [
      "system-codes/gold-prices-history"
     ]
    },
+   // Workmanship and cashback (bulk): Admin and Super admin only, the same screen key as Settings (no screen key of its own in the backend yet).
+   {
+    "id": "item-fees",
+    "route": "/setup/item-fees",
+    "screens": [
+     "administration/settings"
+    ]
+   },
    // The Settings page is commented out of the sidebar, the search and its address (owner, 2026-11-05) until further notice.
    // To bring it back, remove the comment markers around this entry; nothing else was removed.
    /*

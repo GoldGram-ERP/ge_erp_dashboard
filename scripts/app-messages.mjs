@@ -9,7 +9,7 @@ export const APP = {
   "nav.item.cash": ["حركات النقدية", "Cash movements"], "nav.item.treasuries": ["الخزن", "Treasuries"], "nav.item.transfers": ["تحويلات الخزن", "Treasury transfers"], "nav.item.banks": ["البنوك", "Banks"],
   "nav.item.bank-movements": ["الحركات البنكية", "Bank movements"], "nav.item.bank-transfers": ["التحويل بين الحسابات", "Transfers between accounts"],
   "nav.item.expense-types": ["أنواع المصروفات", "Expense types"], "nav.item.expenses": ["المصروفات", "Expenses"],
-  "nav.item.users": ["المستخدمين", "Users"], "nav.item.branches": ["الفروع", "Branches"], "nav.item.karats": ["العيارات", "Karats"], "nav.item.gold-prices": ["أسعار الذهب", "Gold prices"], "nav.item.settings": ["الإعدادات", "Settings"],
+  "nav.item.users": ["المستخدمين", "Users"], "nav.item.branches": ["الفروع", "Branches"], "nav.item.karats": ["العيارات", "Karats"], "nav.item.gold-prices": ["أسعار الذهب", "Gold prices"], "nav.item.settings": ["الإعدادات", "Settings"], "nav.item.item-fees": ["المصنعية والكاش باك", "Workmanship and cashback"],
   "nav.item.accounts": ["الحسابات والجلسات", "Accounts and sessions"], "nav.item.security": ["الأمان والبيانات", "Security and data"],
  "app.searchSheet": ["بحث بملء الشاشة", "Open full search"], "app.search": ["بحث", "Search"], "app.searchPlaceholder": ["ابحث عن صفحة أو مهمة أو سؤال أو رقم فاتورة أو كود قطعة…", "Search pages, jobs, questions, an invoice number or a piece code…"], "app.searchNone": ["لا توجد نتائج.", "No results."],
   "app.searchGroup.pages": ["الصفحات", "Pages"], "app.searchGroup.jobs": ["المهام", "Jobs"], "app.searchGroup.questions": ["الأسئلة", "Questions"], "app.searchGroup.find": ["بحث مباشر", "Find directly"],
