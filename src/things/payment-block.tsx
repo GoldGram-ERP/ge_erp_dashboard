@@ -102,7 +102,7 @@ export function PriceButton({ tr, id, price, parts, open, onToggle }: { tr: Tr; 
   );
 }
 export function Breakdown({ tr, id, parts, price }: { tr: Tr; id: string; parts: Parts; price: number }) {
-  return <div className="breakdown" id={`how-${id}`}>{breakdownLines(tr, parts, price).map((s, i) => <div key={i}>{s}</div>)}</div>;
+  return <div className="breakdown" id={`how-${id}`}>{breakdownLines(tr, parts, price).map((s, i) => <div key={i}><bdi>{s}</bdi></div>)}</div>;
 }
 
 /** The account name of each bank row of a saved document (for the record's enrich). */
