@@ -1,5 +1,27 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales desk: smaller, calmer controls (fields, buttons, tabs and icons), on the phone too.",
+    "ar": "مكتب المبيعات: الحقول والزراير والتابات والأيقونات بقت أصغر وأهدى، وعلى الموبايل كمان.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "Invoice print: the shop's fixed footer (tax numbers and terms) always prints, in English on English invoices and in Arabic on Arabic ones, and the invoice time and the price of each karat print for the pre-printed layout.",
+    "ar": "طباعة الفاتورة: الفوتر الثابت بتاع المحل (الأرقام الضريبية والشروط) بيطبع دايمًا، بالإنجليزي على الفواتير الإنجليزي وبالعربي على العربي، وبيطبع كمان وقت الفاتورة وسعر كل عيار للورق المطبوع مسبقًا.",
+    "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "The Settings page is hidden from the side menu for now.",
+    "ar": "صفحة الإعدادات اتخبّت من القائمة الجانبية دلوقتي."
+   }
+  ]
+ },
+ {
   "version": "1.0.20",
   "date": "2026-11-05",
   "changes": [
