@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Settings: a new screen to set workmanship and cashback for many items at once.",
+    "ar": "الإعدادات: شاشة جديدة تظبط فيها المصنعية والكاش باك لأصناف كتير مرة واحدة.",
+    "route": "/setup/item-fees"
+   }
+  ]
+ },
+ {
   "version": "1.0.27",
   "date": "2026-11-05",
   "changes": [
