@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import type { FieldConfig, Option, Row } from "@/lib/engine-types";
 import { useT } from "@/lib/t";
 import { addNewFor } from "@/lib/fields";
+import { stepAmount } from "@/lib/price-step";
 import { useLookup } from "./useLookup";
 import { Select } from "./Select";
 import { DatePicker } from "./DatePicker";
@@ -102,9 +103,14 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
       placeholder={f.placeholder} autoComplete={f.autocomplete ?? "off"} aria-invalid={!!err || undefined} aria-describedby={describedBy}
       onBlur={onBlur} onChange={(e) => onChange(e.target.value)} />
   );
+  const stepper = f.type === "money" && f.step && !f.disabled ? (
+    <div className="stepper">
+      <StepBtn dir={-1} f={f} value={value} onChange={onChange} />{input}<StepBtn dir={1} f={f} value={value} onChange={onChange} />
+    </div>
+  ) : null;
   return wrap(<>
     {label}
-    {password ? <div style={{ position: "relative" }}>{input}<ShowHide shown={shown} toggle={() => setShown((s) => !s)} /></div> : input}
+    {stepper ?? (password ? <div style={{ position: "relative" }}>{input}<ShowHide shown={shown} toggle={() => setShown((s) => !s)} /></div> : input)}
     {help}
   </>);
 }
@@ -117,6 +123,18 @@ function ShowHide({ shown, toggle }: { shown: boolean; toggle: () => void }) {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {shown ? <path d="M3 3l18 18M10.6 6.1A10 10 0 0 1 12 6c6 0 10 6 10 6a17 17 0 0 1-3.2 3.7M6.6 6.6A17 17 0 0 0 2 12s4 6 10 6a9.7 9.7 0 0 0 4.3-1" /> : <><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z" /><circle cx="12" cy="12" r="3" /></>}
       </svg>
+    </button>
+  );
+}
+
+/** A "-5" / "+5" pound step for a money field: it edits the text like typing does (exact piastres, never below 0). */
+function StepBtn({ dir, f, value, onChange }: { dir: 1 | -1; f: FieldConfig; value: unknown; onChange: (v: unknown) => void }) {
+  const { L } = useT();
+  const n = f.step ?? 0;
+  const label = dir > 0 ? L(`زيادة ${n} جنيهات في ${f.label}`, `Add ${n} pounds to ${f.label}`) : L(`إنقاص ${n} جنيهات من ${f.label}`, `Subtract ${n} pounds from ${f.label}`);
+  return (
+    <button type="button" className="step-btn" dir="ltr" aria-label={label} onClick={() => onChange(stepAmount(value, dir * n * 100))}>
+      {dir > 0 ? "+" : "−"}{n}
     </button>
   );
 }

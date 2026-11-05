@@ -26,6 +26,7 @@ export type FieldConfig = {
   maxLength?: number;
   autocomplete?: string;
   positive?: boolean;                  // number/money/weight: refuses zero
+  step?: number;                       // money: shows -/+ buttons that change the value by this many pounds
   min?: number | string;               // numbers: parsed value; date: ISO day
   max?: number | string;
   pattern?: RegExp;

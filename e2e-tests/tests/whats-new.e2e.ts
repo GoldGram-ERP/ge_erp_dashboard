@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { test, expect, LANGS, M } from './lib.ts';
+// The newest released version, read from the data the page shows, so a new release never breaks the test.
+const LATEST: string = (JSON.parse(readFileSync(new URL('../../changelog/changelog.json', import.meta.url), 'utf8')) as { version: string }[]).find((r) => r.version !== 'next')!.version;
 
 // What's new (Admin and Super admin only): reached from the version label in the sidebar, a dot until it is read, one line per change
 // with where to see it (Group > Screen from the real menu) and a button that opens the screen. A plain User gets none of it.
@@ -25,13 +28,22 @@ for (const lang of LANGS) {
     await expect(browser.locator('#whats-new')).toBeVisible();
     expect(await browser.evaluate(() => document.querySelector('h1')?.textContent ?? '')).toContain(M(lang, 'app', 'whatsNew.title'));
     const body = await text(browser);
-    expect(body).toContain('v1.0.16');
+    expect(body).toContain(`v${LATEST}`);
     expect(body).toContain(M(lang, 'app', 'whatsNew.latest'));
     expect(body).toContain(M(lang, 'app', 'whatsNew.kind.new'));
     // "where" is built from the real menu names
     expect(body).toContain(`${M(lang, 'nav', 'group.buy')} › ${M(lang, 'nav', 'item.items')}`);
+    // Layout, not just presence: every kind pill sits inside its own card and is in the normal flow (a Tailwind `.fixed` once pinned it over the text).
+    const pills = await browser.evaluate(() => Array.from(document.querySelectorAll('#whats-new .wn-kind')).map((el) => {
+      const r = el.getBoundingClientRect(), c = (el.closest('.wn-change') as HTMLElement).getBoundingClientRect(), t = (el.parentElement!.querySelector('.wn-text') as HTMLElement).getBoundingClientRect();
+      const inside = r.top >= c.top - 1 && r.bottom <= c.bottom + 1 && r.left >= c.left - 1 && r.right <= c.right + 1;
+      const overlapsText = r.left < t.right && r.right > t.left && r.top < t.bottom && r.bottom > t.top;
+      return { position: getComputedStyle(el).position, inside, overlapsText };
+    })) as { position: string; inside: boolean; overlapsText: boolean }[];
+    expect(pills.length).toBeGreaterThan(3);
+    for (const p of pills) expect(p).toEqual({ position: 'static', inside: true, overlapsText: false });
     await shot(`whats-new-${lang}-2-page`);
-    expect(await browser.evaluate((k: string) => localStorage.getItem(k), SEEN)).toBe('1.0.16');
+    expect(await browser.evaluate((k: string) => localStorage.getItem(k), SEEN)).toBe(LATEST);
 
     // back to Home: the dot is gone for good
     await go('superadmin', '', lang);

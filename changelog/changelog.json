@@ -1,5 +1,22 @@
 [
  {
+  "version": "1.0.20",
+  "date": "2026-11-05",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "A new gold price now starts with the last prices you saved, and each price has minus 5 and plus 5 pound buttons so you only change what moved.",
+    "ar": "أصبح السعر الجديد يبدأ بآخر أسعار حفظتها، ولكل سعر زرّا ناقص ٥ وزائد ٥ جنيه لتغيّر ما تغيّر فقط.",
+    "route": "/setup/gold-prices"
+   },
+   {
+    "kind": "fixed",
+    "en": "Phones: a wide table now scrolls inside its card instead of cutting off the whole page, in Arabic too.",
+    "ar": "الهاتف: الجدول العريض يتحرّك داخل بطاقته بدل أن تُقصّ الصفحة كلها، بالعربية أيضًا."
+   }
+  ]
+ },
+ {
   "version": "1.0.19",
   "date": "2026-11-05",
   "changes": [

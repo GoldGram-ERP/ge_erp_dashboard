@@ -1,6 +1,6 @@
 {
   "name": "ge_erp_dashboard",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "pack:hostinger": "node scripts/pack-hostinger.mjs",
+    "pack:check": "node scripts/pack-check.mjs",
     "release": "node scripts/release.mjs"
   },
   "dependencies": {

@@ -156,7 +156,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           </div>
           {showLog && (
             <div className={`sec ${pathname === "/whats-new" ? "has-active" : ""}`}>
-              <Link className="sec-head" id="nav-whats-new" href="/whats-new" aria-current={pathname === "/whats-new" ? "page" : undefined} title={t("app.whatsNew.title")}><span className="ico"><Icon name="bell" size={19} /></span><span className="name">{t("app.whatsNew.title")}{unseenLog ? <i className="wn-dot" aria-hidden="true" /> : null}</span></Link>
+              <Link className="sec-head" id="nav-whats-new" href="/whats-new" aria-current={pathname === "/whats-new" ? "page" : undefined} title={t("app.whatsNew.title")}><span className="ico"><Icon name="sparkle" size={19} /></span><span className="name">{t("app.whatsNew.title")}{unseenLog ? <i className="wn-dot" aria-hidden="true" /> : null}</span></Link>
             </div>
           )}
           {section("pins", "pin", t("nav.pinned"), pins.some((p) => p && isActive(p.route)), open("pins"),
