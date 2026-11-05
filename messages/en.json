@@ -1571,16 +1571,30 @@
    "howLine": "({gold} + {making}) × {count} = {line}"
   },
   "prints": {
+   "name": "Name",
+   "mobile": "Mobile",
+   "nationalId": "National ID",
+   "titleSub": "فاتورة",
+   "pricePerGram": "Gram price",
+   "karatPrice": "{karat}K price",
+   "silverPrice": "Silver price",
+   "totalInWords": "Total in words",
+   "onlyPrefix": "Only",
+   "onlySuffix": "",
+   "paymentMethod": "Payment method",
+   "receiver": "Receiver",
+   "sellerCode": "Seller / code",
+   "stamp": "Company stamp",
    "buttonsLabel": "Print the invoice",
    "layouts": {
-    "a4": "Print A4",
+    "a4": "Print invoice (A5)",
     "thermal": "Print thermal",
     "receipt": "Print receipt",
     "gift": "Print gift",
     "star": "Print star"
    },
    "sizes": {
-    "a4": "A4",
+    "a4": "A5",
     "thermal": "80 mm",
     "receipt": "80 mm"
    },
