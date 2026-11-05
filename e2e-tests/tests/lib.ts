@@ -23,10 +23,15 @@ export const stamp = () => `${Date.now().toString(36)}${Math.random().toString(3
 const H = { 'content-type': 'application/json', origin: WEB };
 
 export async function signInApi(username: string, password = PASSWORD) {
-  const r = await fetch(`${API}/access/sign-in`, { method: 'POST', headers: H, body: JSON.stringify({ email: `${username}@example.com`, password }) });
-  const raw = r.headers.get('set-cookie')?.split(';')[0] ?? '';
-  const i = raw.indexOf('=');
-  return { status: r.status, name: raw.slice(0, i), value: raw.slice(i + 1), cookie: raw };
+  const once = async () => {
+    const r = await fetch(`${API}/access/sign-in`, { method: 'POST', headers: H, body: JSON.stringify({ email: `${username}@example.com`, password }) });
+    const raw = r.headers.get('set-cookie')?.split(';')[0] ?? '';
+    const i = raw.indexOf('=');
+    return { status: r.status, name: raw.slice(0, i), value: raw.slice(i + 1), cookie: raw };
+  };
+  // A 200 with no cookie (a rare answer under load) made the browser refuse the empty cookie ("Invalid cookie fields"): ask once more, no sleep.
+  const first = await once();
+  return first.status === 200 && first.name ? first : once();
 }
 /** Direct backend call as a role (for setup, cleanup and API-level checks). */
 export async function apiAs(username: string, password = PASSWORD) {

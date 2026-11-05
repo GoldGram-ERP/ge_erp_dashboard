@@ -283,6 +283,8 @@ function ViewBody({ cfg, view, vs, set, chips, unit, flashId, onRow, openForm, j
         {!vs.ran ? <EmptyState title={L("اختر الفلاتر ثم اضغط «" + view.runLabel + "»", "Pick the filters, then press “" + view.runLabel + "”")} />
           : q.isError ? (
             <div className="empty"><Icon name="alert" size={36} /><strong>{(q.error as any)?.error ? errorText((q.error as any).error) : L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")}</strong>
+              {/* what the server answered, so a failure can be told apart without opening the network tab */}
+              {(q.error as any)?.status !== undefined && <span className="help" dir="ltr" id="list-error-detail">{`HTTP ${(q.error as any).status} · ${(q.error as any).error?.message ?? ""}`}</span>}
               <button type="button" className="btn quiet" id="retry" onClick={() => q.refetch()}><Icon name="refresh" />{L("إعادة المحاولة", "Try again")}</button></div>
           ) : !answer ? <Skeleton />
           : !rows.length ? (
