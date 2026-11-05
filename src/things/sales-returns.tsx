@@ -7,6 +7,7 @@ import { latinNumber, piastresText } from "@/lib/format";
 import { Kv, Ltr, Section, ThingPage } from "@/components/engine";
 import { ReturnForm } from "./sales-returns-form";
 import { useAccess } from "./sales-access";
+import { BankKvs, bankNamesOf } from "./payment-block";
 
 const code6 = (n: unknown) => String(n).padStart(6, "0");
 const branchSpec = { path: "/branches", value: "id", label: "branchName", query: { pageSize: undefined } };
@@ -65,7 +66,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       endpoint: (r) => `/returns/${r.id}`,
       enrich: async (r) => ({
         branchName: await api(`/branches/${r.branchId}`).then((b) => b.branchName).catch(() => ""),
-        bankName: r.bankAccountId ? await api(`/bank-accounts/${r.bankAccountId}`).then((a) => a.accountName).catch(() => "") : "",
+        bankNames: await bankNamesOf(r.bankPayments),
       }),
       render: (r) => <>
         {r.deletedAt && <div className="note warn">{si("deletedBadge")}</div>}
@@ -75,7 +76,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         </Section>
         <Section title={m("refund")}>
           <Kv k={m("cashRefund")}><Ltr>{piastresText(r.cashRefund)}</Ltr></Kv>
-          {r.bankAccountId && <><Kv k={si("bankAccount")}>{r.bankName ?? ""}</Kv><Kv k={si("bankAmount")}><Ltr>{piastresText(r.bankRefund)}</Ltr></Kv></>}
+          <BankKvs tr={tr} rows={r.bankPayments} names={r.bankNames} />
           <Kv k={m("refundTotal")}><Ltr>{piastresText(r.refundTotal)}</Ltr></Kv>
         </Section>
       </>,

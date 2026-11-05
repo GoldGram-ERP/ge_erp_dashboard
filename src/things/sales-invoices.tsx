@@ -14,6 +14,7 @@ import { GiftPrintBox } from "./sales-gift";
 import { SalesInvoiceForm } from "./sales-invoices-form";
 import { PIECE_CODE } from "./sales-form-parts";
 import { useAccess } from "./sales-access";
+import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
 
 const code6 = (n: unknown) => String(n).padStart(6, "0");
 const branchSpec = { path: "/branches", value: "id", label: "branchName", query: { pageSize: undefined } };
@@ -156,7 +157,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       // The names behind the ids: the branch and each bank account (shown by name when the user may read them).
       enrich: async (r) => ({
         branchName: await api(`/branches/${r.branchId}`).then((b) => b.branchName).catch(() => ""),
-        bankNames: await Promise.all((r.bankPayments ?? []).map((p: Row) => api(`/bank-accounts/${p.bankAccountId}`).then((a) => a.accountName).catch(() => ""))),
+        bankNames: await bankNamesOf(r.bankPayments),
       }),
       render: (r) => {
         const tot = r.totals;
@@ -191,14 +192,12 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
           <Section title={m("payments")}>
             {r.reservation && <><Kv k={m("reservation")}><Ltr>{code6(r.reservation.reservationNumber)}</Ltr></Kv><Kv k={m("paidAhead")}><Ltr>{piastresText(r.reservation.paid)}</Ltr></Kv></>}
             <Kv k={m("cash")}><Ltr>{piastresText(r.cash)}</Ltr></Kv>
-            {(r.bankPayments as Row[]).map((p, i) => <div key={i}>
-              <Kv k={i === 0 ? m("bankAccount") : m("bankAccountN", { number: String(i + 1) })}>{r.bankNames?.[i] ?? ""}</Kv>
-              <Kv k={i === 0 ? m("bankAmount") : m("bankAmountN", { number: String(i + 1) })}><Ltr>{piastresText(p.amount)}</Ltr></Kv></div>)}
+            <BankKvs tr={tr} rows={r.bankPayments} names={r.bankNames} />
           </Section>
           <Section title={m("totals")}>
-            <Kv k={m("lineCount")}><Ltr>{tot.lineCount}</Ltr></Kv><Kv k={m("totalWeight")}><Ltr>{milligramsText(tot.weight)}</Ltr></Kv><Kv k={m("cashDiscount")}><Ltr>{piastresText(tot.discount)}</Ltr></Kv>
-            <Kv k={m("total")}><Ltr>{piastresText(tot.total)}</Ltr></Kv><Kv k={m("paid")}><Ltr>{piastresText(tot.paid)}</Ltr></Kv>
+            <Kv k={m("lineCount")}><Ltr>{tot.lineCount}</Ltr></Kv><Kv k={m("totalWeight")}><Ltr>{milligramsText(tot.weight)}</Ltr></Kv>
           </Section>
+          <Section title={m("amounts")} wide><TotalsBar tr={tr} bar={savedBar(tot)} /></Section>
           {!r.deletedAt && <GiftPrintBox key={r.id} row={r} tr={tr} />}
         </>;
       },

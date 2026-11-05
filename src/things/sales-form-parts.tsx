@@ -67,26 +67,6 @@ export async function customerNameOf(phone: string): Promise<string | null> {
   try { return (await api("/sales-invoices/customer-name", { query: { phone: digits } })).customerName ?? null; } catch { return null; }
 }
 
-// ── bank rows (any number; row 1 stays) ──
-export type BankRow = { bankAccountId: string; amount: string };
-export const accountOptions = (rows: Row[]): [string, string][] => rows.map((a) => [a.id, `${a.accountName} · ${a.bankName}`]);
-export function BankRows({ banks, accounts, onChange, tr }: { banks: BankRow[]; accounts: [string, string][]; onChange: (next: BankRow[]) => void; tr: Tr }) {
-  const set = (i: number, patch: Partial<BankRow>) => onChange(banks.map((b, j) => (j === i ? { ...b, ...patch } : b)));
-  return <>{banks.map((b, i) => (
-    <div className="formgrid" data-bank={i} key={i} style={{ marginBottom: 8 }}>
-      <div className="field" data-k={`bank${i}Account`}>
-        <label htmlFor={`ba${i}`}>{i === 0 ? sg(tr, "bankAccount") : sg(tr, "bankAccountN", { number: i + 1 })}</label>
-        <Choice tr={tr} id={`ba${i}`} options={accounts} value={b.bankAccountId} onChange={(v) => set(i, { bankAccountId: v })} />
-      </div>
-      <div className="field" data-k={`bank${i}Amount`}>
-        <label htmlFor={`bm${i}`}>{i === 0 ? sg(tr, "bankAmount") : sg(tr, "bankAmountN", { number: i + 1 })}</label>
-        <input id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} style={{ textAlign: "end" }} onChange={(e) => set(i, { amount: e.target.value })} />
-      </div>
-      {i > 0 && <div style={{ alignSelf: "end" }}><button type="button" className="btn quiet sm" data-rmbank={i} onClick={() => onChange(banks.filter((_, j) => j !== i))}>{sg(tr, "removeBankRow", { number: i + 1 })}</button></div>}
-    </div>
-  ))}</>;
-}
-
 export type DiscountKind = "amount" | "percent";
 /** Cash discount box. lockedValue: a reservation's own (read only); may=false: locked 0 + note. Help/error rows are the caller's (#discHelp, #discErr). */
 export function DiscountBox({ tr, may, kind, disc, lockedValue, onKind, onDisc, help, error }: { tr: Tr; may: boolean; kind: DiscountKind; disc: string; lockedValue?: number; onKind: (k: DiscountKind) => void; onDisc: (v: string) => void; help?: ReactNode; error?: ReactNode }) {

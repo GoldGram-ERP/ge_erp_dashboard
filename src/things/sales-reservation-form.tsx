@@ -1,9 +1,10 @@
 "use client";
 // The new reservation, one workspace page (forms.create.display "page" + custom). Ported from docs/nav-preview/app/things/sales-reservations-form.js.
-// details (branch, date, seller) -> customer -> items (item, quantity, agreed total price) -> payment (paid in full) -> save.
-// A reservation records no gold and moves no stock; the gold price shown is the latest saved one, display only, never sent.
-// Money is whole piastres. Cash discount: base = the whole agreed price; sent only when typed.
-import { useCallback, useEffect, useRef, useState } from "react";
+// details (branch, date, seller) -> customer -> items (item, quantity; the price is the system's) -> payment (paid in full) -> save.
+// A reservation records no gold and moves no stock. Each line is priced by the backend at the gold price in force on the reservation date
+// (GET /reservations/line-price, the same formula as a sale: issue #166), read only here; the Save prices it again and refuses a typed price.
+// Money is whole piastres. Cash discount: base = the lines' workmanship; sent only when typed.
+import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
@@ -11,21 +12,20 @@ import { latinNumber, piastresText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { toast } from "@/components/engine";
-import { LINES_MAX, MAX_PIASTRES, bankPaid, bankRowErrors, cashPaid, formRowOfRefusal, readDiscount, sentBanks } from "./sales-invoices-math";
-import type { Bank } from "./sales-invoices-math";
-import { BankRows, Choice, CustomerBoxes, DiscountBox, ErrBox, TextBox, accountOptions, allPages, code6, customerRules, fe, latestPrice, ltrStyle, mayDiscount, sg, type DiscountKind } from "./sales-form-parts";
+import { LINES_MAX, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentBanks, totalsOf, type Bank } from "./sales-invoices-math";
+import { Choice, CustomerBoxes, DiscountBox, ErrBox, allPages, code6, customerRules, fe, latestPrice, ltrStyle, mayDiscount, sg, type DiscountKind } from "./sales-form-parts";
+import { Breakdown, PaymentBlock, PriceButton, TotalsBar, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
+import { pricePerGram, typedHundredths } from "./item-math";
 
 const PIECES_MAX = 100;       // pieces on one reservation, all items together (dashboard and backend agree)
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
-type Line = { itemId: string; quantity: string; price: string };
-const blankLine = (): Line => ({ itemId: "", quantity: "1", price: "" });
+type Line = { itemId: string; quantity: string };
+const blankLine = (): Line => ({ itemId: "", quantity: "1" });
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-
-const lineState = (l: Line) => {
-  const qn = /^\d{1,3}$/.test(latinNumber(l.quantity)) ? Number(latinNumber(l.quantity)) : undefined;
-  const p = typedPiastres(String(l.price ?? "").trim());
-  return { q: qn !== undefined && qn >= 1 && qn <= PIECES_MAX ? qn : undefined, p: p !== undefined && p > 0 && p <= MAX_PIASTRES ? p : undefined };
-};
+const qOf = (l: Line) => { const s = latinNumber(l.quantity); const n = /^\d{1,3}$/.test(s) ? Number(s) : 0; return n >= 1 && n <= PIECES_MAX ? n : undefined; };
+// One line's price from the backend: ok (its answer), or why not ("incomplete" | "invalid" | "noGoldPriceToday" | "failed").
+type Priced = { ok: Row } | { why: string } | { loading: true };
+const keyOf = (l: Line, date: string) => (l.itemId && qOf(l) && DAY.test(date) ? `${l.itemId}|${qOf(l)}|${date}` : "");
 
 export function ReservationForm({ close, reload, tr }: CustomFormProps) {
   const { t, L } = tr;
@@ -43,8 +43,10 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
   const [date, setDate] = useState(today());
   const [cust, setCust] = useState<Record<string, string>>({ customerPhone: "", customerName: "", nationalId: "" });
   const [lines, setLines] = useState<Line[]>([blankLine()]);
+  const [priced, setPriced] = useState<Record<string, Priced>>({});
+  const [how, setHow] = useState(-1);   // the line whose price breakdown is open
   const [cash, setCash] = useState("");
-  const [banks, setBanks] = useState<Bank[]>([{ bankAccountId: "", amount: "" }]);
+  const [banks, setBanks] = useState<Bank[]>([blankBank()]);
   const [kind, setKind] = useState<DiscountKind>("amount");
   const [disc, setDisc] = useState("");
   const [price, setPrice] = useState<Row | null | undefined>(undefined);
@@ -80,21 +82,40 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
       .then((r) => { setNext(r.next); setChooseBranch(false); })
       .catch((e) => { setNext(undefined); setChooseBranch(e instanceof ApiFailure && e.status === 400 && ((e.error.fields ?? []) as { field: string }[]).some((f) => f.field === "branchId")); });
   }, [branchId, date]);
+  // Each line's price, asked again whenever its item, count or the date changes (a short pause while typing the count).
+  const wanted = lines.map((l) => keyOf(l, date)).filter((k) => k && !priced[k]);
+  useEffect(() => {
+    if (!wanted.length) return;
+    const h = setTimeout(() => {
+      for (const k of new Set(wanted)) {
+        const [itemId, quantity, day] = k.split("|");
+        setPriced((p) => ({ ...p, [k]: { loading: true } }));
+        api("/reservations/line-price", { query: { itemId, quantity, date: day } })
+          .then((ok) => setPriced((p) => ({ ...p, [k]: { ok } })))
+          .catch((e) => setPriced((p) => ({ ...p, [k]: { why: e instanceof ApiFailure ? (e.status === 409 ? "noGoldPriceToday" : (e.error.fields as any[] ?? []).find((f) => f.field === "itemId")?.message ?? "failed") : "failed" } })));
+      }
+    }, 250);
+    return () => clearTimeout(h);
+  }, [wanted.join(",")]);   // eslint-disable-line react-hooks/exhaustive-deps
 
+  const lineOf = (l: Line) => priced[keyOf(l, date)];
+  const okOf = (l: Line) => { const p = lineOf(l); return p && "ok" in p ? p.ok : undefined; };
+  const rows = lines.map(okOf).filter((x): x is Row => Boolean(x));
   const rules = customerRules(tr);
   const customerValid = !rules.customerPhone(cust.customerPhone.trim()) && !rules.customerName(cust.customerName.trim()) && !rules.nationalId(cust.nationalId.trim());
   const detailsDone = Boolean(branchId && employeeId && DAY.test(date));
-  const itemsDone = lines.length > 0 && lines.every((l) => { const s = lineState(l); return l.itemId && s.q && s.p && s.p >= s.q; });
-  const gross = sum(lines.map((l) => lineState(l).p ?? 0));
-  const d = may ? readDiscount(kind, disc, gross) : { value: 0, invalid: false, tooBig: false, sent: undefined };   // base = the whole agreed price
-  const total = gross - d.value, paid = cashPaid(cash) + bankPaid(banks), left = total - paid;
+  const itemsDone = lines.length > 0 && rows.length === lines.length;
+  const base = makingBase(rows);
+  const d = may ? readDiscount(kind, disc, base) : { value: 0, invalid: false, tooBig: false, sent: undefined };   // base = the lines' workmanship
+  const tot = totalsOf({ lines: rows, discount: d.value, cash, banks });
   const need = { customer: detailsDone, items: detailsDone && customerValid, payment: detailsDone && customerValid && itemsDone };
   // Sections unlock in order and stay open once shown.
   useEffect(() => { setShown((s) => (s.customer === (s.customer || need.customer) && s.items === (s.items || need.items) && s.payment === (s.payment || need.payment) ? s : { customer: s.customer || need.customer, items: s.items || need.items, payment: s.payment || need.payment })); }, [need.customer, need.items, need.payment]);
-  const valid = itemsDone && total > 0 && left === 0 && !d.invalid && !d.tooBig;
+  const valid = itemsDone && tot.total > 0 && tot.left === 0 && !d.invalid && !d.tooBig;
 
-  const karatOf = (id: string) => items.find((i) => i.id === id)?.karat;
-  const setLine = (i: number, patch: Partial<Line>) => { touch(); setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l))); };
+  const itemOf = (id: string) => items.find((i) => i.id === id);
+  const setLine = (i: number, patch: Partial<Line>) => { touch(); setHow(-1); setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l))); };
+  const whyText = (why: string) => (why === "incomplete" ? rm("itemIncomplete") : why === "invalid" ? rm("itemInvalid") : why === "noGoldPriceToday" ? sg(tr, "noGoldPriceForDay") : rm("linePriceFailed"));
 
   async function submit() {
     if (saving) return;
@@ -107,29 +128,25 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
     if (shown.customer) for (const k of ["customerPhone", "customerName", "nationalId"]) { const r = rules[k](cust[k].trim()); if (r) e[k] = r; }
     const seen = new Set<string>();
     lines.forEach((l, i) => {
-      const s = lineState(l);
+      const p = lineOf(l);
       if (!l.itemId) e[`line${i}Item`] = fe(tr, "required");
       else if (seen.has(l.itemId)) e[`line${i}Item`] = fe(tr, "duplicateItem");
+      else if (p && "why" in p) e[`line${i}Item`] = whyText(p.why);
       seen.add(l.itemId);
-      if (!s.q) e[`line${i}Quantity`] = String(l.quantity).trim() === "" ? fe(tr, "required") : rm("quantityInvalid");
-      if (!s.p || (s.q && s.p < s.q)) e[`line${i}Price`] = String(l.price).trim() === "" ? fe(tr, "required") : rm("linePriceInvalid");
+      if (!qOf(l)) e[`line${i}Quantity`] = String(l.quantity).trim() === "" ? fe(tr, "required") : rm("quantityInvalid");
     });
-    const root = sum(lines.map((l) => lineState(l).q ?? 0)) > PIECES_MAX ? rm("tooManyPieces") : "";
-    if (cash !== "") { const c = typedPiastres(cash); if (c === undefined || c <= 0 || c > MAX_PIASTRES) e.cash = sg(tr, "amountInvalid"); }
-    bankRowErrors(banks).forEach((r: any, i: number) => {
-      if (r.account) e[`bank${i}Account`] = fe(tr, r.account);
-      if (r.amount) e[`bank${i}Amount`] = r.amount === "invalid" ? sg(tr, "amountInvalid") : fe(tr, r.amount);
-    });
+    const root = sum(lines.map((l) => qOf(l) ?? 0)) > PIECES_MAX ? rm("tooManyPieces") : "";
+    Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
     setErrs(e); setRootErr(root);
     if (Object.keys(e).length || root) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length + (root ? 1 : 0) })); return; }
-    if (d.invalid || d.tooBig) return;
-    if (left !== 0) { setShort(true); return; }
+    if (!itemsDone || d.invalid || d.tooBig) return;
+    if (tot.left !== 0) { setShort(true); return; }
     setSaving(true);
     const body = {
       branchId, date, employeeId,
       customerName: cust.customerName.trim(), customerPhone: latinNumber(cust.customerPhone.trim()),
       ...(cust.nationalId.trim() ? { nationalId: latinNumber(cust.nationalId.trim()) } : {}),
-      lines: lines.map((l) => ({ itemId: l.itemId, quantity: Number(latinNumber(l.quantity)), linePrice: typedPiastres(String(l.price).trim()) })),
+      lines: lines.map((l) => ({ itemId: l.itemId, quantity: qOf(l) })),
       ...(cash !== "" ? { cash: typedPiastres(cash) } : {}),
       bankPayments: sentBanks(banks),
       ...(d.sent ? { cashDiscount: d.sent } : {}),   // only when typed
@@ -143,23 +160,24 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
   }
   function refusal(err: unknown) {
     if (!(err instanceof ApiFailure)) { setGeneral(L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")); return; }
+    if (err.error.message === "noGoldPriceToday") { setGeneral(sg(tr, "noGoldPriceForDay")); return; }
     const v = err.error.values ?? {}, texts = backendFieldErrors(err.error, tr), e: Record<string, string> = {};
     let gen = "", root = "", pay: { total: number; paid: number } | null = null;
-    for (const f of ((err.error.fields ?? []) as { field: string }[])) {
+    for (const f of ((err.error.fields ?? []) as { field: string; message?: string }[])) {
       let r: RegExpExecArray | null;
+      const payKey = paymentKeyOf(f.field, banks);
       if (f.field === "payments") pay = { total: Number(v.total ?? 0), paid: Number(v.paid ?? 0) };
       else if (f.field === "lines") root = rm("tooManyPieces");
-      else if ((r = /^bankPayments\.(\d+)\.(bankAccountId|amount)$/.exec(f.field))) e[`bank${formRowOfRefusal(banks, +r[1])}${r[2] === "amount" ? "Amount" : "Account"}`] = texts[f.field];
-      else if ((r = /^lines\.(\d+)\.(itemId|quantity|linePrice)$/.exec(f.field))) e[`line${r[1]}${r[2] === "itemId" ? "Item" : r[2] === "quantity" ? "Quantity" : "Price"}`] = r[2] === "itemId" ? rm("itemInvalid") : r[2] === "quantity" ? rm("quantityInvalid") : rm("linePriceInvalid");
-      else if (["branchId", "employeeId", "date", "customerName", "customerPhone", "nationalId", "cash"].includes(f.field)) e[f.field] = texts[f.field];
+      else if (payKey) e[payKey] = texts[f.field];
+      else if ((r = /^lines\.(\d+)\.(itemId|quantity)$/.exec(f.field))) e[`line${r[1]}${r[2] === "itemId" ? "Item" : "Quantity"}`] = r[2] === "quantity" ? rm("quantityInvalid") : f.message === "duplicateItem" ? fe(tr, "duplicateItem") : whyText(f.message ?? "invalid");
+      else if (["branchId", "employeeId", "date", "customerName", "customerPhone", "nationalId"].includes(f.field)) e[f.field] = texts[f.field];
       else gen = texts[f.field] ?? tr.errorText(err.error);
     }
     if (!Object.keys(e).length && !pay && !root && !gen) gen = tr.errorText(err.error);   // no field named: say it once
     setErrs(e); setPayRefusal(pay); setRootErr(root); setGeneral(gen);
+    if (pay || Object.keys(e).some((k) => k.startsWith("line"))) setPriced({});   // the item or the gold price may have changed: ask the prices again
   }
 
-  const cell = (k: string, v: number, bad?: boolean) => <div key={k}><div className="help">{k}</div><b dir="ltr" style={{ fontVariantNumeric: "tabular-nums", color: bad ? "var(--warn)" : undefined }} data-summary>{piastresText(v)}</b></div>;
-  const accOpts = accountOptions(accounts);
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
 
   return (
@@ -175,7 +193,7 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
           <div className="field" data-k="branchId"><label htmlFor="branchId">{sg(tr, "branch")} *</label>
             <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
           <div className="field" data-k="date"><label htmlFor="f-date">{rm("date")} *</label>
-            <DatePicker id="f-date" name="date" value={date} onChange={(v) => { touch(); setDate(v || date); }} disabled={isUser} required />{err("date")}</div>
+            <DatePicker id="f-date" name="date" value={date} onChange={(v) => { touch(); setHow(-1); setDate(v || date); }} disabled={isUser} required />{err("date")}</div>
           <div className="field" data-k="employeeId"><label htmlFor="employeeId">{rm("employee")} *</label>
             {isUser ? <input disabled value={me?.name ?? ""} readOnly />
               : <Choice tr={tr} id="employeeId" options={users.map((u) => [u.id, u.name ?? u.username ?? u.id])} value={employeeId} onChange={(v) => { touch(); setEmployeeId(v); }} />}{err("employeeId")}</div>
@@ -185,33 +203,39 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
         <CustomerBoxes tr={tr} v={cust} set={(k, val) => { touch(); setCust((c) => ({ ...c, [k]: val })); }} errors={errs} /></div>}
       {shown.items && <div className="card" id="sec-items"><h3>{rm("items")}</h3><div className="help">{rm("itemsNote")}</div>
         <div className="field" data-k="lines"><div id="lineRows" style={{ marginTop: 10 }}>
-          {lines.map((l, i) => (
-            <div className="formgrid" data-line={i} key={i} style={{ marginBottom: 10 }}>
-              <div className="field" data-k={`line${i}Item`}><label htmlFor={`it${i}`}>{rm("itemNumber", { number: String(i + 1) })} *</label>
-                <Choice tr={tr} id={`it${i}`} options={items.map((x) => [x.id, `${x.itemName} · ${x.karat ?? ""}`])} value={l.itemId} onChange={(v) => setLine(i, { itemId: v })} />
-                <div className="help" data-karat={i}>{karatOf(l.itemId) ? sg(tr, "karatOf", { karat: karatOf(l.itemId) }) : ""}</div>{err(`line${i}Item`)}</div>
-              <div className="field" data-k={`line${i}Quantity`}><label htmlFor={`iq${i}`}>{rm("quantity")} *</label>
-                <input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" value={l.quantity} style={ltrStyle} onChange={(e) => setLine(i, { quantity: e.target.value })} />{err(`line${i}Quantity`)}</div>
-              <div className="field" data-k={`line${i}Price`}><label htmlFor={`ip${i}`}>{rm("linePrice")} *</label>
-                <input id={`ip${i}`} data-p={i} dir="ltr" inputMode="decimal" maxLength={17} autoComplete="off" placeholder="0.00" value={l.price} style={ltrStyle} onChange={(e) => setLine(i, { price: e.target.value })} />{err(`line${i}Price`)}</div>
-              {lines.length > 1 && <div style={{ alignSelf: "end" }}><button type="button" className="btn quiet sm danger" data-rmline={i} aria-label={rm("removeItem", { number: String(i + 1) })} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{rm("remove")}</button></div>}
-            </div>
-          ))}
+          {lines.map((l, i) => {
+            const it = itemOf(l.itemId), p = lineOf(l), ok = okOf(l);
+            const parts = ok && it ? { perGram: pricePerGram({ sellPrice: ok.goldPrice21k, silverPrice: null }, String(it.karat)), weightMg: Number(it.weight ?? 0), workPerGram: typedHundredths(it.workmanshipValue) ?? BigInt(0), count: qOf(l) ?? 1 } : null;
+            return (
+              <div className="formgrid" data-line={i} key={i} style={{ marginBottom: 10 }}>
+                <div className="field" data-k={`line${i}Item`} data-err={errs[`line${i}Item`] ? "" : undefined}><label htmlFor={`it${i}`}>{rm("itemNumber", { number: String(i + 1) })} *</label>
+                  <Choice tr={tr} id={`it${i}`} options={items.map((x) => [x.id, `${x.itemName} · ${x.karat ?? ""}`])} value={l.itemId} onChange={(v) => setLine(i, { itemId: v })} />
+                  <div className="help" data-karat={i}>{it?.karat ? sg(tr, "karatOf", { karat: it.karat }) : ""}</div>{err(`line${i}Item`)}</div>
+                <div className="field" data-k={`line${i}Quantity`} data-err={errs[`line${i}Quantity`] ? "" : undefined}><label htmlFor={`iq${i}`}>{rm("quantity")} *</label>
+                  <input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" value={l.quantity} style={ltrStyle} onChange={(e) => setLine(i, { quantity: e.target.value })} />{err(`line${i}Quantity`)}</div>
+                <div className="field" data-k={`line${i}Price`}><span className="flabel" id={`ipl${i}`}>{rm("linePrice")}</span>
+                  <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} aria-live="polite">
+                    {ok && parts ? <PriceButton tr={tr} id={`l${i}`} price={ok.linePrice} parts={parts} open={how === i} onToggle={() => setHow(how === i ? -1 : i)} />
+                      : <span className="mute">{p && "loading" in p ? t("common", "loading") : "—"}</span>}
+                  </output>
+                  {ok ? <div className="help">{rm("priceOfDay", { date: String(ok.priceDate).slice(0, 10) })}</div>
+                    : p && "why" in p ? <ErrBox>{whyText(p.why)}</ErrBox> : <div className="help">{rm("priceBySystem")}</div>}
+                  {how === i && ok && parts && <Breakdown tr={tr} id={`l${i}`} parts={parts} price={ok.linePrice} />}
+                </div>
+                {lines.length > 1 && <div style={{ alignSelf: "end" }}><button type="button" className="btn quiet sm danger" data-rmline={i} aria-label={rm("removeItem", { number: String(i + 1) })} onClick={() => { touch(); setErrs({}); setHow(-1); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{rm("remove")}</button></div>}
+              </div>
+            );
+          })}
         </div>{rootErr && <ErrBox>{rootErr}</ErrBox>}</div>
         <button type="button" className="btn quiet sm" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) setLines((ls) => [...ls, blankLine()]); }}>{rm("addItem")}</button>
       </div>}
       {shown.payment && <div className="card" id="sec-payment"><h3>{rm("payment")} <small>{rm("paymentNote")}</small></h3>
-        <div className="formgrid"><TextBox name="cash" label={sg(tr, "cash")} value={cash} maxLength={17} ltr error={errs.cash} onChange={(v) => { touch(); setCash(v); }} /></div>
-        <div id="banks" style={{ marginTop: 12 }}><BankRows tr={tr} banks={banks} accounts={accOpts} onChange={(b) => { touch(); setBanks(b); }} />
-          {Object.entries(errs).filter(([k]) => /^bank\d+(Account|Amount)$/.test(k)).map(([k, v]) => <ErrBox key={k}>{v}</ErrBox>)}</div>
-        <button type="button" className="btn quiet sm" data-addbank onClick={() => setBanks((b) => [...b, { bankAccountId: "", amount: "" }])}>{sg(tr, "addBankRow")}</button>
+        <PaymentBlock tr={tr} cash={cash} onCash={(v) => { touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
         <div className="field" data-k="cashDiscount" style={{ maxWidth: 420, marginTop: 14 }}><label htmlFor="cashDiscount">{sg(tr, "cashDiscount")}</label>
           <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
-            help={sg(tr, "cashDiscountHint", { max: piastresText(gross) })} error={d.tooBig ? <ErrBox>{sg(tr, "cashDiscountAbove", { max: piastresText(gross) })}</ErrBox> : d.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : null} /></div>
-        <div id="tot" className="card" style={{ display: "flex", gap: 36, flexWrap: "wrap", margin: "14px 0 0", background: "var(--side)" }}>
-          {cell(sg(tr, "total"), total)}{cell(sg(tr, "cashDiscount"), d.value)}{cell(rm("paid"), paid)}{cell(left < 0 ? sg(tr, "overPaid") : rm("remaining"), Math.abs(left), left !== 0)}
-        </div>
-        <div id="payMsg">{short && left !== 0 ? <ErrBox>{left > 0 ? sg(tr, "paidShort", { left: piastresText(left) }) : sg(tr, "paidOver", { over: piastresText(-left) })}</ErrBox>
+            help={sg(tr, "cashDiscountHint", { max: piastresText(base) })} error={d.tooBig ? <ErrBox>{sg(tr, "cashDiscountAbove", { max: piastresText(base) })}</ErrBox> : d.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : null} /></div>
+        <TotalsBar tr={tr} bar={tot} />
+        <div id="payMsg">{short && tot.left !== 0 ? <ErrBox>{tot.left > 0 ? sg(tr, "paidShort", { left: piastresText(tot.left) }) : sg(tr, "paidOver", { over: piastresText(-tot.left) })}</ErrBox>
           : payRefusal ? <div className="note warn" role="alert"><b>{rm("paidInvalid", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div> : null}</div>
       </div>}
       {shown.payment && <div className="formbar" id="sec-save">

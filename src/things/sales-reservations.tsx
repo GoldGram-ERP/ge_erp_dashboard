@@ -12,6 +12,7 @@ import type { Tr } from "@/lib/t";
 import { Kv, Ltr, Section, ThingPage, cellNode } from "@/components/engine";
 import { ReservationForm } from "./sales-reservation-form";
 import { code6 } from "./sales-form-parts";
+import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
 
 export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
   const { t, L } = tr;
@@ -104,7 +105,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       enrich: async (r) => ({
         branchName: await api(`/branches/${r.branchId}`).then((b) => b.branchName).catch(() => ""),
         employeeName: r.employeeName || await api(`/users/${r.employeeId}`).then((u) => u.username).catch(() => ""),
-        bankNames: await Promise.all((r.bankPayments ?? []).map((p: Row) => api(`/bank-accounts/${p.bankAccountId}`).then((a) => a.accountName).catch(() => ""))),
+        bankNames: await bankNamesOf(r.bankPayments),
       }),
       render: (r) => {
         const tot = r.totals;
@@ -125,13 +126,12 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
             </Section>
             <Section title={m("payment")}>
               <Kv k={si("cash")}><Ltr>{piastresText(r.cash)}</Ltr></Kv>
-              {(r.bankPayments ?? []).map((p: Row, i: number) => <div key={i}><Kv k={i === 0 ? si("bankAccount") : si("bankAccountN", { number: String(i + 1) })}>{r.bankNames?.[i] ?? ""}</Kv><Kv k={i === 0 ? si("bankAmount") : si("bankAmountN", { number: String(i + 1) })}><Ltr>{piastresText(p.amount)}</Ltr></Kv></div>)}
+              <BankKvs tr={tr} rows={r.bankPayments} names={r.bankNames} />
             </Section>
             <Section title={si("totals")}>
               <Kv k={m("lineCount")}><Ltr>{intText(tot.lineCount)}</Ltr></Kv><Kv k={m("pieces")}><Ltr>{intText(tot.quantity)}</Ltr></Kv>
-              {tot.discount !== undefined && <Kv k={si("cashDiscount")}><Ltr>{piastresText(tot.discount)}</Ltr></Kv>}
-              <Kv k={si("total")}><Ltr>{piastresText(tot.total)}</Ltr></Kv><Kv k={m("paid")}><Ltr>{piastresText(tot.paid)}</Ltr></Kv><Kv k={m("remaining")}><Ltr>{piastresText(tot.remaining)}</Ltr></Kv>
             </Section>
+            <Section title={si("amounts")} wide><TotalsBar tr={tr} bar={savedBar(tot)} /></Section>
           </>
         );
       },

@@ -10,8 +10,10 @@ import { backendFieldErrors } from "@/lib/fields";
 import { useMe } from "@/lib/session";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
 import { Icon, toast } from "@/components/engine";
-import { LINES_MAX, MAX_PIASTRES, bankRowErrors, formRowOfRefusal, makingBase, readDiscount, sentBanks, totalsOf } from "./sales-invoices-math";
-import { BankRows, Choice, DiscountBox, ErrBox, PIECE_CODE, allPages, accountOptions, checkedCustomer, code6, customerFields, customerNameOf, fe, latestPrice, ltrStyle, mayDiscount, sg, type BankRow, type DiscountKind } from "./sales-form-parts";
+import { LINES_MAX, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentBanks, totalsOf, type Bank } from "./sales-invoices-math";
+import { Choice, DiscountBox, ErrBox, PIECE_CODE, allPages, checkedCustomer, code6, customerFields, customerNameOf, fe, latestPrice, mayDiscount, sg, type DiscountKind } from "./sales-form-parts";
+import { Breakdown, PaymentBlock, PriceButton, TotalsBar, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
+import { pricePerGram } from "./item-math";
 import { Link as NavLink } from "@/i18n/navigation";
 import { GiftFields, checkRecipient, type Recipient, type RecipientErrors } from "./sales-gift";
 import { PieceScanner } from "./piece-scanner";
@@ -43,7 +45,8 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const [choices, setChoices] = useState<Row[]>([]);
   const [adding, setAdding] = useState(false);
   const [cash, setCash] = useState("");
-  const [banks, setBanks] = useState<BankRow[]>([{ bankAccountId: "", amount: "" }]);
+  const [banks, setBanks] = useState<Bank[]>([blankBank()]);
+  const [how, setHow] = useState("");   // the piece whose price breakdown is open
   const [kind, setKind] = useState<DiscountKind>("amount");
   const [disc, setDisc] = useState("");
   const [made, setMade] = useState<Row | null>(null);
@@ -163,11 +166,11 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       let row: RegExpExecArray | null;
       if (f.field === "payments") pay = { total: Number((made ? v.remaining : v.total) ?? 0), paid: Number(v.paid ?? 0) };
       else if (f.field === "reservationId") ref = true;
-      else if ((row = /^bankPayments\.(\d+)\.(bankAccountId|amount)$/.exec(f.field))) out[`bank${formRowOfRefusal(banks, +row[1])}${row[2] === "amount" ? "Amount" : "Account"}`] = texts[f.field];
+      else if (paymentKeyOf(f.field, banks)) out[paymentKeyOf(f.field, banks)!] = texts[f.field];
       else if ((row = /^lines\.(\d+)\.(pieceCode|linePrice)$/.exec(f.field))) { const line = lines[+row[1]]; if (line) lerr[line.pieceCode] = key === "pieceNotForSale" ? errorText({ message: key }) : texts[f.field]; }
       else if (f.field === "giftRecipientName" || f.field === "giftRecipientPhone") setRecipientErr((prev) => ({ ...prev, [f.field === "giftRecipientName" ? "name" : "phone"]: texts[f.field] }));
       else if (f.field === "lines") out.pieceCode = texts[f.field];
-      else if (["invoiceType", "branchId", "cash", "cashDiscount", "customerPhone", "customerName", "nationalId"].includes(f.field)) {
+      else if (["invoiceType", "branchId", "cashDiscount", "customerPhone", "customerName", "nationalId"].includes(f.field)) {
         if (f.field.startsWith("customer") || f.field === "nationalId") cust.setError(f.field, { type: "server", message: texts[f.field] }); else out[f.field] = texts[f.field];
       } else gen = texts[f.field] ?? errorText(e.error);
     }
@@ -182,11 +185,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
     if (!type) e.invoiceType = fe(tr, "required");
     if (!branchId && !isUser) e.branchId = fe(tr, "required");
     if (!made && !(await cust.read())) e.customer = "x";
-    if (cash !== "") { const c = typedPiastres(cash); if (c === undefined || c <= 0 || c > MAX_PIASTRES) e.cash = m("amountInvalid"); }
-    bankRowErrors(banks).forEach((r, i) => {
-      if (r.account) e[`bank${i}Account`] = fe(tr, r.account);
-      if (r.amount) e[`bank${i}Amount`] = r.amount === "invalid" ? m("amountInvalid") : fe(tr, r.amount);
-    });
+    Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
     if (!lines.length) e.pieceCode = fe(tr, "required");
     const rErr = gift ? checkRecipient(tr, recipient) : {};
     setRecipientErr(rErr);
@@ -224,7 +223,8 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const invoiced = made?.salesInvoiceId ? { number: made.salesInvoiceNumber ?? takenBy } : takenBy !== undefined ? { number: takenBy } : null;
   const kv = (k: string, v: string) => <div className="kv"><span>{k}</span><span dir="ltr">{v}</span></div>;
   const num = next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : "";
-  const cell = (k: string, v: number, bad?: boolean) => <div key={k}><div className="help">{k}</div><b dir="ltr" style={{ fontVariantNumeric: "tabular-nums", color: bad ? "var(--warn)" : undefined }} data-summary>{piastresText(v)}</b></div>;
+  const partsOf = (l: Row) => ({ perGram: price ? pricePerGram({ sellPrice: price.sellPrice, silverPrice: price.silverPrice ?? null }, String(l.karat)) : null, weightMg: l.weight, workPerGram: l.makingChargePerGram ?? 0, count: 1 });
+  const paidBefore = made && <div className="field"><label htmlFor="paidOnReservation">{m("paidOnReservation")}</label><input id="paidOnReservation" disabled dir="ltr" value={piastresText(made.totals.paid)} style={{ textAlign: "end" }} readOnly /></div>;
   const status = saving ? t("common", "savingNote") : lines.length === 0 ? m("saveNeedsPiece") : made ? m("fillAll") : m("saveWaits");
 
   return (
@@ -279,8 +279,9 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
             <tbody id="lineRows">{lines.length === 0 && <tr id="noPieces"><td colSpan={11} className="mute" style={{ textAlign: "center", padding: "22px 12px" }}>{m("noPieces")}</td></tr>}{lines.map((l, i) => <FragmentRow key={l.pieceCode}>
               <tr data-line={i}><td className="num">{i + 1}</td><td dir="ltr"><b>{l.pieceCode}</b></td><td>{l.itemName}</td><td dir="ltr">{l.karat}</td>
                 <td className="num">{milligramsText(l.weight)}</td><td className="num">{l.weight24Mg === null ? "—" : milligramsText(l.weight24Mg)}</td><td className="num">{l.pricePerGram24 === null ? "—" : piastresText(l.pricePerGram24)}</td>
-                <td className="num">{piastresText(l.goldValue)}</td><td className="num">{piastresText(l.makingCharge)}</td><td className="num">{made ? m("priceByReservation") : piastresText(l.linePrice)}</td>
+                <td className="num">{piastresText(l.goldValue)}</td><td className="num">{piastresText(l.makingCharge)}</td><td className="num">{made ? m("priceByReservation") : <PriceButton tr={tr} id={l.pieceCode} price={l.linePrice} parts={partsOf(l)} open={how === l.pieceCode} onToggle={() => setHow(how === l.pieceCode ? "" : l.pieceCode)} />}</td>
                 <td><button type="button" className="btn quiet sm danger" data-rm={i} aria-label={m("removePiece", { code: l.pieceCode })} onClick={() => { setLines(lines.filter((_, j) => j !== i)); edited(); }}><Icon name="trash" size={15} />{m("remove")}</button></td></tr>
+              {how === l.pieceCode && !made && <tr><td colSpan={11} style={{ height: "auto", whiteSpace: "normal" }}><Breakdown tr={tr} id={l.pieceCode} parts={partsOf(l)} price={l.linePrice} /></td></tr>}
               {lineErr[l.pieceCode] && <tr><td colSpan={11}><ErrBox>{lineErr[l.pieceCode]}</ErrBox></td></tr>}
             </FragmentRow>)}</tbody></table></div>
         </div>
@@ -292,22 +293,12 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       {showPayment && (
         <div className="card" id="sec-payment">
           <h3>{m("payments")} <small>{made ? (nothingToPay ? m("nothingToPay") : m("restToPay")) : m("cashOnly")}</small></h3>
-          <div className="formgrid">
-            {made && <div className="field"><label htmlFor="paidOnReservation">{m("paidOnReservation")}</label><input id="paidOnReservation" disabled dir="ltr" value={piastresText(made.totals.paid)} style={{ textAlign: "end" }} readOnly /></div>}
-            {!nothingToPay && <div className="field" data-k="cash" data-err={errs.cash ? "" : undefined}><label htmlFor="f-cash">{m("cash")}</label>
-              <input id="f-cash" dir="ltr" inputMode="decimal" maxLength={17} autoComplete="off" value={cash} style={ltrStyle} onChange={(e) => setCash(e.target.value)} />{errs.cash && <ErrBox>{errs.cash}</ErrBox>}</div>}
-          </div>
-          {!nothingToPay && <div id="banks" style={{ marginTop: 12 }}>
-            <BankRows tr={tr} banks={banks} accounts={accountOptions(accounts)} onChange={setBanks} />
-            {banks.map((_, i) => (errs[`bank${i}Account`] || errs[`bank${i}Amount`]) && <ErrBox key={i}>{errs[`bank${i}Account`] ?? errs[`bank${i}Amount`]}</ErrBox>)}
-          </div>}
-          {!nothingToPay && <button type="button" className="btn quiet sm" data-addbank onClick={() => setBanks([...banks, { bankAccountId: "", amount: "" }])}><Icon name="plus" size={15} />{m("addBankRow")}</button>}
+          {nothingToPay ? <div className="formgrid">{paidBefore}</div>
+            : <PaymentBlock tr={tr} cash={cash} onCash={(v) => { setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { edited(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} before={paidBefore} />}
           <div className="field" data-k="cashDiscount" style={{ maxWidth: 420, marginTop: 14 }}><label htmlFor="cashDiscount">{m("cashDiscount")}</label>
             <DiscountBox tr={tr} may={mayDiscount(me!)} kind={kind} disc={disc} lockedValue={made ? (made.totals.discount ?? 0) : undefined} onKind={setKind} onDisc={setDisc}
-              help={m("cashDiscountHint", { max: piastresText(base) })} error={d.tooBig ? <ErrBox>{m("cashDiscountAbove", { max: piastresText(base) })}</ErrBox> : d.invalid ? <ErrBox>{m("cashDiscountInvalid")}</ErrBox> : null} /></div>
-          <div id="tot" className="card" style={{ display: "flex", gap: 36, flexWrap: "wrap", margin: "14px 0 0", background: "var(--side)" }}>
-            {cell(m("total"), tot.total)}{cell(m("cashDiscount"), tot.discount)}{cell(m("paid"), tot.paid)}{cell(tot.left < 0 ? m("overPaid") : m("leftToPay"), Math.abs(tot.left), tot.left !== 0)}
-          </div>
+              help={m("cashDiscountHint", { max: piastresText(base) })} error={d.tooBig ? <ErrBox>{m("cashDiscountAbove", { max: piastresText(base) })}</ErrBox> : d.invalid ? <ErrBox>{m("cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>
+          <TotalsBar tr={tr} bar={tot} />
           <div id="payMsg">
             {short && tot.left !== 0 ? <ErrBox>{tot.left > 0 ? m("paidShort", { left: piastresText(tot.left) }) : m("paidOver", { over: piastresText(-tot.left) })}</ErrBox>
               : payRefusal ? banner("warn", <b>{made ? m("reservationPaymentsMismatch", { remaining: piastresText(payRefusal.total), paid: piastresText(payRefusal.paid) }) : errorText({ message: "paymentsMismatch", values: { total: piastresText(payRefusal.total), paid: piastresText(payRefusal.paid) } })}</b>) : null}

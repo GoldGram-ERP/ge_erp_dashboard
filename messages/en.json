@@ -868,7 +868,9 @@
   "exportFailed": "The file could not be made. Please try again.",
   "exportOutOfMemory": "This file is too large to make. Choose a shorter period.",
   "exportInterrupted": "The file was interrupted. Please try again.",
-  "itemInactive": "Not coded: {itemName} is inactive or missing its weight, workmanship or cashback. Fix it on the Items screen, then code again."
+  "itemInactive": "Not coded: {itemName} is inactive or missing its weight, workmanship or cashback. Fix it on the Items screen, then code again.",
+  "incomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
+  "aboveMakingCharge": "The cash discount cannot be more than the workmanship."
  },
  "expenses": {
   "expenseTypes": {
@@ -912,8 +914,6 @@
    "new": "New expense",
    "backToList": "Back to Expense history",
    "details": "Movement details",
-   "paidInCash": "Paid in cash",
-   "paidByCard": "Paid by card",
    "documentNumber": "Number",
    "code": "Number",
    "date": "Date",
@@ -925,17 +925,13 @@
    "expenseTypeName": "Expense type",
    "note": "Note",
    "cash": "Cash",
-   "bankAccountId": "Bank account",
-   "bankAccountName": "Bank account",
-   "bankAmount": "Bank amount",
    "total": "Amount",
    "choose": "Choose",
    "autoHint": "Generated automatically",
    "fromDate": "From date",
    "toDate": "To date",
    "dateInvalid": "Type a day as dd/MM/yyyy, such as 05/10/2026.",
-   "amountInvalid": "Type an amount of zero or more, with two decimals at most, such as 5000.00.",
-   "amountsRequired": "Type an amount above zero in Cash or in Bank amount.",
+   "amountsRequired": "Type an amount above zero in cash or in a bank account.",
    "noSuchCode": "No expense type has this code.",
    "branchInvalid": "This branch can no longer be chosen. Choose another.",
    "expenseTypeInvalid": "This expense type can no longer be chosen. Choose another.",
@@ -964,7 +960,8 @@
    "moreExpenseTypes": "{count, plural, one {# more expense type} other {# more expense types}}: type more to narrow the list.",
    "bankAccountSearchPlaceholder": "Search by code, name or number",
    "noBankAccounts": "No bank accounts yet.",
-   "moreBankAccounts": "{count, plural, one {# more bank account} other {# more bank accounts}}: type more to narrow the list."
+   "moreBankAccounts": "{count, plural, one {# more bank account} other {# more bank accounts}}: type more to narrow the list.",
+   "payment": "Payment"
   },
   "expenseRefunds": {
    "title": "Expense refunds",
@@ -973,8 +970,6 @@
    "new": "New expense refund",
    "backToList": "Back to Expense refund history",
    "details": "Refund details",
-   "inCash": "Refunded in cash",
-   "byCard": "Refunded by card",
    "documentNumber": "Number",
    "code": "Number",
    "date": "Date",
@@ -986,17 +981,13 @@
    "expenseTypeName": "Expense type",
    "note": "Note",
    "cash": "Cash",
-   "bankAccountId": "Bank account",
-   "bankAccountName": "Bank account",
-   "bankAmount": "Bank amount",
    "total": "Amount",
    "choose": "Choose",
    "autoHint": "Generated automatically",
    "fromDate": "From date",
    "toDate": "To date",
    "dateInvalid": "Type a day as dd/MM/yyyy, such as 05/10/2026.",
-   "amountInvalid": "Type an amount of zero or more, with two decimals at most, such as 5000.00.",
-   "amountsRequired": "Type an amount above zero in Cash or in Bank amount.",
+   "amountsRequired": "Type an amount above zero in cash or in a bank account.",
    "noSuchCode": "No expense type has this code.",
    "branchInvalid": "This branch can no longer be chosen. Choose another.",
    "expenseTypeInvalid": "This expense type can no longer be chosen. Choose another.",
@@ -1025,7 +1016,8 @@
    "moreExpenseTypes": "{count, plural, one {# more expense type} other {# more expense types}}: type more to narrow the list.",
    "bankAccountSearchPlaceholder": "Search by code, name or number",
    "noBankAccounts": "No bank accounts yet.",
-   "moreBankAccounts": "{count, plural, one {# more bank account} other {# more bank accounts}}: type more to narrow the list."
+   "moreBankAccounts": "{count, plural, one {# more bank account} other {# more bank accounts}}: type more to narrow the list.",
+   "payment": "Refund"
   },
   "expensesReport": {
    "title": "Expenses report",
@@ -1479,7 +1471,6 @@
    "bankAmount": "Bank amount",
    "bankAccountN": "Bank account {number}",
    "bankAmountN": "Bank amount {number}",
-   "summary": "Totals while typing",
    "total": "Total",
    "paid": "Paid",
    "leftToPay": "Left to pay",
@@ -1565,7 +1556,17 @@
    "buyerInternal": "Buyer (internal, not printed on a gift)",
    "giftPrintTitle": "Print as a gift",
    "showPrices": "Show prices",
-   "showPricesHint": "Off by default: pieces, weights and karat only."
+   "showPricesHint": "Off by default: pieces, weights and karat only.",
+   "addBank": "Add a bank account",
+   "amounts": "Amounts",
+   "goldTotal": "Total without workmanship",
+   "makingTotal": "Workmanship total",
+   "grossTotal": "Total with workmanship",
+   "makingLeft": "Workmanship after the discount: {amount}",
+   "howPrice": "{price}, press to see how it is worked out",
+   "howGold": "Gold of one piece: {perGram} a gram × {weight} g = {gold}",
+   "howMaking": "Workmanship of one piece: {work} a gram × {weight} g = {making}",
+   "howLine": "({gold} + {making}) × {count} = {line}"
   },
   "prints": {
    "buttonsLabel": "Print the invoice",
@@ -1648,11 +1649,10 @@
    "itemNumber": "Item {number}",
    "item": "Item",
    "quantity": "Quantity",
-   "linePrice": "Agreed price",
+   "linePrice": "Price",
    "removeItem": "Remove item {number}",
    "remove": "Remove",
    "quantityInvalid": "Type a whole number from 1 to 100.",
-   "linePriceInvalid": "Type an amount of at least 0.01 for each piece, such as 40000.00.",
    "itemInvalid": "Choose an item that is coded and not deleted.",
    "tooManyPieces": "At most 100 pieces on one reservation, all items together.",
    "payment": "Payment",
@@ -1660,7 +1660,11 @@
    "invoicedBy": "Invoiced by invoice",
    "createInvoice": "Create sales invoice",
    "lineCount": "Items",
-   "pieces": "Pieces"
+   "pieces": "Pieces",
+   "priceBySystem": "The system works it out once the item and the count are chosen.",
+   "priceOfDay": "At the gold price of {date}",
+   "itemIncomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
+   "linePriceFailed": "The price could not be worked out. Try again."
   },
   "returns": {
    "new": "New return",
@@ -1690,7 +1694,8 @@
    "emptyBody": "Returns you add will appear here.",
    "noMatchTitle": "No returns match",
    "noMatchBody": "Try a different number, piece code or date.",
-   "noDeletedTitle": "No deleted returns"
+   "noDeletedTitle": "No deleted returns",
+   "refundRequired": "Type the refund in cash or in a bank account."
   },
   "reprintLabel": {
    "title": "Reprint label",

@@ -120,3 +120,29 @@ Object.assign(APP, {
   "gold-accounts.customerPieces.pieceSold": ["لم تُحذف: هذه القطعة بيعت في فاتورة مبيعات.", "Not deleted: this piece has been sold on a sales invoice."],
   "gold-accounts.customerPieces.pieceNotAvailable": ["لم تُحذف: هذه القطعة في تحويل بين الخزن. استلم التحويل أو ألغِه أولاً.", "Not deleted: this piece is on a treasury transfer. Receive or cancel the transfer first."],
 });
+// One payment block, the totals bar and the read-only line price (issue #3, backend #166): cash plus any number of bank rows on every
+// screen that takes or pays money; the bar splits the total into gold and workmanship; a reservation line is priced by the system.
+Object.assign(APP, {
+  "gold-sales.salesInvoices.addBank": ["إضافة حساب بنكي", "Add a bank account"],
+  "gold-sales.salesInvoices.amounts": ["المبالغ", "Amounts"],
+  "gold-sales.salesInvoices.goldTotal": ["الإجمالي بدون مصنعية", "Total without workmanship"],
+  "gold-sales.salesInvoices.makingTotal": ["إجمالي المصنعية", "Workmanship total"],
+  "gold-sales.salesInvoices.grossTotal": ["الإجمالي بالمصنعية", "Total with workmanship"],
+  "gold-sales.salesInvoices.makingLeft": ["المصنعية بعد الخصم: {amount}", "Workmanship after the discount: {amount}"],
+  "gold-sales.salesInvoices.howPrice": ["{price}، اضغط لترى طريقة الحساب", "{price}, press to see how it is worked out"],
+  "gold-sales.salesInvoices.howGold": ["ذهب القطعة: {perGram} للجرام × {weight} جم = {gold}", "Gold of one piece: {perGram} a gram × {weight} g = {gold}"],
+  "gold-sales.salesInvoices.howMaking": ["مصنعية القطعة: {work} للجرام × {weight} جم = {making}", "Workmanship of one piece: {work} a gram × {weight} g = {making}"],
+  "gold-sales.salesInvoices.howLine": ["({gold} + {making}) × {count} = {line}", "({gold} + {making}) × {count} = {line}"],
+  "gold-sales.reservations.linePrice": ["السعر", "Price"],
+  "gold-sales.reservations.priceBySystem": ["يحسبه النظام بعد اختيار الصنف والعدد.", "The system works it out once the item and the count are chosen."],
+  "gold-sales.reservations.priceOfDay": ["بسعر الذهب يوم {date}", "At the gold price of {date}"],
+  "gold-sales.reservations.itemIncomplete": ["هذا الصنف بلا وزن أو بلا مصنعية للجرام: أكمله في صفحة الأصناف.", "This item has no weight or no workmanship per gram: complete it on the Items page."],
+  "gold-sales.reservations.linePriceFailed": ["تعذّر حساب السعر. حاول مرة أخرى.", "The price could not be worked out. Try again."],
+  "gold-sales.returns.refundRequired": ["اكتب مبلغ الاسترداد نقداً أو في حساب بنكي.", "Type the refund in cash or in a bank account."],
+  "expenses.expenses.payment": ["الدفع", "Payment"],
+  "expenses.expenseRefunds.payment": ["الاسترداد", "Refund"],
+  "expenses.expenses.amountsRequired": ["اكتب مبلغاً أكبر من صفر نقداً أو في حساب بنكي.", "Type an amount above zero in cash or in a bank account."],
+  "expenses.expenseRefunds.amountsRequired": ["اكتب مبلغاً أكبر من صفر نقداً أو في حساب بنكي.", "Type an amount above zero in cash or in a bank account."],
+  "errors.incomplete": ["هذا الصنف بلا وزن أو بلا مصنعية للجرام: أكمله في صفحة الأصناف.", "This item has no weight or no workmanship per gram: complete it on the Items page."],
+  "errors.aboveMakingCharge": ["لا يمكن أن يزيد الخصم النقدي على المصنعية.", "The cash discount cannot be more than the workmanship."],
+});

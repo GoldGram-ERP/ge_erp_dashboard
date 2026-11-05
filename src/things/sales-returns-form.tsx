@@ -1,22 +1,20 @@
 "use client";
-// The new return, a workspace page. Details (branch, date, the sold piece) -> refund (cash and/or one bank account) -> save.
+// The new return, a workspace page. Details (branch, date, the sold piece) -> refund (cash and any number of bank rows) -> save.
 // One sold piece per return; the refund limit is the server's (409 refundAboveLinePrice). Ported from sales-returns-form.js.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
-import { piastresText, today, typedPiastres } from "@/lib/format";
+import { today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { backendFieldErrors } from "@/lib/fields";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { Icon, toast } from "@/components/engine";
-import { MAX_PIASTRES } from "./sales-invoices-math";
-import { Choice, ErrBox, accountOptions, allPages, code6, fe, ltrStyle, pieceChoices, readPieceCode, sg } from "./sales-form-parts";
+import { paymentErrors, paymentKeyOf, sentBanks, type Bank } from "./sales-invoices-math";
+import { Choice, ErrBox, allPages, code6, fe, pieceChoices, readPieceCode, sg } from "./sales-form-parts";
+import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { PieceScanner } from "./piece-scanner";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-type Amount = { empty: true } | { bad: true } | { value: number };
-const amountOf = (text: string): Amount => { const s = text.trim(); if (s === "") return { empty: true }; const p = typedPiastres(s); return p === undefined || p <= 0 || p > MAX_PIASTRES ? { bad: true } : { value: p }; };
-const valueOf = (a: Amount) => ("value" in a ? a.value : 0);
 
 export function ReturnForm({ close, reload, tr }: CustomFormProps) {
   const { t, L, errorText } = tr;
@@ -31,8 +29,7 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
   const [scanning, setScanning] = useState(false);
   const [choices, setChoices] = useState<Row[]>([]);
   const [cash, setCash] = useState("");
-  const [bankAccountId, setBankAccountId] = useState("");
-  const [bank, setBank] = useState("");
+  const [banks, setBanks] = useState<Bank[]>([blankBank()]);
   const [next, setNext] = useState<number | undefined>();
   const [chooseBranch, setChooseBranch] = useState(false);
   const [errs, setErrs] = useState<Record<string, string>>({});
@@ -59,9 +56,8 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
 
   const pc = readPieceCode(tr, piece);
   const refundShown = Boolean(branchId) && DAY.test(date) && piece.trim() !== "" && !pc.error;
-  const c = amountOf(cash), b = amountOf(bank);
-  const total = valueOf(c) + valueOf(b);
-  const may = refundShown && !("bad" in c) && !("bad" in b) && total > 0 && Boolean(bankAccountId) === Boolean(valueOf(b)) && !saving;
+  const payCodes = paymentErrors(cash, banks, "any");
+  const may = refundShown && !Object.keys(payCodes).length && !saving;
 
   const submit = async () => {
     if (saving) return;
@@ -72,15 +68,11 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
     if (!DAY.test(date)) e.date = sg(tr, "dateInvalid");
     else if (isUser && date > today()) e.date = fe(tr, "invalid");        // a User cannot date a return after today (the backend refuses it too)
     if (piece.trim() === "") e.pieceCode = fe(tr, "required"); else if (pc.error) e.pieceCode = pc.error;
-    if ("bad" in c) e.cashRefund = sg(tr, "amountInvalid");
-    if ("bad" in b) e.bankRefund = sg(tr, "amountInvalid");
-    if ("empty" in c && "empty" in b && !bankAccountId) { e.cashRefund = fe(tr, "required"); e.bankRefund = fe(tr, "required"); }
-    if (bankAccountId && "empty" in b) e.bankRefund = fe(tr, "required");
-    if (!bankAccountId && "value" in b) e.bankAccountId = fe(tr, "required");
+    Object.assign(e, payErrorTexts(tr, payCodes, rt("refundRequired")));
     setErrs(e);
     if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); return; }
     setSaving(true);
-    const body = { branchId, date, pieceCode: pc.code, ...(valueOf(c) ? { cashRefund: valueOf(c) } : {}), ...(bankAccountId ? { bankAccountId } : {}), ...(valueOf(b) ? { bankRefund: valueOf(b) } : {}) };
+    const body = { branchId, date, pieceCode: pc.code, ...(cash.trim() !== "" ? { cashRefund: typedPiastres(cash.trim()) } : {}), bankPayments: sentBanks(banks) };
     try {
       const saved = await api("/returns", { method: "POST", body, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
@@ -92,7 +84,11 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
       const key = x.error.message, texts = backendFieldErrors(x.error, tr), own: Record<string, string> = {};
       if (key === "refundAboveLinePrice") setAbove(true);
       else if (key === "pieceNotReturnable") own.pieceCode = rt("pieceNotReturnable");
-      else for (const f of (x.error.fields as any[]) ?? []) { if (["branchId", "date", "pieceCode", "cashRefund", "bankRefund", "bankAccountId"].includes(f.field)) own[f.field] = texts[f.field]; }
+      else for (const f of (x.error.fields as any[]) ?? []) {
+        const payKey = paymentKeyOf(f.field, banks, "cashRefund");
+        if (payKey) own[payKey] = payKey === "sum" && f.message === "required" ? rt("refundRequired") : texts[f.field];
+        else if (["branchId", "date", "pieceCode"].includes(f.field)) own[f.field] = texts[f.field];
+      }
       if (key !== "refundAboveLinePrice" && !Object.keys(own).length) setGeneral(errorText(x.error));   // no field named: say it once
       setErrs(own);
     }
@@ -124,12 +120,8 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
       </div>
       {refundShown && (
         <div className="card" id="sec-refund"><h3>{rt("refund")}</h3>
-          <div className="formgrid">
-            {field("cashRefund", "f-cashRefund", rt("cashRefund"), <input id="f-cashRefund" dir="ltr" inputMode="decimal" maxLength={17} autoComplete="off" value={cash} onChange={(e) => { edited(); setCash(e.target.value); }} style={ltrStyle} />)}
-            {field("bankAccountId", "bankAccountId", sg(tr, "bankAccount"), <Choice tr={tr} id="bankAccountId" options={accountOptions(accounts)} value={bankAccountId} onChange={(v) => { edited(); setBankAccountId(v); }} />)}
-            {field("bankRefund", "f-bankRefund", sg(tr, "bankAmount"), <input id="f-bankRefund" dir="ltr" inputMode="decimal" maxLength={17} autoComplete="off" value={bank} onChange={(e) => { edited(); setBank(e.target.value); }} style={ltrStyle} />)}
-          </div>
-          <div className="card" style={{ display: "flex", gap: 36, margin: "14px 0 0", background: "var(--side)" }}><div><div className="help">{rt("refundTotal")}</div><b dir="ltr" data-summary id="refundTotal">{piastresText(total)}</b></div></div>
+          <PaymentBlock tr={tr} cashName="cashRefund" cashLabel={rt("cashRefund")} sumLabel={rt("refundTotal")} cash={cash} onCash={(v) => { edited(); setCash(v); setErrs(withoutPayErrors); }}
+            banks={banks} onBanks={(b) => { edited(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
         </div>
       )}
       {refundShown && (
