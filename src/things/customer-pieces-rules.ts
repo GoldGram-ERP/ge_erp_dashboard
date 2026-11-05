@@ -8,11 +8,13 @@ export const TEXT_MAX = 100;
 const PHONE = /^\d{8,15}$/;                       // the sales invoice's phone rule
 const CODE = /^[A-Za-z0-9 .]{1,20}$/;             // the backend's pattern for a piece code
 
-export type PieceForm = { categoryId: string; itemId: string; description: string; customerName: string; customerPhone: string };
+export type PieceForm = { branchId?: string; categoryId: string; itemId: string; description: string; customerName: string; customerPhone: string };
 
 /** The form as the backend takes it, or the error key of each bad field ("required", "tooLong", "phoneInvalid"). */
-export function readPiece(v: PieceForm): { payload?: PieceForm; errors: Record<string, string> } {
+/** `needsBranch`: the Super admin (every branch) and an Admin (who may oversee and change branches) choose it; the backend uses a plain User's own. */
+export function readPiece(v: PieceForm, needsBranch = false): { payload?: PieceForm; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
+  if (needsBranch && !v.branchId) errors.branchId = "required";
   const text = (k: "description" | "customerName") => { const s = v[k].trim(); if (!s) errors[k] = "required"; else if (s.length > TEXT_MAX) errors[k] = "tooLong"; return s; };
   if (!v.categoryId) errors.categoryId = "required";
   if (!v.itemId) errors.itemId = "required";
@@ -21,7 +23,7 @@ export function readPiece(v: PieceForm): { payload?: PieceForm; errors: Record<s
   if (!customerPhone) errors.customerPhone = "required";
   else if (!PHONE.test(customerPhone)) errors.customerPhone = "phoneInvalid";
   if (Object.keys(errors).length) return { errors };
-  return { errors, payload: { categoryId: v.categoryId, itemId: v.itemId, description, customerName, customerPhone } };
+  return { errors, payload: { ...(needsBranch ? { branchId: v.branchId } : {}), categoryId: v.categoryId, itemId: v.itemId, description, customerName, customerPhone } };
 }
 
 /** What the find box holds: a code, and also a phone when it is 8 to 15 digits (a code can be all digits too). null = neither. */

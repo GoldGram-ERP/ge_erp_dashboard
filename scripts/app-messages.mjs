@@ -77,6 +77,8 @@ Object.assign(APP, {
   "gold-accounts.customerPieces.add": ["إدخال قطعة مرتجعة", "Enter a returned piece"],
   "gold-accounts.customerPieces.intro": ["قطعة أحضرها عميل ولم نبعها: تدخل مخزوننا بصنفها، ثم يُطبع ملصقها. بعد ذلك تُباع كأي قطعة.", "A piece a customer brought that we did not sell: it enters our stock with its item, then its label prints. After that it is sold like any piece."],
   "gold-accounts.customerPieces.noCost": ["تدخل المخزون بلا تكلفة: لا يُدفع للعميل شيء.", "It enters stock at no cost: nothing is paid to the customer."],
+  "gold-accounts.customerPieces.branch": ["الفرع", "Branch"],
+  "gold-accounts.customerPieces.branchChooseAnother": ["هذا الفرع لم يعد قائماً. اختر فرعاً آخر.", "This branch no longer exists. Choose another."],
   "gold-accounts.customerPieces.category": ["الفئة", "Category"],
   "gold-accounts.customerPieces.item": ["الصنف", "Item"],
   "gold-accounts.customerPieces.chooseCategoryFirst": ["اختر الفئة أولاً", "Choose the category first"],
