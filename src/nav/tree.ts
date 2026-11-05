@@ -234,6 +234,9 @@ export const NAV: NavGroup[] = [
      "system-codes/gold-prices-history"
     ]
    },
+   // The Settings page is commented out of the sidebar, the search and its address (owner, 2026-11-05) until further notice.
+   // To bring it back, remove the comment markers around this entry; nothing else was removed.
+   /*
    {
     "id": "settings",
     "route": "/setup/settings",
@@ -241,6 +244,7 @@ export const NAV: NavGroup[] = [
      "administration/settings"
     ]
    }
+   */
   ]
  },
  {
