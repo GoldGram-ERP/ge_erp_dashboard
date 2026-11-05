@@ -6,13 +6,13 @@
    {
     "kind": "better",
     "en": "A new gold price now starts with the last prices you saved, and each price has minus 5 and plus 5 pound buttons so you only change what moved.",
-    "ar": "أصبح السعر الجديد يبدأ بآخر أسعار حفظتها، ولكل سعر زرّا ناقص ٥ وزائد ٥ جنيه لتغيّر ما تغيّر فقط.",
+    "ar": "لما تضيف أسعار جديدة بتلاقي آخر أسعار اتسجلت مكتوبة لك، وعلى كل سعر زرّين: ناقص ٥ وزائد ٥ جنيه، فتغيّر بس اللي اتغيّر.",
     "route": "/setup/gold-prices"
    },
    {
     "kind": "fixed",
     "en": "Phones: a wide table now scrolls inside its card instead of cutting off the whole page, in Arabic too.",
-    "ar": "الهاتف: الجدول العريض يتحرّك داخل بطاقته بدل أن تُقصّ الصفحة كلها، بالعربية أيضًا."
+    "ar": "الموبايل: الجدول العريض بقى بيتحرك جوه الكارت بدل ما الصفحة كلها تتقص، بالعربي كمان."
    }
   ]
  },
@@ -23,13 +23,13 @@
    {
     "kind": "fixed",
     "en": "Sales desk: an Admin no longer sees the 'edit until midnight' note on a draft that the server lets them edit at any time.",
-    "ar": "مكتب المبيعات: لا يرى المدير ملاحظة «التعديل حتى منتصف الليل» على مسودة يسمح له الخادم بتعديلها في أي وقت.",
+    "ar": "مكتب المبيعات: المدير مبقاش بيشوف ملاحظة «التعديل لحد نص الليل» على مسودة السيرفر بيسمح له يعدّلها في أي وقت.",
     "route": "/sales/desk"
    },
    {
     "kind": "fixed",
     "en": "Fixed the deploy package that left out the What's new data.",
-    "ar": "إصلاح حزمة النشر التي كانت تُغفل بيانات «الجديد».",
+    "ar": "صلّحنا حزمة النشر اللي كانت بتنسى بيانات «الجديد».",
     "route": "/whats-new"
    }
   ]
@@ -42,24 +42,24 @@
     "kind": "new",
     "route": "/whats-new",
     "en": "What's new: this page. For the Admin and the Super admin only: every version in plain words, where to see it in the system, and one tap to open the screen.",
-    "ar": "المستجدات: هذه الصفحة. للمدير والمدير العام فقط: كل إصدار بكلام واضح، وأين تراه في النظام، وبضغطة واحدة تفتح الشاشة."
+    "ar": "الجديد: الصفحة دي. للمدير والمدير العام بس: كل إصدار بكلام بسيط، وتلاقيه فين في السيستم، وبضغطة واحدة تفتح الشاشة."
    },
    {
     "kind": "new",
     "en": "Sales desk: a sales agent saves a numbered draft (customer, pieces, planned payment), edits it until midnight, and copies a WhatsApp summary; an Admin opens it by number, scans the pieces and completes the invoice.",
-    "ar": "مكتب المبيعات: يحفظ مندوب المبيعات مسودة برقم (العميل والقطع والدفع المخطط)، ويعدّلها حتى منتصف الليل، وينسخ ملخص واتساب؛ ويفتحها المدير برقمها ويمسح القطع ويُتمّ الفاتورة.",
+    "ar": "مكتب المبيعات: مندوب المبيعات بيحفظ مسودة برقم (العميل والقطع والدفع المخطط)، وبيعدّلها لحد نص الليل، وبينسخ ملخص واتساب؛ والمدير بيفتحها برقمها وبيمسح القطع وبيكمّل الفاتورة.",
     "route": "/sales/desk"
    },
    {
     "kind": "better",
     "en": "Items: cashback is per gram only, like workmanship.",
-    "ar": "الأصناف: الكاش باك بالجرام فقط، مثل المصنعية.",
+    "ar": "الأصناف: الكاش باك بقى بالجرام بس، زي المصنعية.",
     "route": "/buy/items"
    },
    {
     "kind": "new",
     "en": "A What's new page in the menu for the Admin and the Super admin lists what changed in each version.",
-    "ar": "صفحة «الجديد» في القائمة للمدير والمدير العام تعرض ما تغيّر في كل إصدار.",
+    "ar": "صفحة «الجديد» في القائمة للمدير والمدير العام، بتعرض اللي اتغيّر في كل إصدار.",
     "route": "/whats-new"
    }
   ]
@@ -72,13 +72,13 @@
     "kind": "better",
     "route": "/sales/returns",
     "en": "Returned pieces (not bought from us) moved into Sales > Returns as its third tab. The old address still opens it.",
-    "ar": "القطع المرتجعة (غير المشتراة منا) انتقلت إلى المبيعات > المرتجعات كتبويب ثالث. والعنوان القديم ما زال يفتحها."
+    "ar": "القطع المرتجعة (اللي مش مشتراة مننا) اتنقلت لـ المبيعات > المرتجعات كتبويب تالت. والعنوان القديم لسه بيفتحها."
    },
    {
     "kind": "fixed",
     "route": "/sales/returns",
     "en": "Returned pieces: the Super admin and an Admin now choose the branch the piece goes into. Before, saving a piece as Super admin was refused because the Super admin has no branch of their own.",
-    "ar": "القطع المرتجعة: المدير العام والمدير يختاران الآن الفرع الذي تدخل إليه القطعة. قبل ذلك كان الحفظ يُرفض للمدير العام لأنه لا يتبع فرعاً واحداً."
+    "ar": "القطع المرتجعة: المدير العام والمدير بقوا بيختاروا الفرع اللي القطعة هتدخله. قبل كده الحفظ كان بيترفض للمدير العام لأنه مش تابع لفرع واحد."
    }
   ]
  },
@@ -89,7 +89,7 @@
    {
     "kind": "better",
     "en": "Jobs are hidden everywhere (the menu tab, the job bar, the search results and the Jobs pages) until their problems are fixed. Nothing was deleted; they come back when we turn them on.",
-    "ar": "تم إخفاء المهام في كل مكان (تبويب القائمة وشريط المهمة ونتائج البحث وصفحات المهام) إلى أن تُصلح مشاكلها. لم يُحذف شيء، وستعود عند تشغيلها."
+    "ar": "المهام اتخبّت في كل مكان (تبويب القائمة وشريط المهمة ونتايج البحث وصفحات المهام) لحد ما نصلّح مشاكلها. مفيش حاجة اتمسحت، وهترجع لما نشغّلها."
    }
   ]
  },
@@ -100,7 +100,7 @@
    {
     "kind": "better",
     "en": "The Jobs tab was removed from the side menu until its problems are fixed.",
-    "ar": "تمت إزالة تبويب المهام من القائمة الجانبية إلى أن تُصلح مشاكله."
+    "ar": "شلنا تبويب المهام من القائمة الجانبية لحد ما نصلّح مشاكله."
    }
   ]
  },
@@ -112,25 +112,25 @@
     "kind": "new",
     "route": "/sales/invoices",
     "en": "Payments: pay with cash and as many bank accounts as you need, until the total is reached. The same payment block is now on sales invoices, reservations, sales returns, expenses and expense refunds.",
-    "ar": "الدفع: ادفع نقداً وبعدد ما تحتاج من الحسابات البنكية حتى يكتمل الإجمالي. نفس خانة الدفع صارت في فواتير المبيعات والحجوزات والمرتجعات والمصروفات ومرتجعات المصروفات."
+    "ar": "الدفع: ادفع كاش وعلى قد ما تحتاج من الحسابات البنكية لحد ما الإجمالي يكتمل. نفس خانة الدفع بقت في فواتير المبيعات والحجوزات والمرتجعات والمصروفات ومرتجعات المصروفات."
    },
    {
     "kind": "new",
     "route": "/sales/invoices",
     "en": "Sales invoices and reservations show the totals split: total without workmanship, workmanship, total with workmanship, the cash discount, what is paid and what is left.",
-    "ar": "فواتير المبيعات والحجوزات تعرض الإجمالي مقسّماً: الإجمالي بدون المصنعية، والمصنعية، والإجمالي مع المصنعية، والخصم النقدي، والمدفوع، والمتبقي."
+    "ar": "فواتير المبيعات والحجوزات بتعرض الإجمالي مقسّم: الإجمالي من غير المصنعية، والمصنعية، والإجمالي بالمصنعية، والخصم النقدي، والمدفوع، والباقي."
    },
    {
     "kind": "better",
     "route": "/sales/reservations",
     "en": "Reservation prices are worked out by the system from the item, its weight and today's gold price. Nobody types a price any more.",
-    "ar": "سعر الحجز يحسبه النظام من الصنف ووزنه وسعر الذهب اليوم. لم يعد أحد يكتب السعر."
+    "ar": "سعر الحجز السيستم بيحسبه من الصنف ووزنه وسعر الدهب النهارده. محدش بقى بيكتب السعر."
    },
    {
     "kind": "better",
     "route": "/expenses/expenses",
     "en": "Expenses and expense refunds open as full pages (not a side panel) so they can hold any number of bank rows.",
-    "ar": "المصروفات ومرتجعاتها تُفتح كصفحة كاملة (وليس لوحة جانبية) لتتسع لأي عدد من الحسابات البنكية."
+    "ar": "المصروفات ومرتجعاتها بتفتح كصفحة كاملة (مش لوحة جنب) عشان تسع أي عدد من الحسابات البنكية."
    }
   ]
  },
@@ -141,7 +141,7 @@
    {
     "kind": "fixed",
     "en": "A long name in the side menu now wraps inside its row instead of running under the pin button.",
-    "ar": "الاسم الطويل في القائمة الجانبية صار يلتف داخل سطره بدل أن يمتد تحت زر التثبيت."
+    "ar": "الاسم الطويل في القائمة الجانبية بقى بينزل على سطر تاني بدل ما يمتد تحت زرار التثبيت."
    }
   ]
  },
@@ -153,7 +153,7 @@
     "kind": "new",
     "route": "/sales/returns",
     "en": "Returned pieces (not from us): enter a piece a customer brings back, save it into stock, and print its label in one step. Search by code or phone, reprint the label, or delete it while it is still unsold.",
-    "ar": "القطع المرتجعة (ليست منا): سجّل قطعة أحضرها العميل، واحفظها في المخزون، واطبع ملصقها في خطوة واحدة. ابحث بالكود أو الهاتف، وأعد طباعة الملصق، أو احذفها ما دامت غير مباعة."
+    "ar": "القطع المرتجعة (مش مننا): سجّل قطعة جابها العميل، واحفظها في المخزون، واطبع الملصق بتاعها في خطوة واحدة. دوّر بالكود أو التليفون، وأعد طباعة الملصق، أو امسحها طول ما هي لسه ما اتباعتش."
    }
   ]
  },
@@ -165,7 +165,7 @@
     "kind": "better",
     "route": "/buy/purchases",
     "en": "Purchases: the weight of a line is the item's weight times the count, shown but not typed. Coding a line asks for nothing to type. An item that is switched off or has no weight, workmanship or cashback is refused with a clear message.",
-    "ar": "المشتريات: وزن البند هو وزن الصنف في العدد، يظهر ولا يُكتب. وتكويد البند لا يطلب كتابة شيء. والصنف الموقوف أو الناقص الوزن أو المصنعية أو الكاش باك يُرفض برسالة واضحة."
+    "ar": "المشتريات: وزن البند هو وزن الصنف مضروب في العدد، بيظهر ومش بيتكتب. وتكويد البند مش بيطلب منك تكتب حاجة. والصنف الموقوف أو اللي ناقصه وزن أو مصنعية أو كاش باك بيترفض برسالة واضحة."
    }
   ]
  },
@@ -177,17 +177,17 @@
     "kind": "better",
     "route": "/buy/items",
     "en": "Items: the item name is typed straight on the item form (there is no separate New item name form), and workmanship is always per gram.",
-    "ar": "الأصناف: اسم الصنف يُكتب مباشرة في نموذج الصنف (لا يوجد نموذج منفصل لاسم الصنف)، والمصنعية دائماً لكل جرام."
+    "ar": "الأصناف: اسم الصنف بيتكتب على طول في نموذج الصنف (مفيش نموذج منفصل لاسم الصنف)، والمصنعية دايمًا بالجرام."
    },
    {
     "kind": "better",
     "en": "Safer sign-in: stricter browser security, and the sign-in page clears the previous person's data from the browser.",
-    "ar": "تسجيل دخول أكثر أماناً: حماية أشد في المتصفح، وصفحة الدخول تمسح بيانات الشخص السابق من المتصفح."
+    "ar": "تسجيل دخول أأمن: حماية أقوى في المتصفح، وصفحة الدخول بتمسح بيانات الشخص اللي قبلك من المتصفح."
    },
    {
     "kind": "better",
     "en": "Easier to use for everyone: better contrast, clearer names for fields and dates, and page titles that screen readers can read.",
-    "ar": "أسهل في الاستخدام للجميع: تباين ألوان أوضح، وأسماء أوضح للحقول والتواريخ، وعناوين صفحات تقرؤها برامج القراءة."
+    "ar": "أسهل في الاستخدام للكل: ألوان أوضح، وأسماء أوضح للحقول والتواريخ، وعناوين صفحات بتقراها برامج القراءة."
    }
   ]
  },
@@ -198,7 +198,7 @@
    {
     "kind": "better",
     "en": "A field you cannot change (an item code, the next number) now looks faded, the same way everywhere.",
-    "ar": "الحقل الذي لا يمكن تغييره (كود الصنف، الرقم القادم) يظهر الآن باهتاً بنفس الشكل في كل مكان."
+    "ar": "الحقل اللي مينفعش يتغيّر (كود الصنف، الرقم الجاي) بيظهر دلوقتي باهت بنفس الشكل في كل مكان."
    }
   ]
  },
@@ -221,13 +221,13 @@
    {
     "kind": "fixed",
     "en": "A new user who must change the password at the first sign-in can now do it (before, the screen could leave them stuck).",
-    "ar": "المستخدم الجديد الذي يجب أن يغيّر كلمة السر عند أول دخول يستطيع ذلك الآن (قبل ذلك كانت الشاشة قد تتركه عالقاً)."
+    "ar": "المستخدم الجديد اللي لازم يغيّر كلمة السر أول مرة يدخل بقى يقدر يعمل كده (قبل كده الشاشة كانت ممكن تسيبه واقف)."
    },
    {
     "kind": "better",
     "route": "/sales/invoices",
     "en": "A sales invoice with no pieces yet says \"No pieces yet\" instead of showing only the headings.",
-    "ar": "فاتورة المبيعات التي لم تُضف إليها قطع بعد تكتب \"لا توجد قطع بعد\" بدل إظهار العناوين فقط."
+    "ar": "فاتورة المبيعات اللي لسه متضافش لها قطع بتكتب «مفيش قطع لسه» بدل ما تظهر العناوين بس."
    }
   ]
  },
@@ -239,7 +239,7 @@
     "kind": "new",
     "route": "/sales/returns",
     "en": "A camera button next to the piece code on returns and sales invoices, to scan the code with the phone.",
-    "ar": "زر كاميرا بجوار كود القطعة في المرتجعات وفواتير المبيعات لمسح الكود بالهاتف."
+    "ar": "زرار كاميرا جنب كود القطعة في المرتجعات وفواتير المبيعات عشان تمسح الكود بالموبايل."
    }
   ]
  },
@@ -251,24 +251,24 @@
     "kind": "new",
     "route": "/buy/items",
     "en": "Items now hold their weight, workmanship per gram, cashback per gram and an Active switch (only an Admin can switch an item off). An example box shows what one piece costs at today's price.",
-    "ar": "الأصناف صارت تحمل وزنها والمصنعية لكل جرام والكاش باك لكل جرام ومفتاح التفعيل (والمدير وحده يوقف الصنف). وصندوق مثال يوضح تكلفة قطعة واحدة بسعر اليوم."
+    "ar": "الأصناف بقت فيها الوزن والمصنعية بالجرام والكاش باك بالجرام ومفتاح التفعيل (والمدير بس هو اللي يوقف الصنف). وفيه صندوق مثال بيوضّح تكلفة قطعة واحدة بسعر النهارده."
    },
    {
     "kind": "new",
     "route": "/sales/invoices",
     "en": "Gift invoice: switch it on in a new sales invoice, type the person it is for, and print it with their name and phone. The real buyer stays recorded for us and is never printed. The seller's name is not printed on sales invoices.",
-    "ar": "فاتورة الهدية: فعّلها في فاتورة المبيعات الجديدة واكتب اسم المُهدى إليه لتُطبع باسمه وهاتفه. يبقى المشتري الفعلي مسجلاً عندنا ولا يُطبع أبداً. واسم البائع لا يُطبع على فواتير المبيعات."
+    "ar": "فاتورة الهدية: فعّلها في فاتورة المبيعات الجديدة واكتب اسم اللي هتتهدّى له عشان تتطبع باسمه وتليفونه. المشتري الفعلي بيفضل متسجّل عندنا ومبيتطبعش خالص. واسم البايع مش بيتطبع على فواتير المبيعات."
    },
    {
     "kind": "new",
     "route": "/sales/pieces",
     "en": "Gold stock: tap a total row to open exactly its pieces.",
-    "ar": "أرصدة الذهب: اضغط على صف الإجمالي لتفتح قطعه بالضبط."
+    "ar": "أرصدة الدهب: دوس على صف الإجمالي عشان تفتح قطعه بالظبط."
    },
    {
     "kind": "fixed",
     "en": "A heading and its count no longer touch each other, and hint text in code boxes shows correctly in Arabic.",
-    "ar": "العنوان وعدده لم يعودا ملتصقين، والنص الإرشادي في خانات الكود يظهر سليماً بالعربية."
+    "ar": "العنوان وعدده مبقوش لازقين في بعض، والنص الإرشادي في خانات الكود بيظهر صح بالعربي."
    }
   ]
  },
@@ -280,17 +280,17 @@
     "kind": "new",
     "route": "/stock/branch-stock",
     "en": "Reports: filters at the top of every print page, Excel and Print for Stock by category and Stock by item, and Print for treasury balances, in transit and the statement.",
-    "ar": "التقارير: فلاتر أعلى كل صفحة طباعة، وإكسل وطباعة لرصيد المجموعات والأصناف، وطباعة لأرصدة الخزائن والمنقول والكشف."
+    "ar": "التقارير: فلاتر فوق كل صفحة طباعة، وإكسل وطباعة لرصيد المجموعات والأصناف، وطباعة لأرصدة الخزاين والمنقول والكشف."
    },
    {
     "kind": "better",
     "en": "The Save and Cancel bar at the bottom of a form is now a solid bar that floats over the page.",
-    "ar": "شريط الحفظ والإلغاء أسفل النموذج صار شريطاً ثابتاً يطفو فوق الصفحة."
+    "ar": "شريط الحفظ والإلغاء تحت النموذج بقى شريط ثابت بيطفو فوق الصفحة."
    },
    {
     "kind": "better",
     "en": "The connection status and the language switch sit on one line at the bottom of the menu.",
-    "ar": "حالة الاتصال ومفتاح اللغة على سطر واحد أسفل القائمة."
+    "ar": "حالة الاتصال ومفتاح اللغة على سطر واحد تحت القائمة."
    }
   ]
  },
@@ -302,7 +302,7 @@
     "kind": "new",
     "route": "/",
     "en": "The new dashboard: the same system with a new design, a menu by area of work, search for pages and pieces, and Arabic and English.",
-    "ar": "اللوحة الجديدة: نفس النظام بتصميم جديد، وقائمة حسب مجال العمل، وبحث في الصفحات والقطع، بالعربية والإنجليزية."
+    "ar": "اللوحة الجديدة: نفس السيستم بتصميم جديد، وقائمة حسب مجال الشغل، وبحث في الصفحات والقطع، بالعربي والإنجليزي."
    }
   ]
  }
