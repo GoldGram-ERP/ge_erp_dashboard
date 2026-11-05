@@ -3,7 +3,7 @@
 //     adds a line to the unreleased block (version "next"), which sits first in the file;
 //   node scripts/changelog.mjs check    validates the file (the release runs it);
 //   release.mjs stamps "next" with the new version and today's date (stampNext), so a release without a line is refused.
-// Write for the person who runs the shop: what they can now do, and where. `route` is a menu address; no route = no button.
+// Write for the person who runs the shop: what they can now do, and where. The Arabic line is ALWAYS Egyptian colloquial (masri: "بقى بيعمل", "النهارده", "مش", "اللي", "دلوقتي"), never Modern Standard or Gulf/Saudi Arabic (owner, 2026-11-05). `route` is a menu address; no route = no button.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
