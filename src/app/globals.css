@@ -837,6 +837,13 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .copy-btn.done>.copy-ok{opacity:1;transform:scale(1);transition:opacity .12s ease,transform .38s cubic-bezier(.2,.9,.3,1)}
 .copy-btn.done>.copy-ok path{stroke-dashoffset:0;transition:stroke-dashoffset .3s ease-out .05s}
 @media (prefers-reduced-motion:reduce){.copy-btn>.copy-ico,.copy-btn>.copy-ok,.copy-btn.done>.copy-ok{transition:opacity .15s ease!important;transform:none!important}.copy-btn>.copy-ok path,.copy-btn.done>.copy-ok path{stroke-dashoffset:0;transition:none!important}}
+/* Money field with -5 / +5 pound steps: the input keeps the middle, the buttons sit on its two sides */
+.stepper{display:flex;align-items:center;gap:6px}.stepper input{flex:1;min-width:0;text-align:center;font-variant-numeric:tabular-nums}
+.step-btn{flex:none;min-width:44px;height:36px;padding:0 8px;border:0;border-radius:10px;background:var(--gold-wash);color:var(--ink);font:inherit;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s,transform .1s ease-out}
+@media (pointer:coarse){.step-btn{min-width:44px;height:44px}}
+.step-btn:hover{background:var(--gold-tint)}.step-btn:active{transform:scale(.96)}
+.step-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.step-btn{transition:background .15s!important}.step-btn:active{transform:none}}
 /* What's new (Admin and Super admin): the version label is a link with a dot while a version is unseen; the page lists versions in plain words */
 .side-foot .me a.ver{text-decoration:none}.side-foot .me a.ver:hover{text-decoration:underline;color:var(--ink)}
 .wn-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-inline-start:6px;vertical-align:middle}

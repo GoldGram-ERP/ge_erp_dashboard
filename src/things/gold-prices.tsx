@@ -9,9 +9,11 @@
 import { api, ApiFailure } from "@/lib/api";
 import type { Column, MakeConfig, ThingConfig } from "@/lib/engine-types";
 import { piastresText, today, typedPiastres } from "@/lib/format";
+import { prefillFromLatest } from "@/lib/price-step";
 import { ThingPage, Ltr } from "@/components/engine";
 
 const code6 = (n: unknown) => String(n).padStart(6, "0");
+const PRICE_FIELDS = ["sellPrice", "buyPrice", "silverPrice"];
 const KARAT = "21";   // pricedKarat: the typed prices are the 21K ones
 const price = (r: unknown) => (r === null || r === undefined ? "—" : piastresText(r));
 
@@ -29,7 +31,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     { key: "createdAt", label: m("createdAt"), type: "datetime" },
   ];
   const priceField = (name: string) => ({
-    name, label: m(name), type: "money" as const, required: true,
+    name, label: m(name), type: "money" as const, required: true, step: 5,
     validate: (v: unknown) => (typeof v === "number" && v > 0 ? null : m("priceInvalid")),   // above zero, like the backend's rule
   });
 
@@ -71,11 +73,21 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         toPayload: (v) => ({ date: v.date, sellPrice: v.sellPrice, buyPrice: v.buyPrice, silverPrice: v.silverPrice }),
         afterSave: (a, h) => { if (a?.documentNumber) h.toast(m("savedNumber", { code: code6(a.documentNumber) })); },
         // The 24K price follows the typed sell price as it is typed (display only).
-        onReady: ({ watch, setValue }) => watch((raw, changed) => {
-          if (changed && changed !== "sellPrice") return;   // setValue below must not re-trigger itself
-          const p = typedPiastres(String(raw.sellPrice ?? "").trim());
-          setValue("sellPrice24", p === undefined ? "" : piastresText(Math.floor((p * 48 + 21) / 42)));
-        }),
+        // A new set starts with the last saved set's prices (GET /gold-prices/today, the newest set); the person changes only what moved.
+        onReady: ({ watch, setValue }) => {
+          let now: Record<string, unknown> = {};
+          const stop = watch((raw, changed) => {
+            now = raw;
+            if (changed && changed !== "sellPrice") return;   // setValue below must not re-trigger itself
+            const p = typedPiastres(String(raw.sellPrice ?? "").trim());
+            setValue("sellPrice24", p === undefined ? "" : piastresText(Math.floor((p * 48 + 21) / 42)));
+          });
+          const ctl = new AbortController();
+          api("/gold-prices/today", { signal: ctl.signal }).then((last) => {
+            for (const [k, v] of Object.entries(prefillFromLatest(last as Record<string, unknown>, now, PRICE_FIELDS))) setValue(k, v);
+          }).catch(() => {});   // none saved yet (404) or unreachable: the fields stay empty, as before
+          return () => { ctl.abort(); stop(); };
+        },
         fields: [
           { name: "documentNumber", label: m("documentNumber"), type: "code", documentType: "gold_price", hint: m("autoHint"), section: m("details") },
           { name: "date", label: m("date"), type: "date", required: true, section: m("details") },
