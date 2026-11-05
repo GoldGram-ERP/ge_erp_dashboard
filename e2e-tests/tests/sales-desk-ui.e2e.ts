@@ -127,6 +127,44 @@ for (const lang of LANGS) {
   });
 }
 
+// Size and layout (apple-design section 18, e2ev rule 11): small, calm controls on desktop and phone, nothing wider than the screen.
+// The phone is never above the desktop by more than 4 px: the caps below are the desktop cap + 4 for the phone, and the same visuals are used.
+for (const lang of LANGS) {
+  test(`sales desk: controls are small and nothing overflows, new and saved draft (${lang})`, { tags: ['e2e', 'desk'], requires: ['browser'] }, async ({ app, browser, shot }) => {
+    await as('agent1', browser);
+    const name = `Desk size ${stamp()}`;
+    await draftBy('agent1', name);
+    for (const path of [`/${lang}/sales/desk?new=draft`, `/${lang}/sales/desk?q=${encodeURIComponent(name)}`]) {
+      await app.open(path);
+      if (!path.includes('new=draft')) await browser.locator(`text=${name}`).first().tap();
+      await expect(browser.locator('#sd #sd-save')).toBeVisible();
+      await shot(`desk-${lang}-size-${path.includes('new=draft') ? 'new' : 'saved'}`);
+      await expect.poll(() => browser.evaluate(() => !!document.querySelector('#sd #sd-save'))).toBe(true);
+      const m = await browser.evaluate(() => {
+        const phone = window.innerWidth <= 520, root = document.querySelector('#sd')!;
+        const max = (sel: string, f = (b: DOMRect) => b.height) => { let r = 0; root.querySelectorAll(sel).forEach((e) => { const b = e.getBoundingClientRect(); if (b.width && b.height) r = Math.max(r, f(b)); }); return Math.round(r * 10) / 10; };
+        const save = document.querySelector('#sd-save')?.getBoundingClientRect().height ?? 0;
+        return {
+          phone, fields: max('input:not([type=hidden]):not([type=checkbox]),select,.sel-btn'), save,
+          buttons: Math.max(0, ...Array.from(root.querySelectorAll('button:not(.sel-btn):not(.seg button):not(#sd-save)')).map((e) => e.getBoundingClientRect().height)),
+          seg: max('.seg button'), segBox: max('.seg'), icons: max('svg', (b) => Math.max(b.width, b.height)), badges: max('.badge,.card h3'),
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          pinned: Array.from(root.querySelectorAll('*')).filter((e) => e.id !== 'sec-save' && !e.closest('#sec-save') && getComputedStyle(e).position === 'fixed').length,
+        };
+      });
+      expect(m.overflow).toBe(0);
+      expect(m.pinned).toBe(0);
+      expect(m.fields).toBeLessThanOrEqual(m.phone ? 36 : 34);
+      expect(m.buttons).toBeLessThanOrEqual(m.phone ? 36 : 34);
+      expect(m.save).toBeLessThanOrEqual(m.phone ? 40 : 34);
+      expect(m.seg).toBeLessThanOrEqual(30);
+      expect(m.segBox).toBeLessThanOrEqual(32);
+      expect(m.icons).toBeLessThanOrEqual(m.phone ? 18 : 20);
+      expect(m.badges).toBeLessThanOrEqual(22);
+    }
+  });
+}
+
 afterAll(async () => {
   for (const m of made) await (await apiAs(m.by, PASS))('DELETE', `/sales-drafts/${m.id}`).catch(() => {});
 });

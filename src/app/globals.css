@@ -874,3 +874,32 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 #sd .kv{gap:12px;align-items:baseline}
 /* the engine table card is a block that scrolls: Tailwind has a .table utility (display:table) that made it as wide as its table, so on a phone the whole page scrolled sideways (worst in Arabic) */
 div.table{display:block}
+
+/* Sales desk, compact and calm (apple-design section 18): small visuals, the 44 px touch area comes from an invisible ::before, the phone is never bigger than the desktop */
+#sd{--sd-ctl:32px;--sd-btn:30px;--sd-ico:15px}
+#sd .card{padding:14px 16px;margin-bottom:10px;border-radius:12px}
+#sd .card h3,#sd .card>h3:first-child{width:fit-content;margin:0 0 8px;padding:1px 10px;font-size:12.5px;line-height:1.5}
+#sd .help{font-size:12.5px}
+#sd .formgrid{gap:10px}
+#sd .field label,#sd .field .flabel{margin-bottom:4px;font-size:12.5px}
+#sd .field input:not([type=checkbox]):not([type=radio]),#sd .field select,#sd .sel-btn{height:var(--sd-ctl);padding:0 10px;border-radius:8px;font-size:13px}
+#sd .btn{height:var(--sd-btn);padding:0 12px;border-radius:8px;font-size:13px;gap:6px;position:relative}
+#sd .btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+#sd .btn::before,#sd .seg button::before,#sd .step-btn::before{content:"";position:absolute;inset:-7px -4px}
+#sd .btn svg,#sd .sel-btn svg,#sd .copy-btn svg,#sd .step-btn svg{width:var(--sd-ico);height:var(--sd-ico)}
+#sd .seg{padding:2px;gap:2px;border-radius:9px;height:30px;box-sizing:border-box}
+#sd .seg button{height:26px;padding:0 12px;font-size:13px;border-radius:7px}
+#sd #sd-head [data-draft-number]{font-size:24px;font-weight:650}
+#sd .price-out{display:inline-flex;align-items:center;min-height:var(--sd-ctl);min-width:96px;padding:0 10px;border-radius:8px;font-size:13px}
+#sd .kv{padding:6px 0}
+#sd .copy-btn{min-width:var(--sd-btn);height:var(--sd-btn)}
+#sd .formbar{margin-top:14px;padding:8px 10px;border-radius:12px;gap:8px}
+#sd .formbar .btn{height:var(--sd-btn)}
+#sd .formbar #sd-save{height:32px}
+@media (pointer:coarse){#sd .copy-btn{min-width:var(--sd-btn);height:var(--sd-btn)}#sd .step-btn{min-width:32px;height:var(--sd-btn)}}
+@media (max-width:520px){
+  #sd{--sd-ctl:34px;--sd-btn:32px}
+  #sd .card{padding:10px 12px}
+  #sd .formbar #sd-save{height:38px}
+  #sd .btn.sm{height:30px}
+}

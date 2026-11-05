@@ -221,7 +221,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const canComplete = !isUser && draft?.status === "open";
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
-  const touchBox = { minHeight: 44 } as const;
 
   return (
     <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }} style={{ maxWidth: 760 }}>
@@ -231,7 +230,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       <div className="card" id="sd-head" aria-live="polite">
         {draft ? <>
           <div className="help">{d("draftNumberShort")}</div>
-          <div data-draft-number={draft.draftNumber} dir="ltr" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.02em" }}>{draft.draftNumber}</div>
+          <div data-draft-number={draft.draftNumber} dir="ltr" style={{ fontSize: 26, fontWeight: 650, lineHeight: 1.15, letterSpacing: "-0.02em" }}>{draft.draftNumber}</div>
           <div className="help" style={{ marginTop: 6 }}>{draft.branchName} · <Ltr>{draft.createdDay}</Ltr></div>
           {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state} style={{ marginTop: 10 }}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </> : <>
@@ -246,7 +245,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         <div className="card" id="sec-customer"><h3>{sg(tr, "customer")}</h3>
           <div className="field"><span className="flabel" id="sd-type-l">{d("typeLabel")}</span>
             <div className="seg" role="group" aria-labelledby="sd-type-l">
-              {(["sale", "delivery"] as const).map((k) => <button type="button" key={k} data-type={k} aria-pressed={type === k} style={touchBox} onClick={() => { touch(); setType(k); }}>{d(k === "sale" ? "typeSale" : "typeDelivery")}</button>)}
+              {(["sale", "delivery"] as const).map((k) => <button type="button" key={k} data-type={k} aria-pressed={type === k} onClick={() => { touch(); setType(k); }}>{d(k === "sale" ? "typeSale" : "typeDelivery")}</button>)}
             </div></div>
           {isNew && !isUser && <div className="field" data-k="branchId" style={{ marginTop: 12 }}><label htmlFor="branchId">{d("branch")}</label>
             <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>}
@@ -272,21 +271,21 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   <div style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap" }}>
                     <div className="field" data-k={`line${i}Count`}><label htmlFor={`iq${i}`}>{d("count")} *</label>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <button type="button" className="btn quiet" style={{ minWidth: 44, minHeight: 44 }} aria-label={`${d("count")} −`} onClick={() => set({ count: String(Math.max(1, n - 1)) })}>−</button>
-                        <input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-invalid={!!errs[`line${i}Count`]} value={l.count} style={{ width: 70, textAlign: "center", minHeight: 44 }} onChange={(e) => set({ count: e.target.value })} />
-                        <button type="button" className="btn quiet" style={{ minWidth: 44, minHeight: 44 }} aria-label={`${d("count")} +`} onClick={() => set({ count: String(Math.min(LINES_MAX, n + 1)) })}>+</button>
+                        <button type="button" className="btn quiet" aria-label={`${d("count")} −`} onClick={() => set({ count: String(Math.max(1, n - 1)) })}>−</button>
+                        <input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-invalid={!!errs[`line${i}Count`]} value={l.count} style={{ width: 70, textAlign: "center" }} onChange={(e) => set({ count: e.target.value })} />
+                        <button type="button" className="btn quiet" aria-label={`${d("count")} +`} onClick={() => set({ count: String(Math.min(LINES_MAX, n + 1)) })}>+</button>
                       </div>{err(`line${i}Count`)}</div>
                     <div className="field"><span className="flabel" id={`ipl${i}`}>{d("linePrice")}</span>
                       <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} dir="ltr">{saved ? piastresText(saved.linePrice) : "—"}</output>
                       {!saved && <div className="help">{d("priceAfterSave")}</div>}</div>
-                    {lines.length > 1 && <button type="button" className="btn quiet sm danger" style={{ minHeight: 44 }} data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</button>}
+                    {lines.length > 1 && <button type="button" className="btn quiet sm danger" data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</button>}
                   </div>
                 </div>
               );
             })}
           </div>
           {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
-          <button type="button" className="btn quiet" style={{ minHeight: 44 }} data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}><Icon name="plus" size={15} />{d("addLine")}</button>
+          <button type="button" className="btn quiet" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}><Icon name="plus" size={15} />{d("addLine")}</button>
         </div>
 
         <div className="card" id="sec-payment"><h3>{d("plannedPayment")}</h3><div className="help">{d("plannedHelp")}</div>
@@ -308,10 +307,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       {canComplete && <div className="card" id="sec-complete"><h3>{d("complete")}</h3><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
         <div className="field" data-k="pieceCode" style={{ marginTop: 10 }}><label htmlFor="sd-code">{d("scan")}</label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc} style={{ flex: "1 1 180px", minHeight: 44, fontFamily: "monospace" }}
+            <input id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc} style={{ flex: "1 1 180px", fontFamily: "monospace" }}
               onChange={(e) => { setPc(e.target.value); setPcErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addCode(); } }} />
-            <button type="button" className="btn quiet" style={{ minHeight: 44 }} id="sd-add" onClick={() => void addCode()}>{d("codeAdd")}</button>
-            <button type="button" className="btn quiet" style={{ minHeight: 44 }} id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</button>
+            <button type="button" className="btn quiet" id="sd-add" onClick={() => void addCode()}>{d("codeAdd")}</button>
+            <button type="button" className="btn quiet" id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</button>
           </div>
           {scanning && <PieceScanner label={d("codeLabel")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); void addCode(c); }} />}
           <div className="help">{d("scanHelp")}</div>{pcErr && <ErrBox>{pcErr}</ErrBox>}</div>
@@ -321,21 +320,21 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         {scanned.length > 0 && <><div className="help">{d("scannedList")}</div>
           <ul id="sd-codes" style={{ listStyle: "none", padding: 0, margin: "6px 0" }}>{scanned.map((s) => <li key={s.code} className="kv" data-code={s.code} style={codeErr[s.code] ? { color: "var(--warn)" } : undefined}>
             <span><Ltr>{s.code}</Ltr> · {s.itemName}{codeErr[s.code] && <ErrBox>{codeErr[s.code]}</ErrBox>}</span>
-            <button type="button" className="btn quiet sm danger" style={{ minHeight: 44 }} aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></button></li>)}</ul></>}
+            <button type="button" className="btn quiet sm danger" aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></button></li>)}</ul></>}
         {mismatch.length > 0 && <ul id="sd-mismatch" className="note warn" role="alert">{mismatch.map((m, i) => <li key={i}>{d("mismatchRow", { item: String(m.itemName), karat: String(m.karat), expected: Number(m.expected), scanned: Number(m.scanned) })}</li>)}</ul>}
         {payRefusal && <div className="note warn" role="alert" id="sd-payrefused"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
         {completeMsg && <div className="note warn" role="alert" id="sd-completemsg"><b>{completeMsg}</b></div>}
-        <button type="button" className="btn primary" style={{ minHeight: 44, marginTop: 8 }} id="sd-complete" aria-disabled={!allScanned || completing || dirty} onClick={() => { if (allScanned && !dirty) void complete(); }}>{completing ? d("completing") : d("complete")}</button>
+        <button type="button" className="btn primary" style={{ marginTop: 8 }} id="sd-complete" aria-disabled={!allScanned || completing || dirty} onClick={() => { if (allScanned && !dirty) void complete(); }}>{completing ? d("completing") : d("complete")}</button>
         {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
       </div>}
 
       {draft?.status === "completed" && <div className="card" id="sd-done" role="status"><h3>{d("completed", { number: draft.salesInvoiceNumber })}</h3>
-        {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary" style={{ minHeight: 44 }}>{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
+        {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
 
       <div className="formbar" id="sec-save">
-        {!readonly && <button type="submit" className="btn primary" style={{ minHeight: 44 }} aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</button>}
-        {draft && draft.status === "open" && <button type="button" className="btn quiet danger" style={{ minHeight: 44 }} id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</button>}
-        <button type="button" className="btn quiet" style={{ minHeight: 44 }} id="sd-back" onClick={close}>{d("backToList")}</button>
+        {!readonly && <button type="submit" className="btn primary" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</button>}
+        {draft && draft.status === "open" && <button type="button" className="btn quiet danger" id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</button>}
+        <button type="button" className="btn quiet" id="sd-back" onClick={close}>{d("backToList")}</button>
       </div>
     </form>
   );
@@ -368,8 +367,8 @@ export function OpenByNumber({ close, tr, reload }: CustomFormProps) {
       <div className="card">
         {branches.length > 1 && <div className="field"><label htmlFor="sd-branch">{d("branch")}</label><Choice tr={tr} id="sd-branch" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={setBranchId} /></div>}
         <TextBox name="draftNumber" label={d("openNumberLabel")} value={num} ltr maxLength={7} error={msg} onChange={(v) => { setNum(v); setMsg(""); }} />
-        <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn primary" style={{ minHeight: 44 }} id="sd-open">{d("openGo")}</button>
-          <button type="button" className="btn quiet" style={{ minHeight: 44 }} onClick={close}>{d("backToList")}</button></div>
+        <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn primary" id="sd-open">{d("openGo")}</button>
+          <button type="button" className="btn quiet" onClick={close}>{d("backToList")}</button></div>
       </div>
     </form>
   );
