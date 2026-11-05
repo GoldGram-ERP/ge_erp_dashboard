@@ -25,6 +25,7 @@ export const APP = {
   "app.home.price": ["سعر عيار 21", "Karat 21 price"], "app.home.unit": ["ج.م / جرام", "EGP / gram"], "app.home.priceNote": ["هذا آخر سعر مسجّل ويُستخدم في كل العمليات حتى يُسجَّل سعر جديد.", "This is the latest saved price; it is used everywhere until a new one is saved."],
   "app.home.find": ["بحث سريع عن فاتورة", "Quick invoice find"], "app.home.findGo": ["بحث", "Find"], "app.home.invoiceNo": ["رقم الفاتورة", "Invoice number"],
   "app.home.pinsEmpty": ["اضغط على الدبوس بجانب أي صفحة في القائمة لتظهر هنا.", "Press the pin next to any page in the menu and it shows here."],
+  "app.copy.copy": ["نسخ", "Copy"], "app.copy.copied": ["تم النسخ", "Copied"], "app.copy.failed": ["تعذر النسخ", "Could not copy"],
   "app.account.title": ["حسابي", "My account"], "app.account.group": ["الحساب", "Account"], "app.account.name": ["الاسم", "Name"], "app.account.username": ["اسم المستخدم", "Username"], "app.account.type": ["النوع", "Type"], "app.account.branch": ["الفرع", "Branch"],
   "app.account.access": ["الصلاحيات", "Access"], "app.account.pages": ["الصفحات المتاحة لك", "Pages open to you"], "app.account.cashDiscount": ["خصم نقدي على الفاتورة", "Cash discount on an invoice"], "app.account.allowed": ["مسموح", "Allowed"], "app.account.notAllowed": ["غير مسموح", "Not allowed"],
   "app.signIn.cookie": ["تم قبول الدخول لكن المتصفح لم يحفظ الجلسة. أعد المحاولة.", "Sign-in was accepted but the browser did not keep the session. Try again."],

@@ -2749,6 +2749,11 @@
   }
  },
  "app": {
+  "copy": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "failed": "Could not copy"
+  },
   "searchSheet": "Open full search",
   "search": "Search",
   "searchPlaceholder": "Search pages, jobs, questions, an invoice number or a piece code…",

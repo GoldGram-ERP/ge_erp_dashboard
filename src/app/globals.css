@@ -823,3 +823,17 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .breakdown{margin-top:8px;padding:10px 14px;border-radius:12px;background:var(--gold-wash);font-size:13px;line-height:1.6;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:normal}
 @media (prefers-reduced-motion:reduce){.price-btn,.price-btn:active{transition:none;transform:none}}
 @media (prefers-contrast:more){.totals-bar,.pay-sum,.breakdown,.price-out{box-shadow:inset 0 0 0 1px var(--ink-2)}}
+
+/* The shared Copy button (src/components/shell/copy-button.tsx): the copy icon answers the press at once; after the copy it turns into a drawn check with a soft pop. */
+.copy-btn{position:relative;display:inline-grid;place-items:center;min-width:36px;height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:var(--mute);cursor:pointer;transition:background .15s,color .15s,transform .1s ease-out}
+@media (pointer:coarse){.copy-btn{min-width:44px;height:44px}}
+.copy-btn:hover{background:var(--gold-wash);color:var(--ink)}.copy-btn:active{transform:scale(.92)}
+.copy-btn>.copy-ico,.copy-btn>.copy-ok{grid-area:1/1;display:block}
+.copy-btn>.copy-ico{transition:opacity .16s ease,transform .3s cubic-bezier(.2,.9,.3,1)}
+.copy-btn>.copy-ok{opacity:0;transform:scale(.55);transition:opacity .12s ease,transform .1s ease}
+.copy-btn>.copy-ok path{stroke-dasharray:1;stroke-dashoffset:1}
+.copy-btn.done{background:#e6efe1;color:#2f6b3a}
+.copy-btn.done>.copy-ico{opacity:0;transform:scale(.6)}
+.copy-btn.done>.copy-ok{opacity:1;transform:scale(1);transition:opacity .12s ease,transform .38s cubic-bezier(.2,.9,.3,1)}
+.copy-btn.done>.copy-ok path{stroke-dashoffset:0;transition:stroke-dashoffset .3s ease-out .05s}
+@media (prefers-reduced-motion:reduce){.copy-btn>.copy-ico,.copy-btn>.copy-ok,.copy-btn.done>.copy-ok{transition:opacity .15s ease!important;transform:none!important}.copy-btn>.copy-ok path,.copy-btn.done>.copy-ok path{stroke-dashoffset:0;transition:none!important}}
