@@ -1,5 +1,6 @@
 "use client";
-import { Button, Input, Seg } from "@/components/ui";
+import "./sales-desk.css";
+import { Button, Checkbox, Input, Seg, copyText } from "@/components/ui";
 // The Sales desk draft page (issue #6): ONE page for a new draft, an edit and an Admin opening it. Type -> customer -> item + count lines
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
@@ -57,6 +58,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [lineMsg, setLineMsg] = useState<Record<string, string>>({});
   const [readAt, setReadAt] = useState("");
   const [tick, setTick] = useState(0);
+  const [dark, setDark] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("ge-erp:desk-theme") === "dark");
+  const flipTheme = () => setDark((x) => { window.localStorage.setItem("ge-erp:desk-theme", x ? "light" : "dark"); return !x; });
   const [branchId, setBranchId] = useState("");
   const [cust, setCust] = useState({ customerName: "", customerPhone: "", nationalId: "" });
   const [lines, setLines] = useState<DeskLine[]>([blank()]);
@@ -276,6 +279,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), payment2: second, split })) : "";
   const typedManual = manualPrice(operation === "sell" ? manual.sell : manual.buy);
   const buy = operation === "buy";
+  const copy = async () => toast((await copyText(waText)) ? d("desk.copied") : t("common", "offline"), { error: false });
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
@@ -285,6 +289,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
   return (
     <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }}>
+      <div className="desk-ref" data-theme={dark ? "dark" : "light"}>
       {dialog}
       <div id="banners">{general && <div className="note warn" role="alert"><b>{general}</b></div>}</div>
 
@@ -299,106 +304,118 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           <div className="help">{d("intro")}</div>
           {isUser && <div className="help">{d("ownOnly")}</div>}
         </>}
+        <Button size="sm" id="sd-theme" onClick={flipTheme}>{dark ? d("desk.light") : d("desk.dark")}</Button>
         <div className="kv"><span>{d("goldPriceToday", { price: "" }).replace(/:\s*$/, "")}</span><span dir="ltr">{draft ? piastresText(draft.goldPrice21k) : price ? piastresText(price.sellPrice) : price === null ? d("goldNone") : ""}</span></div>
       </div>
 
-      <div className="desk-cols">
+      <div className="desk-cols layout">
       <fieldset disabled={readonly || saving} className="desk-col">
-        <div className="card" id="sec-customer"><h3>{d("desk.operationData")}</h3>
-          <div className="field"><span className="flabel" id="sd-op-l">{d("desk.operation")}</span>
-            <Seg label={d("desk.operation")} attrs={{ "aria-labelledby": "sd-op-l" }} value={operation}
-              onChange={(k) => pick(() => { setOperation(k); setPayment("cash"); setPayment2(""); setSplit(""); setPct(0); setType("sale"); })}
-              items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} /></div>
-          <div className="field"><span className="flabel" id="sd-metal-l">{d("desk.metal")}</span>
-            <Seg label={d("desk.metal")} attrs={{ "aria-labelledby": "sd-metal-l" }} value={metal}
-              onChange={(k) => pick(() => { setMetal(k); setLines([blank()]); })}
-              items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} /></div>
-          {!buy && <div className="field"><span className="flabel" id="sd-type-l">{d("typeLabel")}</span>
-            <Seg label={d("typeLabel")} attrs={{ "aria-labelledby": "sd-type-l" }} value={type} onChange={(k) => { touch(); setType(k); }}
-              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} /></div>}
-          {isNew && !isUser && <div className="field" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
-            <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>}
-          {isNew && isUser && <div className="help">{d("branchHelp")}</div>}
-          {isUser || draft
-            ? <div className="kv" data-seller><span>{d("desk.seller")}</span><span>{sellerName}</span></div>
-            : <div className="field"><label htmlFor="sellerId">{d("desk.seller")}</label>
-              <Choice tr={tr} id="sellerId" options={sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])} value={sellerId} onChange={(v) => setSellerId(v)} /></div>}
-          <div className="formgrid">
-            <TextBox name="customerPhone" label={`${d("customerPhone")} *`} value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
-            <TextBox name="customerName" label={`${d("customerName")} *`} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
-            <TextBox name="nationalId" label={d("nationalId")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
+        <div className="card panel" id="sec-customer"><h3>{d("desk.operationData")}</h3>
+          <div className="operation-switches">
+            <div className="field"><span className="flabel" id="sd-op-l">{d("desk.operation")}</span>
+              <Seg label={d("desk.operation")} attrs={{ "aria-labelledby": "sd-op-l" }} value={operation}
+                onChange={(k) => pick(() => { setOperation(k); setPayment("cash"); setPayment2(""); setSplit(""); setPct(0); setType("sale"); })}
+                items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} /></div>
+            <div className="field"><span className="flabel" id="sd-metal-l">{d("desk.metal")}</span>
+              <Seg label={d("desk.metal")} attrs={{ "aria-labelledby": "sd-metal-l" }} value={metal}
+                onChange={(k) => pick(() => { setMetal(k); setLines([blank()]); })}
+                items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} /></div>
           </div>
-          <div className="field"><span className="flabel" id="sd-pay-l">{d("desk.payment")}</span>
-            <Seg label={d("desk.payment")} attrs={{ "aria-labelledby": "sd-pay-l" }} value={payment}
-              onChange={(k) => pick(() => { setPayment(k); if (k === "visa" || k === payment2) { setPayment2(""); setSplit(""); } })}
-              items={paymentChoices(operation).map((k) => ({ id: k, label: d(`desk.pay.${k}`), attrs: { "data-pay": k } }))} /></div>
+          <div className="sales-identity">
+            <div className="field" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
+              <Choice tr={tr} id="branchId" searchable={false} disabled={!isNew || isUser} options={isNew && !isUser ? branches.map((b) => [b.id, b.branchName]) : [[draft?.branchId ?? me?.branchId ?? "", branchLabel]]}
+                value={isNew && !isUser ? branchId : (draft?.branchId ?? me?.branchId ?? "")} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
+            <div className="field" data-seller><label htmlFor="sellerId">{d("desk.seller")}</label>
+              <Choice tr={tr} id="sellerId" searchable={false} disabled={isUser || !!draft}
+                options={isUser || draft ? [["me", sellerName]] : sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])}
+                value={isUser || draft ? "me" : sellerId} onChange={(v) => setSellerId(v)} /></div>
+          </div>
+          <TextBox name="customerName" label={d("customerName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
+          <TextBox name="nationalId" label={d("nationalId")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
+          <TextBox name="customerPhone" label={d("customerPhone")} value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
+          <div className="field"><label htmlFor="payment">{d("desk.payment")}</label>
+            <Choice tr={tr} id="payment" searchable={false} options={paymentChoices(operation).map((k) => [k, d(`desk.pay.${k}`)])} value={payment}
+              onChange={(k) => pick(() => { setPayment((k || "cash") as Payment); if (k === "visa" || k === payment2) { setPayment2(""); setSplit(""); } })} /></div>
           {secondChoices(operation, payment).length > 0 && <div className="field"><label htmlFor="payment2">{d("desk.payment2")}</label>
             <Choice tr={tr} id="payment2" searchable={false} placeholder={d("desk.none")} options={secondChoices(operation, payment).map((k) => [k, d(`desk.pay.${k}`)])} value={payment2} onChange={(v) => pick(() => setPayment2(v as Payment | ""))} /></div>}
           {second && <TextBox name="splitAmount" label={d("desk.split", { method: d(`desk.pay.${payment}`) })} value={split} ltr maxLength={14}
             error={splitErr ? d(`desk.splitErr.${splitErr}`) : undefined} onChange={(v) => { touch(); setSplit(v); }} />}
-          {!buy && <div className="field"><span className="flabel" id="sd-disc-l">{d("desk.discountPercent")}</span>
-            <Seg label={d("desk.discountPercent")} attrs={{ "aria-labelledby": "sd-disc-l" }} value={String(pct)} onChange={(k) => pick(() => setPct(Number(k)))}
-              items={DISCOUNTS.map((n) => ({ id: String(n), label: n === 0 ? d("desk.none") : `${n}%`, attrs: { "data-disc": String(n) } }))} /></div>}
+          {second && quote && !splitErr && <div className="payment-remaining"><span>{d(`desk.pay.${second}`)}</span><b dir="ltr" id="sd-remaining">{piastresText(quote.q.totalPiastres - (typedPiastres(split) ?? 0))}</b></div>}
+          {!buy && <div className="field"><span className="flabel" id="sd-type-l">{d("typeLabel")}</span>
+            <Seg label={d("typeLabel")} attrs={{ "aria-labelledby": "sd-type-l" }} value={type} onChange={(k) => { touch(); setType(k); }}
+              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} /></div>}
         </div>
       </fieldset>
 
       <fieldset disabled={readonly || saving} className="desk-col">
-        <div className="card" id="sec-items"><h3>{d("pieces")}</h3><div className="help">{d("itemHelp")}</div>
-          {metal === "silver" && <div className="field"><span className="flabel" id="sd-wrap-l">{d("desk.wrapping")}</span>
+        <div className="card panel" id="sec-items"><div className="topline"><h3>{d("pieces")}</h3><span className="dr-pill">{d("desk.autoFees")}</span></div>
+          {metal === "silver" && <div className="wrapping-controls"><span id="sd-wrap-l">{d("desk.wrapping")}</span>
             <Seg label={d("desk.wrapping")} attrs={{ "aria-labelledby": "sd-wrap-l" }} value={wrapping} onChange={(k) => pick(() => setWrapping(k))}
               items={(["wrapped", "unwrapped"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-wrap": k } }))} /></div>}
           <div id="lineRows">
             {lines.map((l, i) => {
               const set = (patch: Partial<DeskLine>) => { touch(); setLines((ls) => ls.map((x, j) => (j === i ? { ...x, ...patch } : x))); };
-              const n = Number(latinNumber(l.count)) || 0;
               const priced = quote?.q.lines[i];
               return (
-                <div className="formgrid" data-line={i} key={i}>
-                  <div className="field" data-k={`line${i}Item`}><label htmlFor={`it${i}`}>{d("lineN", { number: i + 1 })} *</label>
-                    <Choice tr={tr} id={`it${i}`} options={itemOptions} value={l.itemId} onChange={(v) => set({ itemId: v })} />{err(`line${i}Item`)}{lineMsg[i] && <ErrBox>{lineMsg[i]}</ErrBox>}</div>
-                  <div className="field" data-k={`line${i}Count`}><label htmlFor={`iq${i}`}>{d("count")} *</label>
-                    <div className="row">
-                      <Button aria-label={`${d("count")} -`} onClick={() => set({ count: String(Math.max(1, n - 1)) })}>-</Button>
-                      <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-invalid={!!errs[`line${i}Count`]} value={l.count} onChange={(e) => set({ count: e.target.value })} />
-                      <Button aria-label={`${d("count")} +`} onClick={() => set({ count: String(Math.min(LINES_MAX, n + 1)) })}>+</Button>
-                    </div>{err(`line${i}Count`)}</div>
-                  <div className="field"><span className="flabel" id={`ipl${i}`}>{d("linePrice")}</span>
-                    <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} dir="ltr">{priced ? piastresText(priced.pricePiastres) : "—"}</output></div>
-                  {lines.length > 1 && <Button size="sm" danger data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</Button>}
+                <div data-line={i} key={i} data-p={priced ? priced.pricePiastres : undefined}>
+                  <div className="dr-row" data-k={`line${i}Item`}>
+                    <Choice tr={tr} id={`it${i}`} options={itemOptions} value={l.itemId} onChange={(v) => set({ itemId: v })} invalid={!!(errs[`line${i}Item`] || lineMsg[i])} />
+                    <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-label={d("count")} aria-invalid={!!errs[`line${i}Count`]} value={l.count} onChange={(e) => set({ count: e.target.value })} />
+                    <Button className="remove" aria-label={d("removeLine")} disabled={lines.length === 1} data-rmline={i} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}>×</Button>
+                  </div>
+                  {err(`line${i}Item`)}{err(`line${i}Count`)}{lineMsg[i] && <ErrBox>{lineMsg[i]}</ErrBox>}
                 </div>
               );
             })}
           </div>
           {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
-          <Button data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}><Icon name="plus" size={15} />{d("addLine")}</Button>
-        </div>
-        <div className="card" id="sec-quote"><h3>{d("desk.calc")}</h3>
+          <Button className="secondary-full" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}>{d("addLine")}</Button>
+          <Button className="clear-all" id="sd-clear" onClick={() => { touch(); setLines([blank()]); setPct(0); setManual({ sell: "", buy: "" }); setSplit(""); setPayment2(""); }}>{d("desk.clear")}</Button>
+          <h4>{d("desk.calc")}</h4>
           {quoteMsg && <div className="note warn" role="alert" id="sd-quotemsg"><b>{quoteMsg}</b></div>}
           {typedManual.invalid && <div className="note warn" role="alert" id="sd-manualmsg"><b>{d("desk.manualInvalid")}</b></div>}
-          <div className="kv"><span>{d("desk.fees", { kind: d(buy ? "desk.cashback" : "desk.workmanship") })}</span><b dir="ltr" id="sd-fees">{quote ? [...new Set(quote.q.lines.map((x) => piastresText(x.feePerGram)))].join(" + ") : "—"}</b></div>
-          <div className="kv"><span>{d("desk.weight")}</span><b dir="ltr" id="sd-weight">{quote ? milligramsText(quote.q.weightMg) : "—"}</b></div>
-          <div className="kv"><span>{d("desk.units")}</span><b dir="ltr" id="sd-units">{quote ? quote.q.units : "—"}</b></div>
-          {quote && pct > 0 && !buy && <div className="kv"><span>{d("desk.before")}</span><b dir="ltr" id="sd-before">{piastresText(quote.q.beforeDiscountPiastres)}</b></div>}
-          <div className="kv big"><span>{d("desk.total")}</span><b dir="ltr" id="sd-total">{quote ? piastresText(quote.q.totalPiastres) : "—"}</b></div>
-          {second && quote && !splitErr && <div className="kv"><span>{d(`desk.pay.${second}`)}</span><b dir="ltr" id="sd-remaining">{piastresText(quote.q.totalPiastres - (typedPiastres(split) ?? 0))}</b></div>}
+          <div className="field"><label htmlFor="sd-fees">{d("desk.fees", { kind: d(buy ? "desk.cashback" : "desk.workmanship") })}</label>
+            <Input id="sd-fees" readOnly dir="rtl" value={quote ? [...new Set(quote.q.lines.map((x) => piastresText(x.feePerGram)))].join(" + ") : "—"} /></div>
+          <div className="two">
+            <div className="dr-price"><small>{d("desk.weight")}</small><b id="sd-weight">{quote ? milligramsText(quote.q.weightMg) : "0"}</b></div>
+            <div className="dr-price"><small>{d("desk.units")}</small><b id="sd-units">{quote ? quote.q.units : "0"}</b></div>
+          </div>
+          {!buy && <div className="discount">
+            <Checkbox checked={pct > 0} onChange={(on) => pick(() => setPct(on ? 5 : 0))} id="sd-disc-on">{d("desk.discountOn")}</Checkbox>
+            {pct > 0 && <Seg label={d("desk.discountPercent")} value={String(pct)} onChange={(k) => pick(() => setPct(Number(k)))}
+              items={DISCOUNTS.filter((n) => n > 0).map((n) => ({ id: String(n), label: `${n}%`, attrs: { "data-disc": String(n) } }))} />}
+          </div>}
+          <div className="summary"><span>{d("desk.total")}</span>
+            {quote && pct > 0 && !buy && <div className="muted" id="sd-before">{d("desk.before")}: {piastresText(quote.q.beforeDiscountPiastres)}</div>}
+            <strong id="sd-total" dir="ltr">{quote ? piastresText(quote.q.totalPiastres) : "—"}</strong><small>{d("desk.currency")}</small></div>
         </div>
       </fieldset>
 
-      <div className="desk-col">
-        <div className="card" id="sec-prices"><h3>{d("desk.prices")}</h3>
-          <div className="kv"><span>{d(metal === "silver" ? "desk.silverPrice" : "desk.sellPrice")}</span><b dir="ltr" id="sd-sellprice">{price ? piastresText(metal === "silver" ? price.silverPrice : price.sellPrice) : "—"}</b></div>
-          {metal === "gold" && <div className="kv"><span>{d("desk.buyPrice")}</span><b dir="ltr" id="sd-buyprice">{price ? piastresText(price.buyPrice) : "—"}</b></div>}
-          <TextBox name={buy ? "manualBuy" : "manualSell"} label={d(buy ? "desk.manualBuy" : "desk.manualSell")} value={buy ? manual.buy : manual.sell} ltr maxLength={13}
-            onChange={(v) => setManual((m) => (buy ? { ...m, buy: v } : { ...m, sell: v }))} />
-          <div className="help" id="sd-pricemode">{quote?.q.manualPriceUsed ? d("desk.manualUsed") : d("desk.listUsed")}</div>
-          <div className="help" id="sd-readat">{readAt ? d("desk.readAt", { time: readAt }) : d("desk.noRead")}</div>
-          <Button id="sd-refresh" onClick={readPrice}><Icon name="refresh" size={15} />{d("desk.refresh")}</Button>
+      <div className="desk-col preview-col">
+        <div className="card panel" id="sec-prices"><div className="topline"><h3>{d("desk.prices")}</h3><span className="dr-pill">{d("desk.every15")}</span></div>
+          <div className={`dr-status ${price ? "ok" : price === null ? "bad" : ""}`} id="sd-status">{price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading")}</div>
+          <div className="price-grid">
+            {(["sell", "buy"] as const).map((side) => (
+              <div className="dr-price" key={side}>
+                <small>{d(metal === "silver" ? `desk.${side}Silver` : `desk.${side}Price`)}</small>
+                <b id={`sd-${side}price`} dir="ltr">{price ? piastresText(metal === "silver" ? price.silverPrice : side === "sell" ? price.sellPrice : price.buyPrice) : "—"}</b>
+                <label className="override-label" htmlFor={`f-manual${side}`}>{d(side === "sell" ? "desk.manualSell" : "desk.manualBuy")}</label>
+                <Input id={`f-manual${side}`} className="manual-price" inputMode="decimal" autoComplete="off" dir="ltr" value={manual[side]} onChange={(e) => setManual((m) => ({ ...m, [side]: e.target.value }))} />
+                <small className={`mode${(side === "sell") === !buy && quote?.q.manualPriceUsed ? " manual-active" : ""}`} id={`sd-${side}mode`}>{(side === "sell") === !buy && quote?.q.manualPriceUsed ? d("desk.manualUsed") : d("desk.listUsed")}</small>
+              </div>
+            ))}
+          </div>
+          <p className="muted" id="sd-readat">{readAt ? d("desk.readAt", { time: readAt }) : d("desk.noRead")}</p>
+          <Button className="secondary-full" id="sd-refresh" onClick={readPrice}>{d("desk.refresh")}</Button>
         </div>
-        <div className="card" id="sec-wa"><h3>{d("wa.title")}</h3><div className="help">{d("wa.help")}</div>
-          <pre id="wa-text" dir="auto" aria-label={d("wa.title")}>{waText || d("desk.waEmpty")}</pre>
-          <CopyButton text={waText} label={d("wa.copy")} /></div>
+        <div className="card panel" id="sec-wa"><div className="topline"><h3>{d("wa.title")}</h3><span className="dr-pill">{d("desk.live")}</span></div>
+          <pre id="wa-text" className="preview" dir="rtl">{waText || d("desk.waEmpty")}</pre>
+          <p className="muted">{d("wa.help")}</p>
+          <Button variant="primary" className="copy-full" id="sd-copy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button></div>
       </div>
       </div>
+      <div className="mobile-bar" id="sd-mobilebar"><div className="mobile-total"><span>{d("desk.mobileTotal")}</span><b id="sd-mobiletotal" dir="ltr">{quote ? `${piastresText(quote.q.totalPiastres)} ${d("desk.egp")}` : "—"}</b></div>
+        <Button className="mobile-copy" id="sd-mobilecopy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button></div>
 
       <fieldset disabled={readonly || saving} className="desk-pay">
         <div className="card" id="sec-payment"><h3>{d("plannedPayment")}</h3><div className="help">{d("plannedHelp")}</div>
@@ -444,6 +461,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         {!readonly && !buy && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
         {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
         <Button id="sd-back" onClick={close}>{d("backToList")}</Button>
+      </div>
       </div>
     </form>
   );
