@@ -46,9 +46,14 @@ describe("the preprinted invoice", () => {
       const html = renderInvoice(invoice({ layout, footer: null }), tFor("ar"), true);
       for (const part of fixed) expect(html, `${layout}: ${part}`).toContain(part);
     }
+    // English invoice: the foot in English, left to right; Arabic invoice: in Arabic, right to left
     const english = renderInvoice(invoice({ footer: null }), tFor("en"), false);
-    expect(english).toContain("295852");
-    expect(english).toContain('<footer class="pfoot" dir="rtl" lang="ar">');   // Arabic text stays right to left on an English page   // the shop's wording, in any language
+    for (const part of ["C.R.", "295852", "Tax file no.", "774-088-346", "Short no.", "The price includes tax", "Please keep this invoice", "Sold gold cannot be returned or exchanged"]) expect(english, part).toContain(part);
+    expect(english).toContain('<footer class="pfoot" dir="ltr" lang="en">');
+    expect(english).not.toContain("السعر شامل الضريبة");
+    const arabic = renderInvoice(invoice({ footer: null }), tFor("ar"), true);
+    expect(arabic).toContain('<footer class="pfoot" dir="rtl" lang="ar">');
+    expect(arabic).not.toContain("Sold gold cannot");
     const own = renderInvoice(invoice({ footer: "ملف ضريبي 111-222-333" }), tFor("ar"), true);
     expect(own).toContain("111-222-333");
     expect(own).not.toContain("295852");
