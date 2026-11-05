@@ -59,6 +59,11 @@ describe("the preprinted invoice", () => {
     expect(own).not.toContain("295852");
   });
 
+  it("prints its colours even when the print window has Background graphics off", () => {
+    // the table head is white text on blue: without its background it would read blank
+    expect(renderInvoice(invoice(), tFor("en"), false)).toContain("article.pre,article.pre *{-webkit-print-color-adjust:exact;print-color-adjust:exact}");
+  });
+
   it("lists the price of each karat on the invoice, and only those", () => {
     const both = renderInvoice(invoice(), tFor("ar"), true);
     expect(both).toContain("سعر عيار 24:");
