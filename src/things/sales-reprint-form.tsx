@@ -19,7 +19,7 @@ function Label({ l, layout, gram, karatText }: { l: Row; layout: "tag" | "a4"; g
   const text = (
     <>
       <span dir="ltr" data-label-code style={{ fontFamily: "monospace", fontWeight: 700 }}>{l.pieceCode}</span>
-      {l.itemName && <span data-label-item style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.itemName}</span>}
+      {(l.itemName ?? l.categoryName) && <span data-label-item style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.itemName ?? l.categoryName}</span>}   {/* a returned customer piece prints its category (#4) */}
       <span dir="ltr" style={{ whiteSpace: "nowrap" }}>{karatText} · {milligramsText(l.weight)} {gram}</span>
       {l.tagPrice ? <span dir="ltr" style={{ fontWeight: 600 }}>{piastresText(l.tagPrice)}</span> : null}
     </>
@@ -92,7 +92,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
       const r = await api("/reprint-label", { method: "POST", body: { ...body, labelTemplateId: templateId, layout }, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
       localStorage.setItem(LAYOUT_KEY, r.layout ?? layout);
-      setLabels((r.pieces ?? []).map((p: Row) => ({ pieceCode: p.pieceCode, labelKind: p.labelKind, itemName: p.itemName, karat: p.karat, weight: p.weight, tagPrice: p.tagPrice })));
+      setLabels((r.pieces ?? []).map((p: Row) => ({ pieceCode: p.pieceCode, labelKind: p.labelKind, itemName: p.itemName, categoryName: p.categoryName, karat: p.karat, weight: p.weight, tagPrice: p.tagPrice })));
     } catch (err) {
       const texts = err instanceof ApiFailure ? backendFieldErrors(err.error, tr) : {};
       const named = Object.fromEntries(Object.entries(texts).filter(([k]) => ["pieceCode", "fromCode", "toCode", "labelTemplateId", "layout"].includes(k)));
