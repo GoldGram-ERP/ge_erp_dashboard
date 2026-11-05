@@ -22,3 +22,21 @@ for (const lang of LANGS) {
     }
   });
 }
+
+// The same class of failure on every page that has lookup filters (branch, category, item, treasury, customer...): no filter shows the
+// "Could not load the list" sentence once the page has settled. Each route opens in both languages for the superadmin.
+const FILTER_PAGES = ['/sales/invoices', '/sales/reservations', '/sales/returns', '/sales/pieces?view=totals', '/sales/pieces?view=pieces', '/stock/count'];
+for (const lang of LANGS) {
+  test(`no filter list fails to load on the pages with lookup filters (${lang})`, { tags: ['e2e', 'lists'], requires: ['browser'] }, async ({ go, browser }) => {
+    const failed: string[] = [];
+    for (const route of FILTER_PAGES) {
+      await go('superadmin', route, lang);
+      await browser.locator('h1, h2').first().waitFor({ timeout: 20_000 });
+      // settled: no skeleton or spinner left, the filter lists have answered
+      await expect.poll(() => browser.evaluate(() => document.querySelectorAll('.skeleton, [aria-busy="true"]').length), { timeout: 20_000 }).toBe(0);
+      const text = await browser.evaluate(() => document.body.innerText);
+      if (/Could not load the list|تعذّر تحميل القائمة/.test(text)) failed.push(route);
+    }
+    expect(failed, 'pages whose filter list did not load').toEqual([]);
+  });
+}
