@@ -86,7 +86,7 @@ for (const lang of LANGS) {
 
     // every field validates: an empty form sends nothing
     await save();
-    for (const f of ['categoryId', 'itemName', 'karat', 'weight', 'workmanshipValue', 'cashbackMode', 'cashbackValue'])
+    for (const f of ['categoryId', 'itemName', 'karat', 'weight', 'workmanshipValue', 'cashbackValue'])
       await expect(browser.locator(`#f-${f}-err`)).toBeVisible();
     expect(sent('POST')).toHaveLength(0);
     await shot(`items-fields-${lang}-2-required`);
@@ -110,11 +110,8 @@ for (const lang of LANGS) {
     await browser.locator('#f-itemName').fill(`  ${itemName}  `);   // trimmed before it is sent
     await pick('karat', '21');
     await browser.locator('#f-weight').fill('1.2345');
-    await pick('cashbackMode', g(lang, 'modes.percent'));
-    await browser.locator('#f-cashbackValue').fill('100.01');
     await save();
     await expect(browser.locator('#f-weight-err')).toBeVisible();
-    await expect(browser.locator('#f-cashbackValue-err')).toContainText(g(lang, 'percentMax'));
     expect(sent('POST')).toHaveLength(0);
     await browser.locator('#f-weight').fill(lang === 'ar' ? '٤٫٣٧٥' : '4.375');
 
@@ -126,22 +123,14 @@ for (const lang of LANGS) {
     for (const n of [charge, gold + charge]) expect(await tx(browser, box)).toContain(money(n));
     await shot(`items-fields-${lang}-5-example-per-gram`);
 
-    // cashback keeps its three settings, and its example follows each
-    await browser.locator('#f-cashbackMode-btn').tap();
-    expect(await options(browser, 'cashbackMode')).toEqual(['per_gram', 'percent', 'per_piece'].map((x) => g(lang, `modes.${x}`)));
-    await shot(`items-fields-${lang}-6-cashback-settings`);
-    await browser.locator('#f-cashbackMode-btn').tap();
-    const back = '#cashback-example';   // percent is already chosen (picking it again would clear it), so per piece first
-    await pick('cashbackMode', g(lang, 'modes.per_piece'));
-    await browser.locator('#f-cashbackValue').fill('800');
-    await expect.poll(() => tx(browser, back)).toContain(money(B(80000)));
-    await pick('cashbackMode', g(lang, 'modes.percent'));
-    await browser.locator('#f-cashbackValue').fill('4.5');
-    await expect.poll(() => tx(browser, back)).toContain(money((gold * B(450) + B(5000)) / B(10000)));
-    await pick('cashbackMode', g(lang, 'modes.per_gram'));
+    // workmanship and cashback are both per gram: no setting to pick, and the cashback example follows the typing
+    await expect(browser.locator('#f-workmanshipMode-btn')).toHaveCount(0);
+    await expect(browser.locator('#f-cashbackMode-btn')).toHaveCount(0);
+    await expect(browser.locator('#f-cashbackValue-help')).toContainText(g(lang, 'valueHelp.per_gram'));
+    const back = '#cashback-example';
     await browser.locator('#f-cashbackValue').fill('10');
     await expect.poll(() => tx(browser, back)).toContain(money((B(1000) * B(4375) + B(500)) / B(1000)));
-    await shot(`items-fields-${lang}-7-example-cashback`);
+    await shot(`items-fields-${lang}-7-example-cashback-per-gram`);
     expect(await disabled(browser)).toBe(false);
 
     // save: the exact body on the wire
@@ -171,7 +160,6 @@ for (const lang of LANGS) {
     await pick('karat', '21');
     await browser.locator('#f-weight').fill('1');
     await browser.locator('#f-workmanshipValue').fill('1');
-    await pick('cashbackMode', g(lang, 'modes.per_piece'));
     await browser.locator('#f-cashbackValue').fill('1');
     await save();
     await expect.poll(() => sent('POST').length).toBe(2);

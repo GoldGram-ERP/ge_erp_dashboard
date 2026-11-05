@@ -4,7 +4,7 @@
 // Ported from docs/nav-preview/app/things/gold-items.js. Codes come from the backend (the form shows the upcoming one, a preview).
 // Lists take only search / page (fixed 20) / order / deleted (+ categoryId on names and items): no pageSize, no limit.
 // Category and name forms are engine sheets (a name only edited: it is created by typing it on the item form, which is a page form, custom).
-// Workmanship is always per gram; cashback keeps its three settings.
+// Workmanship and cashback are both always per gram: no setting to pick, only the value.
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useWatch } from "react-hook-form";
@@ -18,7 +18,7 @@ import { Kv, Ltr, Section, ThingPage, toast } from "@/components/engine";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
 import { useAccess } from "./sales-access";
 import { useJobIntent } from "./job-intent";
-import { CHARGE_MODES, exampleOf, pricePerGram, valueText, type PriceSet } from "./item-math";
+import { exampleOf, pricePerGram, valueText, type PriceSet } from "./item-math";
 
 type Kind = "category" | "name" | "item";
 const K = {
@@ -194,12 +194,12 @@ const loadPrice = async (): Promise<PriceSet | null> => {
 const SILVER = "999";
 const hundredthsOf = (v: unknown) => (v == null || v === "" ? "" : typedPiastres(String(v)) ?? "");   // "187.50" -> 18750, the money field's typed form
 
-// Under each workmanship and cashback setting: one piece at today's price, following the typing.
+// Under the workmanship and the cashback value: one piece at today's price, following the typing (both per gram).
 function ExampleBox({ kind, price, tr }: { kind: "workmanship" | "cashback"; price: PriceSet | null | undefined; tr: Tr }) {
   const m = (k: string, v?: Record<string, string>) => tr.t("gold-accounts", `items.${k}`, v);
-  const [karat, weight, watchedMode, value] = useWatch({ name: ["karat", "weight", "cashbackMode", `${kind}Value`] });
+  const [karat, weight, value] = useWatch({ name: ["karat", "weight", `${kind}Value`] });
   if (price === undefined) return <div className="note example" id={`${kind}-example`}>{tr.L("جارٍ التحميل…", "Loading…")}</div>;
-  const ex = exampleOf(price, { karat, weight, mode: kind === "workmanship" ? "per_gram" : watchedMode, value });
+  const ex = exampleOf(price, { karat, weight, mode: "per_gram", value });
   const money = (p: bigint) => piastresText(Number(p));
   return (
     <div className="note example" id={`${kind}-example`}>
@@ -221,7 +221,6 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
   const { data: me } = useMe();
   const canSwitch = me?.userType === "admin" || me?.userType === "super_admin";   // the backend refuses anyone else (403 notAllowed)
   const [itemType, setItemType] = useState(String(row?.itemType ?? "gold"));
-  const [cashbackMode, setCashbackMode] = useState(String(row?.cashbackMode ?? ""));
   const [saving, setSaving] = useState(false);
   const [saveKey, setSaveKey] = useState(newSaveKey());
   const cats = useQuery({ queryKey: CATS, queryFn: loadCats, staleTime: 60_000 });
@@ -231,7 +230,6 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
   const karatOptions: Option[] = ((karats.data ?? []) as Row[]).map((k) => String(k.karat)).filter((k) => (itemType === "gold") === (k !== SILVER)).map((k) => [k, k]);
   const fields = useMemo<FieldConfig[]>(() => {
     const details = m("items.basicDetails"), work = m("items.workmanship"), back = m("items.cashback");
-    const modeOptions: Option[] = CHARGE_MODES.map((x) => [x, m(`items.modes.${x}`)]);
     const example = (kind: "workmanship" | "cashback", section: string): FieldConfig =>
       ({ name: `${kind}Example`, label: "", type: "html", wide: true, html: () => <ExampleBox kind={kind} price={price.isPending ? undefined : price.data ?? null} tr={tr} />, section });
     // As the backend's rule: ten whole digits at most (v is hundredths).
@@ -247,14 +245,13 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
       // workmanship: always per gram, so only its value
       { name: "workmanshipValue", label: m("items.workmanshipValue"), type: "money", required: true, help: m("items.valueHelp.per_gram"), section: work, validate: tooBig },
       example("workmanship", work),
-      { name: "cashbackMode", label: m("items.cashbackMode"), type: "select", required: true, searchable: false, options: modeOptions, placeholder: c("choose"), section: back },
-      { name: "cashbackValue", label: m("items.cashbackValue"), type: "money", required: true, help: cashbackMode ? m(`items.valueHelp.${cashbackMode}`) : undefined, section: back,
-        validate: (v, all) => tooBig(v) ?? (all.cashbackMode === "percent" && v > 10_000 ? m("items.percentMax") : null) },   // a percent is 100 at most
+      // cashback: always per gram too, so only its value
+      { name: "cashbackValue", label: m("items.cashbackValue"), type: "money", required: true, help: m("items.valueHelp.per_gram"), section: back, validate: tooBig },
       example("cashback", back),
       { name: "isActive", label: m("items.isActive"), type: "checkbox", disabled: !canSwitch, help: canSwitch ? undefined : m("items.activeAdminOnly"), section: m("items.status") },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cats.data, karats.data, price.data, price.isPending, itemType, cashbackMode, canSwitch, tr]);
+  }, [cats.data, karats.data, price.data, price.isPending, itemType, canSwitch, tr]);
   const values = useMemo<Row>(() => (row
     ? { ...row, isCoded: String(row.isCoded), weight: row.weight ?? "", workmanshipValue: hundredthsOf(row.workmanshipValue), cashbackValue: hundredthsOf(row.cashbackValue), isActive: row.isActive !== false }
     : { isCoded: "true", itemType: "gold", isActive: true }), [row]);
@@ -266,7 +263,6 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
         setItemType(String(v.itemType ?? ""));
         if (v.itemType === "gold" ? v.karat === SILVER : v.karat !== SILVER) f.setValue("karat", v.itemType === "gold" ? "" : SILVER);
       }
-      if (info.name === "cashbackMode") setCashbackMode(String(v.cashbackMode ?? ""));
     });
     return () => s.unsubscribe();
   }, [f]);
@@ -278,7 +274,7 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
     try {
       const body = {
         itemName: v.itemName, isCoded: v.isCoded === "true", itemType: v.itemType, categoryId: v.categoryId, karat: v.karat, weight: v.weight,
-        workmanshipMode: "per_gram", workmanshipValue: valueText(BigInt(v.workmanshipValue)), cashbackMode: v.cashbackMode, cashbackValue: valueText(BigInt(v.cashbackValue)),
+        workmanshipMode: "per_gram", workmanshipValue: valueText(BigInt(v.workmanshipValue)), cashbackMode: "per_gram", cashbackValue: valueText(BigInt(v.cashbackValue)),
         ...(canSwitch ? { isActive: v.isActive } : {}),   // a normal user never sends it: the item keeps its state
       };
       const a = await api(row ? `/items/${row.id}` : "/items", { method: row ? "PATCH" : "POST", body, saveKey });

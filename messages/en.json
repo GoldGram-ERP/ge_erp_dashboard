@@ -1187,13 +1187,7 @@
    "workmanship": "Workmanship",
    "cashback": "Cashback",
    "workmanshipValue": "Workmanship per gram (EGP)",
-   "cashbackMode": "Cashback setting",
-   "cashbackValue": "Cashback value",
-   "modes": {
-    "per_gram": "Per gram",
-    "percent": "Percent of the gold",
-    "per_piece": "Per piece"
-   },
+   "cashbackValue": "Cashback per gram (EGP)",
    "valueHelp": {
     "per_gram": "EGP per gram, such as 187.50",
     "percent": "A percent, such as 4.50",
@@ -1218,8 +1212,7 @@
     "cashback": "One piece: gold {gold}, cashback on it {charge} EGP",
     "noPrice": "No price is saved for this karat yet, so there is no example.",
     "fill": "Choose the karat and type the weight and the value to see one piece priced today."
-   },
-   "percentMax": "A percent is 100 at most."
+   }
   },
   "newLine": {
    "title": "The new line",
