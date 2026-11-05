@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { NAV, canOpen } from "@/nav/tree";
+import { JOBS_ENABLED } from "@/lib/jobs/enabled";
 import { JOBS, QUESTIONS, canAsk, isVisible, jobName, matches, normalise, runHref } from "@/nav/jobs";
 import { isSuper } from "@/lib/session";
 import type { Me } from "@/stores/ui";
@@ -27,9 +28,9 @@ export function useSearchHits(me: Me, q: string): Hit[] {
       if (matchesText(word, label, group, NAV_LABELS.item[i.id], NAV_LABELS.group[g.id])) out.push({ key: `p:${i.route}`, group: "pages", label, hint: group, icon: g.icon, href: i.route });
     }
     if (word) {
-      JOBS.filter((j: any) => isVisible(j, screens, (me as any).jobs) && matches(j, word)).slice(0, MAX)
+      (JOBS_ENABLED ? JOBS : []).filter((j: any) => isVisible(j, screens, (me as any).jobs) && matches(j, word)).slice(0, MAX)
         .forEach((j: any) => out.push({ key: `j:${j.id}`, group: "jobs", label: jobName(j, lang), icon: jobIconName(j.icon), href: runHref(j, 0) }));
-      QUESTIONS.filter((x: any) => canAsk(x, screens) && matches(x, word)).slice(0, MAX)
+      (JOBS_ENABLED ? QUESTIONS : []).filter((x: any) => canAsk(x, screens) && matches(x, word)).slice(0, MAX)
         .forEach((x: any) => out.push({ key: `q:${x.id}`, group: "questions", label: jobName(x, lang), icon: jobIconName(x.icon), href: `/jobs/ask/${encodeURIComponent(x.id)}` }));
       if (canOpen(me, ["gold-sales/find-invoice", "gold-sales/sales-invoices-list"])) out.push({ key: "f:inv", group: "find", label: t("app.searchFindInvoice", { text: word }), icon: "sales", href: `/sales/invoices?q=${encodeURIComponent(word)}` });
       if (canOpen(me, pages.filter((p) => p.i.route === "/sales/pieces").flatMap((p) => p.i.screens))) out.push({ key: "f:piece", group: "find", label: t("app.searchFindPiece", { text: word }), icon: "gem", href: `/sales/pieces?q=${encodeURIComponent(word)}` });

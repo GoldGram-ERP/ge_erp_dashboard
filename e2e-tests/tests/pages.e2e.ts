@@ -1,7 +1,7 @@
 import { test, expect, LANGS, NAV, M } from './lib.ts';
 
-// Every page of the nav tree (+ Home, Jobs, Account) opens for the superadmin in ar and en: heading, not the placeholder, no console errors, dir matches. One file, loops the routes.
-const ROUTES = ['/', '/jobs', '/jobs/questions', '/jobs/todo', '/account', ...NAV.flatMap((g) => g.items.map((i) => i.route))];
+// Every page of the nav tree (+ Home, Account; Jobs are hidden for now: src/lib/jobs/enabled.ts) opens for the superadmin in ar and en: heading, not the placeholder, no console errors, dir matches. One file, loops the routes.
+const ROUTES = ['/', '/account', ...NAV.flatMap((g) => g.items.map((i) => i.route))];
 
 for (const lang of LANGS) {
   test(`every page opens for the superadmin (${lang})`, { tags: ['smoke'], requires: ['browser'] }, async ({ go, browser, shot }) => {

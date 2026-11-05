@@ -20,7 +20,6 @@ const SCREENS: Screen[] = [
   { name: 'mobile-drawer-390', role: 'superadmin', path: '', width: 390, act: async (b) => { await b.locator('#trigger').tap(); await sleep(600); } },
   { name: 'select-popover', role: 'superadmin', path: '/sales/invoices?new=create', act: async (b) => { await b.locator('button.sel-btn').first().tap(); await sleep(500); } },
   { name: 'date-picker-popover', role: 'superadmin', path: '/sales/returns?new=create', act: async (b) => { await b.locator('button.dp-btn').first().tap(); await sleep(500); } },
-  { name: 'jobs-home', role: 'superadmin', path: '/jobs' },
   { name: 'e2euser-home', role: 'e2euser', path: '' },
 ];
 
