@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Every screen now uses the same smaller text, buttons, fields and table rows, so more fits on the screen.",
+    "ar": "كل الشاشات بقت بنفس حجم الكتابة والأزرار والخانات والصفوف، وبقى فيه مكان أكتر على الشاشة."
+   }
+  ]
+ },
+ {
   "version": "1.0.29",
   "date": "2026-11-05",
   "changes": [
