@@ -81,7 +81,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         allPages("/items", { active: true }).catch(() => []), allPages("/bank-accounts").catch(() => []), isUser ? [] : allPages("/branches").catch(() => []),
       ]);
       // only active, complete items (the backend refuses the others)
-      setItems(i.filter((x) => x.isCoded !== false && x.isActive !== false && !x.deletedAt && Number(x.weight ?? 0) > 0));
+      setItems(i.filter((x) => x.isCoded !== false && x.isActive !== false && !x.deletedAt && Number(x.weight ?? 0) > 0 && x.workmanshipMode === "per_gram" && x.workmanshipValue != null));
       setAccounts(a); setBranches(b);
       if (row?.id) {
         try { fill(await api(`/sales-drafts/${row.id}`)); } catch { setGone(true); }
@@ -127,6 +127,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       saveKey.current = newSaveKey();
       fill(saved);
       toast(d("saved", { number: saved.draftNumber }));
+      requestAnimationFrame(() => document.getElementById("sd-head")?.scrollIntoView({ block: "start", behavior: "auto" }));
     } catch (err) { refusal(err); } finally { setSaving(false); }
   }
   function refusal(err: unknown) {
@@ -211,7 +212,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   if (!loaded) return <p className="help" role="status">{t("common", "loading")}</p>;
   if (gone) return <div className="note warn" role="alert">{tr.errorText({ message: "salesDraftNotFound" })}</div>;
 
-  const wa: WaLabels = { date: d("wa.date"), branch: d("wa.branch"), customer: d("wa.customer"), phone: d("wa.phone"), nationalId: d("wa.nationalId"), pieces: d("wa.pieces"), piece: d("wa.piece"), goldPrice: d("wa.goldPrice"), discount: d("wa.discount"), total: d("wa.total"), payment: d("wa.payment"), cash: d("wa.cash"), bank: d("wa.bank") };
+  const wa: WaLabels = { date: d("wa.date"), branch: d("wa.branch"), customer: d("wa.customer"), phone: d("wa.phone"), nationalId: d("wa.nationalId"), pieces: d("wa.pieces"), piece: d("wa.piece", { count: "{count}", item: "{item}", karat: "{karat}", weight: "{weight}", price: "{price}" }), goldPrice: d("wa.goldPrice"), discount: d("wa.discount"), total: d("wa.total"), payment: d("wa.payment"), cash: d("wa.cash"), bank: d("wa.bank") };
   const waText = draft ? buildWhatsappText({ ...draft, customerName: cust.customerName.trim() || draft.customerName, customerPhone: latinNumber(cust.customerPhone.trim()) || draft.customerPhone, nationalId: cust.nationalId.trim() ? latinNumber(cust.nationalId.trim()) : null } as never, wa, tr.locale, bankNames) : "";
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
@@ -287,7 +288,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         </div>
 
         <div className="card" id="sec-payment"><h3>{d("plannedPayment")}</h3><div className="help">{d("plannedHelp")}</div>
-          <PaymentBlock tr={tr} cash={cash} onCash={(v) => { touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
+          <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
           <div className="field" data-k="cashDiscount" style={{ maxWidth: 420, marginTop: 14 }}><label htmlFor="cashDiscount">{d("discount")}</label>
             <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
               error={dsc.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>

@@ -859,3 +859,9 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .notif-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:22px 18px 26px;color:var(--mute)}
 .notif-empty b{color:var(--ink)}.notif-empty p{margin:0;font-size:13px;line-height:1.6}
 .notif-ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--gold-wash);color:var(--gold)}
+
+/* Sales desk (issue #6): the save bar stays on one row at 390 px so it does not cover the form; the saved number is the first thing seen */
+@media (max-width:520px){#sd .formbar{flex-wrap:nowrap;gap:6px;padding:8px}#sd .formbar .btn{flex:0 1 auto;min-width:0;padding-inline:12px;white-space:nowrap}#sd .formbar #sd-save{flex:1 1 auto}}
+#sd #sd-head{scroll-margin-top:12px}
+#sd .price-out{display:inline-block;min-width:110px;padding:10px 12px;border-radius:10px}
+#sd .kv{gap:12px;align-items:baseline}
