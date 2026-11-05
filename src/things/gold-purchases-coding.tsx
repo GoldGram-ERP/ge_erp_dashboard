@@ -17,7 +17,7 @@ import { LabelsCard, labelOf } from "./purchases-labels";
 import { itemsById } from "./gold-purchases-invoice";
 import { itemProblem } from "./purchases-rules";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 
 const ROWS_SHOWN = 20;   // pieces drawn per line
 

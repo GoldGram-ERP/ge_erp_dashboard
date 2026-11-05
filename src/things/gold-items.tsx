@@ -28,7 +28,7 @@ const K = {
   item: { path: "/items", ns: "items", codeKey: "itemCode", view: "items", editForm: "editItem" },
 } as const;
 const kindOf = (r: Row): Kind => (r.categoryCode !== undefined ? "category" : r.itemNameCode !== undefined ? "name" : "item");
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 const KEYS = ["gold-accounts/categories", "gold-accounts/categories-list", "gold-accounts/item-names", "gold-accounts/item-names-list", "gold-accounts/items", "gold-accounts/items-list"];
 
 // Every row of a paged list (the backend gives 20 at a time).

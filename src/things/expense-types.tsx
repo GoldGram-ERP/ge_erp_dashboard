@@ -5,7 +5,7 @@ import type { FieldConfig, MakeConfig, ThingConfig } from "@/lib/engine-types";
 import { ThingPage, Kv, Ltr, Section } from "@/components/engine";
 import { useAccess } from "./sales-access";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 const NAME_MAX = 100;   // EXPENSE_TYPE_NAME_MAX_LENGTH (dashboard = backend)
 
 export const makeConfig: MakeConfig = (tr): ThingConfig => {

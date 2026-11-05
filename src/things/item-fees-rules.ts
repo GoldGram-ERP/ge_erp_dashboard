@@ -1,6 +1,7 @@
 // The pure rules of the Workmanship and cashback bulk screen: which items it lists, what an edit changes, the bulk "set this value",
 // the payload of PATCH /items/fees and how a refusal maps back to rows. No React here, so Vitest runs it as it is.
 // Fees are exact decimals (text with two decimals, hundredths as BigInt): never a float. A typed value follows the item form's rule (typedHundredths).
+import { code6 } from "@/lib/code6";
 import { matchesText } from "@/lib/search";
 import { typedHundredths, valueText } from "./item-math";
 
@@ -31,7 +32,7 @@ export function toRows(items: FeeItem[]): FeeRow[] {
 }
 
 export function filterRows(rows: FeeRow[], f: Filters): FeeRow[] {
-  return rows.filter((r) => (!f.categoryId || r.categoryId === f.categoryId) && (!f.karat || r.karat === f.karat) && (!f.q.trim() || matchesText(f.q, r.itemName, String(r.itemCode).padStart(6, "0"), r.categoryName)));
+  return rows.filter((r) => (!f.categoryId || r.categoryId === f.categoryId) && (!f.karat || r.karat === f.karat) && (!f.q.trim() || matchesText(f.q, r.itemName, code6(r.itemCode), r.categoryName)));
 }
 
 /** The text a cell shows: what was typed, else the saved value. */

@@ -17,7 +17,7 @@ import { PIECE_CODE } from "./sales-form-parts";
 import { useAccess } from "./sales-access";
 import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 const branchSpec = { path: "/branches", value: "id", label: "branchName", query: { pageSize: undefined } };
 const userSpec = { path: "/users", value: "id", label: (r: Row) => [r.firstName, r.familyName].filter(Boolean).join(" ") || r.username, query: { pageSize: undefined } };
 const bankAccountSpec = { path: "/bank-accounts", value: "id", label: (r: Row) => `${r.accountName} · ${r.bankName}`, query: { pageSize: undefined } };

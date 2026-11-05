@@ -9,7 +9,8 @@ import type { Tr } from "@/lib/t";
 import { Td } from "@/components/ui";
 import { cellNode } from "@/components/engine";
 
-export const code6 = (n: unknown) => String(n ?? "").padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
+export { code6 };
 export const nameOf = (path: string, id: string | null | undefined, key: string): Promise<string> => (id ? api(`${path}/${id}`).then((r) => r[key] as string).catch(() => "") : Promise.resolve(""));
 export const KARATS = ["24", "21", "18", "999"];     // the order the design draws the karat columns
 

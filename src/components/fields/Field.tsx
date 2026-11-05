@@ -13,7 +13,7 @@ import { Select } from "./Select";
 import { DatePicker } from "./DatePicker";
 
 export const fieldId = (f: { name: string }) => `f-${f.name}`;
-const pad6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as pad6 } from "@/lib/code6";
 const NUMERIC = ["number", "money", "weight"];
 
 function Label({ f, htmlFor, id }: { f: FieldConfig; htmlFor: string; id: string }) {

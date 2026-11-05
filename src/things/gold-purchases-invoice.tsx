@@ -16,7 +16,7 @@ import { Select } from "@/components/fields/Select";
 import { loadLookup } from "@/components/fields/useLookup";
 import { LINES_MAX, itemProblem, lineWeightOf, readInvoice, totalsOf } from "./purchases-rules";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 const itemLabel = (code: unknown, name?: string) => `${code6(code)} · ${name || code6(code)}`;
 const FIELD = /^(date|lines\.\d+\.(itemId|quantity))$/;
 type Line = { itemId: string; label: string; quantity: string; itemWeight: number | null };

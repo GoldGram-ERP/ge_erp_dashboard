@@ -10,7 +10,7 @@ import { useAccess } from "./sales-access";
 import { BankKvs, bankNamesOf } from "./payment-block";
 import { makeConfig as makeReturnedPieces } from "./customer-pieces";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 const branchSpec = { path: "/branches", value: "id", label: "branchName", query: { pageSize: undefined } };
 
 const RETURNED_PIECES_KEYS = ["gold-accounts/purchase-coding"];

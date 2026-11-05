@@ -6,7 +6,7 @@ import type { FieldConfig, MakeConfig, ThingConfig } from "@/lib/engine-types";
 import { ThingPage, Kv, Ltr, Section } from "@/components/engine";
 import { useAccess } from "./sales-access";
 
-const code = (n: unknown) => String(n).padStart(6, "0");   // branchCodeText: six digits
+import { code6 as code } from "@/lib/code6"; // branchCodeText: six digits
 
 export const makeConfig: MakeConfig = (tr): ThingConfig => {
   const { t, L } = tr;

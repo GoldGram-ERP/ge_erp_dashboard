@@ -12,7 +12,7 @@ import { piastresText, today, typedPiastres } from "@/lib/format";
 import { prefillFromLatest } from "@/lib/price-step";
 import { ThingPage, Ltr } from "@/components/engine";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 const PRICE_FIELDS = ["sellPrice", "buyPrice", "silverPrice"];
 const KARAT = "21";   // pricedKarat: the typed prices are the 21K ones
 const price = (r: unknown) => (r === null || r === undefined ? "—" : piastresText(r));

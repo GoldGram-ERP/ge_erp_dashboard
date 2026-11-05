@@ -7,7 +7,7 @@ import { latinNumber } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { ThingPage, Kv, Ltr, Section, cellNode } from "@/components/engine";
 
-const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
 // Commission is an exact decimal text: always two decimals, no float.
 const dec2 = (s: unknown) => { const [i, f = ""] = String(s).split("."); return `${i}.${(f + "00").slice(0, 2)}`; };
 const COMMISSION = /^\d{1,10}(\.\d{1,2})?$/;

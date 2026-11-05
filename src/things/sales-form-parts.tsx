@@ -12,7 +12,8 @@ import { Select } from "@/components/fields/Select";
 
 export const sg = (tr: Tr, k: string, v?: Record<string, string | number | undefined>) => tr.t("gold-sales", `salesInvoices.${k}`, v);
 export const fe = (tr: Tr, k: string) => tr.t("common", `fieldErrors.${k}`);
-export const code6 = (n: unknown) => String(n).padStart(6, "0");
+import { code6 as code6 } from "@/lib/code6";
+export { code6 };
 export const PIECE_CODE = /^[A-Za-z0-9 .]{1,20}$/;   // the backend's pattern for a piece code
 
 export const ErrBox = ({ children, id }: { children: ReactNode; id?: string }) => <div className="err" id={id} role="alert" style={{ color: "var(--warn)", fontSize: 12.5, marginTop: 4 }}>{children}</div>;
