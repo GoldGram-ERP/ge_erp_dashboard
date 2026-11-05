@@ -137,6 +137,18 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
     }
   }
 
+  // While scanning (often on a phone) the scan box, the last scan and the summary come first; the details follow.
+  const details = data && (
+      <Section title={m("details")}>
+        <Kv k={m("branch")}>{names.branch || "…"}</Kv>
+        <Kv k={m("countDate")}><Ltr>{String(data.countDate).slice(0, 10)}</Ltr></Kv>
+        <Kv k={m("category")}>{data.categoryId ? names.category || "…" : m("allCategories")}</Kv>
+        <Kv k={m("item")}>{data.itemId ? names.item || "…" : m("anyItem")}</Kv>
+        <Kv k={m("karat")}>{data.karat ? <Ltr>{data.karat}</Ltr> : m("anyKarat")}</Kv>
+        <Kv k={m("scanned")}><Ltr>{m("scannedCount", { count: data.scannedCount })}</Ltr></Kv>
+        {!open && <Kv k={m("missing")}><Ltr>{m("missingCount", { count: data.missingCount })}</Ltr></Kv>}
+      </Section>
+  );
   const heading = data ? `${m("recordNo")} ${code6(data.countNumber)}` : m("recordNo");
   return (
     <div className="thing-root" style={{ position: "relative" }}>
@@ -154,15 +166,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
             </p>
             {!data.deletedAt && <button type="button" className="btn quiet danger" id="sc-del" onClick={remove}><Icon name="trash" />{m("delete")}</button>}
           </div>
-          <Section title={m("details")}>
-            <Kv k={m("branch")}>{names.branch || "…"}</Kv>
-            <Kv k={m("countDate")}><Ltr>{String(data.countDate).slice(0, 10)}</Ltr></Kv>
-            <Kv k={m("category")}>{data.categoryId ? names.category || "…" : m("allCategories")}</Kv>
-            <Kv k={m("item")}>{data.itemId ? names.item || "…" : m("anyItem")}</Kv>
-            <Kv k={m("karat")}>{data.karat ? <Ltr>{data.karat}</Ltr> : m("anyKarat")}</Kv>
-            <Kv k={m("scanned")}><Ltr>{m("scannedCount", { count: data.scannedCount })}</Ltr></Kv>
-            {!open && <Kv k={m("missing")}><Ltr>{m("missingCount", { count: data.missingCount })}</Ltr></Kv>}
-          </Section>
+          {!open && details}
           {open && (
             <div id="sc-scan">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -192,6 +196,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
           )}
           {board && <>
             <Summary live={board} updatedAt={live.dataUpdatedAt} paused={!online && !!open} />
+            {open && details}
             <Breakdown live={board} />
             <PieceLists id={id} live={board} />
           </>}

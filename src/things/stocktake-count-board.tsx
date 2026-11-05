@@ -33,7 +33,7 @@ export function useLive(id: string, open: boolean) {
 
 function Grams({ mg }: { mg: number }) {
   const { m } = useM();
-  return <span dir="ltr" className="num">{m("grams", { w: milligramsText(mg) })}</span>;
+  return <span dir="ltr" className="sc-grams">{m("grams", { w: milligramsText(mg) })}</span>;
 }
 
 // ───── Summary: progress, and expected / counted / remaining in pieces, grams and 24K grams ─────
