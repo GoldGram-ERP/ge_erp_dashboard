@@ -3,6 +3,7 @@
 // The form sends category, item, description, customer name and phone (POST /customer-pieces, backend #167); karat, weight and workmanship
 // per gram are the item's, shown read only. Save opens the print window straight from the click and fills it with the label the answer holds.
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, keepsKey, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { esc, milligramsText } from "@/lib/format";
@@ -43,6 +44,7 @@ const blank: PieceForm = { categoryId: "", itemId: "", description: "", customer
 const itemText = (it: Row) => `${code6(it.itemCode)} · ${it.itemName}`;
 
 export function CustomerPieceForm({ close, tr }: CustomFormProps) {
+  const qc = useQueryClient();
   const { t, L } = tr;
   const c = (k: string) => t("common", k);
   const [v, setV] = useState<PieceForm>(blank);
@@ -98,6 +100,9 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
     answer.then((x) => {
       saveKey.current = newSaveKey();
       setSaved(x);
+      // The page stays on the saved piece, so `reload` (which closes it) is not used: refresh the cached lists and the next piece code by hand.
+      qc.invalidateQueries({ queryKey: ["thing"] });
+      qc.invalidateQueries({ queryKey: ["next-number"] });
       toast(cp(tr, "saved", { code: x.code }));      // the page stays on the saved piece (print again, enter another); Done goes back to the list
     }, (err) => {
       // a refusal ends the attempt (the next Save is a new one); a lost or failed answer, or a 409 saveInProgress, keeps its key, so a retry cannot save twice
@@ -130,9 +135,9 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       <p className="help" style={{ marginTop: 0, marginBottom: 16 }}>{cp(tr, "intro")}</p>
       <div className="formgrid">
         <div className="field" data-k="categoryId"><label htmlFor="categoryId">{cp(tr, "category")} *</label>
-          <Choice tr={tr} id="categoryId" options={categories} value={v.categoryId} onChange={(x) => { set("categoryId", x); set("itemId", ""); }} />{err("categoryId")}</div>
+          <Choice tr={tr} id="categoryId" invalid={!!errs.categoryId} options={categories} value={v.categoryId} onChange={(x) => { set("categoryId", x); set("itemId", ""); }} />{err("categoryId")}</div>
         <div className="field" data-k="itemId"><label htmlFor="itemId">{cp(tr, "item")} *</label>
-          <Choice tr={tr} id="itemId" options={itemOptions} value={v.itemId} disabled={!v.categoryId} placeholder={!v.categoryId ? cp(tr, "chooseCategoryFirst") : undefined} onChange={(x) => set("itemId", x)} />
+          <Choice tr={tr} id="itemId" invalid={!!errs.itemId} options={itemOptions} value={v.itemId} disabled={!v.categoryId} placeholder={!v.categoryId ? cp(tr, "chooseCategoryFirst") : undefined} onChange={(x) => set("itemId", x)} />
           {v.categoryId && items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
           {err("itemId")}</div>
       </div>

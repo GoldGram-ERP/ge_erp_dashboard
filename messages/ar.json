@@ -1305,6 +1305,8 @@
    "gram": "جم",
    "pieceNumber": "قطعة {number}",
    "codeAuto": "يعطيه النظام",
+
+   "moreUnits": "+ {count} قطعة أخرى بنفس الوزن والمصنعية. تُعطى الأكواد عند الحفظ.",
    "pieceCode": "الكود",
    "weight": "الوزن (جم)",
    "makingChargePerGram": "المصنعية للجرام (ج.م)",
