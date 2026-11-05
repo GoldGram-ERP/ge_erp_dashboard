@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Tables: the header row is no longer fixed, it scrolls away with the rows.",
+    "ar": "الجداول: صف العناوين مبقاش ثابت، بيتحرك مع الصفوف وإنت بتنزل."
+   }
+  ]
+ },
+ {
   "version": "1.0.25",
   "date": "2026-11-05",
   "changes": [
