@@ -99,8 +99,9 @@ export function CustomerPieceForm({ close, reload, tr }: CustomFormProps) {
       toast(cp(tr, "saved", { code: x.code }));
       reload();
     }, (err) => {
-      if (err instanceof ApiFailure && !err.unreachable) refusal(err);
-      else setBanner(tr.errorText({ message: "serverUnreachable" }));
+      // a refusal ends the attempt (the next Save is a new one); a lost or failed answer keeps its key, so a retry cannot save twice
+      if (err instanceof ApiFailure && !err.unreachable && err.status < 500) { saveKey.current = newSaveKey(); refusal(err); }
+      else setBanner(tr.errorText(err instanceof ApiFailure && !err.unreachable ? err.error : { message: "serverUnreachable" }));
     }).finally(() => setSaving(false));
   }
 
