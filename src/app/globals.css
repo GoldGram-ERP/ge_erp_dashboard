@@ -850,3 +850,12 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .wn-kind.fixed{background:#e9efe4;color:#3f5b2c}.wn-kind.better{background:#e8edf3;color:#365a80}
 .wn-text{min-width:0;flex:1}.wn-text p{margin:0 0 6px;line-height:1.7}
 .wn-where{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--mute);font-size:13px}.wn-where b{color:var(--ink)}
+
+/* Notification sheet (bell in the menu header): under progress, it opens and says so. */
+.notif-scrim{position:fixed;inset:0;z-index:15}
+.notif{position:fixed;z-index:16;top:58px;inset-inline-start:12px;width:min(340px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--surface,#fff);border:1px solid var(--line,#e5ddc8);border-radius:14px;box-shadow:0 12px 32px rgba(43,37,25,.18);animation:fade .15s}
+.notif header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px 14px}
+.notif h2{margin:0;font-size:15px}
+.notif-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:22px 18px 26px;color:var(--mute)}
+.notif-empty b{color:var(--ink)}.notif-empty p{margin:0;font-size:13px;line-height:1.6}
+.notif-ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--gold-wash);color:var(--gold)}

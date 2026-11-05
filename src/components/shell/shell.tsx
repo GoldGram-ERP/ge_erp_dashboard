@@ -39,6 +39,9 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const ui = useUi();
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
+  // The notification sheet (bell in the menu header). Under progress: the sheet opens and says so; nothing is sent to it yet.
+  const [notif, setNotif] = useState(false);
+  useEffect(() => { if (!notif) return; const k = (e: KeyboardEvent) => { if (e.key === "Escape") setNotif(false); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [notif]);
   // The Admin and the Super admin get What's new from the version label; a dot says there is a version they have not looked at.
   const showLog = canSeeChangelog(me.userType);
   const [seenLog, setSeenLog] = useState<string | null | undefined>(undefined);
@@ -130,9 +133,19 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
     <>
       <a className="sr-only" href="#ws">{t("shell.skipToContent")}</a>
       {drawer ? <div className="scrim" onClick={() => setDrawer(false)} /> : null}
+      {notif ? (
+        <>
+          <div className="notif-scrim" onClick={() => setNotif(false)} />
+          <section id="notif" className="notif" role="dialog" aria-modal="false" aria-labelledby="notif-title">
+            <header><h2 id="notif-title">{t("app.notifications.title")}</h2><button type="button" className="ic-btn" aria-label={t("app.notifications.close")} title={t("app.notifications.close")} onClick={() => setNotif(false)}><Icon name="x" size={16} /></button></header>
+            <div className="notif-empty"><span className="notif-ico"><Icon name="bell" size={22} /></span><b>{t("app.notifications.progress")}</b><p>{t("app.notifications.empty")}</p></div>
+          </section>
+        </>
+      ) : null}
       <aside id="side"><div className="side-inner">
         <div className="side-head">
           <div className="brand" id="brand">GoldGram</div>
+          <button className="ic-btn" id="notif-btn" type="button" aria-haspopup="dialog" aria-expanded={notif} title={t("app.notifications.title")} aria-label={t("app.notifications.title")} onClick={() => setNotif((v) => !v)}><Icon name="bell" size={18} /></button>
           <button className="ic-btn" id="fold-all" type="button" title={allOpen ? t("app.foldAll") : t("app.unfoldAll")} aria-label={allOpen ? t("app.foldAll") : t("app.unfoldAll")} onClick={() => ui.setGroups(allOpen ? [] : allIds)}><Icon name={allOpen ? "fold" : "unfold"} /></button>
           <button className="ic-btn" id="collapse" type="button" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></button>
         </div>
@@ -141,6 +154,11 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           <div className={`sec ${pathname === "/" ? "has-active" : ""}`}>
             <Link className="sec-head" href="/" aria-current={pathname === "/" ? "page" : undefined} title={t("nav.home")}><span className="ico"><Icon name="home" size={19} /></span><span className="name">{t("nav.home")}</span></Link>
           </div>
+          {showLog && (
+            <div className={`sec ${pathname === "/whats-new" ? "has-active" : ""}`}>
+              <Link className="sec-head" id="nav-whats-new" href="/whats-new" aria-current={pathname === "/whats-new" ? "page" : undefined} title={t("app.whatsNew.title")}><span className="ico"><Icon name="bell" size={19} /></span><span className="name">{t("app.whatsNew.title")}{unseenLog ? <i className="wn-dot" aria-hidden="true" /> : null}</span></Link>
+            </div>
+          )}
           {section("pins", "pin", t("nav.pinned"), pins.some((p) => p && isActive(p.route)), open("pins"),
             pins.length ? pins.map((p) => p && row(p)) : <li className="hint">{t("app.pinHint")}</li>)}
           {groups.map((g) => section(g.id, g.icon, t(`nav.group.${g.id}`), g.items.some((i) => isActive(i.route)), open(g.id), g.items.map(row)))}

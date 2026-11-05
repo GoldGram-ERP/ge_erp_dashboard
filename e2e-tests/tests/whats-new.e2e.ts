@@ -16,6 +16,8 @@ for (const lang of LANGS) {
     await menu(browser);
     await expect(browser.locator('a#app-version')).toBeVisible();
     await expect(browser.locator('#app-version .wn-dot')).toBeVisible();   // a version nobody has looked at
+    await expect(browser.locator('a#nav-whats-new')).toBeVisible();        // and a menu tab of its own, with the same dot
+    await expect(browser.locator('#nav-whats-new .wn-dot')).toBeVisible();
     await shot(`whats-new-${lang}-1-version-with-dot`);
 
     await browser.locator('a#app-version').tap();
@@ -36,6 +38,7 @@ for (const lang of LANGS) {
     await menu(browser);
     await expect(browser.locator('a#app-version')).toBeVisible();
     await expect(browser.locator('#app-version .wn-dot')).toHaveCount(0);
+    await expect(browser.locator('#nav-whats-new .wn-dot')).toHaveCount(0);
 
     // one tap opens the screen of a change
     await go('superadmin', '/whats-new', lang);
@@ -58,6 +61,7 @@ for (const lang of LANGS) {
     await menu(browser);
     await expect(browser.locator('span#app-version')).toBeVisible();
     await expect(browser.locator('a#app-version')).toHaveCount(0);
+    await expect(browser.locator('a#nav-whats-new')).toHaveCount(0);
     await go('e2euser', '/whats-new', lang);
     await expect.poll(() => path(browser)).toBe(`/${lang}`);
     expect(await text(browser)).not.toContain(M(lang, 'app', 'whatsNew.sub'));

@@ -2749,6 +2749,12 @@
   }
  },
  "app": {
+  "notifications": {
+    "title": "Notifications",
+    "progress": "Under progress",
+    "empty": "Notifications will appear here: what needs your attention, in one place. We are building it now.",
+    "close": "Close"
+  },
   "copy": {
     "copy": "Copy",
     "copied": "Copied",
