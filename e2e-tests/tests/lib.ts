@@ -171,6 +171,30 @@ export async function layoutAudit(browser: any, root = 'body'): Promise<string[]
         if (!hdrEnd && !hdrStart) { const tr = R(th), cr = R(cell), tcs = getComputedStyle(th), ccs = getComputedStyle(cell); out.push(`table column not aligned: "${(th.textContent ?? '').trim().slice(0, 18)}" header text x=${Math.round(a.left)}..${Math.round(a.right)} (box ${Math.round(tr.left)}..${Math.round(tr.right)}, ${tcs.textAlign}/${tcs.direction}) cell text x=${Math.round(b.left)}..${Math.round(b.right)} (box ${Math.round(cr.left)}..${Math.round(cr.right)}, ${ccs.textAlign}/${ccs.direction}, ${cell.tagName}.${cell.className})`); }
       }
     }
+    // 6 size scale (globals.css :root --fs-*/--h-*; the sales desk, .desk-ref, keeps the reference's own sizes): the real sizes must equal the variables, desktop and phone
+    const v = (n: string) => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n));
+    const S = { fsBase: v('--fs-base'), fsTable: v('--fs-table'), fsTitle: v('--fs-title'), field: v('--h-field'), btn: v('--h-btn'), btnSm: v('--h-btn-sm'), row: v('--h-row'), th: v('--h-th') };
+    const shown = (e: Element) => { const r = R(e); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !e.closest('.desk-ref, #sd'); };
+    const fsz = (e: Element) => parseFloat(getComputedStyle(e).fontSize), off = (a: number, b: number) => Math.abs(a - b) > 0.6;
+    const scale = (sel: string, label: string, hLo: number, hHi: number, fs?: number) => {
+      for (const e of Array.from(base.querySelectorAll(sel)).filter(shown)) {
+        const h = R(e).height;
+        if (h < hLo - 0.6 || h > hHi + 0.6) out.push(`size scale: ${label} height ${Math.round(h * 10) / 10}px, scale ${hLo}..${hHi}px: ${name(e)}`);
+        if (fs !== undefined && off(fsz(e), fs)) out.push(`size scale: ${label} font ${fsz(e)}px, scale ${fs}px: ${name(e)}`);
+      }
+    };
+    scale('h1', 'title', 0, 99, S.fsTitle);
+    scale('.field input:not([type=checkbox]):not([type=radio]):not([type=hidden]), .field select, .sel-btn', 'field', S.field, S.field, S.fsBase);
+    scale('.btn', 'button', S.btnSm, S.btn);
+    scale('.table th', 'table head', S.th, S.th);
+    scale('.table td', 'table cell', S.row, 999, S.fsTable); // a cell that wraps may grow, never shrink
+    // any other text bigger than the base size (title, logo, the home price figure and the scan board's hero numbers excepted) is a stray size
+    const walker = document.createTreeWalker(base, NodeFilter.SHOW_TEXT); const stray = new Set<string>();
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const p = n.parentElement; if (!p || !(n.nodeValue ?? '').trim() || !shown(p) || p.closest('h1, .price, .brand, .sc-tile-n, .sc-last-code')) continue;
+      if (fsz(p) > S.fsBase + 0.6) stray.add(`${name(p)} ${fsz(p)}px`);
+    }
+    for (const s of Array.from(stray).slice(0, 5)) out.push(`size scale: text bigger than ${S.fsBase}px: ${s}`);
     return out;
   }, root)) as string[];
 }

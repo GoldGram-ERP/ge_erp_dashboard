@@ -15,7 +15,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font:15px/1.7 var(--font);background:var(--bg);color:var(--ink);display:flex;overflow:hidden;-webkit-font-smoothing:antialiased}
+body{font:var(--fs-base)/1.7 var(--font);background:var(--bg);color:var(--ink);display:flex;overflow:hidden;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0}
 button:disabled{cursor:not-allowed;opacity:.5}
@@ -32,7 +32,7 @@ aside{width:268px;background:var(--side);display:flex;flex-direction:column;flex
 nav{flex:1;overflow:auto;padding:12px 10px 22px;-webkit-mask-image:linear-gradient(transparent,#000 12px,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(transparent,#000 12px,#000 calc(100% - 22px),transparent)}
 nav::-webkit-scrollbar{width:6px} nav::-webkit-scrollbar-thumb{background:transparent;border-radius:6px} nav:hover::-webkit-scrollbar-thumb{background:#d4c9aa}
 .sec{margin-bottom:4px}
-.sec-head{width:100%;display:flex;align-items:center;gap:11px;height:42px;padding:0 12px;border-radius:10px;font-size:15px;font-weight:700;color:var(--ink);text-align:start;transition:background .15s}
+.sec-head{width:100%;display:flex;align-items:center;gap:11px;height:42px;padding:0 12px;border-radius:10px;font-size:var(--fs-base);font-weight:700;color:var(--ink);text-align:start;transition:background .15s}
 .sec-head:hover{background:rgba(111,81,16,.07)}
 .sec-head:active{transform:scale(.98)}
 .sec-head .ico{display:grid;color:var(--mute);transition:color .15s}
@@ -122,7 +122,7 @@ tr.flash td{animation:flash 1.6s ease-out}
 .pager .btn{height:32px;padding:0 12px}
 .empty{display:grid;place-items:center;text-align:center;gap:10px;padding:56px 24px;color:var(--mute)}
 .empty svg{color:#c9bd9c}
-.empty strong{color:var(--ink);font-size:15px}
+.empty strong{color:var(--ink);font-size:var(--fs-base)}
 .skeleton{padding:12px 16px;display:grid;gap:10px}
 .skeleton i{display:block;height:18px;border-radius:6px;background:linear-gradient(90deg,#f1ebdb 25%,#f8f4e8 50%,#f1ebdb 75%);background-size:200% 100%;animation:sk 1.2s linear infinite}
 @keyframes sk{to{background-position:-200% 0}}
@@ -145,7 +145,7 @@ tr.flash td{animation:flash 1.6s ease-out}
 .formgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .formgrid .wide{grid-column:1/-1}
 .card{background:var(--surface);border-radius:14px;box-shadow:0 0 0 1px var(--line);padding:18px 20px;margin-bottom:14px}
-.card h3{font-size:15px;margin-bottom:12px}
+.card h3{font-size:var(--fs-base);margin-bottom:12px}
 .lines{width:100%}
 .lines td,.lines th{height:46px}
 .lines td .err{white-space:normal}   /* a refusal under a line box wraps instead of being cut off by the cell ellipsis */
@@ -204,7 +204,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-start}
 .tile:hover{background:var(--gold-wash);box-shadow:0 0 0 1px var(--line-strong)}
 .tile:active{transform:scale(.98)}
 .tile .ico{width:40px;height:40px;border-radius:11px;background:var(--gold-tint);color:var(--gold);display:grid;place-items:center}
-.tile b{display:block;font-size:15px;line-height:1.4}
+.tile b{display:block;font-size:var(--fs-base);line-height:1.4}
 .tile small{display:block;color:var(--mute);font-size:12.5px;line-height:1.4}
 .todo{display:grid;gap:8px;margin-bottom:8px}
 .todo a{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:var(--surface);box-shadow:0 0 0 1px var(--line);text-decoration:none;color:inherit}
@@ -555,7 +555,7 @@ a.tile b{color:var(--ink)}
 .jobs-page .head{margin-bottom:0}
 .jobs-groups{display:flex;flex-direction:column;gap:14px}
 .jobs-search{max-width:520px;flex:none;height:44px}
-.jobs-search input{font-size:15px}
+.jobs-search input{font-size:var(--fs-base)}
 .b-purpose{background:var(--surface)}
 .b-done{background:#e9f2ea}.b-done .pill{background:#d3e6d8;color:var(--good);display:inline-flex;align-items:center;gap:6px}
 .b-todo{background:#f9f1e1}.b-todo .pill{background:#f0e1c4;color:#7a4a12}
@@ -579,7 +579,7 @@ a.tile b{color:var(--ink)}
 /* the bar above a step page */
 .jobbar{margin:8px 28px 0;align-items:flex-start;position:relative;z-index:2}
 .jobbar .jb-main{flex:1;min-width:220px;display:flex;flex-direction:column;gap:3px}
-.jobbar .jb-title{font-size:15px;font-weight:600;line-height:1.5}
+.jobbar .jb-title{font-size:var(--fs-base);font-weight:600;line-height:1.5}
 .jobbar .hint{flex-basis:auto;font-size:13.5px}
 .jobbar ol.steps{list-style:none;display:flex;gap:6px;flex:none;min-width:0;max-width:420px;margin-top:2px}
 .jobbar .steps li{flex:1;min-width:10px;height:6px;border-radius:3px;background:#e0d6b9;transition:background .2s var(--calm,ease-out)}
@@ -864,7 +864,7 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .notif-scrim{position:fixed;inset:0;z-index:15}
 .notif{position:fixed;z-index:16;top:58px;inset-inline-start:12px;width:min(340px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--surface,#fff);border:1px solid var(--line,#e5ddc8);border-radius:14px;box-shadow:0 12px 32px rgba(43,37,25,.18);animation:fade .15s}
 .notif header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px 14px}
-.notif h2{margin:0;font-size:15px}
+.notif h2{margin:0;font-size:var(--fs-base)}
 .notif-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:22px 18px 26px;color:var(--mute)}
 .notif-empty b{color:var(--ink)}.notif-empty p{margin:0;font-size:13px;line-height:1.6}
 .notif-ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--gold-wash);color:var(--gold)}
@@ -959,11 +959,11 @@ div.table{display:block}
 /* Stock count screen sizes (owner, 2026-11-05, apple-design section 18): small calm controls; the phone is at most 4 px taller, hit areas come from padding */
 #sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:32px}
 #sc-code,.sc-search{padding-block:0}
-.sc-table td{height:36px;padding:0 12px}
+.sc-table td{height:var(--h-row);padding:0 12px}
 .sc-table th{height:28px;padding:0 12px}
 .sc-table table{border-spacing:0 3px}
 .sc-code .copy-btn{min-width:28px;height:28px;border-radius:8px}
-@media (max-width:520px){#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:36px}}
+@media (max-width:520px){#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:var(--h-field)}}
 @media (pointer:coarse){.sc-code .copy-btn::before{content:"";position:absolute;inset:-8px}}
 @media (max-width:520px){.sc-tools .seg{max-width:100%}.sc-tools .seg button{padding:0 9px;font-size:12.5px}}
 
@@ -972,7 +972,7 @@ div.table{display:block}
 .bpr{--bpr-h:32px;--bpr-primary:34px;--bpr-sm:28px}
 @media (max-width:520px){.bpr{--bpr-h:36px;--bpr-primary:38px;--bpr-sm:32px}}
 .bpr.card,.bpr .card{padding:14px 16px;margin-bottom:12px;border-radius:12px}
-.bpr .card h3,.bpr.card h3{margin:0 0 8px;font-size:15px}
+.bpr .card h3,.bpr.card h3{margin:0 0 8px;font-size:var(--fs-base)}
 .bpr h4{font-size:13.5px}
 .bpr .formgrid{gap:10px}
 .bpr .field label{font-size:13px;margin-bottom:4px}
@@ -982,7 +982,7 @@ div.table{display:block}
 .bpr .btn.sm{height:var(--bpr-sm);padding:0 10px;font-size:13px}
 .bpr .kv{padding:6px 0;font-size:13.5px}
 .bpr .pay-sum{margin-top:10px;padding:8px 12px;border-radius:10px}
-.bpr .pay-sum b{font-size:15px}
+.bpr .pay-sum b{font-size:var(--fs-base)}
 .bpr .bank-row{align-items:end;margin-bottom:8px}
 .bpr .bank-rm{padding-top:0}
 .bpr .bank-row .bank-rm .btn{height:var(--bpr-sm)}
@@ -1049,3 +1049,24 @@ input[role=switch]:disabled{opacity:.5;cursor:not-allowed}
 /* TextButton (the library TextButton): looks like text, still a real button. */
 .tbtn{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
 .tbtn:focus-visible{outline:2px solid color-mix(in srgb,var(--gold) 45%,transparent);outline-offset:2px;border-radius:4px}
+
+/* ---- Size scale (ONE source, owner 2026-11-05) ----
+   Measured before: text 15px, title 24px, fields and selects 42px, table rows 54px, buttons 38px on 22 of 25 pages.
+   Every list, form, filter and table follows these variables: change a number here and the whole app changes.
+   The scale: text 14 (table 13.5), title 20, field and select 32 (phone 34), button 32 (small 28), table row 38, table head 32. */
+:root{--fs-base:14px;--fs-table:13.5px;--fs-title:20px;--h-field:32px;--h-btn:32px;--h-btn-sm:28px;--h-row:38px;--h-th:32px;--h-search:32px}
+@media (max-width:640px){:root{--h-field:34px;--h-btn:34px;--h-row:40px}}
+h1{font-size:var(--fs-title)}
+.btn{height:var(--h-btn);padding:0 14px;font-size:13.5px}
+.btn.sm{height:var(--h-btn-sm);padding:0 10px;font-size:13px}
+.formbar .btn,.jobbar .btn.sm{height:var(--h-btn)}
+.search,.usearch{height:var(--h-search)}
+.field input:not([type=checkbox]):not([type=radio]),.field select{height:var(--h-field);font-size:var(--fs-base)}
+.sel-btn{height:var(--h-field);font-size:var(--fs-base)}
+.price-out{min-height:var(--h-field)}
+.bank-row .bank-rm .btn{height:var(--h-field)}
+th,.table th{height:var(--h-th)}
+td,.table td{height:var(--h-row);font-size:var(--fs-table)}
+.table td{padding:0 14px}.table th{padding:0 14px}
+.table tr.grp td{height:30px}.table tr.foot td{height:38px}
+.lines td,.lines th{height:var(--h-row)}
