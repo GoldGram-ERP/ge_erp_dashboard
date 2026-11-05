@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { Row } from "@/lib/engine-types";
+import { Disclosure } from "@/components/ui";
 import { Icon, Kv, Ltr, Section, ToastHost, toast, useConfirm } from "@/components/engine";
 import { useT } from "@/lib/t";
 import { Breakdown, MissingPreview, PieceLists, ScanFeedback, Summary, useLive, type BoardPiece, type LastScan, type Live } from "./stocktake-count-board";
@@ -189,10 +190,9 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
           )}
           {last && open && <ScanFeedback last={last} />}
           {open && refused.length > 0 && (
-            <details className="sc-refused" id="sc-refused">
-              <summary>{m("refusedList")} ({refused.length})</summary>
+            <Disclosure className="sc-refused" id="sc-refused" summary={<>{m("refusedList")} ({refused.length})</>}>
               <ul>{refused.map((x) => <li key={x.at}><span dir="ltr">{x.code}</span> · {x.reason}</li>)}</ul>
-            </details>
+            </Disclosure>
           )}
           {board && <>
             <Summary live={board} updatedAt={live.dataUpdatedAt} paused={!online && !!open} />

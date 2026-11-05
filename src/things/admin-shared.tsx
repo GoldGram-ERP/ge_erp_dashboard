@@ -4,6 +4,7 @@
 // so it is sent only when the person changed it. Forced password change and the lock after 5 wrong passwords are backend behaviour only
 // (the form has no control for them; a locked account shows the locked badge and the Unlock action).
 // shortcut: the page's "back" button leaves without the unsaved-changes question (Cancel asks); upgrade when the engine exposes a leave guard.
+import { Checkbox, CheckInput } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
@@ -77,7 +78,7 @@ export function UserRecord({ r, tr }: { r: Row; tr: Tr }) {
 }
 
 const Check = ({ checked, disabled, onChange, label, ind, ...rest }: { checked: boolean; disabled?: boolean; onChange: (v: boolean) => void; label: ReactNode; ind?: boolean; [k: string]: any }) => (
-  <label className="field check"><input type="checkbox" ref={(el) => { if (el) el.indeterminate = !!ind; }} checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} {...rest} /><span>{label}</span></label>
+  <Checkbox checked={checked} disabled={disabled} onChange={onChange} indeterminate={ind} {...rest}>{label}</Checkbox>
 );
 
 type Props = CustomFormProps & { onlyTypes?: readonly string[]; path: string; staysAfterAdd?: boolean };
@@ -214,7 +215,7 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
           <button type="button" className="btn quiet sm" disabled={on === 0} onClick={() => toggleJobs(ids, false)}>{u("jobs.unselectAll")}</button></>}</div>
         <div style={grid}>{inG.map((j) => { const id = j[0], can = givable(id), keys = jobScreens(id), has = can && jobs.has(id), missing = keys.filter((k) => !screens.has(k));
           return <label key={id} style={box(has, preview || !can)}>
-            <input type="checkbox" data-job={id} checked={has} disabled={preview || !can} onChange={(e) => toggleJobs([id], e.target.checked, false)} style={{ marginTop: 3 }} />
+            <CheckInput data-job={id} checked={has} disabled={preview || !can} onChange={(v) => toggleJobs([id], v, false)} style={{ marginTop: 3 }} />
             <span><b style={{ fontWeight: 600 }}>{L(j[2], j[3])}</b>{!can && <> <span className="mute">{u("jobs.adminOnly")}</span></>}
               <span style={small}>{keys.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ")}</span>
               {has && missing.length > 0 && !preview && <span className="note warn" style={{ display: "block", marginTop: 4 }}>{u("jobs.partMissing", { names: missing.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ") })} <button type="button" className="btn quiet sm" onClick={(e) => { e.preventDefault(); keys.forEach((k) => screens.add(k)); setScreens(new Set(screens)); mark(); }}>{u("jobs.giveMissing")}</button></span>}</span>
@@ -236,7 +237,7 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
         {mods.map((m0) => { const m = { ...m0, list: m0.list.filter((x) => !ql || `${x.name} ${m0.name}`.toLowerCase().includes(ql)) }; if (!m.list.length) return null; const keys = m.list.map((x) => x.key), on = keys.filter((k) => screens.has(k)).length;
           return <div key={m.id} style={{ marginTop: 12 }}>
             <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: m.name })} label={<><b>{m.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span> <span className="mute">· {u("screens.selectAll")}</span></>} />
-            <div style={grid}>{m.list.map((x) => <label key={x.key} style={box(screens.has(x.key))}><input type="checkbox" data-screen={x.key} checked={screens.has(x.key)} onChange={(e) => toggleScreens([x.key], e.target.checked)} style={{ marginTop: 3 }} /><span>{x.name}</span></label>)}</div></div>; })}
+            <div style={grid}>{m.list.map((x) => <label key={x.key} style={box(screens.has(x.key))}><CheckInput data-screen={x.key} checked={screens.has(x.key)} onChange={(v) => toggleScreens([x.key], v)} style={{ marginTop: 3 }} /><span>{x.name}</span></label>)}</div></div>; })}
       </>; })() : jobCards(false)}
     </>;
 

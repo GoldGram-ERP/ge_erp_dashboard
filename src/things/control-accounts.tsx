@@ -3,7 +3,6 @@
 // Ported from docs/nav-preview/app/things/control-accounts.js. Admin accounts: the Users form with types admin + super_admin
 // (POST /admin-accounts, PATCH /admin-accounts/{id}), delete = DELETE /admin-accounts/{id}. Active sessions open on everyone; the search box narrows (same endpoint).
 // The page is hidden for everyone but the Super admin by the nav (superOnly group) and refused by the server.
-// shortcut: "end other sessions" asks with window.confirm (the view actions have no dialog hook); swap for the engine's confirm when it passes one.
 import { api, ApiFailure } from "@/lib/api";
 import type { Column, CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
 import { dateTimeText } from "@/lib/format";
@@ -89,8 +88,8 @@ const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       onRow: open,
       actions: [{
         label: m("activeSessions.endOthers"), icon: "out",
-        run: async ({ reload }) => {
-          if (!window.confirm(`${m("activeSessions.endOthersTitle")}\n${m("activeSessions.endOthersBody")}`)) return;
+        run: async ({ reload, confirm }) => {
+          if (!(await confirm({ title: m("activeSessions.endOthersTitle"), text: m("activeSessions.endOthersBody"), danger: true }))) return;
           try { const r = await api("/active-sessions/end-others", { method: "POST" }); toast(m("activeSessions.othersEnded", { count: r?.ended ?? 0 })); reload(); }
           catch (e) { toast(e instanceof ApiFailure ? tr.errorText(e.error) : m("activeSessions.endFailed"), { error: true }); }
         },

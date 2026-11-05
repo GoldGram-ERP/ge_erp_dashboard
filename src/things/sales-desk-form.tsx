@@ -277,9 +277,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                       </div>{err(`line${i}Count`)}</div>
                     <div className="field"><span className="flabel" id={`ipl${i}`}>{d("linePrice")}</span>
                       <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} dir="ltr">{saved ? piastresText(saved.linePrice) : "—"}</output>
-                      {!saved && <div className="help">{d("priceAfterSave")}</div>}</div>
+                    </div>
                     {lines.length > 1 && <button type="button" className="btn quiet sm danger" data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</button>}
                   </div>
+                  {!saved && <div className="help" style={{ marginTop: -4 }}>{d("priceAfterSave")}</div>}
                 </div>
               );
             })}

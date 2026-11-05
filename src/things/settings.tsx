@@ -3,6 +3,7 @@
 // Ported from docs/nav-preview/app/things/settings.js. Admin and Super admin only. Limits: names 200, address 500, phone 500, footer 2000; the logo is kept
 // to 90,000 characters (dashboard) although the backend would take more. The logo is a data URL inside the row; null removes it.
 // shortcut: the shell's header brand is not refreshed after a save (a reload shows it), as in the HTML.
+import { FileInput } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
@@ -109,7 +110,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
                 <button type="button" className="btn quiet sm" id="logo-pick" onClick={() => fileRef.current?.click()}>{logo ? m("changeLogo") : m("uploadLogo")}</button>
                 {logo && <button type="button" className="btn quiet sm danger" id="logo-rm" onClick={() => { setLogo(null); setLogoName(""); setLogoDirty(true); key.current = newSaveKey(); }}>{m("removeLogo")}</button>}
               </div>
-              <input ref={fileRef} type="file" id="logo-file" accept="image/*" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
+              <FileInput ref={fileRef} id="logo-file" accept="image/*" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
               <div className="mute">{logoName ? m("logoChosen", { name: logoName }) : logo ? m("logoKept") : ""}</div>
             </div>
             <div className="help">{m("logoHint")}</div>
