@@ -7,6 +7,12 @@
     "en": "A segmented switch inside a form field is now as wide as its buttons, with no empty strip at its end.",
     "ar": "السويتش اللي جوه خانة الفورم بقى بعرض أزراره بس، من غير شريط فاضي في آخره.",
     "route": "/setup/item-fees"
+   },
+   {
+    "kind": "better",
+    "en": "The sales desk now works like the price calculator: sell or buy, gold or silver, two payments with a split, discount on workmanship, Visa, and the same WhatsApp text, priced by the system.",
+    "ar": "مكتب المبيعات بقى زي الحاسبة بالظبط: بيع أو شراء، دهب أو فضة، دفعتين وتقسيم المبلغ، خصم على المصنعية، فيزا، ونفس رسالة الواتساب، والسعر بيتحسب من السيستم.",
+    "route": "/sales/desk"
    }
   ]
  },

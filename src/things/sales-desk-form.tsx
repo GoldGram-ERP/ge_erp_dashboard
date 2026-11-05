@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
-import { latinNumber, milligramsText, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
+import { latinNumber, milligramsText, piastresInput, piastresText, timeText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
@@ -118,7 +118,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
   // The list price: read now, then every 15 s while the tab is visible ("read a new price now" forces it); a new read re-quotes.
   function readPrice() {
-    latestPrice(today()).then((p) => { setPrice(p); setReadAt(new Date().toLocaleTimeString(tr.locale)); setTick((n) => n + 1); }).catch(() => setPrice(undefined));
+    latestPrice(today()).then((p) => { setPrice(p); setReadAt(timeText(Date.now(), tr.locale, true)); setTick((n) => n + 1); }).catch(() => setPrice(undefined));
   }
   useEffect(() => {
     const id = setInterval(() => { if (!document.hidden) readPrice(); }, 15000);
