@@ -36,7 +36,7 @@
     "kind": "better",
     "en": "Piece labels now print a real, scannable QR code of the piece code, and the Arabic and English lines are no longer cut.",
     "ar": "ملصقات القطع بقت بتطبع QR حقيقي بيتقري بالسكانر لكود القطعة، والسطور العربي والإنجليزي مابقتش بتتقطع.",
-    "route": "/buy/purchase-coding"
+    "route": "/buy/purchases"
    },
    {
     "kind": "better",
