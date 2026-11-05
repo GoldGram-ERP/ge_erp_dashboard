@@ -962,3 +962,43 @@ div.table{display:block}
 @media (max-width:520px){#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:36px}}
 @media (pointer:coarse){.sc-code .copy-btn::before{content:"";position:absolute;inset:-8px}}
 @media (max-width:520px){.sc-tools .seg{max-width:100%}.sc-tools .seg button{padding:0 9px;font-size:12.5px}}
+
+/* Returned pieces (buy a piece back) sizes (owner, 2026-11-05, apple-design section 18): small calm controls on the form and the saved page; the
+   phone is at most 4 px taller than the desktop, the hit area grows by an invisible ::before, never by a bigger control. */
+.bpr{--bpr-h:32px;--bpr-primary:34px;--bpr-sm:28px}
+@media (max-width:520px){.bpr{--bpr-h:36px;--bpr-primary:38px;--bpr-sm:32px}}
+.bpr.card,.bpr .card{padding:14px 16px;margin-bottom:12px;border-radius:12px}
+.bpr .card h3,.bpr.card h3{margin:0 0 8px;font-size:15px}
+.bpr h4{font-size:13.5px}
+.bpr .formgrid{gap:10px}
+.bpr .field label{font-size:13px;margin-bottom:4px}
+.bpr .field input:not([type=checkbox]):not([type=radio]),.bpr .field select,.bpr .sel-btn{height:var(--bpr-h);padding-inline:10px;border-radius:8px;font-size:13.5px}
+.bpr .btn{height:var(--bpr-h);padding:0 12px;border-radius:8px;font-size:13.5px}
+.bpr .btn.primary{height:var(--bpr-primary)}
+.bpr .btn.sm{height:var(--bpr-sm);padding:0 10px;font-size:13px}
+.bpr .kv{padding:6px 0;font-size:13.5px}
+.bpr .pay-sum{margin-top:10px;padding:8px 12px;border-radius:10px}
+.bpr .pay-sum b{font-size:15px}
+.bpr .bank-row{align-items:end;margin-bottom:8px}
+.bpr .bank-rm{padding-top:0}
+.bpr .bank-row .bank-rm .btn{height:var(--bpr-sm)}
+.bpr .formbar{margin:8px 0 0;padding:8px 12px;border-radius:12px}
+.bpr .formbar .btn{height:var(--bpr-h)}
+.bpr .formbar .btn.primary{height:var(--bpr-primary)}
+.bpr .copy-btn{min-width:var(--bpr-sm);height:var(--bpr-sm);border-radius:8px}
+.bpr .copy-btn svg{width:16px;height:16px}
+@media (pointer:coarse){.bpr .btn,.bpr .sel-btn,.bpr .copy-btn{position:relative}.bpr .btn::before,.bpr .sel-btn::before,.bpr .copy-btn::before{content:"";position:absolute;inset:-4px}.bpr .btn.sm::before,.bpr .copy-btn::before{inset:-8px}}
+@media (max-width:520px){.bpr.card,.bpr .card{padding:12px}.bpr .formbar .btn.primary{flex:1}}
+/* the piece record sheet (found by the bpr-rec marker): same small buttons as the form */
+.sheet:has(.bpr-rec){--bpr-h:32px;--bpr-sm:28px}
+@media (max-width:520px){.sheet:has(.bpr-rec){--bpr-h:36px;--bpr-sm:32px}}
+.sheet:has(.bpr-rec) footer{padding:10px 16px}
+.sheet:has(.bpr-rec) footer .btn{height:var(--bpr-h);padding:0 12px;border-radius:8px;font-size:13.5px}
+.bpr-rec .kv{padding:6px 0;font-size:13.5px}
+@media (pointer:coarse){.sheet:has(.bpr-rec) footer .btn{position:relative}.sheet:has(.bpr-rec) footer .btn::before{content:"";position:absolute;inset:-4px}}
+.bpr.card .kv{justify-content:flex-start;gap:12px}
+.bpr.card .kv span:first-child{flex:0 0 8.5rem}
+.bpr.card .kv span:last-child{flex:1 1 0;min-width:0;text-align:start;overflow-wrap:anywhere}
+@media (max-width:520px){.bpr.card .kv span:first-child{flex-basis:7rem}}
+html[dir=rtl] .bpr.card .kv span:last-child{text-align:right}
+html[dir=ltr] .bpr.card .kv span:last-child{text-align:left}

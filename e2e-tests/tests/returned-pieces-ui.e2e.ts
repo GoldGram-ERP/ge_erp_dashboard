@@ -31,6 +31,53 @@ const onePieceOf = (perGram: number, weightMg: number) => Number((BigInt(perGram
 const WEIGHT_MG = 4375;                                  // 4.375 g
 const texts = (browser: any, sel: string) => browser.evaluate((s: string) => [...document.querySelectorAll(s)].map((e) => (e.textContent ?? '').trim()), sel);
 
+/** The owner's size rules, measured in the browser (apple-design 18): controls <=34 desktop / <=36 phone (the one primary action <=40 on phone),
+ *  icons <=20 / <=18, badges <=22, card padding 12-16 (phone 10-14); no horizontal overflow; everything inside its card; nothing fixed or sticky
+ *  by accident. Returns the maxima (printed as SIZES for the before/after table) and the list of broken rules. */
+const measure = (browser: any, scope: string, opts: { position?: boolean } = {}) => browser.evaluate(({ sc, o }: { sc: string; o: { position?: boolean } }) => {
+  const phone = innerWidth <= 500, root = document.querySelector(sc) as HTMLElement | null;
+  if (!root) return { bad: [`no ${sc}: ${document.querySelector('#cp-save')?.closest('form,div')?.outerHTML.slice(0, 80)} ${[...document.querySelectorAll('form')].map((f) => f.id).join(',')}`], max: {} };
+  const bad: string[] = [], max: Record<string, number> = {};
+  const note = (k: string, v: number) => { max[k] = Math.max(max[k] ?? 0, Math.round(v * 10) / 10); };
+  const vis = (e: Element) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const name = (e: Element) => `${e.tagName.toLowerCase()}${(e as HTMLElement).id ? '#' + (e as HTMLElement).id : ''}${typeof (e as HTMLElement).className === 'string' && (e as HTMLElement).className ? '.' + (e as HTMLElement).className.split(' ')[0] : ''}`;
+  for (const e of root.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select,textarea,button,[role=combobox],a.btn')) {
+    if (!vis(e)) continue;
+    const h = e.getBoundingClientRect().height, primary = e.classList.contains('primary');
+    const lim = primary ? (phone ? 40 : 34) : (phone ? 36 : 34);
+    note(primary ? 'primary' : e.matches('button,a.btn') ? 'button' : 'field', h);
+    if (h > lim + 0.5) bad.push(`${name(e)} is ${h}px high (max ${lim})`);
+  }
+  for (const e of root.querySelectorAll('svg')) {
+    if (!vis(e)) continue;
+    const r = e.getBoundingClientRect(), lim = phone ? 18 : 20;
+    note('icon', Math.max(r.width, r.height));
+    if (Math.max(r.width, r.height) > lim + 0.5) bad.push(`svg in ${name(e.parentElement!)} is ${r.width}x${r.height} (max ${lim})`);
+  }
+  for (const e of root.querySelectorAll('.badge,.pill,.chip,.tag,.seg button')) {
+    if (!vis(e)) continue;
+    const h = e.getBoundingClientRect().height, lim = e.closest('.seg') ? 30 : 22;
+    note('pill', h);
+    if (h > lim + 0.5) bad.push(`${name(e)} is ${h}px high (max ${lim})`);
+  }
+  for (const c of [root, ...root.querySelectorAll('.card')].filter((x) => x.classList.contains('card') && vis(x))) {
+    const cs = getComputedStyle(c), pads = [cs.paddingTop, cs.paddingBottom, cs.paddingLeft, cs.paddingRight].map(parseFloat);
+    const [lo, hi] = phone ? [10, 14] : [12, 16];
+    note('cardPad', Math.max(...pads));
+    if (pads.some((x) => x < lo - 0.5 || x > hi + 0.5)) bad.push(`card padding ${pads.join('/')} (want ${lo}-${hi})`);
+    const cr = c.getBoundingClientRect();
+    for (const d of c.querySelectorAll('input,select,button,[role=combobox],.kv,.help,.err,li')) {
+      if (!vis(d)) continue;
+      const r = d.getBoundingClientRect();
+      if (r.left < cr.left - 1 || r.right > cr.right + 1) bad.push(`${name(d)} sticks out of its card (${Math.round(r.left - cr.left)}, ${Math.round(cr.right - r.right)})`);
+    }
+  }
+  if (document.documentElement.scrollWidth > innerWidth + 1) bad.push(`horizontal overflow ${document.documentElement.scrollWidth} > ${innerWidth}`);
+  if (o.position !== false) for (const e of [root, ...root.querySelectorAll('*')]) { const p = getComputedStyle(e).position; if ((p === 'fixed' || p === 'sticky') && !e.classList.contains('formbar')) bad.push(`${name(e)} is position:${p}`); }
+  return { bad, max };
+}, { sc: scope, o: opts });
+const sizesOk = async (browser: any, scope: string, opts: { position?: boolean } = {}) => { await expect(browser.locator(scope).first()).toBeVisible(); const m = await measure(browser, scope, opts); console.log('SIZES', scope, JSON.stringify(m.max)); expect(m.bad).toEqual([]); };
+
 const made = { purchases: [] as string[], item: undefined as any, bank: '' as string, accounts: [] as { id: string; label: string }[], price: '' as string };
 
 async function setup() {
@@ -70,6 +117,7 @@ for (const lang of LANGS) {
       await expect(browser.locator('#cp-save')).toBeVisible();
       await expect(browser.locator('#branchId-btn')).toBeVisible();
       for (const gone of ['#categoryId-btn', '#cp-karat', '#cp-weight', '#f-code', '#f-pieceCode', '#f-price', '#f-tagPrice', '#f-weight']) await expect(browser.locator(gone)).toHaveCount(0);
+      await sizesOk(browser, '#cp');
       await shot(`returned-${lang}-1-form`);
 
       // 2. Nothing chosen: the item says required, nothing is sent
@@ -78,8 +126,11 @@ for (const lang of LANGS) {
       expect(seen.length).toBe(0);
 
       // 3. Branch (the Admin picks it), item, quantity 3: the preview follows the rule, to the piastre
-      await browser.locator('#branchId-btn').tap();
-      await screen.getByRole('option', 'Main branch').tap();
+      // a database with a single branch pre-selects it (tapping it again would clear it): pick only when it is not already chosen
+      if (!((await texts(browser, '#branchId-btn'))[0] ?? '').includes('Main branch')) {
+        await browser.locator('#branchId-btn').tap();
+        await screen.getByRole('option', 'Main branch').tap();
+      }
       await pickItem(browser, screen);
       await browser.locator('#f-quantity').fill('3');
       await expect(browser.locator('[data-preview=total]')).toBeVisible();
@@ -94,6 +145,7 @@ for (const lang of LANGS) {
       expect(await shown('cashbackPerGram')).toBe(money(q.cashbackPerGram));
       expect(await shown('onePiece')).toBe(money(one));
       await expect(browser.locator('[data-left]')).toHaveText(money(q.total));
+      await sizesOk(browser, '#cp');
       await shot(`returned-${lang}-2-preview`);
 
       // 4. Paying one piastre short is refused on the page (the sum box says what is due and what was typed), nothing is sent
@@ -124,6 +176,7 @@ for (const lang of LANGS) {
       expect(doc).toMatchObject({ quantity: 3, total: q.total, cash: q.total, bankPayments: [], itemId: made.item.id, branchId: MAIN_BRANCH });
       expect(doc.pieces.map((p: any) => p.code)).toEqual(codes);
       for (const c of codes) await expect(browser.locator(`[data-piece-code="${c}"] .copy-btn`)).toBeVisible();
+      await sizesOk(browser, '#cp-saved');
       await shot(`returned-${lang}-4-saved`);
 
       // 6. Print label: code, category, karat and weight; never the name, phone or any money
@@ -148,6 +201,7 @@ for (const lang of LANGS) {
       await screen.getByRole('option', made.accounts[0].label).tap();
       await browser.locator('#bm0').fill(plain(one1 - 10000));
       await expect(browser.locator('[data-left]')).toHaveText('0.00');
+      await sizesOk(browser, '#cp');
       await shot(`returned-${lang}-6-cash-and-bank`);
       await browser.locator('#cp-save').tap();
       await expect.poll(() => seen.length).toBe(2);
@@ -166,6 +220,7 @@ for (const lang of LANGS) {
       await browser.locator('#tbl tbody tr').first().tap();
       await expect(browser.locator('.sheet footer button.danger')).toHaveCount(1);
       await expect(browser.locator('.sheet footer button.danger')).toContainText(cp(lang, 'deletePurchase'));
+      await sizesOk(browser, '.sheet', { position: false });
       await shot(`returned-${lang}-8-record`);
       await browser.locator('.sheet footer button.danger').tap();
       await expect(browser.locator('dialog[open]')).toContainText(cp(lang, 'deletePurchaseTitle'));

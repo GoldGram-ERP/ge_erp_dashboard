@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Returned pieces are now bought at the buy price: pick the item and the quantity, pay in cash or by bank, and get the piece codes and their labels.",
+    "ar": "القطع المرتجعة بقت بتتشترى بسعر الشراء: اختار الصنف والعدد، وادفع كاش أو بنك، وهتاخد أكواد القطع وملصقاتها دلوقتي.",
+    "route": "/sales/returns"
+   }
+  ]
+ },
+ {
   "version": "1.0.22",
   "date": "2026-11-05",
   "changes": [

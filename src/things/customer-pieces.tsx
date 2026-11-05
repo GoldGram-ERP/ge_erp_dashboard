@@ -75,7 +75,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       title: (r) => `${cp("pieceTitle")} · ${r.code}`,
       endpoint: (r) => `/customer-pieces/${r.id}`,
       render: (r) => (
-        <>
+        <div className="bpr-rec">
           {r.deletedAt ? <div className="note warn">{cp("deleted")} · {dateTimeText(r.deletedAt)}</div> : null}
           <Section title={cp("pieceTitle")}>
             <Kv k={cp("code")}><Ltr>{r.code}</Ltr></Kv><Kv k={cp("category")}>{r.categoryName ?? "—"}</Kv><Kv k={cp("item")}>{r.itemName ?? "—"}</Kv>
@@ -84,7 +84,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
           <Section title={cp("customer")}>
             <Kv k={cp("customerName")}>{r.customerName}</Kv><Kv k={cp("customerPhone")}><Ltr>{r.customerPhone}</Ltr></Kv><Kv k={cp("createdAt")}><Ltr>{dateTimeText(r.createdAt)}</Ltr></Kv>
           </Section>
-        </>
+        </div>
       ),
       actions: [
         { id: "reprint", label: cp("reprint"), icon: "print", when: (r) => !r.deletedAt, run: (r) => reprint(r) },

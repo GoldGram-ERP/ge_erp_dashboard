@@ -152,7 +152,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   if (saved) {
     const pieces = (saved.pieces ?? []) as Row[];
     return (
-      <div className="card" id="cp-saved" role="status">
+      <div className="card bpr" id="cp-saved" role="status">
         <h3>{cp(tr, "saved", { number: code6(saved.documentNumber) })}</h3>
         <div className="kv"><span>{cp(tr, "purchaseNumber")}</span><span dir="ltr" data-doc-number>{code6(saved.documentNumber)}</span></div>
         <div className="kv"><span>{cp(tr, "item")}</span><span>{saved.itemName}</span></div>
@@ -181,10 +181,10 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   const left = total === null ? null : remainingToPay(total, v.cash, v.banks);
   const pv = preview.state === "ok" ? previewLines(preview.price) : null;
   return (
-    <form id="cp" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); save(); }}>
+    <form id="cp" className="bpr" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); save(); }}>
       {banner && <div className="note warn" role="alert" id="cp-alert">{banner}</div>}
       <div className="card">
-        <p className="help" style={{ marginTop: 0, marginBottom: 16 }}>{cp(tr, "intro")}</p>
+        <p className="help" style={{ marginTop: 0, marginBottom: 10 }}>{cp(tr, "intro")}</p>
         <div className="formgrid">
           {needsBranch && <div className="field" data-k="branchId"><label htmlFor="branchId">{cp(tr, "branch")} *</label>
             <Choice tr={tr} id="branchId" invalid={!!errs.branchId} options={branches} value={v.branchId ?? ""} onChange={(x) => set({ branchId: x })} />{err("branchId")}</div>}
