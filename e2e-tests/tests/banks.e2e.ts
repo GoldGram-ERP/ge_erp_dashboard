@@ -42,11 +42,11 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     await expect(browser.locator('#f-bankName-err')).toBeVisible();
     await shot(`banks-${lang}-4-bank-duplicate`);
     await browser.locator('#cancel, [data-close]').first().tap();
-    await browser.locator('dialog[open] button').last().tap(); // discard the unsaved form
+    await browser.locator('dialog[open] button.danger').tap(); // Leave (not Keep editing, the last button): discard the unsaved form
 
     // ---- bank edit
     await row(name).tap();
-    await browser.locator('[data-edit]').tap();
+    await screen.getByRole('button', W.edit[lang]).tap();
     await browser.locator('#f-bankName').fill(name2);
     await save();
     await expect.poll(() => sent('PATCH', `/banks/${bank.id}`).length).toBe(1);
@@ -76,7 +76,7 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     await expect(row(acc)).toBeVisible();
     await shot(`banks-${lang}-7-account-created`);
     await row(acc).tap();
-    await browser.locator('[data-edit]').tap();
+    await screen.getByRole('button', W.edit[lang]).tap();
     await browser.locator('#f-accountName').fill(acc2);
     await browser.locator('#f-commission').fill('');
     await save();

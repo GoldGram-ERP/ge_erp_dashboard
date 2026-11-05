@@ -17,6 +17,8 @@ for (const lang of ['en', 'ar'] as const) {
     await go('superadmin', '/sales/invoices?new=create', lang);
     await browser.locator('#ws [data-type=sale]').tap();
     // With several branches the form asks which one; with one it takes it.
+    // The branches load after the form opens, so wait for the picker or the piece box (shown once a branch is set), never check once.
+    await expect.poll(() => browser.evaluate(() => Boolean(document.querySelector('#ws [data-k=branchId] [role=combobox], #pc')))).toBe(true);
     if (await browser.evaluate(() => Boolean(document.querySelector('#ws [data-k=branchId] [role=combobox]')))) {
       await browser.locator('#ws [data-k=branchId] [role=combobox]').tap();
       await screen.getByRole('option', 'Main branch').tap();
@@ -32,8 +34,9 @@ for (const lang of ['en', 'ar'] as const) {
     await expect(browser.locator('#f-giftRecipientName')).toBeVisible();
     await expect(browser.locator('#gift')).toContainText(m('giftSwitch'));
     await shot(`gift-${lang}-1-switch-on`);
-    const tot = await browser.evaluate(() => (document.querySelector('#tot') as HTMLElement).innerText);
-    await browser.locator('#f-cash').fill((money(tot.match(/[\d,]+\.\d\d/)![0]) / 100).toFixed(2));
+    // The totals bar has six cells; the invoice total is the "with workmanship" one (data-cell=gross), not the first number.
+    const tot = await browser.evaluate(() => (document.querySelector('#tot [data-cell=gross] [data-summary]') as HTMLElement).innerText);
+    await browser.locator('#f-cash').fill((money(tot) / 100).toFixed(2));
     // A gift without a recipient is not sent.
     await browser.locator('#sec-save button[type=submit]').tap();
     await expect(browser.locator('#gift .err').first()).toBeVisible();
@@ -61,6 +64,8 @@ for (const lang of ['en', 'ar'] as const) {
     S.created.invoices.push(inv.body.id);
     await go('superadmin', '/sales/invoices', lang);
     await browser.locator('input[type=search], .search input').first().fill(buyer);
+    // The list filters a moment after typing: wait for it to narrow to this buyer, or the tap opens whichever row is first.
+    await expect(browser.locator('table tbody tr').first()).toContainText(buyer);
     await browser.locator('table tbody tr').first().tap();
     await expect(browser.locator('[data-gift]').first()).toBeVisible();
     await expect(browser.locator('body')).toContainText('Saved Recipient');
