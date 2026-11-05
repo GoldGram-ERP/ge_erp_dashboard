@@ -17,7 +17,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const allowDirty = args.includes("--allow-dirty");
 const version0 = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
-const out = resolve(args.find((a) => !a.startsWith("--")) ?? join(root, `app-${version0}.zip`));   // every zip carries its version; upload.sh stores it as app.zip on the host
+const out = resolve(args.find((a) => !a.startsWith("--")) ?? join(root, `ge-erp-dashboard-${version0}.zip`));   // every zip carries its version; upload.sh keeps the same name on the host: start-build archive_path is this exact file name
 
 const git = (args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 

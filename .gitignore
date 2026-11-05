@@ -43,4 +43,4 @@ next-env.d.ts
 app.zip
 .pack/
 .env.production.local
-app-*.zip
+ge-erp-dashboard-*.zip

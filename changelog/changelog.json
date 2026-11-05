@@ -1,5 +1,22 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Stock count: a live board under the scan box shows counted and remaining, with a breakdown by item, karat and category, and it updates as you scan.",
+    "ar": "الجرد: لوحة مباشرة تحت خانة المسح بتوريك اللي اتعدّ واللي لسه، وتفصيل بالصنف والعيار والتصنيف، وبتتحدّث وانت بتمسح.",
+    "route": "/stock/count"
+   },
+   {
+    "kind": "fixed",
+    "en": "Sales desk: reloading a saved draft opens that same draft, not an empty form.",
+    "ar": "مكتب المبيعات: لو عملت ريفريش لمسودة محفوظة بترجعلك نفس المسودة، مش نموذج فاضي.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.21",
   "date": "2026-11-05",
   "changes": [

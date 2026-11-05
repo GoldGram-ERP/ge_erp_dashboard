@@ -1,5 +1,5 @@
 // Dry build of the deploy archive: unzips it to a temp folder and runs the same install + build the host runs (npm ci, npm run build).
-//   node scripts/pack-check.mjs [app-<version>.zip]     (defaults to the zip for the package version)
+//   node scripts/pack-check.mjs [ge-erp-dashboard-<version>.zip]     (defaults to the zip for the package version)
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
-const zip = resolve(process.argv[2] ?? join(root, `app-${version}.zip`));
+const zip = resolve(process.argv[2] ?? join(root, `ge-erp-dashboard-${version}.zip`));
 if (!existsSync(zip)) { console.error(`No ${zip}. Run: npm run pack:hostinger`); process.exit(1); }
 
 const dir = mkdtempSync(join(tmpdir(), "pack-check-"));
