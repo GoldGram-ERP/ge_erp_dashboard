@@ -34,6 +34,37 @@ async function world() {
   return { api, tag, branch, admin, ring, chain, rings: await piecesOf(ring.id, 3), chains: await piecesOf(chain.id, 2) };
 }
 
+// Size and layout rules (owner, 2026-11-05; apple-design section 18): small calm controls on desktop AND phone, nothing pinned,
+// nothing wider than the screen, every part inside its section. Measured in the page, so a regression fails here, not in review.
+const AUDIT = `(() => {
+  const phone = innerWidth <= 520, ws = document.querySelector('#ws') || document.body, out = { phone, w: innerWidth, max: {}, bad: [] };
+  const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? r : null; };
+  const note = (k, e, v) => { out.max[k] = Math.max(out.max[k] || 0, Math.round(v)); };
+  const name = (e) => (e.id ? '#' + e.id : e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : ''));
+  for (const e of ws.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select, [role=combobox], .btn, .search, .seg button, .copy-btn')) { const r = vis(e); if (r && !e.closest('.search, .sel-btn') || (r && e.matches('.search'))) note(e.closest('.seg') ? 'segmented' : e.matches('.copy-btn') ? 'copyButton' : 'control', e, r.height); }
+  for (const e of ws.querySelectorAll('.btn, .search, .seg button, input:not([type=checkbox]):not([type=radio])')) { const r = vis(e); if (r && !e.closest('.search, .copy-btn') && !e.closest('dialog')) { const lim = e.matches('.seg button') ? 30 : (phone ? (e.matches('.btn.primary') ? 40 : 36) : 34); if (r.height > lim + 0.5) out.bad.push('height ' + name(e) + ' ' + Math.round(r.height) + ' > ' + lim); } }
+  for (const e of ws.querySelectorAll('.search')) { const r = vis(e); if (r && r.height > (phone ? 36 : 34) + 0.5) out.bad.push('height search ' + Math.round(r.height)); }
+  for (const e of ws.querySelectorAll('svg')) { const r = vis(e); if (!r) continue; note('icon', e, Math.max(r.width, r.height)); if (Math.max(r.width, r.height) > (phone ? 18 : 20) + 0.5) out.bad.push('icon ' + name(e.parentElement) + ' ' + Math.round(r.width)); }
+  for (const e of ws.querySelectorAll('.sc-live, .status')) { const r = vis(e); if (r) { note('badge', e, r.height); if (r.height > 22.5) out.bad.push('badge ' + name(e) + ' ' + Math.round(r.height)); } }
+  for (const e of ws.querySelectorAll('.sc-table tbody tr')) { const r = vis(e); if (r) { note('row', e, r.height); if (r.height > (phone ? 38 : 36) + 0.5) out.bad.push('row ' + Math.round(r.height)); } }
+  for (const e of ws.querySelectorAll('.sc-tile, .sc-last')) { const r = vis(e), c = getComputedStyle(e); if (r) { const pad = Math.max(parseFloat(c.paddingTop), parseFloat(c.paddingLeft)); note('cardPadding', e, pad); if (pad < 10 || pad > 16) out.bad.push('padding ' + name(e) + ' ' + pad); } }
+  if (document.documentElement.scrollWidth > innerWidth + 1) out.bad.push('page scrolls sideways ' + document.documentElement.scrollWidth + ' > ' + innerWidth);
+  for (const e of ws.querySelectorAll('*')) { if (e.closest('.sr-only, .thumb, svg')) continue; const p = getComputedStyle(e).position; if ((p === 'fixed' || p === 'sticky') && !e.matches('th') && !e.closest('#toast, .toast, dialog') && vis(e)) out.bad.push('pinned ' + name(e) + ' ' + p); }
+  for (const s of ws.querySelectorAll('#sc-summary, #sc-breakdown, #sc-pieces, #sc-last')) {
+    const sr = s.getBoundingClientRect();
+    if (sr.left < -1 || sr.right > innerWidth + 1) out.bad.push('section off screen ' + name(s));
+    for (const c of s.querySelectorAll('*')) { if (c.closest('table, svg, .sr-only, .seg') && !c.matches('.seg')) continue; const r = vis(c); if (r && (r.left < sr.left - 1 || r.right > sr.right + 1)) out.bad.push('outside ' + name(s) + ' > ' + name(c)); }
+    for (const t of s.querySelectorAll('.sc-table')) { const r = t.getBoundingClientRect(); if (r.right > sr.right + 1 || r.left < sr.left - 1) out.bad.push('table box outside ' + name(s)); }
+  }
+  return out;
+})()`;
+const audit = async (browser: { evaluate: (s: string) => Promise<unknown> }, label: string) => {
+  const r = (await browser.evaluate(AUDIT)) as { phone: boolean; w: number; max: Record<string, number>; bad: string[] };
+  console.log(`SIZES ${label} ${JSON.stringify(r.max)}`);
+  expect(r.bad, `${label} (${r.phone ? 'phone' : 'desktop'} ${r.w}px)`).toEqual([]);
+  return r;
+};
+
 const m = (l: Lang, k: string) => M(l, 'gold-stocktake', `stockCount.${k}`);
 
 for (const lang of ['en', 'ar'] as Lang[]) {
@@ -48,8 +79,9 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     const name = `SCL UI ${w.tag}`;
     await expect.poll(async () => {
       await browser.locator('#ws [data-k=branchId] [role=combobox]').tap();
-      if (!(await browser.evaluate(() => !!document.querySelector('[role=searchbox]')))) return false;   // the list is still loading
-      await browser.locator('[role=searchbox]').fill(name);
+      if (!(await browser.evaluate(() => !!document.querySelector('[role=listbox]')))) return false;   // the list is still loading
+      // A short list has no search box; a long one does.
+      if (await browser.evaluate(() => !!document.querySelector('[role=searchbox]'))) await browser.locator('[role=searchbox]').fill(name);
       const found = await browser.evaluate((n: string) => [...document.querySelectorAll('[role=option]')].some((o) => o.textContent?.includes(n)), name);
       if (!found) { await browser.keyboard.press('Escape'); return false; }
       await screen.getByRole('option', name).tap();
@@ -66,6 +98,7 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     expect(await text('#sc-sum-expected')).toContain('5');
     expect(await text('#sc-sum-remaining')).toContain('21.500');
     expect(await text('#sc-pct')).toContain('0');
+    await audit(browser, `${lang} 1-started`);
     await shot(`live-${lang}-1-started`);
 
     // A scan: the big last-scan card names the item, karat and weight; the summary moves at once.
@@ -76,6 +109,7 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     await expect.poll(() => text('#sc-sum-counted')).toContain('5.000');
     expect(await text('#sc-sum-remaining')).toContain('16.500');
     expect(await text('#sc-pct')).toContain('20');
+    await audit(browser, `${lang} 2-scanned`);
     await shot(`live-${lang}-2-scanned`);
 
     // The same piece again: already counted, when and by whom. An unknown code: refused, with the reason.
@@ -85,6 +119,7 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     await scan('NOPE0');
     await expect(browser.locator('#ws #sc-last.refused')).toBeVisible();
     await expect(browser.locator('#ws #sc-refused')).toBeVisible();
+    await audit(browser, `${lang} 3-refused`);
     await shot(`live-${lang}-3-refused`);
 
     // Live: a chain scanned on another device shows by itself (the board reads again every few seconds).
@@ -98,10 +133,12 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     await browser.locator('#ws #sc-bd-item').tap();
     expect(await text('#sc-bd-table')).toContain(`SCL Chain ${w.tag}`);
     await expect.poll(() => text('#sc-pl-table')).toContain(w.chains[0]);
+    await audit(browser, `${lang} 4-breakdown`);
     await shot(`live-${lang}-4-breakdown`);
     await browser.locator('#ws #sc-pl-remaining').tap();
     await expect.poll(() => text('#sc-pl-table')).toContain(w.rings[1]);
-    expect(await text('#sc-pl-table')).not.toContain(w.rings[0]);
+    expect(await browser.evaluate(() => [...document.querySelectorAll('#sc-pl-table tbody tr td:first-child')].map((c) => c.textContent?.trim()).join(' '))).not.toContain(w.rings[0]);   // by the code cell only: short codes also look like karats
+    await audit(browser, `${lang} 5-remaining`);
     await shot(`live-${lang}-5-remaining`);
 
     // Save: the confirmation lists what will be recorded as missing (3 pieces, 13.250 g) before it is confirmed.
@@ -109,6 +146,7 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     await expect(browser.locator('#sc-save-preview')).toBeVisible();
     expect(await text('#sc-save-preview')).toContain('13.250');
     expect(await text('#sc-save-preview')).toContain(`SCL Ring ${w.tag}`);
+    await audit(browser, `${lang} 6-save-confirm`);
     await shot(`live-${lang}-6-save-confirm`);
     await browser.locator('dialog[open] .btn.primary').tap();
 
@@ -118,6 +156,7 @@ for (const lang of ['en', 'ar'] as Lang[]) {
     expect(await text('#sc-sum-remaining')).toContain('13.250');
     await browser.locator('#ws #sc-pl-remaining').tap();
     await expect.poll(() => text('#sc-pl-table')).toContain(w.rings[2]);
+    await audit(browser, `${lang} 7-closed`);
     await shot(`live-${lang}-7-closed`);
   });
 }

@@ -951,3 +951,14 @@ div.table{display:block}
 .sc-preview-items{max-height:40vh;overflow:auto}
 @media (prefers-reduced-motion:reduce){.sc-bar span{transition:none}.sc-last{animation:sc-fade .2s ease}}
 @keyframes sc-fade{from{opacity:.4}to{opacity:1}}
+
+/* Stock count screen sizes (owner, 2026-11-05, apple-design section 18): small calm controls; the phone is at most 4 px taller, hit areas come from padding */
+#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:32px}
+#sc-code,.sc-search{padding-block:0}
+.sc-table td{height:36px;padding:0 12px}
+.sc-table th{height:28px;padding:0 12px}
+.sc-table table{border-spacing:0 3px}
+.sc-code .copy-btn{min-width:28px;height:28px;border-radius:8px}
+@media (max-width:520px){#sc-code,#sc-go,#sc-savebtn,#sc-del,#sc-camtoggle,#sc-retry,.sc-search{height:36px}}
+@media (pointer:coarse){.sc-code .copy-btn::before{content:"";position:absolute;inset:-8px}}
+@media (max-width:520px){.sc-tools .seg{max-width:100%}.sc-tools .seg button{padding:0 9px;font-size:12.5px}}

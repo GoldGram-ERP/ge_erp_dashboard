@@ -258,7 +258,7 @@ export function ScanFeedback({ last }: { last: LastScan }) {
   const p = last.piece;
   return (
     <div key={last.at} className={`sc-last ${last.kind}`} id="sc-last" role="status" aria-live="polite">
-      <Icon name={last.kind === "ok" ? "check" : "alert"} size={28} />
+      <Icon name={last.kind === "ok" ? "check" : "alert"} size={18} />
       <div>
         <span className="sc-last-k">{m("lastScan")} · {title}</span>
         <strong dir="ltr" className="sc-last-code">{last.code}</strong>
