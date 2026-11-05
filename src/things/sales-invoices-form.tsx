@@ -88,7 +88,8 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       try {
         let b = me?.branchId ?? "";
         if (!b && !isUser) b = (await api(`/users/${me!.id}`).catch(() => null))?.branchId ?? "";
-        if (!b && !isUser) { const all = await allPages("/branches"); setBranches(all); if (all.length === 1) b = all[0].id; else setPickBranch(true); }
+        // An Admin starts on their own branch and may pick another; the Super admin picks one (one branch: nothing to pick).
+        if (!isUser) { const all = await allPages("/branches"); setBranches(all); if (!b && all.length === 1) b = all[0].id; setPickBranch(all.length > 1); }
         setBranchId(b);
         if (b) setBranchName((await api(`/branches/${b}`)).branchName);
       } catch { /* the name only */ }

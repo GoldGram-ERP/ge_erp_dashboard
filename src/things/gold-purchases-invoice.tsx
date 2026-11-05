@@ -45,9 +45,9 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
   const c = (k: string) => t("common", k);
   const { data: me } = useMe();
   const editing = Boolean(row);
-  const picksBranch = !editing && !!me && me.userType !== "user" && !me.branchId;
+  const picksBranch = !editing && !!me && me.userType !== "user";   // an Admin starts on their own branch and may pick another; the Super admin picks one
   const [date, setDate] = useState(editing ? dateText(row!.date) : today());
-  const [branchId, setBranchId] = useState("");
+  const [branchId, setBranchId] = useState(me?.userType === "user" ? "" : (me?.branchId ?? ""));
   const [lines, setLines] = useState<Line[]>(editing ? (row!.lines as Row[]).map((l) => ({ itemId: l.itemId, label: itemLabel(l.itemCode, l.itemName), quantity: String(l.quantity), itemWeight: l.weight % l.quantity === 0 ? l.weight / l.quantity : null })) : [blank()]);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState("");
