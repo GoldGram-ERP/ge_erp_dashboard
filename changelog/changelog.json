@@ -7,6 +7,12 @@
     "en": "Piece labels now print a real, scannable QR code of the piece code, and the Arabic and English lines are no longer cut.",
     "ar": "ملصقات القطع بقت بتطبع QR حقيقي بيتقري بالسكانر لكود القطعة، والسطور العربي والإنجليزي مابقتش بتتقطع.",
     "route": "/buy/purchase-coding"
+   },
+   {
+    "kind": "better",
+    "en": "Purchases: the pieces list now shows the largest code first, so the newest pieces are on top.",
+    "ar": "المشتريات: سجل القطع بقى بيعرض الكود الأكبر الأول، يعني أحدث القطع فوق.",
+    "route": "/buy/purchases"
    }
   ]
  },
