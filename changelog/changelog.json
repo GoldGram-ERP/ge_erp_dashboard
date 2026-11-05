@@ -10,11 +10,6 @@
    },
    {
     "kind": "better",
-    "en": "Tables: the header row now stays at the top while you scroll the rows.",
-    "ar": "الجداول: صف العناوين بقى ثابت فوق وإنت بتنزل في الصفوف."
-   },
-   {
-    "kind": "better",
     "en": "Coding: every piece now shows the code it will get (74, 75, 76 ...), and the pieces are listed from the smallest code to the largest.",
     "ar": "التكويد: كل قطعة بقت بتظهر الكود اللي هتاخده (74 و75 و76 ...)، والقطع بتتعرض من الأصغر للأكبر.",
     "route": "/buy/purchases"
