@@ -6,6 +6,12 @@
     "kind": "better",
     "en": "Tables: the header row is no longer fixed, it scrolls away with the rows.",
     "ar": "الجداول: صف العناوين مبقاش ثابت، بيتحرك مع الصفوف وإنت بتنزل."
+   },
+   {
+    "kind": "fixed",
+    "en": "Filters on Gold stock (category, item) now load their lists again.",
+    "ar": "فلاتر المخزون (التصنيف والصنف) رجعت تحمّل قوايمها تاني.",
+    "route": "/sales/pieces"
    }
   ]
  },
