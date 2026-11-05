@@ -5,6 +5,7 @@ import { esc, latinNumber, milligramsText, piastresText, typedPiastres } from "@
 import type { Row } from "@/lib/engine-types";
 import type { Tr } from "@/lib/t";
 import { bankPaid, cashPaid, paymentErrors, sentBanks, type Bank } from "./sales-invoices-math";
+import { qrSvgText } from "@/lib/qr";
 
 export const TEXT_MAX = 100;
 export const QUANTITY_MAX = 100;
@@ -78,15 +79,14 @@ export type CustomerLabel = { pieceCode: string; categoryName: string | null; ka
 
 /** The label as HTML: code, category, karat and weight. Only these fields are read, so no price, name or phone can reach the paper.
  *  "tag" = one 50 x 12 mm label, "a4" = one 38.1 x 21.2 mm label at the top of an A4 sheet. */
-// shortcut: the symbol is a labelled box ("QR"), as on every other label of the dashboard; swap in a real QR drawing when a shared label module exists.
 export function customerLabelHtml(l: CustomerLabel, tr: Pick<Tr, "t">, layout: "tag" | "a4" = "tag"): string {
   const pc = (k: string, v?: Record<string, string>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
   const tag = layout === "tag";
   return `<div data-label data-label-kind="qr" style="width:${tag ? "50mm" : "38.1mm"};height:${tag ? "12mm" : "21.2mm"};display:flex;align-items:center;gap:1mm;overflow:hidden;background:#fff;color:#1c1912;font-size:7pt">`
-    + `<span data-qr style="flex:none;width:10mm;height:10mm;border:1px solid #1c1912;display:flex;align-items:center;justify-content:center;font-size:6pt;font-weight:700">QR</span>`
-    + `<span style="display:flex;flex-direction:column;min-width:0;flex:1;padding-inline-end:1mm;line-height:1.05">`
+    + qrSvgText(l.pieceCode)
+    + `<span style="display:flex;flex-direction:column;min-width:0;flex:1;padding-inline-end:1mm;line-height:1.3">`
     + `<span dir="ltr" data-label-code style="font-family:monospace;font-weight:700">${esc(l.pieceCode)}</span>`
-    + (l.categoryName ? `<span data-label-category style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.categoryName)}</span>` : "")
+    + (l.categoryName ? `<span data-label-category style="padding-block:0.15mm;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.categoryName)}</span>` : "")
     + `<span dir="ltr" style="white-space:nowrap">${esc(pc("karatValue", { karat: l.karat }))} · ${esc(milligramsText(l.weight))} ${esc(pc("gram"))}</span>`
     + `</span></div>`;
 }

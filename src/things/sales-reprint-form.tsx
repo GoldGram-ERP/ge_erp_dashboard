@@ -2,7 +2,7 @@
 // Reprint label (sales/pieces form): one piece code, or a range of numeric codes, a template and a layout.
 // POST /reprint-label (Idempotency-Key) records one "reprint" activity row and answers the labels; nothing else changes.
 // Ported from docs/nav-preview/app/things/sales-reprint-form.js. Labels as the dashboard prints them: "tag" = 50 x 12 mm per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm.
-// shortcut: the symbol is a labelled box ("QR" / "Code 128"), not a real bar/QR drawing (the preview had none either); swap in JsBarcode/qrcode when a shared label module exists.
+// The QR symbol is a real, scannable QR code of the piece code (src/lib/qr.ts); the Code 128 bars stay a labelled box (shortcut: draw them with JsBarcode when a barcode label is needed).
 import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
@@ -11,6 +11,7 @@ import { latinNumber, milligramsText, piastresText } from "@/lib/format";
 import { toast } from "@/components/engine";
 import { Button, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, pieceChoices, readPieceCode } from "./sales-form-parts";
+import { LabelQr } from "@/components/label-qr";
 
 const LAYOUT_KEY = "ge-erp.labelLayout";        // the layout chosen is remembered on this device
 const A4_PER_PAGE = 65;
@@ -20,18 +21,18 @@ function Label({ l, layout, gram, karatText }: { l: Row; layout: "tag" | "a4"; g
   const text = (
     <>
       <span dir="ltr" data-label-code style={{ fontFamily: "monospace", fontWeight: 700 }}>{l.pieceCode}</span>
-      {(l.itemName ?? l.categoryName) && <span data-label-item style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.itemName ?? l.categoryName}</span>}   {/* a returned customer piece prints its category (#4) */}
+      {(l.itemName ?? l.categoryName) && <span data-label-item style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingBlock: "0.15mm" }}>{l.itemName ?? l.categoryName}</span>}   {/* a returned customer piece prints its category (#4) */}
       <span dir="ltr" style={{ whiteSpace: "nowrap" }}>{karatText} · {milligramsText(l.weight)} {gram}</span>
       {l.tagPrice ? <span dir="ltr" style={{ fontWeight: 600 }}>{piastresText(l.tagPrice)}</span> : null}
     </>
   );
   const mark = qr
-    ? <span data-qr style={{ flex: "none", width: "10mm", height: "10mm", border: "1px solid #1c1912", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "6pt", fontWeight: 700 }}>QR</span>
+    ? <LabelQr value={l.pieceCode} />
     : <span data-bars style={{ display: "block", width: tag ? "40mm" : "34mm", height: tag ? "4mm" : "7mm", borderBlock: "1px solid #1c1912", textAlign: "center", fontSize: "5pt", lineHeight: tag ? "4mm" : "7mm" }}>Code 128</span>;
   return (
     <div data-label data-label-kind={l.labelKind} style={{ width: tag ? "50mm" : "38.1mm", height: tag ? "12mm" : "21.2mm", display: "flex", ...(qr ? { alignItems: "center", gap: "1mm" } : { flexDirection: "column", alignItems: "center", justifyContent: "center" }), overflow: "hidden", background: "#fff", color: "#1c1912", fontSize: "7pt", breakInside: "avoid", breakAfter: tag ? "page" : undefined, border: "1px dashed #cfc8b4" }}>
-      {qr ? <>{mark}<span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, paddingInlineEnd: "1mm", lineHeight: 1.05 }}>{text}</span></>
-        : <>{mark}<span style={{ display: "flex", flexWrap: "wrap", gap: "0 2mm", justifyContent: "center", lineHeight: 1.05 }}>{text}</span></>}
+      {qr ? <>{mark}<span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, paddingInlineEnd: "1mm", lineHeight: 1.3 }}>{text}</span></>
+        : <>{mark}<span style={{ display: "flex", flexWrap: "wrap", gap: "0 2mm", justifyContent: "center", lineHeight: 1.3 }}>{text}</span></>}
     </div>
   );
 }
