@@ -6,7 +6,7 @@ const ROUTES = ['/', '/account', ...NAV.flatMap((g) => g.items.map((i) => i.rout
 for (const lang of LANGS) {
   test(`every page opens for the superadmin (${lang})`, { tags: ['smoke'], requires: ['browser'] }, async ({ go, browser, shot }) => {
     await browser.addInitScript(`window.__errs=[];const oe=console.error;console.error=(...a)=>{window.__errs.push(a.map(String).join(' ').slice(0,300));oe(...a)};window.addEventListener('error',e=>window.__errs.push('uncaught '+e.message));`);
-    expect(ROUTES.length).toBe(28);
+    expect(ROUTES.length).toBe(25);   // Home + Account + 23 nav pages (Jobs hidden; Returned pieces is a tab of Returns)
     const problems: string[] = [];
     for (const r of ROUTES) {
       await go('superadmin', r, lang);
