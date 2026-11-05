@@ -7,6 +7,24 @@
     "route": "/whats-new",
     "en": "What's new: this page. For the Admin and the Super admin only: every version in plain words, where to see it in the system, and one tap to open the screen.",
     "ar": "المستجدات: هذه الصفحة. للمدير والمدير العام فقط: كل إصدار بكلام واضح، وأين تراه في النظام، وبضغطة واحدة تفتح الشاشة."
+   },
+   {
+    "kind": "new",
+    "en": "Sales desk: a sales agent saves a numbered draft (customer, pieces, planned payment), edits it until midnight, and copies a WhatsApp summary; an Admin opens it by number, scans the pieces and completes the invoice.",
+    "ar": "مكتب المبيعات: يحفظ مندوب المبيعات مسودة برقم (العميل والقطع والدفع المخطط)، ويعدّلها حتى منتصف الليل، وينسخ ملخص واتساب؛ ويفتحها المدير برقمها ويمسح القطع ويُتمّ الفاتورة.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "Items: cashback is per gram only, like workmanship.",
+    "ar": "الأصناف: الكاش باك بالجرام فقط، مثل المصنعية.",
+    "route": "/buy/items"
+   },
+   {
+    "kind": "new",
+    "en": "A What's new page in the menu for the Admin and the Super admin lists what changed in each version.",
+    "ar": "صفحة «الجديد» في القائمة للمدير والمدير العام تعرض ما تغيّر في كل إصدار.",
+    "route": "/whats-new"
    }
   ]
  },
