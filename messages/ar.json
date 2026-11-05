@@ -1571,16 +1571,30 @@
    "howLine": "({gold} + {making}) × {count} = {line}"
   },
   "prints": {
+   "name": "الاسم",
+   "mobile": "الموبايل",
+   "nationalId": "الرقم القومي",
+   "titleSub": "INVOICE",
+   "pricePerGram": "سعر الجرام",
+   "karatPrice": "سعر عيار {karat}",
+   "silverPrice": "سعر الفضة",
+   "totalInWords": "الإجمالي كتابة",
+   "onlyPrefix": "فقط وقدره",
+   "onlySuffix": "لا غير",
+   "paymentMethod": "طريقة الدفع",
+   "receiver": "المستلم",
+   "sellerCode": "البائع / الكود",
+   "stamp": "ختم الشركة",
    "buttonsLabel": "طباعة الفاتورة",
    "layouts": {
-    "a4": "طباعة A4",
+    "a4": "طباعة الفاتورة (A5)",
     "thermal": "طباعة حرارية",
     "receipt": "طباعة إيصال",
     "gift": "طباعة هدية",
     "star": "طباعة نجوم"
    },
    "sizes": {
-    "a4": "A4",
+    "a4": "A5",
     "thermal": "80 مم",
     "receipt": "80 مم"
    },
