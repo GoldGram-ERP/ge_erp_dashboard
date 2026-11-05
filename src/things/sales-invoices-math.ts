@@ -1,7 +1,7 @@
-// The sums of the new sales invoice, pure and exact: money is whole piastres, never a float.
-// Same rules as the dashboard's sales-invoice-form.tsx and bank-payment-rows.tsx; the backend recomputes
-// everything on Save (these numbers only guide the typing).
+// The sums of the money forms, pure and exact: money is whole piastres, never a float.
+// The backend recomputes everything on Save (these numbers only guide the typing).
 import { latinNumber, typedPiastres } from "@/lib/format";
+import { onePiece } from "./item-math";
 
 export type Bank = { bankAccountId: string; amount: string };
 
@@ -38,13 +38,15 @@ export function readDiscount(kind: string, typed: unknown, base: number): { inva
 export const bankPaid = (rows: Bank[]) => sum(rows.map((r) => typedPiastres(String(r.amount ?? "").trim()) ?? 0));
 export const cashPaid = (typed: unknown) => typedPiastres(String(typed ?? "").trim()) ?? 0;
 
-// lines: [{linePrice}] ; discount: piastres taken off ; made: the reservation (its totals rule) ; cash: typed text ; banks: rows
+// The totals bar (owner, 2026-11-05): without workmanship (gold), workmanship, with workmanship (gross), cash discount, paid, remaining.
+// lines: [{linePrice, goldValue}] ; discount: piastres taken off the workmanship ; made: the reservation an invoice fills (its totals rule) ;
+// cash: typed text ; banks: rows. making = gross - gold exactly, so the three always add up; makingLeft is the workmanship after the discount.
 export function totalsOf({ lines, discount, made, cash, banks }: { lines: any[]; discount: number; made?: any; cash: string; banks: Bank[] }) {
-  // The deployed reservation sends totals.total (sum of its line prices) and no grossTotal / discount: fall back to those.
-  const gross = made ? (made.totals.grossTotal ?? made.totals.total) : sum(lines.map((l) => l.linePrice));
+  const gross = made ? made.totals.grossTotal : sum(lines.map((l) => l.linePrice));
+  const gold = made ? made.totals.goldTotal : sum(lines.map((l) => l.goldValue));
   const total = gross - discount;
   const paid = (made?.totals.paid ?? 0) + cashPaid(cash) + bankPaid(banks);
-  return { gross, discount, total, paid, left: total - paid };
+  return { gold, making: gross - gold, gross, discount, makingLeft: gross - gold - discount, total, paid, left: total - paid };
 }
 
 // One row of bank payment: nothing typed = not sent; half a row needs the other half; an account once.
@@ -61,11 +63,44 @@ export function bankRowErrors(rows: Bank[]) {
   });
 }
 
-// What the backend takes: the filled rows only, amounts as piastres.
-export const sentBanks = (rows: Bank[]) => rows.flatMap((r) => (r.bankAccountId && String(r.amount ?? "").trim() !== "" ? [{ bankAccountId: r.bankAccountId, amount: typedPiastres(String(r.amount).trim()) }] : []));
+// The whole payment block (cash box + bank rows), checked as the backend checks it.
+// -> { [key]: fieldErrors key } with keys "cash", "bank<i>Account", "bank<i>Amount", "sum".
+// need: "any" = cash and banks together above 0 (expense, refund, return); "none" = may be all empty (sale, reservation: the total decides).
+export function paymentErrors(cash: string, banks: Bank[], need: "any" | "none" = "none"): Record<string, string> {
+  const e: Record<string, string> = {}, text = String(cash ?? "").trim();
+  if (text !== "") { const c = typedPiastres(text); if (c === undefined || c <= 0 || c > MAX_PIASTRES) e.cash = "invalid"; }
+  bankRowErrors(banks).forEach((r, i) => { if (r.account) e[`bank${i}Account`] = r.account; if (r.amount) e[`bank${i}Amount`] = r.amount; });
+  const total = cashPaid(cash) + bankPaid(banks);
+  if (!Object.keys(e).length) {
+    if (need === "any" && total === 0) e.sum = "required";
+    else if (total > MAX_PIASTRES) e.sum = "invalid";
+  }
+  return e;
+}
 
-// The backend counts only the filled rows: its "bankPayments.N.x" is the Nth filled row of the form.
+// What the backend takes: the filled rows only, amounts as piastres.
+const filled = (r: Bank) => Boolean(r.bankAccountId) && String(r.amount ?? "").trim() !== "";
+export const sentBanks = (rows: Bank[]) => rows.flatMap((r) => (filled(r) ? [{ bankAccountId: r.bankAccountId, amount: typedPiastres(String(r.amount).trim()) }] : []));
+
+// The backend counts only the rows sent: its "bankPayments.N.x" is the Nth sent row of the form.
 export function formRowOfRefusal(rows: Bank[], n: number) {
-  const filled = rows.flatMap((r, i): number[] => (r.bankAccountId ? [i] : []));
-  return filled[n] ?? 0;
+  const sent = rows.flatMap((r, i): number[] => (filled(r) ? [i] : []));
+  return sent[n] ?? 0;
+}
+
+// A backend refusal of the payment block -> the key of the box it belongs under (see paymentErrors), or undefined when not ours.
+// cashField: "cash" (sale, reservation, expense, refund) or "cashRefund" (return).
+export function paymentKeyOf(field: string, rows: Bank[], cashField = "cash"): string | undefined {
+  if (field === cashField) return "cash";
+  if (field === "bankPayments") return "sum";
+  const row = /^bankPayments\.(\d+)\.(bankAccountId|amount)$/.exec(field);
+  return row ? `bank${formRowOfRefusal(rows, +row[1])}${row[2] === "amount" ? "Amount" : "Account"}` : undefined;
+}
+
+// The one price of Sales and Reservation (owner, 2026-11-05): ((karat price + workmanship per gram) x weight) x count.
+// The gold and the workmanship of ONE piece are each half up to the piastre, then times the count (backend livePriceOf).
+// perGram and workPerGram in piastres per gram, weightMg in milligrams.
+export function linePriceOf(perGram: bigint, weightMg: bigint, workPerGram: bigint, count: number) {
+  const one = onePiece(perGram, weightMg, "per_gram", workPerGram), n = BigInt(count);
+  return { pieceGold: one.gold, pieceMaking: one.charge, piece: one.total, gold: one.gold * n, making: one.charge * n, line: one.total * n };
 }
