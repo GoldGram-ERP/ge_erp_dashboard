@@ -15,6 +15,8 @@ import { SearchPalette, SidebarSearch } from "./search-palette";
 import { DASHBOARD_VERSION } from "@/version";
 
 const JOBS_ITEMS = [["", "jobsHome"], ["questions", "jobsQuestions"], ["todo", "jobsTodo"]] as const;
+// The Jobs tab is hidden from the sidebar until its bugs are sorted out (owner, 2026-11-05). Only the tab: the pages, the job bar and the search keep working. Set to true to show it again.
+const SHOW_JOBS_TAB = false;
 const narrow = () => matchMedia("(max-width:900px)").matches;
 
 export function Shell({ initialMe, children }: { initialMe: Me; children: ReactNode }) {
@@ -87,7 +89,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const isActive = (route: string) => pathname === route || pathname.startsWith(route + "/");
   const jobsActive = pathname === "/jobs" || pathname.startsWith("/jobs/");
   const open = (id: string) => ui.openGroups.includes(id);
-  const allIds = [...groups.map((g) => g.id), "jobs"];
+  const allIds = [...groups.map((g) => g.id), ...(SHOW_JOBS_TAB ? ["jobs"] : [])];
   const allOpen = allIds.every(open);
   const toggleLabel = `${ui.collapsed && !drawer ? t("app.expand") : t("app.collapse")} (Ctrl+B)`;
   const locale = useLocale();
@@ -132,8 +134,8 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           {section("pins", "pin", t("nav.pinned"), pins.some((p) => p && isActive(p.route)), open("pins"),
             pins.length ? pins.map((p) => p && row(p)) : <li className="hint">{t("app.pinHint")}</li>)}
           {groups.map((g) => section(g.id, g.icon, t(`nav.group.${g.id}`), g.items.some((i) => isActive(i.route)), open(g.id), g.items.map(row)))}
-          <div className="divider" />
-          {section("jobs", "jobs", t("nav.jobs"), jobsActive, jobsActive || open("jobs"), JOBS_ITEMS.map(([view, key]) => {
+          {SHOW_JOBS_TAB && <div className="divider" />}
+          {SHOW_JOBS_TAB && section("jobs", "jobs", t("nav.jobs"), jobsActive, jobsActive || open("jobs"), JOBS_ITEMS.map(([view, key]) => {
             const href = view ? `/jobs/${view}` : "/jobs";
             const current = view ? pathname === href : pathname === "/jobs";
             return <li key={key}><Link className="thing" href={href} aria-current={current ? "page" : undefined}>{t(`nav.${key}`)}{view === "todo" && todo.count ? <span className="dot">{todo.count}</span> : null}</Link></li>;
