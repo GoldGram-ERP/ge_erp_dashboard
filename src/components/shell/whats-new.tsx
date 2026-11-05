@@ -42,7 +42,7 @@ export function WhatsNewView() {
                 const place = where(c);
                 return (
                   <li className="wn-change" key={j} data-kind={c.kind}>
-                    <span className={`wn-kind ${c.kind}`}>{w(`kind.${c.kind}`)}</span>
+                    <span className={`wn-kind wn-k-${c.kind}`}>{w(`kind.${c.kind}`)}</span>
                     <div className="wn-text">
                       <p>{c[lang]}</p>
                       {place && <div className="wn-where"><span>{w("where")}: <b>{place}</b></span>{c.route ? <Link className="btn quiet sm" href={c.route}>{w("open")}</Link> : null}</div>}
