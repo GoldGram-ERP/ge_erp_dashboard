@@ -9,6 +9,13 @@ export const NAV: NavGroup[] = [
   "icon": "sales",
   "items": [
    {
+    "id": "sales-desk",
+    "route": "/sales/desk",
+    "screens": [
+     "gold-sales/sales-desk"
+    ]
+   },
+   {
     "id": "invoices",
     "route": "/sales/invoices",
     "screens": [

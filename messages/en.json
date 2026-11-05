@@ -689,7 +689,9 @@
    "notToday": "The invoice date must be today.",
    "duplicateItem": "This item is already on another line.",
    "duplicateAccount": "This bank account is already on another row.",
-   "duplicatePiece": "This piece is already on another line."
+   "duplicatePiece": "This piece is already on another line.",
+   "inactive": "This item is not active",
+   "incomplete": "This item has no weight or workmanship: complete it on the Items screen"
   },
   "view": "View",
   "print": "Print",
@@ -871,7 +873,11 @@
   "itemInactive": "Not coded: {itemName} is inactive or missing its weight, workmanship or cashback. Fix it on the Items screen, then code again.",
   "lineWeightChanged": "Not coded: {itemName} now weighs a different amount than when this invoice line was saved. Edit and save the purchase invoice again so it takes the item weight, then code it.",
   "incomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
-  "aboveMakingCharge": "The cash discount cannot be more than the workmanship."
+  "aboveMakingCharge": "The cash discount cannot be more than the workmanship.",
+  "draftLocked": "Not saved: this draft was made on {day} and is locked. Only Delete remains.",
+  "draftCompleted": "This draft is already completed. It cannot be edited, deleted or completed again.",
+  "draftItemsMismatch": "The scanned pieces do not match the draft's items and counts. Check the table and scan again.",
+  "salesDraftNotFound": "This draft was not found."
  },
  "expenses": {
   "expenseTypes": {
@@ -1298,7 +1304,6 @@
    "gram": "g",
    "pieceNumber": "Piece {number}",
    "codeAuto": "Given by the system",
-
    "moreUnits": "+ {count} more pieces, each with the same weight and workmanship. Codes are given when you save.",
    "pieceCode": "Code",
    "weight": "Weight (g)",
@@ -1391,7 +1396,6 @@
    "findHelp": "A customer phone shows their latest 20 pieces.",
    "findInvalid": "Type the piece code or the customer phone in digits.",
    "findRun": "Find",
-   "branch": "Branch",
    "code": "Code",
    "createdAt": "Entered",
    "pieceTitle": "Returned piece",
@@ -1948,6 +1952,89 @@
     "karat": "Karat",
     "count": "Count",
     "weight": "Weight"
+   }
+  },
+  "salesDesk": {
+   "title": "Sales desk",
+   "intro": "Save the customer's order as a numbered draft and edit it until midnight. An Admin opens it, scans the real pieces and creates the invoice.",
+   "ownOnly": "You see only your own drafts here.",
+   "newDraft": "New draft",
+   "list": "Drafts",
+   "search": "Search by draft number, customer name or phone",
+   "openByNumber": "Open a draft by its number",
+   "openGo": "Open",
+   "empty": "There are no drafts.",
+   "draftNumber": "Draft number {number}",
+   "draftNumberShort": "Draft number",
+   "numbersPerBranch": "Draft numbers count per branch, so a gap in the numbers is normal.",
+   "status": {
+    "open": "Open",
+    "completed": "Completed",
+    "deleted": "Deleted"
+   },
+   "type": "Type",
+   "typeSale": "Sale",
+   "typeDelivery": "Delivery",
+   "branch": "Branch",
+   "branchHelp": "Your draft is saved on your branch.",
+   "customerName": "Customer name",
+   "customerPhone": "Customer phone",
+   "phoneHelp": "8 to 15 digits; Arabic digits are accepted.",
+   "nationalId": "National ID",
+   "nationalIdHelp": "Optional: 14 digits.",
+   "pieces": "Pieces",
+   "item": "Item",
+   "itemHelp": "Only active, complete items are listed.",
+   "count": "Count",
+   "addLine": "Add an item",
+   "removeLine": "Remove the line",
+   "linePrice": "Price",
+   "priceBySystem": "The system works out the price; it is never typed.",
+   "goldPriceToday": "Gold price (karat 21) from Gold prices: {price}",
+   "plannedPayment": "Planned payment",
+   "plannedHelp": "It moves no money and no stock. The real payment is taken when the invoice is completed.",
+   "discount": "Cash discount on the workmanship",
+   "saveDraft": "Save the draft",
+   "saveChanges": "Save the changes",
+   "saved": "Draft number {number} saved",
+   "lock": {
+    "editable": "You can edit this draft until midnight tonight (Cairo time).",
+    "locked": "Locked",
+    "reason": "This draft was made on {day}. A draft can be edited only until midnight (Cairo time) of the day it was made. Only Delete remains.",
+    "completed": "This draft is completed and became an invoice, so it cannot be edited.",
+    "deleted": "This draft is deleted."
+   },
+   "delete": "Delete the draft",
+   "deleteAsk": "Delete draft number {number}? Afterwards only the Super admin can see it.",
+   "deleted": "Draft number {number} deleted",
+   "complete": "Complete the invoice",
+   "completeIntro": "Scan the real pieces, take the payment, then press Complete. The sales invoice is created once only.",
+   "scan": "Scan a piece code",
+   "scanHelp": "Use the hand scanner then Enter, or the camera button.",
+   "scanned": "{scanned} of {total} pieces scanned",
+   "completed": "Sales invoice number {number} created",
+   "invoiceNumber": "Sales invoice number {number}",
+   "invoiceNoAccess": "You are not allowed to open the invoice from here.",
+   "mismatchRow": "{item} (karat {karat}): needed {expected}, scanned {scanned}",
+   "totalChanged": "The gold price changed since the draft was saved, so the invoice total is now {total}.",
+   "wa": {
+    "title": "WhatsApp summary",
+    "copy": "Copy the summary",
+    "copied": "Copied",
+    "help": "Copies the order details for the customer. The seller's name is never in it.",
+    "date": "Date",
+    "branch": "Branch",
+    "customer": "Customer",
+    "phone": "Phone",
+    "nationalId": "National ID",
+    "pieces": "Pieces",
+    "piece": "{count} × {item}, karat {karat}, {weight} g, price {price}",
+    "goldPrice": "Gold price, karat 21",
+    "discount": "Discount",
+    "total": "Total",
+    "payment": "Payment methods",
+    "cash": "Cash",
+    "bank": "Bank account"
    }
   }
  },
@@ -2738,7 +2825,8 @@
    "settings": "Settings",
    "accounts": "Accounts and sessions",
    "security": "Security and data",
-   "returned-pieces": "Returned pieces (not from us)"
+   "returned-pieces": "Returned pieces (not from us)",
+   "sales-desk": "Sales desk"
   }
  },
  "app": {
