@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
-import { latinNumber, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
+import { latinNumber, milligramsText, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
@@ -17,7 +17,8 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { PaymentBlock, TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { PieceScanner } from "./piece-scanner";
 import { LINES_MAX, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
-import { buildWhatsappText, type WaLabels } from "./sales-desk-whatsapp";
+import { buildDeskMessage } from "./sales-desk-whatsapp";
+import { DISCOUNTS, PAYMENT_NAMES, karatFits, manualPrice, messageInput, paymentChoices, quoteBody, secondChoices, splitProblem, type Metal, type Operation, type Payment, type Quote, type Wrapping } from "./sales-desk-quote";
 
 const INVOICES_KEY = "gold-sales/sales-invoices";
 const blank = (): DeskLine => ({ itemId: "", count: "1" });
@@ -40,6 +41,22 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [branches, setBranches] = useState<Row[]>([]);
   const [price, setPrice] = useState<Row | null | undefined>(undefined);
   const [type, setType] = useState("sale");
+  const [operation, setOperation] = useState<Operation>("sell");
+  const [metal, setMetal] = useState<Metal>("gold");
+  const [wrapping, setWrapping] = useState<Wrapping>("wrapped");
+  const [payment, setPayment] = useState<Payment>("cash");
+  const [payment2, setPayment2] = useState<Payment | "">("");
+  const [split, setSplit] = useState("");
+  const [pct, setPct] = useState(0);
+  const [manual, setManual] = useState({ sell: "", buy: "" });
+  const [sellers, setSellers] = useState<Row[]>([]);
+  const [sellerId, setSellerId] = useState("");
+  const [ownBranch, setOwnBranch] = useState("");
+  const [quote, setQuote] = useState<{ q: Quote; cash: Quote | null } | null>(null);
+  const [quoteMsg, setQuoteMsg] = useState("");
+  const [lineMsg, setLineMsg] = useState<Record<string, string>>({});
+  const [readAt, setReadAt] = useState("");
+  const [tick, setTick] = useState(0);
   const [branchId, setBranchId] = useState("");
   const [cust, setCust] = useState({ customerName: "", customerPhone: "", nationalId: "" });
   const [lines, setLines] = useState<DeskLine[]>([blank()]);
@@ -89,16 +106,53 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         setLoaded(true);
       } else if (me?.branchId) setBranchId(me.branchId);
     })();
-    latestPrice(today()).then(setPrice).catch(() => setPrice(undefined));
+    if (me?.branchId) api(`/branches/${me.branchId}`).then((b: Row) => setOwnBranch(b.branchName)).catch(() => {});
+    if (me && !isUser) allPages("/users").then(setSellers).catch(() => {});
+    readPrice();
   }, [me?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The list price: read now, then every 15 s while the tab is visible ("read a new price now" forces it); a new read re-quotes.
+  function readPrice() {
+    latestPrice(today()).then((p) => { setPrice(p); setReadAt(new Date().toLocaleTimeString(tr.locale)); setTick((n) => n + 1); }).catch(() => setPrice(undefined));
+  }
+  useEffect(() => {
+    const id = setInterval(() => { if (!document.hidden) readPrice(); }, 15000);
+    return () => clearInterval(id);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The price of everything on the screen is the backend's quote (debounced); nothing is worked out here.
+  const form = { operation, metal, payment, discountPercent: pct, manualSell: manual.sell, manualBuy: manual.buy, wrapping, lines };
+  const body = quoteBody(form);
+  const quoteKey = `${JSON.stringify(body)}|${tick}`;
+  useEffect(() => {
+    setLineMsg({});
+    if (!body) { setQuote(null); setQuoteMsg(""); return; }
+    let live = true;
+    const h = setTimeout(async () => {
+      try {
+        const ask = (b: unknown) => api<Quote>("/sales-desk/quote", { method: "POST", body: b });
+        const [q, cash] = await Promise.all([ask(body), operation === "sell" && payment === "visa" ? ask({ ...body, payment: "cash" }) : null]);
+        if (live) { setQuote({ q, cash }); setQuoteMsg(""); }
+      } catch (err) {
+        if (!live) return;
+        setQuote(null);
+        if (!(err instanceof ApiFailure)) { setQuoteMsg(L("تعذر حساب السعر. حاول مرة أخرى.", "Could not work out the price. Try again.")); return; }
+        const texts = backendFieldErrors(err.error, tr), lm: Record<string, string> = {};
+        let msg = "";
+        for (const [f, text] of Object.entries(texts)) { const r = /^lines\.(\d+)\.itemId$/.exec(f); if (r) lm[r[1]] = text; else msg = text; }
+        setLineMsg(lm);
+        setQuoteMsg(msg || (Object.keys(lm).length ? "" : tr.errorText(err.error)));
+      }
+    }, 150);
+    return () => { live = false; clearTimeout(h); };
+  }, [quoteKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const note = draft ? lockNote(draft as never, tr) : null;
   const readonly = Boolean(draft && note && note.state !== "editable");
   const isNew = !draft;
-  const itemOptions: [string, string][] = items.map((x) => [x.id, `${x.itemName} · ${x.karat ?? ""}`]);
+  const itemOptions: [string, string][] = items.filter((x) => karatFits(metal, String(x.karat))).map((x) => [x.id, `${x.itemName} · ${x.karat ?? ""}`]);
   // an item already on the draft stays visible even if it was switched off since
   for (const l of draft?.lines ?? []) if (!itemOptions.some(([id]) => id === l.itemId)) itemOptions.push([l.itemId, `${l.itemName} · ${l.karat}`]);
-  const bankNames = Object.fromEntries(accounts.map((a) => [a.id, a.accountName as string]));
   const total = draft?.totals?.total ?? 0;
   const against = plannedAgainst(total, cash, banks);
   const dsc = may ? readDiscount(kind, disc, Number.MAX_SAFE_INTEGER / 4) : { invalid: false, value: 0, tooBig: false, sent: undefined };
@@ -215,8 +269,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   if (!loaded) return <p className="help" role="status">{t("common", "loading")}</p>;
   if (gone) return <div className="note warn" role="alert">{tr.errorText({ message: "salesDraftNotFound" })}</div>;
 
-  const wa: WaLabels = { date: d("wa.date"), branch: d("wa.branch"), customer: d("wa.customer"), phone: d("wa.phone"), nationalId: d("wa.nationalId"), pieces: d("wa.pieces"), piece: d("wa.piece", { count: "{count}", item: "{item}", karat: "{karat}", weight: "{weight}", price: "{price}" }), goldPrice: d("wa.goldPrice"), discount: d("wa.discount"), total: d("wa.total"), payment: d("wa.payment"), cash: d("wa.cash"), bank: d("wa.bank") };
-  const waText = draft ? buildWhatsappText({ ...draft, customerName: cust.customerName.trim() || draft.customerName, customerPhone: latinNumber(cust.customerPhone.trim()) || draft.customerPhone, nationalId: cust.nationalId.trim() ? latinNumber(cust.nationalId.trim()) : null } as never, wa, tr.locale, bankNames) : "";
+  const branchLabel = draft?.branchName ?? (isUser ? ownBranch : branches.find((b) => b.id === branchId)?.branchName) ?? "";
+  const sellerName = draft?.employeeName ?? (isUser ? me?.name : (([u]) => u && ([u.firstName, u.familyName].filter(Boolean).join(" ") || u.username))(sellers.filter((x) => x.id === sellerId)) ?? me?.name) ?? "";
+  const second = payment2 ? payment2 : undefined;
+  const splitErr = second && quote ? splitProblem(split, quote.q.totalPiastres) : "";
+  const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), payment2: second, split })) : "";
+  const typedManual = manualPrice(operation === "sell" ? manual.sell : manual.buy);
+  const buy = operation === "buy";
+  const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
   const canComplete = !isUser && draft?.status === "open";
@@ -224,7 +284,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 
   return (
-    <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }} style={{ maxWidth: 760 }}>
+    <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }}>
       {dialog}
       <div id="banners">{general && <div className="note warn" role="alert"><b>{general}</b></div>}</div>
 
@@ -242,45 +302,69 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         <div className="kv"><span>{d("goldPriceToday", { price: "" }).replace(/:\s*$/, "")}</span><span dir="ltr">{draft ? piastresText(draft.goldPrice21k) : price ? piastresText(price.sellPrice) : price === null ? d("goldNone") : ""}</span></div>
       </div>
 
-      <fieldset disabled={readonly || saving} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-        <div className="card" id="sec-customer"><h3>{sg(tr, "customer")}</h3>
-          <div className="field"><span className="flabel" id="sd-type-l">{d("typeLabel")}</span>
+      <div className="desk-cols">
+      <fieldset disabled={readonly || saving} className="desk-col">
+        <div className="card" id="sec-customer"><h3>{d("desk.operationData")}</h3>
+          <div className="field"><span className="flabel" id="sd-op-l">{d("desk.operation")}</span>
+            <Seg label={d("desk.operation")} attrs={{ "aria-labelledby": "sd-op-l" }} value={operation}
+              onChange={(k) => pick(() => { setOperation(k); setPayment("cash"); setPayment2(""); setSplit(""); setPct(0); setType("sale"); })}
+              items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} /></div>
+          <div className="field"><span className="flabel" id="sd-metal-l">{d("desk.metal")}</span>
+            <Seg label={d("desk.metal")} attrs={{ "aria-labelledby": "sd-metal-l" }} value={metal}
+              onChange={(k) => pick(() => { setMetal(k); setLines([blank()]); })}
+              items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} /></div>
+          {!buy && <div className="field"><span className="flabel" id="sd-type-l">{d("typeLabel")}</span>
             <Seg label={d("typeLabel")} attrs={{ "aria-labelledby": "sd-type-l" }} value={type} onChange={(k) => { touch(); setType(k); }}
-              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} /></div>
-          {isNew && !isUser && <div className="field" data-k="branchId" style={{ marginTop: 12 }}><label htmlFor="branchId">{d("branch")}</label>
+              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} /></div>}
+          {isNew && !isUser && <div className="field" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
             <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>}
-          {isNew && isUser && <div className="help" style={{ marginTop: 8 }}>{d("branchHelp")}</div>}
-          <div className="formgrid" style={{ marginTop: 12 }}>
+          {isNew && isUser && <div className="help">{d("branchHelp")}</div>}
+          {isUser || draft
+            ? <div className="kv" data-seller><span>{d("desk.seller")}</span><span>{sellerName}</span></div>
+            : <div className="field"><label htmlFor="sellerId">{d("desk.seller")}</label>
+              <Choice tr={tr} id="sellerId" options={sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])} value={sellerId} onChange={(v) => setSellerId(v)} /></div>}
+          <div className="formgrid">
             <TextBox name="customerPhone" label={`${d("customerPhone")} *`} value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
             <TextBox name="customerName" label={`${d("customerName")} *`} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
             <TextBox name="nationalId" label={d("nationalId")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
           </div>
+          <div className="field"><span className="flabel" id="sd-pay-l">{d("desk.payment")}</span>
+            <Seg label={d("desk.payment")} attrs={{ "aria-labelledby": "sd-pay-l" }} value={payment}
+              onChange={(k) => pick(() => { setPayment(k); if (k === "visa" || k === payment2) { setPayment2(""); setSplit(""); } })}
+              items={paymentChoices(operation).map((k) => ({ id: k, label: d(`desk.pay.${k}`), attrs: { "data-pay": k } }))} /></div>
+          {secondChoices(operation, payment).length > 0 && <div className="field"><label htmlFor="payment2">{d("desk.payment2")}</label>
+            <Choice tr={tr} id="payment2" searchable={false} placeholder={d("desk.none")} options={secondChoices(operation, payment).map((k) => [k, d(`desk.pay.${k}`)])} value={payment2} onChange={(v) => pick(() => setPayment2(v as Payment | ""))} /></div>}
+          {second && <TextBox name="splitAmount" label={d("desk.split", { method: d(`desk.pay.${payment}`) })} value={split} ltr maxLength={14}
+            error={splitErr ? d(`desk.splitErr.${splitErr}`) : undefined} onChange={(v) => { touch(); setSplit(v); }} />}
+          {!buy && <div className="field"><span className="flabel" id="sd-disc-l">{d("desk.discountPercent")}</span>
+            <Seg label={d("desk.discountPercent")} attrs={{ "aria-labelledby": "sd-disc-l" }} value={String(pct)} onChange={(k) => pick(() => setPct(Number(k)))}
+              items={DISCOUNTS.map((n) => ({ id: String(n), label: n === 0 ? d("desk.none") : `${n}%`, attrs: { "data-disc": String(n) } }))} /></div>}
         </div>
+      </fieldset>
 
+      <fieldset disabled={readonly || saving} className="desk-col">
         <div className="card" id="sec-items"><h3>{d("pieces")}</h3><div className="help">{d("itemHelp")}</div>
-          {dirty && !isNew && <div className="help" role="status">{d("pricesStale")}</div>}
-          <div id="lineRows" style={{ marginTop: 10 }}>
+          {metal === "silver" && <div className="field"><span className="flabel" id="sd-wrap-l">{d("desk.wrapping")}</span>
+            <Seg label={d("desk.wrapping")} attrs={{ "aria-labelledby": "sd-wrap-l" }} value={wrapping} onChange={(k) => pick(() => setWrapping(k))}
+              items={(["wrapped", "unwrapped"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-wrap": k } }))} /></div>}
+          <div id="lineRows">
             {lines.map((l, i) => {
-              const saved = !dirty && (draft?.lines as Row[] | undefined)?.find((x) => x.itemId === l.itemId && String(x.quantity) === l.count);
               const set = (patch: Partial<DeskLine>) => { touch(); setLines((ls) => ls.map((x, j) => (j === i ? { ...x, ...patch } : x))); };
               const n = Number(latinNumber(l.count)) || 0;
+              const priced = quote?.q.lines[i];
               return (
-                <div className="formgrid" data-line={i} key={i} style={{ marginBottom: 12, gridTemplateColumns: "minmax(0,1fr)" }}>
+                <div className="formgrid" data-line={i} key={i}>
                   <div className="field" data-k={`line${i}Item`}><label htmlFor={`it${i}`}>{d("lineN", { number: i + 1 })} *</label>
-                    <Choice tr={tr} id={`it${i}`} options={itemOptions} value={l.itemId} onChange={(v) => set({ itemId: v })} />{err(`line${i}Item`)}</div>
-                  <div style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap" }}>
-                    <div className="field" data-k={`line${i}Count`}><label htmlFor={`iq${i}`}>{d("count")} *</label>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Button aria-label={`${d("count")} −`} onClick={() => set({ count: String(Math.max(1, n - 1)) })}>−</Button>
-                        <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-invalid={!!errs[`line${i}Count`]} value={l.count} style={{ width: 70, textAlign: "center" }} onChange={(e) => set({ count: e.target.value })} />
-                        <Button aria-label={`${d("count")} +`} onClick={() => set({ count: String(Math.min(LINES_MAX, n + 1)) })}>+</Button>
-                      </div>{err(`line${i}Count`)}</div>
-                    <div className="field"><span className="flabel" id={`ipl${i}`}>{d("linePrice")}</span>
-                      <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} dir="ltr">{saved ? piastresText(saved.linePrice) : "—"}</output>
-                    </div>
-                    {lines.length > 1 && <Button size="sm" danger data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</Button>}
-                  </div>
-                  {!saved && <div className="help" style={{ marginTop: -4 }}>{d("priceAfterSave")}</div>}
+                    <Choice tr={tr} id={`it${i}`} options={itemOptions} value={l.itemId} onChange={(v) => set({ itemId: v })} />{err(`line${i}Item`)}{lineMsg[i] && <ErrBox>{lineMsg[i]}</ErrBox>}</div>
+                  <div className="field" data-k={`line${i}Count`}><label htmlFor={`iq${i}`}>{d("count")} *</label>
+                    <div className="row">
+                      <Button aria-label={`${d("count")} -`} onClick={() => set({ count: String(Math.max(1, n - 1)) })}>-</Button>
+                      <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-invalid={!!errs[`line${i}Count`]} value={l.count} onChange={(e) => set({ count: e.target.value })} />
+                      <Button aria-label={`${d("count")} +`} onClick={() => set({ count: String(Math.min(LINES_MAX, n + 1)) })}>+</Button>
+                    </div>{err(`line${i}Count`)}</div>
+                  <div className="field"><span className="flabel" id={`ipl${i}`}>{d("linePrice")}</span>
+                    <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} dir="ltr">{priced ? piastresText(priced.pricePiastres) : "—"}</output></div>
+                  {lines.length > 1 && <Button size="sm" danger data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</Button>}
                 </div>
               );
             })}
@@ -288,7 +372,35 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
           <Button data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}><Icon name="plus" size={15} />{d("addLine")}</Button>
         </div>
+        <div className="card" id="sec-quote"><h3>{d("desk.calc")}</h3>
+          {quoteMsg && <div className="note warn" role="alert" id="sd-quotemsg"><b>{quoteMsg}</b></div>}
+          {typedManual.invalid && <div className="note warn" role="alert" id="sd-manualmsg"><b>{d("desk.manualInvalid")}</b></div>}
+          <div className="kv"><span>{d("desk.fees", { kind: d(buy ? "desk.cashback" : "desk.workmanship") })}</span><b dir="ltr" id="sd-fees">{quote ? [...new Set(quote.q.lines.map((x) => piastresText(x.feePerGram)))].join(" + ") : "—"}</b></div>
+          <div className="kv"><span>{d("desk.weight")}</span><b dir="ltr" id="sd-weight">{quote ? milligramsText(quote.q.weightMg) : "—"}</b></div>
+          <div className="kv"><span>{d("desk.units")}</span><b dir="ltr" id="sd-units">{quote ? quote.q.units : "—"}</b></div>
+          {quote && pct > 0 && !buy && <div className="kv"><span>{d("desk.before")}</span><b dir="ltr" id="sd-before">{piastresText(quote.q.beforeDiscountPiastres)}</b></div>}
+          <div className="kv big"><span>{d("desk.total")}</span><b dir="ltr" id="sd-total">{quote ? piastresText(quote.q.totalPiastres) : "—"}</b></div>
+          {second && quote && !splitErr && <div className="kv"><span>{d(`desk.pay.${second}`)}</span><b dir="ltr" id="sd-remaining">{piastresText(quote.q.totalPiastres - (typedPiastres(split) ?? 0))}</b></div>}
+        </div>
+      </fieldset>
 
+      <div className="desk-col">
+        <div className="card" id="sec-prices"><h3>{d("desk.prices")}</h3>
+          <div className="kv"><span>{d(metal === "silver" ? "desk.silverPrice" : "desk.sellPrice")}</span><b dir="ltr" id="sd-sellprice">{price ? piastresText(metal === "silver" ? price.silverPrice : price.sellPrice) : "—"}</b></div>
+          {metal === "gold" && <div className="kv"><span>{d("desk.buyPrice")}</span><b dir="ltr" id="sd-buyprice">{price ? piastresText(price.buyPrice) : "—"}</b></div>}
+          <TextBox name={buy ? "manualBuy" : "manualSell"} label={d(buy ? "desk.manualBuy" : "desk.manualSell")} value={buy ? manual.buy : manual.sell} ltr maxLength={13}
+            onChange={(v) => setManual((m) => (buy ? { ...m, buy: v } : { ...m, sell: v }))} />
+          <div className="help" id="sd-pricemode">{quote?.q.manualPriceUsed ? d("desk.manualUsed") : d("desk.listUsed")}</div>
+          <div className="help" id="sd-readat">{readAt ? d("desk.readAt", { time: readAt }) : d("desk.noRead")}</div>
+          <Button id="sd-refresh" onClick={readPrice}><Icon name="refresh" size={15} />{d("desk.refresh")}</Button>
+        </div>
+        <div className="card" id="sec-wa"><h3>{d("wa.title")}</h3><div className="help">{d("wa.help")}</div>
+          <pre id="wa-text" dir="auto" aria-label={d("wa.title")}>{waText || d("desk.waEmpty")}</pre>
+          <CopyButton text={waText} label={d("wa.copy")} /></div>
+      </div>
+      </div>
+
+      <fieldset disabled={readonly || saving} className="desk-pay">
         <div className="card" id="sec-payment"><h3>{d("plannedPayment")}</h3><div className="help">{d("plannedHelp")}</div>
           <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
           <div className="field" data-k="cashDiscount" style={{ maxWidth: 420, marginTop: 14 }}><label htmlFor="cashDiscount">{d("discount")}</label>
@@ -300,10 +412,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       {bar && <div className="card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />
         {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
         {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
-
-      {draft && <div className="card" id="sec-wa"><h3>{d("wa.title")}</h3><div className="help">{d("wa.help")}</div>
-        <pre id="wa-text" dir="auto" aria-label={d("wa.title")} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: "10px 0", padding: 12, borderRadius: 12, background: "var(--bg)", font: "inherit", fontSize: 14, maxHeight: 320, overflow: "auto" }}>{waText}</pre>
-        <CopyButton text={waText} label={d("wa.copy")} /> <span className="help">{d("wa.copy")}</span></div>}
 
       {canComplete && <div className="card" id="sec-complete"><h3>{d("complete")}</h3><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
         <div className="field" data-k="pieceCode" style={{ marginTop: 10 }}><label htmlFor="sd-code">{d("scan")}</label>
@@ -333,7 +441,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
 
       <div className="formbar" id="sec-save">
-        {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
+        {!readonly && !buy && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
         {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
         <Button id="sd-back" onClick={close}>{d("backToList")}</Button>
       </div>

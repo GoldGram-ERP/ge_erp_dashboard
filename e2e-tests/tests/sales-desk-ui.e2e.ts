@@ -53,7 +53,7 @@ for (const lang of LANGS) {
     const wa = (await browser.evaluate(() => document.querySelector('#wa-text')!.textContent)) as string;
     expect(wa).toContain(name);
     expect(wa).toContain('01012345678');
-    expect(wa.toLowerCase()).not.toContain('agent1');
+    expect(wa).toContain('اسم البائع:');   // the seller is in the text now (sales-desk-reference.md section 6)
     await browser.evaluate(() => { (window as any).__copied = ''; navigator.clipboard.writeText = async (t: string) => { (window as any).__copied = t; }; return null; });
     await browser.locator('#sd #sec-wa button').first().tap();
     await expect.poll(() => browser.evaluate(() => (window as any).__copied)).toBe(wa);
