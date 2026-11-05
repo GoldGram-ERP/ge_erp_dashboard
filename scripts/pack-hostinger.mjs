@@ -16,7 +16,8 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const allowDirty = args.includes("--allow-dirty");
-const out = resolve(args.find((a) => !a.startsWith("--")) ?? join(root, "app.zip"));
+const version0 = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
+const out = resolve(args.find((a) => !a.startsWith("--")) ?? join(root, `app-${version0}.zip`));   // every zip carries its version; upload.sh stores it as app.zip on the host
 
 const git = (args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 
@@ -39,28 +40,17 @@ if (tagged !== `v${pkgVersion}` && !args.includes("--no-version-check")) {
   process.exit(1);
 }
 
-// Only source: the host installs and builds it. No node_modules, no .next, no .env*, no .git.
-const files = [
-  "src",
-  "scripts",
-  "public",
-  "package.json",
-  "package-lock.json",
-  "next.config.mjs",
-  "tsconfig.json",
-  "postcss.config.mjs",
-  "next-env.d.ts",
-  "eslint.config.mjs",
-  "messages",
-  "changelog",
-];
+// Everything git tracks, minus what the host never builds: a new folder the build imports can never be forgotten.
+const EXCLUDE = /^(e2e-tests|docs|\.github|\.claude|\.proof|worktrees)\//;
+const tracked = git(["ls-files"]).split(/?
+/).filter(Boolean).filter((f) => !EXCLUDE.test(f) && existsSync(join(root, f)));
 
 const stage = join(root, ".pack");
 rmSync(stage, { recursive: true, force: true });
-for (const file of files) {
-  const from = join(root, file);
+for (const file of tracked) {
   // Tests are never part of a deploy archive: the host only installs and builds (a test that imports the config file once broke its type check, v1.0.8).
-  if (existsSync(from)) cpSync(from, join(stage, file), { recursive: true, filter: (p) => !/\.(test|spec)\.(ts|tsx|mjs)$/.test(p) });
+  if (/\.(test|spec)\.(ts|tsx|mjs)$/.test(file)) continue;
+  cpSync(join(root, file), join(stage, file));
 }
 
 const { version } = JSON.parse(execFileSync(process.execPath, ["-p", "JSON.stringify(require('./package.json'))"], { cwd: root, encoding: "utf8" }));

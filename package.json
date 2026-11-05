@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "pack:hostinger": "node scripts/pack-hostinger.mjs",
+    "pack:check": "node scripts/pack-check.mjs",
     "release": "node scripts/release.mjs"
   },
   "dependencies": {
