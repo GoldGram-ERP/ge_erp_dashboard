@@ -233,7 +233,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           <div className="help">{d("draftNumberShort")}</div>
           <div data-draft-number={draft.draftNumber} dir="ltr" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.02em" }}>{draft.draftNumber}</div>
           <div className="help" style={{ marginTop: 6 }}>{draft.branchName} · <Ltr>{draft.createdDay}</Ltr></div>
-          {note && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state} style={{ marginTop: 10 }}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
+          {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state} style={{ marginTop: 10 }}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </> : <>
           <h3 style={{ margin: 0 }}>{d("newDraft")}</h3>
           <div className="help">{d("intro")}</div>

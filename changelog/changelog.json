@@ -1,5 +1,22 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Sales desk: an Admin no longer sees the 'edit until midnight' note on a draft that the server lets them edit at any time.",
+    "ar": "مكتب المبيعات: لا يرى المدير ملاحظة «التعديل حتى منتصف الليل» على مسودة يسمح له الخادم بتعديلها في أي وقت.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "fixed",
+    "en": "Fixed the deploy package that left out the What's new data.",
+    "ar": "إصلاح حزمة النشر التي كانت تُغفل بيانات «الجديد».",
+    "route": "/whats-new"
+   }
+  ]
+ },
+ {
   "version": "1.0.18",
   "date": "2026-11-05",
   "changes": [

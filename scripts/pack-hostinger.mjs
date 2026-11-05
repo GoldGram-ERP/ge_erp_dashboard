@@ -52,6 +52,7 @@ const files = [
   "next-env.d.ts",
   "eslint.config.mjs",
   "messages",
+  "changelog",
 ];
 
 const stage = join(root, ".pack");
