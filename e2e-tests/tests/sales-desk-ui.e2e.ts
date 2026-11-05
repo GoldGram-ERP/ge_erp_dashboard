@@ -6,7 +6,7 @@ import { test, expect, signInApi, apiAs, capture, M, stamp, LANGS, WEB, layoutAu
 // agent1 (sales agent) saves, edits and sees the lock; agent2 never sees agent1's draft; deskadmin completes with the real pieces.
 const PASS = 'Correct-Horse-9', ROOT = 'E2e-Local-Pass-1234';
 const made: { id: string; by: string }[] = [];
-const sql = (q: string) => execSync(`wsl -d Ubuntu -u postgres -- psql -p 5433 -d ge_erp_sd -tA -c "${q}"`).toString().trim();
+const sql = (q: string) => execSync(`wsl -d Ubuntu -u postgres -- psql -p 5433 -d ge_erp_sd -tA -c "${q}"`, { windowsHide: true }).toString().trim();
 const d = (l: Lang, k: string, v?: Record<string, string>) => { let s = M(l, 'gold-sales', `salesDesk.${k}`) as string; for (const [a, b] of Object.entries(v ?? {})) s = s.replace(`{${a}}`, b); return s; };
 
 async function as(user: string, browser: any) {

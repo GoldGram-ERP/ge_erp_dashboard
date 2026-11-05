@@ -1050,4 +1050,6 @@ input[role=switch]:disabled{opacity:.5;cursor:not-allowed}
 .disc-head svg{flex:none;transform:rotate(-90deg);transition:transform .18s var(--calm)}
 .disc-head[aria-expanded=true] svg{transform:rotate(90deg)}
 .disc-body{padding:4px 8px 0}
-
+/* TextButton (the library TextButton): looks like text, still a real button. */
+.tbtn{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+.tbtn:focus-visible{outline:2px solid color-mix(in srgb,var(--gold) 45%,transparent);outline-offset:2px;border-radius:4px}

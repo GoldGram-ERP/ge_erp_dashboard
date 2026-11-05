@@ -5,6 +5,7 @@
 // Decisions kept from the HTML: cash discount sent as cashDiscount {kind,value}; line limit 100; a saved invoice is never edited;
 // the list pages at 20 and refuses unknown params (the history strips pageSize/sort/order before asking).
 import { api, ApiFailure } from "@/lib/api";
+import { DataTable, Status, Td, Tr } from "@/components/ui";
 import type { Column, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
 import { addDays, intText, latinNumber, milligramsText, monthStart, piastresText, today } from "@/lib/format";
 import { useSession } from "@/stores/session";
@@ -62,11 +63,11 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     const totals = answer?.totals;
     if (!totals) return null;
     const vals = map(totals);
-    return cols.map((c, i) => <td key={c.key} className={["money", "weight", "int"].includes(c.type ?? "") ? "num" : ""}>{i === 0 ? name : vals[c.key] === undefined ? "" : cellNode({ type: c.type, key: "v" }, { v: vals[c.key] }, tr)}</td>);
+    return cols.map((c, i) => <Td key={c.key} num={["money", "weight", "int"].includes(c.type ?? "")}>{i === 0 ? name : vals[c.key] === undefined ? "" : cellNode({ type: c.type, key: "v" }, { v: vals[c.key] }, tr)}</Td>);
   };
 
   const historyCols: Column[] = [
-    { key: "invoiceNumber", label: m("invoiceNumber"), render: (r) => <><Ltr>{code6(r.invoiceNumber)}</Ltr>{r.isGift && <> <span className="st" data-gift><i />{m("giftBadge")}</span></>}{r.deletedAt && <> <span className="st off"><i />{m("deletedBadge")}</span></>}</> },
+    { key: "invoiceNumber", label: m("invoiceNumber"), render: (r) => <><Ltr>{code6(r.invoiceNumber)}</Ltr>{r.isGift && <> <span className="st" data-gift><i />{m("giftBadge")}</span></>}{r.deletedAt && <> <Status tone="off">{m("deletedBadge")}</Status></>}</> },
     { key: "invoiceDate", label: m("invoiceDate"), type: "date" },
     { key: "invoiceType", label: m("invoiceType"), get: (r) => m(`invoiceTypes.${r.invoiceType}`) },
     { key: "customerName", label: m("customerName") },
@@ -179,15 +180,14 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
             <Kv k={m("customerName")}>{r.customerName ?? ""}</Kv><Kv k={m("customerPhone")}><Ltr>{r.customerPhone ?? ""}</Ltr></Kv><Kv k={m("nationalId")}><Ltr>{r.nationalId ?? ""}</Ltr></Kv>
           </Section>
           <Section title={m("pieces")} wide>
-            <div className="table" style={{ overflowX: "auto" }}><table>
-              <thead><tr>{heads.map(([k, n]) => <th key={k} className={n ? "num" : undefined}>{m(k)}</th>)}</tr></thead>
-              <tbody>{(r.lines as Row[]).map((l) => (
-                <tr key={l.lineNumber}>
-                  <td>{l.lineNumber}</td><td dir="ltr">{l.pieceCode}</td><td>{l.itemName}</td><td dir="ltr">{l.karat}</td>
-                  <td className="num">{milligramsText(l.weight)}</td><td className="num">{dash(l.weight24Mg, milligramsText)}</td><td className="num">{dash(l.pricePerGram24, piastresText)}</td>
-                  <td className="num">{piastresText(l.goldValue)}</td><td className="num">{piastresText(l.makingCharge)}</td><td className="num">{piastresText(l.cashDiscount)}</td><td className="num">{piastresText(l.linePrice)}</td>
-                </tr>))}</tbody>
-            </table></div>
+            <DataTable style={{ overflowX: "auto" }} head={heads.map(([k, n]) => ({ label: m(k), num: n }))}>
+              {(r.lines as Row[]).map((l) => (
+                <Tr key={l.lineNumber}>
+                  <Td>{l.lineNumber}</Td><Td dir="ltr">{l.pieceCode}</Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td>
+                  <Td num>{milligramsText(l.weight)}</Td><Td num>{dash(l.weight24Mg, milligramsText)}</Td><Td num>{dash(l.pricePerGram24, piastresText)}</Td>
+                  <Td num>{piastresText(l.goldValue)}</Td><Td num>{piastresText(l.makingCharge)}</Td><Td num>{piastresText(l.cashDiscount)}</Td><Td num>{piastresText(l.linePrice)}</Td>
+                </Tr>))}
+            </DataTable>
           </Section>
           <Section title={m("payments")}>
             {r.reservation && <><Kv k={m("reservation")}><Ltr>{code6(r.reservation.reservationNumber)}</Ltr></Kv><Kv k={m("paidAhead")}><Ltr>{piastresText(r.reservation.paid)}</Ltr></Kv></>}

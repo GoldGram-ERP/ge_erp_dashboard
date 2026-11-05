@@ -1,4 +1,5 @@
 "use client";
+import { Button, Input } from "@/components/ui";
 // الأمان والبيانات (Super admin only): super-control/security-policy, data-reset, activity-log. Ported from docs/nav-preview/app/things/control-security.js.
 // Security policy: only inactivityMinutes (whole 1..1440, default 15) is edited (PUT /security-policy {inactivityMinutes}); the other three boxes are shown, not edited.
 // Data reset: GET /data-reset {enabled, username}; off => info card, no form. On => warning + the typed username + the password; the button stays disabled until
@@ -48,7 +49,7 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
   if (failed) return <div className="note warn">{failed}</div>;
   if (!pol) return <Skeleton rows={3} />;
 
-  const locked = (label: string, value: string) => <div className="field"><label>{label}</label><input disabled value={value} style={{ borderStyle: "dashed" }} readOnly /></div>;
+  const locked = (label: string, value: string) => <div className="field"><label>{label}</label><Input disabled value={value} style={{ borderStyle: "dashed" }} readOnly /></div>;
   async function save() {
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
     const typed = text.trim().replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
@@ -81,7 +82,7 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
         <form id="sp" noValidate onSubmit={(e) => { e.preventDefault(); void save(); }}>
           <div className="field" data-k="inactivityMinutes">
             <label htmlFor="f-inactivityMinutes">{m("inactivityMinutes")} <span className="req" aria-hidden="true">*</span></label>
-            <input id="f-inactivityMinutes" inputMode="numeric" dir="ltr" maxLength={5} autoComplete="off" value={text} aria-invalid={!!err} style={{ textAlign: "end" }}
+            <Input id="f-inactivityMinutes" inputMode="numeric" dir="ltr" maxLength={5} autoComplete="off" value={text} aria-invalid={!!err} style={{ textAlign: "end" }}
               onChange={(e) => { setText(e.target.value); setErr(""); setDirty(true); key.current = newSaveKey(); setNote(c("unsavedChanges")); }} />
             <div className="help">{m("inactivityHint")}</div>
             {err && <div className="err" role="alert">{err}</div>}
@@ -89,8 +90,8 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
         </form>
       </div>
       <div className="formbar">
-        <button type="button" className="btn primary" id="sp-save" disabled={saving} onClick={() => void save()}>{saving ? c("saving") : c("saveChanges")}</button>
-        <button type="button" className="btn quiet" id="sp-cancel" onClick={() => void leave()}>{c("cancel")}</button>
+        <Button variant="primary" id="sp-save" disabled={saving} onClick={() => void save()}>{saving ? c("saving") : c("saveChanges")}</Button>
+        <Button id="sp-cancel" onClick={() => void leave()}>{c("cancel")}</Button>
         <span className="mute" id="sp-note">{note}</span>
       </div>
       {dialog}
@@ -138,16 +139,16 @@ function ResetPage({ tr }: CustomFormProps) {
       <form id="dr" className="card" noValidate autoComplete="off" onSubmit={(e) => e.preventDefault()}>
         <div className="field" data-k="username">
           <label htmlFor="f-username">{m("typeUsername", { username: state.username })}</label>
-          <input id="f-username" dir="ltr" maxLength={100} autoComplete="off" autoCapitalize="none" spellCheck={false} value={user} onChange={(e) => setUser(e.target.value)} />
+          <Input id="f-username" dir="ltr" maxLength={100} autoComplete="off" autoCapitalize="none" spellCheck={false} value={user} onChange={(e) => setUser(e.target.value)} />
         </div>
         <div className="field" data-k="password">
           <label htmlFor="f-password">{m("password")}</label>
-          <input id="f-password" type="password" maxLength={200} autoComplete="new-password" value={pass} aria-invalid={!!passErr} onChange={(e) => { setPass(e.target.value); setPassErr(""); }} />
+          <Input id="f-password" type="password" maxLength={200} autoComplete="new-password" value={pass} aria-invalid={!!passErr} onChange={(e) => { setPass(e.target.value); setPassErr(""); }} />
           {passErr && <div className="err" role="alert">{passErr}</div>}
         </div>
         {err && <div className="err" id="dr-err" role="alert">{err}</div>}
       </form>
-      <div className="formbar"><button type="button" className="btn danger" id="dr-go" disabled={!ready} onClick={() => void go()}>{busy ? m("resetting") : m("reset")}</button></div>
+      <div className="formbar"><Button variant="plain" danger id="dr-go" disabled={!ready} onClick={() => void go()}>{busy ? m("resetting") : m("reset")}</Button></div>
     </>
   );
 }

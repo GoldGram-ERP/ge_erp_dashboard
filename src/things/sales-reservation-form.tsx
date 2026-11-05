@@ -12,6 +12,7 @@ import { latinNumber, piastresText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { toast } from "@/components/engine";
+import { Button, Input } from "@/components/ui";
 import { LINES_MAX, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentBanks, totalsOf, type Bank } from "./sales-invoices-math";
 import { Choice, CustomerBoxes, DiscountBox, ErrBox, allPages, code6, customerRules, fe, latestPrice, ltrStyle, mayDiscount, sg, type DiscountKind } from "./sales-form-parts";
 import { Breakdown, PaymentBlock, PriceButton, TotalsBar, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
@@ -195,7 +196,7 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
           <div className="field" data-k="date"><label htmlFor="f-date">{rm("date")} *</label>
             <DatePicker id="f-date" name="date" value={date} onChange={(v) => { touch(); setHow(-1); setDate(v || date); }} disabled={isUser} required />{err("date")}</div>
           <div className="field" data-k="employeeId"><label htmlFor="employeeId">{rm("employee")} *</label>
-            {isUser ? <input disabled value={me?.name ?? ""} readOnly />
+            {isUser ? <Input disabled value={me?.name ?? ""} readOnly />
               : <Choice tr={tr} id="employeeId" options={users.map((u) => [u.id, u.name ?? u.username ?? u.id])} value={employeeId} onChange={(v) => { touch(); setEmployeeId(v); }} />}{err("employeeId")}</div>
         </div>
       </div>
@@ -212,7 +213,7 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
                   <Choice tr={tr} id={`it${i}`} options={items.map((x) => [x.id, `${x.itemName} · ${x.karat ?? ""}`])} value={l.itemId} onChange={(v) => setLine(i, { itemId: v })} />
                   <div className="help" data-karat={i}>{it?.karat ? sg(tr, "karatOf", { karat: it.karat }) : ""}</div>{err(`line${i}Item`)}</div>
                 <div className="field" data-k={`line${i}Quantity`} data-err={errs[`line${i}Quantity`] ? "" : undefined}><label htmlFor={`iq${i}`}>{rm("quantity")} *</label>
-                  <input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" value={l.quantity} style={ltrStyle} onChange={(e) => setLine(i, { quantity: e.target.value })} />{err(`line${i}Quantity`)}</div>
+                  <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" value={l.quantity} style={ltrStyle} onChange={(e) => setLine(i, { quantity: e.target.value })} />{err(`line${i}Quantity`)}</div>
                 <div className="field" data-k={`line${i}Price`}><span className="flabel" id={`ipl${i}`}>{rm("linePrice")}</span>
                   <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} aria-live="polite">
                     {ok && parts ? <PriceButton tr={tr} id={`l${i}`} price={ok.linePrice} parts={parts} open={how === i} onToggle={() => setHow(how === i ? -1 : i)} />
@@ -222,12 +223,12 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
                     : p && "why" in p ? <ErrBox>{whyText(p.why)}</ErrBox> : <div className="help">{rm("priceBySystem")}</div>}
                   {how === i && ok && parts && <Breakdown tr={tr} id={`l${i}`} parts={parts} price={ok.linePrice} />}
                 </div>
-                {lines.length > 1 && <div style={{ alignSelf: "end" }}><button type="button" className="btn quiet sm danger" data-rmline={i} aria-label={rm("removeItem", { number: String(i + 1) })} onClick={() => { touch(); setErrs({}); setHow(-1); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{rm("remove")}</button></div>}
+                {lines.length > 1 && <div style={{ alignSelf: "end" }}><Button size="sm" danger data-rmline={i} aria-label={rm("removeItem", { number: String(i + 1) })} onClick={() => { touch(); setErrs({}); setHow(-1); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{rm("remove")}</Button></div>}
               </div>
             );
           })}
         </div>{rootErr && <ErrBox>{rootErr}</ErrBox>}</div>
-        <button type="button" className="btn quiet sm" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) setLines((ls) => [...ls, blankLine()]); }}>{rm("addItem")}</button>
+        <Button size="sm" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) setLines((ls) => [...ls, blankLine()]); }}>{rm("addItem")}</Button>
       </div>}
       {shown.payment && <div className="card" id="sec-payment"><h3>{rm("payment")} <small>{rm("paymentNote")}</small></h3>
         <PaymentBlock tr={tr} cash={cash} onCash={(v) => { touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
@@ -239,8 +240,8 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
           : payRefusal ? <div className="note warn" role="alert"><b>{rm("paidInvalid", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div> : null}</div>
       </div>}
       {shown.payment && <div className="formbar" id="sec-save">
-        <button type="submit" className="btn primary" aria-disabled={!valid || saving} style={{ opacity: valid && !saving ? undefined : 0.6 }}>{saving ? t("common", "saving") : t("common", "save")}</button>
-        <button type="button" className="btn quiet" id="cancelRsv" onClick={close}>{t("common", "cancel")}</button>
+        <Button type="submit" variant="primary" aria-disabled={!valid || saving} style={{ opacity: valid && !saving ? undefined : 0.6 }}>{saving ? t("common", "saving") : t("common", "save")}</Button>
+        <Button id="cancelRsv" onClick={close}>{t("common", "cancel")}</Button>
         {!(valid && !saving) && <span className="help" role="status">{saving ? t("common", "savingNote") : rm("saveWaits")}</span>}
       </div>}
     </form>

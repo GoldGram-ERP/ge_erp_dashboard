@@ -29,6 +29,11 @@
     "kind": "better",
     "en": "Smaller, cleaner controls on every screen: checkboxes, switches, dialogs and dropdowns look and line up the same everywhere, and table columns line up in Arabic too.",
     "ar": "عناصر أصغر وأنضف في كل الشاشات: الـ checkbox والـ switch والنوافذ والقوايم شكلها واحد ومتظبطة، وأعمدة الجداول ماشية مع بعض في العربي كمان."
+   },
+   {
+    "kind": "better",
+    "en": "Buttons, tables, switches and labels now look and behave the same on every screen, and a missing invoice number shows blank instead of 00null.",
+    "ar": "الأزرار والجداول والـ switch والعناوين بقت شكلها واحد وشغالة بنفس الطريقة في كل الشاشات، ورقم الفاتورة لو مش موجود بيظهر فاضي بدل 00null."
    }
   ]
  },

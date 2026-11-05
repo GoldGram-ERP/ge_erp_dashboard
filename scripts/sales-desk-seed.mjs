@@ -10,7 +10,7 @@ const PASSWORD = "Correct-Horse-9", DESK = "gold-sales/sales-desk", SELL = 512_5
 const root = { username: "superadmin", email: "superadmin@example.com", password: "E2e-Local-Pass-1234" };
 
 const sql = (q) => {
-  const r = spawnSync("wsl", ["-d", "Ubuntu", "-u", "postgres", "--", "psql", "-p", "5433", "-d", "ge_erp_sd", "-tA", "-c", q], { encoding: "utf8", env: { ...process.env, MSYS_NO_PATHCONV: "1" } });
+  const r = spawnSync("wsl", ["-d", "Ubuntu", "-u", "postgres", "--", "psql", "-p", "5433", "-d", "ge_erp_sd", "-tA", "-c", q], { windowsHide: true, encoding: "utf8", env: { ...process.env, MSYS_NO_PATHCONV: "1" } });
   if (r.status !== 0) throw new Error(r.stderr);
   return r.stdout.trim();
 };
@@ -38,7 +38,7 @@ const makeUser = async (username, firstName, extra) => {
 let branchId = sql(`SELECT id FROM branch WHERE branch_name='Desk branch' AND deleted_at IS NULL LIMIT 1`);
 if (!branchId) {
   // the backend's own command line makes the first Admin (a user needs a branch, a branch needs an Admin), as scripts/seed-users.mjs does
-  const cli = spawnSync(process.execPath, ["dist/modules/access/create-user.cli.js", "deskfull", "deskfull@example.com", PASSWORD, "Desk full"], { cwd: new URL("../../../worktrees/sd-backend", import.meta.url), encoding: "utf8", env: { ...process.env, DATABASE_URL: "postgresql://ge:ge_e2e@localhost:5433/ge_erp_sd", REDIS_URL: "redis://localhost:6391", BETTER_AUTH_SECRET: "e2e-local-secret-e2e-local-secret-0123456789", ALLOWED_EMAIL_DOMAIN: "example.com", API_PUBLIC_URL: API, DASHBOARD_ORIGIN: ORIGIN, PORT: "8104", SUPER_ADMIN_USERNAME: root.username, SUPER_ADMIN_EMAIL: root.email, SUPER_ADMIN_PASSWORD: root.password } });
+  const cli = spawnSync(process.execPath, ["dist/modules/access/create-user.cli.js", "deskfull", "deskfull@example.com", PASSWORD, "Desk full"], { windowsHide: true, cwd: new URL("../../../worktrees/sd-backend", import.meta.url), encoding: "utf8", env: { ...process.env, DATABASE_URL: "postgresql://ge:ge_e2e@localhost:5433/ge_erp_sd", REDIS_URL: "redis://localhost:6391", BETTER_AUTH_SECRET: "e2e-local-secret-e2e-local-secret-0123456789", ALLOWED_EMAIL_DOMAIN: "example.com", API_PUBLIC_URL: API, DASHBOARD_ORIGIN: ORIGIN, PORT: "8104", SUPER_ADMIN_USERNAME: root.username, SUPER_ADMIN_EMAIL: root.email, SUPER_ADMIN_PASSWORD: root.password } });
   if (cli.status !== 0) throw new Error(cli.stderr);
   sql(`UPDATE "user" SET user_type='admin', must_change_password=false WHERE username='deskfull'`);
   const adminId = sql(`SELECT id FROM "user" WHERE username='deskfull'`);

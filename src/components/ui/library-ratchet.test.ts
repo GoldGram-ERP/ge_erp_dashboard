@@ -25,6 +25,7 @@ const count = (t: string, re: RegExp) => (t.match(re) ?? []).length;
 const ratchet: Record<string, RegExp> = {
   rawInput: /<input\b/g,
   rawButton: /<button\b/g,
+  rawTable: /<(?:table|th|td)\b/g,
   inlineStyle: /style=\{\{/g,
   localComponent: /^(?:export )?(?:const|function) [A-Z][A-Za-z0-9]*\b(?: ?=|\()/gm,
 };
@@ -33,7 +34,7 @@ const forbidden: Record<string, RegExp> = {
   "a raw checkbox or radio (use Checkbox / CheckInput from @/components/ui)": /<input\b[^>]*type="(?:checkbox|radio)"/g,
   'a raw switch (use SwitchInput from @/components/ui)': /role="switch"/g,
   "a raw <select> (use Select from @/components/ui)": /<select\b/g,
-  "a raw <textarea> (add a Textarea to the library first)": /<textarea\b/g,
+  "a raw <textarea> (use Textarea from @/components/ui)": /<textarea\b/g,
   "a native <dialog> (use Sheet / ConfirmDialog from @/components/ui)": /<dialog\b/g,
   "a native <details> (use Disclosure from @/components/ui)": /<details\b/g,
   "a raw file input (use FileInput from @/components/ui)": /type="file"/g,

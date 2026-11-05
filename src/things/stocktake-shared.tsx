@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type { Column, Option, Row } from "@/lib/engine-types";
 import { rowsOf } from "@/lib/fields";
 import type { Tr } from "@/lib/t";
+import { Td } from "@/components/ui";
 import { cellNode } from "@/components/engine";
 
 export const code6 = (n: unknown) => String(n ?? "").padStart(6, "0");
@@ -48,6 +49,6 @@ export function footerOf(cols: Column[], name: string, map: Record<string, unkno
     const v = map[c.key];
     const num = ["money", "weight", "int"].includes(c.type ?? "");
     const cell = v === undefined ? "" : v && typeof v === "object" && "node" in v ? (v as { node: ReactNode }).node : cellNode({ key: "v", type: c.type }, { v }, tr);
-    return <td key={c.key} className={num ? "num" : ""}>{i === 0 && v === undefined ? name : cell}</td>;
+    return <Td key={c.key} num={num}>{i === 0 && v === undefined ? name : cell}</Td>;
   });
 }

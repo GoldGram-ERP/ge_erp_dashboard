@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { Row } from "@/lib/engine-types";
-import { Disclosure } from "@/components/ui";
+import { Disclosure, Button, Input, TextButton } from "@/components/ui";
 import { Icon, Kv, Ltr, Section, ToastHost, toast, useConfirm } from "@/components/engine";
 import { useT } from "@/lib/t";
 import { Breakdown, MissingPreview, PieceLists, ScanFeedback, Summary, useLive, type BoardPiece, type LastScan, type Live } from "./stocktake-count-board";
@@ -153,11 +153,11 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
   const heading = data ? `${m("recordNo")} ${code6(data.countNumber)}` : m("recordNo");
   return (
     <div className="thing-root" style={{ position: "relative" }}>
-      <button type="button" className="back" id="back" onClick={onClose}><Icon name="back" />{m("title")}</button>
+      <TextButton className="back" id="back" onClick={onClose}><Icon name="back" />{m("title")}</TextButton>
       <div className="head"><div><h1>{heading}</h1></div></div>
       <div className="card" id="sc">
         {!data && !loadErr && <p className="help" role="status">{t("common", "loading")}</p>}
-        {loadErr && <><div className="err" role="alert">{loadErr}</div><button type="button" className="btn quiet" id="sc-retry" onClick={() => load(true)}>{t("common", "retry")}</button></>}
+        {loadErr && <><div className="err" role="alert">{loadErr}</div><Button id="sc-retry" onClick={() => load(true)}>{t("common", "retry")}</Button></>}
         {data && <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <p style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
@@ -165,14 +165,14 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
               <CopyButton text={code6(data.countNumber)} />
               <span className={`st ${open ? "good" : "off"}`}><i />{data.deletedAt ? t("gold-sales", "salesInvoices.deletedBadge") : open ? m("statusOpen") : m("statusClosed")}</span>
             </p>
-            {!data.deletedAt && <button type="button" className="btn quiet danger" id="sc-del" onClick={remove}><Icon name="trash" />{m("delete")}</button>}
+            {!data.deletedAt && <Button danger id="sc-del" onClick={remove}><Icon name="trash" />{m("delete")}</Button>}
           </div>
           {!open && details}
           {open && (
             <div id="sc-scan">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <h3 className="grp-title">{m("scanTitle")}</h3>
-                <button type="button" className="btn quiet" id="sc-camtoggle" onClick={() => { setCamNote(""); setCamera((c) => !c); }}>{camera ? m("stopCamera") : m("useCamera")}</button>
+                <Button id="sc-camtoggle" onClick={() => { setCamNote(""); setCamera((c) => !c); }}>{camera ? m("stopCamera") : m("useCamera")}</Button>
               </div>
               {camera && <div id="sc-cam"><CameraBox onCode={scanCode} onUnavailable={(why) => { setCamera(false); setCamNote(why === "denied" ? m("cameraDenied") : m("cameraUnsupported")); }} /></div>}
               {camNote && <p id="sc-note" role="status" className="help">{camNote}</p>}
@@ -180,11 +180,11 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
                 onSubmit={(e) => { e.preventDefault(); if (code.trim() !== "") scanCode(code); }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <label htmlFor="sc-code">{m("pieceCode")}</label>
-                  <input id="sc-code" ref={input} dir="ltr" autoComplete="off" maxLength={20} style={{ fontFamily: "monospace" }} value={code} aria-invalid={!!problem}
+                  <Input id="sc-code" ref={input} dir="ltr" autoComplete="off" maxLength={20} style={{ fontFamily: "monospace" }} value={code} aria-invalid={!!problem}
                     onChange={(e) => { setCode(e.target.value); setProblem(""); }} />
                   {problem && <div id="sc-err" className="err" role="alert">{t("gold-sales", "pieceLookUp.notOurCode")}{problem === "arabicLayout" && <span style={{ display: "block" }}>{t("gold-sales", "pieceLookUp.switchKeyboard")}</span>}</div>}
                 </div>
-                <button type="submit" className="btn primary" id="sc-go" disabled={scanning || !online || code.trim() === ""}>{m("scan")}</button>
+                <Button variant="primary" type="submit" id="sc-go" disabled={scanning || !online || code.trim() === ""}>{m("scan")}</Button>
               </form>
             </div>
           )}
@@ -203,7 +203,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
           {!board && live.isError && <div className="err" role="alert">{t("common", "couldNotLoad")}</div>}
           {open && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderTop: "1px solid var(--line,#ddd)", marginTop: 16, paddingTop: 12 }}>
-              <button type="button" className="btn primary" id="sc-savebtn" disabled={saving} onClick={save}>{m("save")}</button>
+              <Button variant="primary" id="sc-savebtn" disabled={saving} onClick={save}>{m("save")}</Button>
               <span className="help">{m("savingHint")}</span>
             </div>
           )}

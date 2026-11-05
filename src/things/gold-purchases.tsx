@@ -1,4 +1,5 @@
 "use client";
+import { DataTable, Td, Tr } from "@/components/ui";
 // المشتريات: purchase-invoices (+ list), purchase-coding, pieces-list. ONE page, three tabs: purchase invoices (history; "new" and edit are a full page),
 // pieces (GET /pieces), purchase coding (find an invoice by number, code its lines). Port of docs/nav-preview/app/things/gold-purchases.js.
 // Decisions (specs/gold-accounts.json): the list takes no branch filter and no `order`; delete is offered on every live invoice and the backend refuses with
@@ -41,11 +42,10 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         <Kv k={m("purchaseInvoices.date")}><Ltr>{dateText(r.date)}</Ltr></Kv><Kv k={L("تاريخ الإضافة", "Created")}><Ltr>{dateTimeText(r.createdAt)}</Ltr></Kv>
       </Section>
       <Section title={m("purchaseInvoices.lines")} wide>
-        <div className="table"><table>
-          <thead><tr><th className="num">{m("purchaseInvoices.lineHeading")}</th><th>{m("purchaseInvoices.item")}</th><th className="num">{m("purchaseInvoices.quantity")}</th><th className="num">{m("purchaseInvoices.weight")}</th><th>{m("purchaseCoding.title")}</th></tr></thead>
-          <tbody>{((r.lines ?? []) as Row[]).map((l) => (
-            <tr key={l.lineNumber}><td className="num">{l.lineNumber}</td><td>{itemCell(l)}</td><td className="num">{l.quantity}</td><td className="num">{milligramsText(l.weight)}</td><td>{l.coded ? L("مكوّد", "Coded") : L("بانتظار التكويد", "Waiting")}</td></tr>))}</tbody>
-        </table></div>
+        <DataTable head={[{ label: m("purchaseInvoices.lineHeading"), num: true }, m("purchaseInvoices.item"), { label: m("purchaseInvoices.quantity"), num: true }, { label: m("purchaseInvoices.weight"), num: true }, m("purchaseCoding.title")]}>
+          {((r.lines ?? []) as Row[]).map((l) => (
+            <Tr key={l.lineNumber}><Td num>{l.lineNumber}</Td><Td>{itemCell(l)}</Td><Td num>{l.quantity}</Td><Td num>{milligramsText(l.weight)}</Td><Td>{l.coded ? L("مكوّد", "Coded") : L("بانتظار التكويد", "Waiting")}</Td></Tr>))}
+        </DataTable>
       </Section>
       <Section title={m("purchaseInvoices.totals")}>
         <Kv k={m("purchaseInvoices.totalQuantity")}><Ltr>{r.totals?.totalQuantity}</Ltr></Kv><Kv k={m("purchaseInvoices.totalWeight")}><Ltr>{milligramsText(r.totals?.totalWeight)}</Ltr></Kv>

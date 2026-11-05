@@ -1,4 +1,5 @@
 "use client";
+import { Input, Seg } from "@/components/ui";
 // Pieces the sales forms share (invoice, reservation, return). Ported from docs/nav-preview/app/things/sales-form-parts.js.
 // Text helpers take `tr` (useT()); the HTML's string builders became small React components.
 import type { ReactNode } from "react";
@@ -70,15 +71,14 @@ export async function customerNameOf(phone: string): Promise<string | null> {
 export type DiscountKind = "amount" | "percent";
 /** Cash discount box. lockedValue: a reservation's own (read only); may=false: locked 0 + note. Help/error rows are the caller's (#discHelp, #discErr). */
 export function DiscountBox({ tr, may, kind, disc, lockedValue, onKind, onDisc, help, error }: { tr: Tr; may: boolean; kind: DiscountKind; disc: string; lockedValue?: number; onKind: (k: DiscountKind) => void; onDisc: (v: string) => void; help?: ReactNode; error?: ReactNode }) {
-  if (lockedValue !== undefined) return <input id="cashDiscount" disabled dir="ltr" value={piastresText(lockedValue)} style={{ textAlign: "end" }} readOnly />;
-  if (!may) return <><input id="cashDiscount" disabled dir="ltr" value={piastresText(0)} style={{ textAlign: "end" }} readOnly /><div className="help">{sg(tr, "cashDiscountNotAllowed")}</div></>;
+  if (lockedValue !== undefined) return <Input id="cashDiscount" disabled dir="ltr" value={piastresText(lockedValue)} style={{ textAlign: "end" }} readOnly />;
+  if (!may) return <><Input id="cashDiscount" disabled dir="ltr" value={piastresText(0)} style={{ textAlign: "end" }} readOnly /><div className="help">{sg(tr, "cashDiscountNotAllowed")}</div></>;
   return (
     <>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <div className="seg" role="group" aria-label={sg(tr, "cashDiscountKind")}>
-          {(["amount", "percent"] as const).map((k) => <button type="button" key={k} data-kind={k} aria-pressed={kind === k} onClick={() => onKind(k)}>{sg(tr, k === "amount" ? "discountAmount" : "discountPercent")}</button>)}
-        </div>
-        <input id="cashDiscount" dir="ltr" inputMode="decimal" autoComplete="off" maxLength={13} placeholder="0" value={disc} style={{ maxWidth: 140, textAlign: "end" }} onChange={(e) => onDisc(e.target.value)} />
+        <Seg label={sg(tr, "cashDiscountKind")} value={kind} onChange={onKind}
+          items={(["amount", "percent"] as const).map((k) => ({ id: k, label: sg(tr, k === "amount" ? "discountAmount" : "discountPercent"), attrs: { "data-kind": k } }))} />
+        <Input id="cashDiscount" dir="ltr" inputMode="decimal" autoComplete="off" maxLength={13} placeholder="0" value={disc} style={{ maxWidth: 140, textAlign: "end" }} onChange={(e) => onDisc(e.target.value)} />
       </div>
       <div className="help" id="discHelp">{help}</div><div id="discErr">{error}</div>
     </>
@@ -90,7 +90,7 @@ export function TextBox({ name, label, value, onChange, error, help, maxLength, 
   return (
     <div className="field" data-k={name}>
       <label htmlFor={`f-${name}`}>{label}</label>
-      <input id={`f-${name}`} name={name} value={value} maxLength={maxLength} disabled={disabled} autoComplete="off" aria-invalid={!!error} aria-describedby={[help ? `f-${name}-help` : "", error ? `f-${name}-err` : ""].filter(Boolean).join(" ") || undefined} dir={ltr ? "ltr" : undefined} style={ltr ? { textAlign: "end" } : undefined}
+      <Input id={`f-${name}`} name={name} value={value} maxLength={maxLength} disabled={disabled} autoComplete="off" aria-invalid={!!error} aria-describedby={[help ? `f-${name}-help` : "", error ? `f-${name}-err` : ""].filter(Boolean).join(" ") || undefined} dir={ltr ? "ltr" : undefined} style={ltr ? { textAlign: "end" } : undefined}
         onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
       {help && <div className="help" id={`f-${name}-help`}>{help}</div>}
       {error && <ErrBox id={`f-${name}-err`}>{error}</ErrBox>}

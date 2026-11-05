@@ -4,6 +4,7 @@
 // No BarcodeDetector or no camera API -> onUnavailable("unsupported"); camera refused or failed -> onUnavailable("denied"). No library is used.
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/t";
+import { Button } from "@/components/ui";
 
 export const cameraSupported = () => typeof window !== "undefined" && "BarcodeDetector" in window && !!navigator.mediaDevices?.getUserMedia;
 
@@ -51,8 +52,8 @@ export function CameraBox({ onCode, onUnavailable }: { onCode: (code: string) =>
         <div style={{ position: "absolute", inset: 0, margin: "auto", width: "66%", height: "33%", border: "2px solid #fff", borderRadius: 4, pointerEvents: "none" }} />
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <button type="button" className="btn quiet sm" onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}>{m("switchCamera")}</button>
-        <button type="button" className="btn quiet sm" aria-pressed={torch} onClick={toggleTorch}>{m("torch")}</button>
+        <Button size="sm" onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}>{m("switchCamera")}</Button>
+        <Button size="sm" aria-pressed={torch} onClick={toggleTorch}>{m("torch")}</Button>
       </div>
     </>
   );

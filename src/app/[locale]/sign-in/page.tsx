@@ -1,4 +1,5 @@
 "use client";
+import { Button, Input } from "@/components/ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,13 +55,13 @@ export default function SignInPage() {
         <h1>{t("title")}</h1>
         <p>GoldGram</p>
         {error ? <div className="note warn" role="alert">{error}</div> : null}
-        <div className="field"><label htmlFor="f-email">{t("email")}</label><input id="f-email" name="email" autoComplete="username" dir="ltr" style={{ textAlign: "start" }} autoFocus /></div>
+        <div className="field"><label htmlFor="f-email">{t("email")}</label><Input id="f-email" name="email" autoComplete="username" dir="ltr" style={{ textAlign: "start" }} autoFocus /></div>
         <div className="field"><label htmlFor="f-password">{t("password")}</label>
-          <input id="f-password" name="password" type={show ? "text" : "password"} autoComplete="current-password" dir="ltr" style={{ textAlign: "start" }} />
-          <button type="button" className="btn quiet sm" onClick={() => setShow(!show)}>{show ? t("hidePassword") : t("showPassword")}</button>
+          <Input id="f-password" name="password" type={show ? "text" : "password"} autoComplete="current-password" dir="ltr" style={{ textAlign: "start" }} />
+          <Button size="sm" onClick={() => setShow(!show)}>{show ? t("hidePassword") : t("showPassword")}</Button>
         </div>
-        <button className="btn primary" id="si-go" type="submit" disabled={busy}>{busy ? t("signingIn") : t("submit")}</button>
-        <button className="btn quiet" type="button" onClick={() => router.replace(pathname, { locale: other })}>{other === "en" ? "English" : "العربية"}</button>
+        <Button variant="primary" id="si-go" type="submit" disabled={busy}>{busy ? t("signingIn") : t("submit")}</Button>
+        <Button onClick={() => router.replace(pathname, { locale: other })}>{other === "en" ? "English" : "العربية"}</Button>
       </form>
     </div>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { Button, DataTable, Input, Seg, Td, Tr } from "@/components/ui";
 // The new sales invoice, a workspace page. System values (number, gold price, date, branch, seller) are the system's and locked;
 // steps unlock in order (type + branch -> pieces -> customer -> payment -> save); money is integer piastres.
 // Also the invoice made from a reservation: /sales/invoices?reservation=<id> (the page then opens whole). Ported from sales-invoices-form.js.
@@ -225,7 +226,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const kv = (k: string, v: string) => <div className="kv"><span>{k}</span><span dir="ltr">{v}</span></div>;
   const num = next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : "";
   const partsOf = (l: Row) => ({ perGram: price ? pricePerGram({ sellPrice: price.sellPrice, silverPrice: price.silverPrice ?? null }, String(l.karat)) : null, weightMg: l.weight, workPerGram: l.makingChargePerGram ?? 0, count: 1 });
-  const paidBefore = made && <div className="field"><label htmlFor="paidOnReservation">{m("paidOnReservation")}</label><input id="paidOnReservation" disabled dir="ltr" value={piastresText(made.totals.paid)} style={{ textAlign: "end" }} readOnly /></div>;
+  const paidBefore = made && <div className="field"><label htmlFor="paidOnReservation">{m("paidOnReservation")}</label><Input id="paidOnReservation" disabled dir="ltr" value={piastresText(made.totals.paid)} style={{ textAlign: "end" }} readOnly /></div>;
   const status = saving ? t("common", "savingNote") : lines.length === 0 ? m("saveNeedsPiece") : made ? m("fillAll") : m("saveWaits");
 
   return (
@@ -249,9 +250,8 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       </div>
       <div className="card" id="sec-head">
         <div className="field" data-k="invoiceType" data-err={errs.invoiceType ? "" : undefined}><label className="flabel">{m("invoiceType")} *</label>
-          <div className="seg" role="group" aria-label={m("invoiceType")}>
-            {["sale", "delivery"].map((k) => <button type="button" key={k} data-type={k} aria-pressed={type === k} onClick={() => { setType(k); edited(); }}>{m(`invoiceTypes.${k}`)}</button>)}
-          </div>
+          <Seg label={m("invoiceType")} value={type} onChange={(k) => { setType(k); edited(); }}
+            items={["sale", "delivery"].map((k) => ({ id: k, label: m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />
           {errs.invoiceType && <ErrBox>{errs.invoiceType}</ErrBox>}</div>
         {pickBranch && <div className="field" data-k="branchId" style={{ marginTop: 12, maxWidth: 320 }}><label htmlFor="branchId">{m("branch")} *</label>
           <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { setBranchId(v); setBranchName(branches.find((b) => b.id === v)?.branchName ?? ""); edited(); }} />
@@ -261,30 +261,27 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
       {showPieces && (
         <div className="card" id="sec-pieces">
           {made && <><h3 className="grp-title">{m("fromReservation", { number: code6(made.reservationNumber) })} <small>{m("fromReservationNote")}</small></h3>
-            <div className="table"><table><thead><tr><th>{m("item")}</th><th>{m("karat")}</th><th className="num">{m("toFill")}</th><th className="num">{m("agreedPrice")}</th></tr></thead>
-              <tbody id="fillRows">{made.lines.map((ln: Row, i: number) => <tr key={i}><td>{ln.itemName}</td><td dir="ltr">{ln.karat}</td><td className="num"><b>{m("filledOf", { scanned: scannedOf(ln), expected: ln.quantity })}</b></td><td className="num">{piastresText(ln.linePrice)}</td></tr>)}</tbody></table></div></>}
+            <DataTable bodyId="fillRows" head={[m("item"), m("karat"), { label: m("toFill"), num: true }, { label: m("agreedPrice"), num: true }]}>{made.lines.map((ln: Row, i: number) => <Tr key={i}><Td>{ln.itemName}</Td><Td dir="ltr">{ln.karat}</Td><Td num><b>{m("filledOf", { scanned: scannedOf(ln), expected: ln.quantity })}</b></Td><Td num>{piastresText(ln.linePrice)}</Td></Tr>)}</DataTable></>}
           <h3>{m("pieces")} <small id="pcCount">{m("pieceCount", { count: lines.length })}</small></h3>
           <div className="field" data-k="pieceCode" data-err={errs.pieceCode ? "" : undefined} style={{ maxWidth: 560 }}><label htmlFor="pc">{m("pieceCode")} *</label>
             <div style={{ display: "flex", gap: 8 }}>
-              <input id="pc" dir="ltr" list="pcl" maxLength={20} autoComplete="off" placeholder={m("pieceCodePlaceholder")} style={{ fontFamily: "monospace" }} value={pc}
+              <Input id="pc" dir="ltr" list="pcl" maxLength={20} autoComplete="off" placeholder={m("pieceCodePlaceholder")} style={{ fontFamily: "monospace" }} value={pc}
                 onChange={(e) => { setPc(e.target.value); setPcErr(""); const hit = choices.some((c) => c.pieceCode === e.target.value && !c.sold && !c.inTransfer); if (hit && (e.nativeEvent as InputEvent).inputType === "insertReplacementText") addPiece(e.target.value); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPiece(); } }} />
               <datalist id="pcl">{choices.filter((p) => !p.sold && !p.inTransfer && !lines.some((l) => l.pieceCode === p.pieceCode)).map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName} · ${p.karat} · ${milligramsText(p.weight)}`}</option>)}</datalist>
-              <button type="button" className="btn quiet" id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</button>
-              <button type="button" className="btn quiet" id="addPiece" onClick={() => addPiece()}><Icon name="plus" />{m("addPiece")}</button></div>
+              <Button id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</Button>
+              <Button id="addPiece" onClick={() => addPiece()}><Icon name="plus" />{m("addPiece")}</Button></div>
             {scanning && <PieceScanner label={m("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); setPcErr(""); void addPiece(c); }} />}
             <div className="help">{m("pieceCodeHint")}</div>
             <div id="pcErr">{pcErr && <ErrBox>{pcErr}{pcErr === m("pieceNoGoldPrice") && <> <NavLink href="/setup/gold-prices">{m("enterGoldPrice")}</NavLink></>}</ErrBox>}{errs.pieceCode && <ErrBox>{errs.pieceCode}</ErrBox>}</div></div>
-          <div className="table" style={{ marginTop: 12 }}><table>
-            <thead><tr><th>{m("lineHeading")}</th><th>{m("pieceCode")}</th><th>{m("item")}</th><th>{m("karat")}</th><th className="num">{m("weight")}</th><th className="num">{m("weight24")}</th><th className="num">{m("pricePerGram24")}</th><th className="num">{m("goldValue")}</th><th className="num">{m("makingCharge")}</th><th className="num">{m("linePrice")}</th><th /></tr></thead>
-            <tbody id="lineRows">{lines.length === 0 && <tr id="noPieces"><td colSpan={11} className="mute" style={{ textAlign: "center", padding: "22px 12px" }}>{m("noPieces")}</td></tr>}{lines.map((l, i) => <FragmentRow key={l.pieceCode}>
-              <tr data-line={i}><td className="num">{i + 1}</td><td dir="ltr"><b>{l.pieceCode}</b></td><td>{l.itemName}</td><td dir="ltr">{l.karat}</td>
-                <td className="num">{milligramsText(l.weight)}</td><td className="num">{l.weight24Mg === null ? "—" : milligramsText(l.weight24Mg)}</td><td className="num">{l.pricePerGram24 === null ? "—" : piastresText(l.pricePerGram24)}</td>
-                <td className="num">{piastresText(l.goldValue)}</td><td className="num">{piastresText(l.makingCharge)}</td><td className="num">{made ? m("priceByReservation") : <PriceButton tr={tr} id={l.pieceCode} price={l.linePrice} parts={partsOf(l)} open={how === l.pieceCode} onToggle={() => setHow(how === l.pieceCode ? "" : l.pieceCode)} />}</td>
-                <td><button type="button" className="btn quiet sm danger" data-rm={i} aria-label={m("removePiece", { code: l.pieceCode })} onClick={() => { setLines(lines.filter((_, j) => j !== i)); edited(); }}><Icon name="trash" size={15} />{m("remove")}</button></td></tr>
-              {how === l.pieceCode && !made && <tr><td colSpan={11} style={{ height: "auto", whiteSpace: "normal" }}><Breakdown tr={tr} id={l.pieceCode} parts={partsOf(l)} price={l.linePrice} /></td></tr>}
-              {lineErr[l.pieceCode] && <tr><td colSpan={11}><ErrBox>{lineErr[l.pieceCode]}</ErrBox></td></tr>}
-            </FragmentRow>)}</tbody></table></div>
+          <DataTable style={{ marginTop: 12 }} bodyId="lineRows" head={[m("lineHeading"), m("pieceCode"), m("item"), m("karat"), { label: m("weight"), num: true }, { label: m("weight24"), num: true }, { label: m("pricePerGram24"), num: true }, { label: m("goldValue"), num: true }, { label: m("makingCharge"), num: true }, { label: m("linePrice"), num: true }, ""]}>{lines.length === 0 && <Tr id="noPieces"><Td colSpan={11} className="mute" style={{ textAlign: "center", padding: "22px 12px" }}>{m("noPieces")}</Td></Tr>}{lines.map((l, i) => <FragmentRow key={l.pieceCode}>
+              <Tr data-line={i}><Td className="num">{i + 1}</Td><Td dir="ltr"><b>{l.pieceCode}</b></Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td>
+                <Td className="num">{milligramsText(l.weight)}</Td><Td className="num">{l.weight24Mg === null ? "—" : milligramsText(l.weight24Mg)}</Td><Td className="num">{l.pricePerGram24 === null ? "—" : piastresText(l.pricePerGram24)}</Td>
+                <Td className="num">{piastresText(l.goldValue)}</Td><Td className="num">{piastresText(l.makingCharge)}</Td><Td className="num">{made ? m("priceByReservation") : <PriceButton tr={tr} id={l.pieceCode} price={l.linePrice} parts={partsOf(l)} open={how === l.pieceCode} onToggle={() => setHow(how === l.pieceCode ? "" : l.pieceCode)} />}</Td>
+                <Td><Button size="sm" danger data-rm={i} aria-label={m("removePiece", { code: l.pieceCode })} onClick={() => { setLines(lines.filter((_, j) => j !== i)); edited(); }}><Icon name="trash" size={15} />{m("remove")}</Button></Td></Tr>
+              {how === l.pieceCode && !made && <Tr><Td colSpan={11} style={{ height: "auto", whiteSpace: "normal" }}><Breakdown tr={tr} id={l.pieceCode} parts={partsOf(l)} price={l.linePrice} /></Td></Tr>}
+              {lineErr[l.pieceCode] && <Tr><Td colSpan={11}><ErrBox>{lineErr[l.pieceCode]}</ErrBox></Td></Tr>}
+            </FragmentRow>)}</DataTable>
         </div>
       )}
 
@@ -309,8 +306,8 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
 
       {showPayment && open && (
         <div className="formbar" id="sec-save">
-          <button type="submit" className="btn primary" aria-disabled={!may} style={may ? undefined : { opacity: 0.6 }}><Icon name="check" />{saving ? t("common", "saving") : t("common", "save")}</button>
-          <button type="button" className="btn quiet" id="cancelInv" onClick={close}>{t("common", "cancel")}</button>
+          <Button variant="primary" type="submit" aria-disabled={!may} style={may ? undefined : { opacity: 0.6 }}><Icon name="check" />{saving ? t("common", "saving") : t("common", "save")}</Button>
+          <Button id="cancelInv" onClick={close}>{t("common", "cancel")}</Button>
           {!may && <span className="help" role="status">{status}</span>}
         </div>
       )}

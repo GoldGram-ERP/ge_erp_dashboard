@@ -1,4 +1,5 @@
 "use client";
+import { Button, Input, Seg } from "@/components/ui";
 // The Sales desk draft page (issue #6): ONE page for a new draft, an edit and an Admin opening it. Type -> customer -> item + count lines
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
@@ -244,9 +245,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       <fieldset disabled={readonly || saving} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <div className="card" id="sec-customer"><h3>{sg(tr, "customer")}</h3>
           <div className="field"><span className="flabel" id="sd-type-l">{d("typeLabel")}</span>
-            <div className="seg" role="group" aria-labelledby="sd-type-l">
-              {(["sale", "delivery"] as const).map((k) => <button type="button" key={k} data-type={k} aria-pressed={type === k} onClick={() => { touch(); setType(k); }}>{d(k === "sale" ? "typeSale" : "typeDelivery")}</button>)}
-            </div></div>
+            <Seg label={d("typeLabel")} attrs={{ "aria-labelledby": "sd-type-l" }} value={type} onChange={(k) => { touch(); setType(k); }}
+              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} /></div>
           {isNew && !isUser && <div className="field" data-k="branchId" style={{ marginTop: 12 }}><label htmlFor="branchId">{d("branch")}</label>
             <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>}
           {isNew && isUser && <div className="help" style={{ marginTop: 8 }}>{d("branchHelp")}</div>}
@@ -271,14 +271,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   <div style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap" }}>
                     <div className="field" data-k={`line${i}Count`}><label htmlFor={`iq${i}`}>{d("count")} *</label>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <button type="button" className="btn quiet" aria-label={`${d("count")} −`} onClick={() => set({ count: String(Math.max(1, n - 1)) })}>−</button>
-                        <input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-invalid={!!errs[`line${i}Count`]} value={l.count} style={{ width: 70, textAlign: "center" }} onChange={(e) => set({ count: e.target.value })} />
-                        <button type="button" className="btn quiet" aria-label={`${d("count")} +`} onClick={() => set({ count: String(Math.min(LINES_MAX, n + 1)) })}>+</button>
+                        <Button aria-label={`${d("count")} −`} onClick={() => set({ count: String(Math.max(1, n - 1)) })}>−</Button>
+                        <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-invalid={!!errs[`line${i}Count`]} value={l.count} style={{ width: 70, textAlign: "center" }} onChange={(e) => set({ count: e.target.value })} />
+                        <Button aria-label={`${d("count")} +`} onClick={() => set({ count: String(Math.min(LINES_MAX, n + 1)) })}>+</Button>
                       </div>{err(`line${i}Count`)}</div>
                     <div className="field"><span className="flabel" id={`ipl${i}`}>{d("linePrice")}</span>
                       <output id={`ip${i}`} data-p={i} className="price-out" aria-labelledby={`ipl${i}`} dir="ltr">{saved ? piastresText(saved.linePrice) : "—"}</output>
                     </div>
-                    {lines.length > 1 && <button type="button" className="btn quiet sm danger" data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</button>}
+                    {lines.length > 1 && <Button size="sm" danger data-rmline={i} aria-label={d("removeLine")} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}><Icon name="trash" size={15} />{d("removeLine")}</Button>}
                   </div>
                   {!saved && <div className="help" style={{ marginTop: -4 }}>{d("priceAfterSave")}</div>}
                 </div>
@@ -286,7 +286,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             })}
           </div>
           {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
-          <button type="button" className="btn quiet" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}><Icon name="plus" size={15} />{d("addLine")}</button>
+          <Button data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}><Icon name="plus" size={15} />{d("addLine")}</Button>
         </div>
 
         <div className="card" id="sec-payment"><h3>{d("plannedPayment")}</h3><div className="help">{d("plannedHelp")}</div>
@@ -308,10 +308,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       {canComplete && <div className="card" id="sec-complete"><h3>{d("complete")}</h3><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
         <div className="field" data-k="pieceCode" style={{ marginTop: 10 }}><label htmlFor="sd-code">{d("scan")}</label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc} style={{ flex: "1 1 180px", fontFamily: "monospace" }}
+            <Input id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc} style={{ flex: "1 1 180px", fontFamily: "monospace" }}
               onChange={(e) => { setPc(e.target.value); setPcErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addCode(); } }} />
-            <button type="button" className="btn quiet" id="sd-add" onClick={() => void addCode()}>{d("codeAdd")}</button>
-            <button type="button" className="btn quiet" id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</button>
+            <Button id="sd-add" onClick={() => void addCode()}>{d("codeAdd")}</Button>
+            <Button id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</Button>
           </div>
           {scanning && <PieceScanner label={d("codeLabel")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); void addCode(c); }} />}
           <div className="help">{d("scanHelp")}</div>{pcErr && <ErrBox>{pcErr}</ErrBox>}</div>
@@ -321,11 +321,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         {scanned.length > 0 && <><div className="help">{d("scannedList")}</div>
           <ul id="sd-codes" style={{ listStyle: "none", padding: 0, margin: "6px 0" }}>{scanned.map((s) => <li key={s.code} className="kv" data-code={s.code} style={codeErr[s.code] ? { color: "var(--warn)" } : undefined}>
             <span><Ltr>{s.code}</Ltr> · {s.itemName}{codeErr[s.code] && <ErrBox>{codeErr[s.code]}</ErrBox>}</span>
-            <button type="button" className="btn quiet sm danger" aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></button></li>)}</ul></>}
+            <Button size="sm" danger aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></Button></li>)}</ul></>}
         {mismatch.length > 0 && <ul id="sd-mismatch" className="note warn" role="alert">{mismatch.map((m, i) => <li key={i}>{d("mismatchRow", { item: String(m.itemName), karat: String(m.karat), expected: Number(m.expected), scanned: Number(m.scanned) })}</li>)}</ul>}
         {payRefusal && <div className="note warn" role="alert" id="sd-payrefused"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
         {completeMsg && <div className="note warn" role="alert" id="sd-completemsg"><b>{completeMsg}</b></div>}
-        <button type="button" className="btn primary" style={{ marginTop: 8 }} id="sd-complete" aria-disabled={!allScanned || completing || dirty} onClick={() => { if (allScanned && !dirty) void complete(); }}>{completing ? d("completing") : d("complete")}</button>
+        <Button variant="primary" style={{ marginTop: 8 }} id="sd-complete" aria-disabled={!allScanned || completing || dirty} onClick={() => { if (allScanned && !dirty) void complete(); }}>{completing ? d("completing") : d("complete")}</Button>
         {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
       </div>}
 
@@ -333,9 +333,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
 
       <div className="formbar" id="sec-save">
-        {!readonly && <button type="submit" className="btn primary" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</button>}
-        {draft && draft.status === "open" && <button type="button" className="btn quiet danger" id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</button>}
-        <button type="button" className="btn quiet" id="sd-back" onClick={close}>{d("backToList")}</button>
+        {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
+        {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
+        <Button id="sd-back" onClick={close}>{d("backToList")}</Button>
       </div>
     </form>
   );
@@ -368,8 +368,8 @@ export function OpenByNumber({ close, tr, reload }: CustomFormProps) {
       <div className="card">
         {branches.length > 1 && <div className="field"><label htmlFor="sd-branch">{d("branch")}</label><Choice tr={tr} id="sd-branch" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={setBranchId} /></div>}
         <TextBox name="draftNumber" label={d("openNumberLabel")} value={num} ltr maxLength={7} error={msg} onChange={(v) => { setNum(v); setMsg(""); }} />
-        <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn primary" id="sd-open">{d("openGo")}</button>
-          <button type="button" className="btn quiet" onClick={close}>{d("backToList")}</button></div>
+        <div className="row" style={{ marginTop: 12 }}><Button variant="primary" type="submit" id="sd-open">{d("openGo")}</Button>
+          <Button onClick={close}>{d("backToList")}</Button></div>
       </div>
     </form>
   );

@@ -2,7 +2,7 @@
 // "Scan with camera" beside a piece code box: a modal with the live camera; a code read closes it and is handed back. When the camera is refused or the browser
 // cannot read a barcode it says so and offers the typed box ("Type the code" closes it). Ported from the dashboard's piece-scanner.tsx; the camera is stocktake-count-camera.
 import { useState } from "react";
-import { Modal } from "@/components/ui";
+import { Modal, Button } from "@/components/ui";
 import { useT } from "@/lib/t";
 import { CameraBox } from "./stocktake-count-camera";
 
@@ -15,7 +15,7 @@ export function PieceScanner({ label, onClose, onCode }: { label: string; onClos
       {off
         ? <div role="alert"><strong>{m("cameraDeniedTitle")}</strong><p>{off === "denied" ? m("cameraDeniedBody") : m("cameraUnsupportedBody")}</p></div>
         : <><CameraBox onCode={(c) => onCode(c.trim())} onUnavailable={setOff} /><p className="hint">{m("scanHint")}</p></>}
-      <div className="row"><button type="button" className={`btn ${off ? "primary" : "quiet"}`} id="type-code" onClick={onClose}>{m("typeCode")}</button></div>
+      <div className="row"><Button variant={off ? "primary" : "quiet"} id="type-code" onClick={onClose}>{m("typeCode")}</Button></div>
     </Modal>
   );
 }

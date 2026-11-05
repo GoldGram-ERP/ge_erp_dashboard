@@ -1,4 +1,5 @@
 "use client";
+import { Status, Td } from "@/components/ui";
 // البنوك: bank-accounts/banks, banks-list, bank-accounts, bank-accounts-list, bank-balances. Ported from docs/nav-preview/app/things/banks.js.
 // Views: main banks, sub bank accounts, bank balances report (EGP). Writes: bank and account create/edit/delete.
 import type { Column, FieldConfig, LookupSpec, MakeConfig, Row, ThingConfig, ViewConfig } from "@/lib/engine-types";
@@ -22,7 +23,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
   const bb = (k: string) => t("bank-accounts", `bankBalances.${k}`);
   const rep = (k: string) => t("common", `report.${k}`);
   const ALL = rep("all");
-  const deleted = (label: string) => <span className="st off"><i />{label}</span>;
+  const deleted = (label: string) => <Status tone="off">{label}</Status>;
 
   const balanceCols: Column[] = [
     { key: "code", label: bb("columns.code"), get: (r) => code6(r.code) },
@@ -78,7 +79,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         if (!totals) return null;
         return balanceCols.map((c, i) => {
           const v = ({ total: totals.total } as Record<string, unknown>)[c.key];
-          return <td key={c.key} className={["money", "weight", "int"].includes(c.type ?? "") ? "num" : ""}>{i === 0 ? rep("total") : v === undefined ? "" : cellNode({ key: "v", type: c.type }, { v }, tr)}</td>;
+          return <Td key={c.key} num={["money", "weight", "int"].includes(c.type ?? "")}>{i === 0 ? rep("total") : v === undefined ? "" : cellNode({ key: "v", type: c.type }, { v }, tr)}</Td>;
         });
       },
     },

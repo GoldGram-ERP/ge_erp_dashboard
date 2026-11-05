@@ -3,6 +3,7 @@
 // Parity: a reservation has exactly two actions, Create sales invoice and Delete (Delete = cancel; no refund screen, no stock moves).
 // The list takes only search, fromDate, toDate, deleted, page (20 a page); the reports take their filters, sort, order, page, pageSize.
 import { api } from "@/lib/api";
+import { DataTable, Td, Tr as TRow } from "@/components/ui";
 import type { Column, CustomFormProps, MakeConfig, Row, ThingConfig, ViewConfig } from "@/lib/engine-types";
 import { intText, latinNumber, piastresText } from "@/lib/format";
 import { canOpen } from "@/nav/tree";
@@ -32,7 +33,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     const totals = answer?.totals;
     if (!totals) return null;
     const vals = map(totals);
-    return cols.map((c, i) => <td key={c.key} className={["money", "weight", "int"].includes(c.type ?? "") ? "num" : ""}>{i === 0 ? name : vals[c.key] === undefined ? "" : cellNode({ key: "v", type: c.type }, { v: vals[c.key] }, tr)}</td>);
+    return cols.map((c, i) => <Td key={c.key} num={["money", "weight", "int"].includes(c.type ?? "")}>{i === 0 ? name : vals[c.key] === undefined ? "" : cellNode({ key: "v", type: c.type }, { v: vals[c.key] }, tr)}</Td>);
   };
 
   const historyView: ViewConfig = {
@@ -86,7 +87,6 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     };
   };
 
-  const th = (k: string, n?: boolean) => <th key={k} className={n ? "num" : undefined}>{k}</th>;
   return {
     id: "reservations",
     title: m("title"),
@@ -121,8 +121,9 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
               <Kv k={si("customerName")}>{r.customerName ?? ""}</Kv><Kv k={si("customerPhone")}><Ltr>{r.customerPhone ?? ""}</Ltr></Kv><Kv k={si("nationalId")}><Ltr>{r.nationalId ?? ""}</Ltr></Kv>
             </Section>
             <Section title={m("items")} wide>
-              <div className="table" style={{ overflowX: "auto" }}><table><thead><tr>{th(si("lineHeading"))}{th(m("item"))}{th(si("karat"))}{th(m("quantity"), true)}{th(m("linePrice"), true)}{th(si("cashDiscount"), true)}</tr></thead>
-                <tbody>{r.lines.map((l: Row) => <tr key={l.lineNumber}><td>{l.lineNumber}</td><td>{l.itemName}</td><td dir="ltr">{l.karat}</td><td className="num">{intText(l.quantity)}</td><td className="num">{piastresText(l.linePrice)}</td><td className="num">{piastresText(l.cashDiscount ?? 0)}</td></tr>)}</tbody></table></div>
+              <DataTable style={{ overflowX: "auto" }} head={[si("lineHeading"), m("item"), si("karat"), { label: m("quantity"), num: true }, { label: m("linePrice"), num: true }, { label: si("cashDiscount"), num: true }]}>
+                {r.lines.map((l: Row) => <TRow key={l.lineNumber}><Td>{l.lineNumber}</Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td><Td num>{intText(l.quantity)}</Td><Td num>{piastresText(l.linePrice)}</Td><Td num>{piastresText(l.cashDiscount ?? 0)}</Td></TRow>)}
+              </DataTable>
             </Section>
             <Section title={m("payment")}>
               <Kv k={si("cash")}><Ltr>{piastresText(r.cash)}</Ltr></Kv>

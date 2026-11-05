@@ -4,6 +4,7 @@
 // An invoice is editable only until one line is coded, and for a normal user only 24 hours after the save (admin: any time): the refusals come back as words.
 // An Admin or Super admin whose account has no branch picks the branch of a new invoice.
 import { useEffect, useRef, useState } from "react";
+import { Button, DataTable, Input, Td, Tr } from "@/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
@@ -140,10 +141,10 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
         <h3>{m("details")}</h3>
         <div className="formgrid">
           <div className="field"><label htmlFor="inv-no">{m("invoiceNumber")}</label>
-            <input id="inv-no" disabled dir="ltr" style={{ textAlign: "start" }} value={numberText} readOnly />
+            <Input id="inv-no" disabled dir="ltr" style={{ textAlign: "start" }} value={numberText} readOnly />
             <div className="help">{editing ? "" : next.data ? c("upcomingNumber") : m("autoHint")}</div></div>
           {editing ? (
-            <div className="field"><label htmlFor="inv-branch">{m("branch")}</label><input id="inv-branch" disabled value={branchName.data ?? ""} readOnly /></div>
+            <div className="field"><label htmlFor="inv-branch">{m("branch")}</label><Input id="inv-branch" disabled value={branchName.data ?? ""} readOnly /></div>
           ) : picksBranch ? (
             <div className="field" data-k="branchId"><label htmlFor="inv-branch-btn">{m("branch")} *</label>
               <Select id="inv-branch" name="inv-branch" value={branchId} options={branches} placeholder={c("choose")} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
@@ -156,22 +157,19 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
       </form>
       <div className="card">
         <h3>{m("lines")} <span className="sub">{m("linesOf", { count: lines.length })}</span></h3>
-        <div className="table"><table className="lines">
-          <thead><tr><th className="num">#</th><th>{m("item")} *</th><th>{m("quantity")} *</th><th>{m("weight")}</th><th /></tr></thead>
-          <tbody id="inv-lines">{lines.map((l, i) => (
-            <tr key={i} data-i={i}>
-              <td className="num">{i + 1}</td>
-              <td><div className="field" data-k={`lines.${i}.itemId`}>
-                <input data-f="item" list="inv-items" autoComplete="off" aria-label={m("item")} placeholder={m("itemSearchPlaceholder")} value={l.label}
+        <DataTable tableClassName="lines" bodyId="inv-lines" head={[{ label: "#", num: true }, <>{m("item")} *</>, <>{m("quantity")} *</>, m("weight"), ""]}>{lines.map((l, i) => (
+            <Tr key={i} data-i={i}>
+              <Td num>{i + 1}</Td>
+              <Td><div className="field" data-k={`lines.${i}.itemId`}>
+                <Input data-f="item" list="inv-items" autoComplete="off" aria-label={m("item")} placeholder={m("itemSearchPlaceholder")} value={l.label}
                   onFocus={() => { if (!choices.length) searchItems(""); }}
-                  onChange={(ev) => { const label = ev.target.value, it = known.current.get(label); touch(); setLines((ls) => ls.map((x, j) => (j === i ? pick({ ...x, label }, it) : x))); problemText(i, label, it); searchItems(label); }} />{err(`lines.${i}.itemId`)}</div></td>
-              <td><div className="field" data-k={`lines.${i}.quantity`}><input data-f="quantity" dir="ltr" inputMode="numeric" aria-label={m("quantity")} value={l.quantity} onChange={(ev) => setLine(i, { quantity: ev.target.value })} />{err(`lines.${i}.quantity`)}</div></td>
-              <td><div className="field"><input data-f="weight" dir="ltr" readOnly aria-label={m("weight")} aria-describedby="inv-weight-help" placeholder="—" value={milligramsOrEmpty(lineWeightOf(l.itemWeight, l.quantity))} /></div></td>
-              <td><button type="button" className="btn quiet sm" data-remove={i} disabled={lines.length === 1} aria-label={m("removeLine", { number: i + 1 })} onClick={() => { touch(); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{m("remove")}</button></td>
-            </tr>))}</tbody>
-        </table></div>
+                  onChange={(ev) => { const label = ev.target.value, it = known.current.get(label); touch(); setLines((ls) => ls.map((x, j) => (j === i ? pick({ ...x, label }, it) : x))); problemText(i, label, it); searchItems(label); }} />{err(`lines.${i}.itemId`)}</div></Td>
+              <Td><div className="field" data-k={`lines.${i}.quantity`}><Input data-f="quantity" dir="ltr" inputMode="numeric" aria-label={m("quantity")} value={l.quantity} onChange={(ev) => setLine(i, { quantity: ev.target.value })} />{err(`lines.${i}.quantity`)}</div></Td>
+              <Td><div className="field"><Input data-f="weight" dir="ltr" readOnly aria-label={m("weight")} aria-describedby="inv-weight-help" placeholder="—" value={milligramsOrEmpty(lineWeightOf(l.itemWeight, l.quantity))} /></div></Td>
+              <Td><Button size="sm" data-remove={i} disabled={lines.length === 1} aria-label={m("removeLine", { number: i + 1 })} onClick={() => { touch(); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{m("remove")}</Button></Td>
+            </Tr>))}</DataTable>
         <div className="help" id="inv-weight-help" style={{ marginTop: 8 }}>{m("weightFromItem")}</div>
-        <div style={{ marginTop: 12 }}><button type="button" className="btn quiet" id="inv-add" disabled={lines.length >= LINES_MAX} onClick={() => { touch(); setLines((ls) => [...ls, blank()]); }}><Icon name="plus" />{m("addLine")}</button></div>
+        <div style={{ marginTop: 12 }}><Button id="inv-add" disabled={lines.length >= LINES_MAX} onClick={() => { touch(); setLines((ls) => [...ls, blank()]); }}><Icon name="plus" />{m("addLine")}</Button></div>
       </div>
       <div className="card"><h3>{m("totals")}</h3>
         <div className="totals" id="inv-totals">
@@ -179,8 +177,8 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
           <div className="kv"><span>{m("totalWeight")}</span><span dir="ltr">{milligramsText(tot.weight)}</span></div>
         </div></div>
       <div className="formbar">
-        <button type="button" className="btn primary" id="inv-save" disabled={saving} onClick={save}>{saving ? c("saving") : editing ? c("saveChanges") : c("save")}</button>
-        <button type="button" className="btn quiet" id="inv-cancel" onClick={close}>{c("cancel")}</button>
+        <Button variant="primary" id="inv-save" disabled={saving} onClick={save}>{saving ? c("saving") : editing ? c("saveChanges") : c("save")}</Button>
+        <Button id="inv-cancel" onClick={close}>{c("cancel")}</Button>
       </div>
     </>
   );

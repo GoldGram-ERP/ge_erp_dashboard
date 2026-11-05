@@ -11,6 +11,7 @@ import { backendFieldErrors } from "@/lib/fields";
 import { today } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { toast } from "@/components/engine";
+import { Button, Input } from "@/components/ui";
 import { Select } from "@/components/fields/Select";
 import { code6, useOptions, type Lists } from "./stocktake-shared";
 
@@ -63,13 +64,13 @@ export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { l
         <div className="formgrid">
           <div className="field" data-k="countNumber">
             <label htmlFor="f-countNumber">{m("countNumber")}</label>
-            <input id="f-countNumber" className="code-box" disabled readOnly dir="ltr" style={{ textAlign: "start" }} value={next.data ? code6(next.data.next) : ""} aria-describedby="f-countNumber-help" />
+            <Input id="f-countNumber" className="code-box" disabled readOnly dir="ltr" style={{ textAlign: "start" }} value={next.data ? code6(next.data.next) : ""} aria-describedby="f-countNumber-help" />
             <div className="help" id="f-countNumber-help">{numberHelp}</div>
           </div>
           {field("branchId", m("branch"), <Select id="f-branchId" name="branchId" value={branchId} onChange={(v) => { setBranchId(v); setErr(""); }} options={branches} invalid={!!err} />, undefined, err, true)}
           <div className="field" data-k="countDate">
             <label htmlFor="f-countDate">{m("countDate")}</label>
-            <input id="f-countDate" disabled dir="ltr" style={{ textAlign: "start" }} value={today()} />
+            <Input id="f-countDate" disabled dir="ltr" style={{ textAlign: "start" }} value={today()} />
             <div className="help">{m("filledBySystem")}</div>
           </div>
           {branchId && <>
@@ -80,8 +81,8 @@ export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { l
         </div>
       </form>
       <div className="formbar">
-        <button type="button" className="btn primary" id="save" disabled={saving} onClick={save}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</button>
-        <button type="button" className="btn quiet" id="cancel" onClick={close}>{L("إلغاء", "Cancel")}</button>
+        <Button variant="primary" id="save" disabled={saving} onClick={save}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</Button>
+        <Button id="cancel" onClick={close}>{L("إلغاء", "Cancel")}</Button>
       </div>
     </>
   );

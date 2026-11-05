@@ -11,6 +11,7 @@ import { backendFieldErrors, readFields } from "@/lib/fields";
 import { milligramsText, piastresText, today, typedMilligrams, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { Icon, toast } from "@/components/engine";
+import { Button } from "@/components/ui";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
 import { useLookup } from "@/components/fields/useLookup";
 import { branchSpec, code6 } from "./money-shared";
@@ -126,8 +127,8 @@ function MovementForm({ kind, tr, close }: CustomFormProps & { kind: "egp" | "go
         </form>
         {alert && <div id="mv-alert" role="alert" className="err">{alert}</div>}
         <div className="formbar">
-          <button type="button" className="btn primary" id="mv-save" disabled={saving} onClick={submit}>{saving ? c("saving") : L("حفظ", "Save")}</button>
-          <button type="button" className="btn quiet" id="mv-history" onClick={close}><Icon name="file" />{m("listTitle")}</button>
+          <Button variant="primary" id="mv-save" disabled={saving} onClick={submit}>{saving ? c("saving") : L("حفظ", "Save")}</Button>
+          <Button id="mv-history" onClick={close}><Icon name="file" />{m("listTitle")}</Button>
         </div>
       </div>
       {!gold && <Recent m={m} />}

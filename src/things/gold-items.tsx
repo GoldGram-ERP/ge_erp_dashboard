@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui";
 // الأصناف: buy/items (gold-accounts/categories, item-names, items + their -list screens). ONE page, two tabs now (the third, أسماء الأصناف / item names, is hidden, see `views`):
 // المجموعات الرئيسية (category) -> مجموعات الأصناف (item, one per name).
 // Ported from docs/nav-preview/app/things/gold-items.js. Codes come from the backend (the form shows the upcoming one, a preview).
@@ -300,8 +301,8 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
       <FormFields form={f} fields={fields} values={values} />
     </form>
     <div className="formbar">
-      <button type="button" className="btn primary" id="save" disabled={saving} onClick={submit}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</button>
-      <button type="button" className="btn quiet" id="cancel" onClick={close}>{L("إلغاء", "Cancel")}</button>
+      <Button variant="primary" id="save" disabled={saving} onClick={submit}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</Button>
+      <Button id="cancel" onClick={close}>{L("إلغاء", "Cancel")}</Button>
     </div>
   </>;
 }

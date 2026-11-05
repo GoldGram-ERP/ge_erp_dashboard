@@ -9,6 +9,7 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { esc, milligramsText, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
+import { Button } from "@/components/ui";
 import { CopyButton } from "@/components/shell/copy-button";
 import { useMe } from "@/lib/session";
 import { Choice, ErrBox, TextBox, allPages, code6, fe } from "./sales-form-parts";
@@ -166,13 +167,13 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
             <li key={p.code} data-piece-code={p.code} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <b dir="ltr">{p.code}</b><CopyButton text={String(p.code)} />
               <span className="help" dir="ltr">{p.categoryName} · {p.karat} · {milligramsText(p.weight)}</span>
-              <button type="button" className="btn quiet sm" data-print={p.code} aria-label={cp(tr, "reprintCode", { code: p.code })} onClick={() => { openLabelPrint(tr, p.label).catch(() => {}); }}>{cp(tr, "printLabel")}</button>
+              <Button size="sm" data-print={p.code} aria-label={cp(tr, "reprintCode", { code: p.code })} onClick={() => { openLabelPrint(tr, p.label).catch(() => {}); }}>{cp(tr, "printLabel")}</Button>
             </li>
           ))}
         </ul>
         <div className="formbar">
-          <button type="button" className="btn quiet" id="cp-another" onClick={() => { setSaved(null); setV({ ...blank, branchId: v.branchId, banks: [blankBank()] }); }}>{cp(tr, "another")}</button>
-          <button type="button" className="btn primary" id="cp-done" onClick={close}>{L("تم", "Done")}</button>
+          <Button id="cp-another" onClick={() => { setSaved(null); setV({ ...blank, branchId: v.branchId, banks: [blankBank()] }); }}>{cp(tr, "another")}</Button>
+          <Button variant="primary" id="cp-done" onClick={close}>{L("تم", "Done")}</Button>
         </div>
       </div>
     );
@@ -220,8 +221,8 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
           <TextBox name="description" label={cp(tr, "description")} help={cp(tr, "descriptionHelp")} value={v.description} maxLength={TEXT_MAX} error={errs.description} onChange={(x) => set({ description: x })} />
         </div>
         <div className="formbar">
-          <button type="submit" className="btn primary" id="cp-save" disabled={saving}>{saving ? c("saving") : cp(tr, "buy")}</button>
-          <button type="button" className="btn quiet" id="cp-cancel" onClick={close}>{c("cancel")}</button>
+          <Button type="submit" variant="primary" id="cp-save" disabled={saving}>{saving ? c("saving") : cp(tr, "buy")}</Button>
+          <Button id="cp-cancel" onClick={close}>{c("cancel")}</Button>
         </div>
       </div>
     </form>

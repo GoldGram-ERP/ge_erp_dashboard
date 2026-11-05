@@ -1,4 +1,5 @@
 "use client";
+import { Button, Seg } from "@/components/ui";
 // Piece labels as the dashboard prints them: "tag" = one 50 x 12 mm label per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm; the layout is remembered on this device.
 // shortcut: the symbol is a labelled box ("QR" / "Code 128"), not a drawn bar/QR code (the mockup had none either); swap in JsBarcode/qrcode when a shared label module exists.
 import { useEffect, useState } from "react";
@@ -54,11 +55,9 @@ export function LabelsCard({ title, labels, tr }: { title: string; labels: Row[]
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <h3 style={{ margin: 0 }}>{title} <span className="sub">{pc(tr, "labelCount", { count: labels.length })}</span></h3>
         <div className="actions">
-          <div className="seg" role="group" aria-label={pc(tr, "layout")}>
-            <button type="button" data-layout="tag" aria-pressed={layout === "tag"} onClick={() => pick("tag")}>{pc(tr, "layoutTag")}</button>
-            <button type="button" data-layout="a4" aria-pressed={layout === "a4"} onClick={() => pick("a4")}>{pc(tr, "layoutA4")}</button>
-          </div>
-          <button type="button" className="btn primary" data-print onClick={() => window.print()}><Icon name="print" />{tr.t("common", "print")}</button>
+          <Seg label={pc(tr, "layout")} value={layout} onChange={pick}
+            items={[{ id: "tag", label: pc(tr, "layoutTag"), attrs: { "data-layout": "tag" } }, { id: "a4", label: pc(tr, "layoutA4"), attrs: { "data-layout": "a4" } }]} />
+          <Button variant="primary" data-print onClick={() => window.print()}><Icon name="print" />{tr.t("common", "print")}</Button>
         </div>
       </div>
       <div data-labels data-print-labels style={{ display: "flex", flexWrap: "wrap", gap: 10, maxHeight: "60vh", overflow: "auto", background: "var(--bg)", padding: 12, borderRadius: 10 }}>

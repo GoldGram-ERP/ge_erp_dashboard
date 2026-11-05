@@ -9,6 +9,7 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
 import { latinNumber, milligramsText, piastresText } from "@/lib/format";
 import { toast } from "@/components/engine";
+import { Button, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, pieceChoices, readPieceCode } from "./sales-form-parts";
 
 const LAYOUT_KEY = "ge-erp.labelLayout";        // the layout chosen is remembered on this device
@@ -110,7 +111,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
         <div id="banners">{banner && <div className="note warn" role="alert"><b>{banner}</b></div>}</div>
         <div className="formgrid" id="grid">
           <div className="field" data-k="pieceCode"><label htmlFor="pc">{rl("pieceCode")}</label>
-            <input id="pc" dir="ltr" list="pcl" maxLength={40} autoComplete="off" style={{ fontFamily: "monospace" }} value={code} onChange={(ev) => { touch(); setCode(ev.target.value); }} />
+            <Input id="pc" dir="ltr" list="pcl" maxLength={40} autoComplete="off" style={{ fontFamily: "monospace" }} value={code} onChange={(ev) => { touch(); setCode(ev.target.value); }} />
             <datalist id="pcl">{choices.map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName ?? ""} · ${p.karat ?? ""}`}</option>)}</datalist>{err("pieceCode")}</div>
           <div className="field wide"><div className="help">{rl("orRange")}</div></div>
           <TextBox name="fromCode" label={rl("fromCode")} value={fromCode} maxLength={12} ltr error={errs.fromCode} onChange={(v) => { touch(); setFromCode(v); }} />
@@ -120,7 +121,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
           <div className="field" data-k="layout"><label htmlFor="layout">{rl("layout")} *</label>
             <Choice tr={tr} id="layout" searchable={false} options={[["tag", pc("layoutTag")], ["a4", pc("layoutA4")]]} value={layout} onChange={pickLayout} />{err("layout")}</div>
         </div>
-        <div className="formbar"><button type="submit" className="btn primary" id="go" disabled={saving}>{rl("print")}</button></div>
+        <div className="formbar"><Button type="submit" variant="primary" id="go" disabled={saving}>{rl("print")}</Button></div>
       </form>
       {labels && (
         <div id="result" style={{ marginTop: 14 }}>
@@ -128,7 +129,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
           <div className="card">
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h3 style={{ margin: 0 }}>{rl("print")} <span className="sub">{pc("labelCount", { count: String(labels.length) })}</span></h3>
-              <button type="button" className="btn primary" data-print onClick={print}>{t("common", "print")}</button>
+              <Button variant="primary" data-print onClick={print}>{t("common", "print")}</Button>
             </div>
             <div data-labels data-print-labels style={{ display: "flex", flexWrap: "wrap", gap: 10, maxHeight: "60vh", overflow: "auto", background: "var(--bg)", padding: 12, borderRadius: 10 }}>
               <Sheet labels={labels} layout={layout} gram={pc("gram")} karatText={(k) => pc("karatValue", { karat: k })} />

@@ -17,21 +17,21 @@ const env = {
   ALLOWED_EMAIL_DOMAIN: "example.com", SUPER_ADMIN_USERNAME: "superadmin", SUPER_ADMIN_EMAIL: "superadmin@example.com",
   SUPER_ADMIN_PASSWORD: "E2e-Local-Pass-1234", SUPER_ADMIN_NAME: "E2E Super admin", ALLOW_DATA_RESET: "true",
 };
-const wsl = (cmd) => spawnSync("wsl", ["-d", "Ubuntu", "-u", "root", "--", "bash", "-lc", cmd], { encoding: "utf8", env: { ...process.env, MSYS_NO_PATHCONV: "1" } });
+const wsl = (cmd) => spawnSync("wsl", ["-d", "Ubuntu", "-u", "root", "--", "bash", "-lc", cmd], { windowsHide: true, encoding: "utf8", env: { ...process.env, MSYS_NO_PATHCONV: "1" } });
 const keepFile = path.join(root, ".e2e-wsl.pid");
 const alive = async () => { try { return (await fetch(`http://localhost:${PORT}/health`)).status < 500; } catch { return false; } };
 
 if (process.argv[2] === "down") {
-  if (existsSync(pidFile)) { spawnSync("taskkill", ["/PID", readFileSync(pidFile, "utf8"), "/T", "/F"]); rmSync(pidFile); }
-  if (existsSync(keepFile)) { spawnSync("taskkill", ["/PID", readFileSync(keepFile, "utf8"), "/T", "/F"]); rmSync(keepFile); }
+  if (existsSync(pidFile)) { spawnSync("taskkill", ["/PID", readFileSync(pidFile, "utf8"), "/T", "/F"], { windowsHide: true }); rmSync(pidFile); }
+  if (existsSync(keepFile)) { spawnSync("taskkill", ["/PID", readFileSync(keepFile, "utf8"), "/T", "/F"], { windowsHide: true }); rmSync(keepFile); }
   wsl("service redis-server stop; service postgresql stop");
   console.log("stack down (run `wsl --shutdown` when no other session uses WSL)");
 } else {
   // WSL stops its services when its last session ends: keep one session open while the stack is up
-  if (!existsSync(keepFile)) { const k = spawn("wsl", ["-d", "Ubuntu", "-u", "root", "--", "sleep", "infinity"], { detached: true, windowsHide: true, stdio: "ignore" }); writeFileSync(keepFile, String(k.pid)); k.unref(); }
+  if (!existsSync(keepFile)) { const k = spawn("wsl", ["-d", "Ubuntu", "-u", "root", "--", "sleep", "infinity"], { detached: process.platform !== "win32", windowsHide: true, stdio: "ignore" }); writeFileSync(keepFile, String(k.pid)); k.unref(); }
   console.log(wsl("service postgresql start; service redis-server start").stdout);
   if (!(await alive())) {
-    const child = spawn(process.execPath, ["dist/main.js"], { cwd: backend, env, detached: true, windowsHide: true, stdio: ["ignore", "ignore", "ignore"] });
+    const child = spawn(process.execPath, ["dist/main.js"], { cwd: backend, env, detached: process.platform !== "win32", windowsHide: true, stdio: ["ignore", "ignore", "ignore"] });
     writeFileSync(pidFile, String(child.pid)); child.unref();
     for (let i = 0; i < 60 && !(await alive()); i++) await new Promise((r) => setTimeout(r, 1000));
   }

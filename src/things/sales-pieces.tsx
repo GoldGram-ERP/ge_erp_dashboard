@@ -11,6 +11,7 @@ import type { Column, CustomFormProps, MakeConfig, Row, ThingConfig, ViewAction,
 import { esc, milligramsText } from "@/lib/format";
 import { canOpen } from "@/nav/tree";
 import { useMe } from "@/lib/session";
+import { Td } from "@/components/ui";
 import { useT, type Tr } from "@/lib/t";
 import { useRouter } from "@/i18n/navigation";
 import { ThingPage, cellNode } from "@/components/engine";
@@ -76,7 +77,7 @@ export const makeConfigWith = (treasuries: Treasury[], scan?: () => void): MakeC
     const tot = answer?.totals;
     if (!tot) return null;
     const vals: Record<string, unknown> = { count: tot.count, weight: tot.weightMg };
-    return cols.map((c, i) => <td key={c.key} className={["money", "weight", "int"].includes(c.type ?? "") ? "num" : ""}>{i === 0 ? rep("total") : vals[c.key] === undefined ? "" : cellNode({ key: "v", type: c.type }, { v: vals[c.key] }, tr)}</td>);
+    return cols.map((c, i) => <Td key={c.key} num={["money", "weight", "int"].includes(c.type ?? "")}>{i === 0 ? rep("total") : vals[c.key] === undefined ? "" : cellNode({ key: "v", type: c.type }, { v: vals[c.key] }, tr)}</Td>);
   };
   const c = (key: string, type: Column["type"], get: (r: Row) => unknown, extra: Partial<Column> = {}): Column => ({ key, label: gs(`columns.${key}`), type, get, ...extra });
   const totalsCols = [c("branch", undefined, (r) => r.branchName), c("karat", undefined, (r) => r.karat), c("count", "int", (r) => r.count), c("weight", "weight", (r) => r.weightMg)];

@@ -11,6 +11,7 @@ import { useMe } from "@/lib/session";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { Icon, toast } from "@/components/engine";
 import { Select } from "@/components/fields/Select";
+import { Button, Input } from "@/components/ui";
 import { code6 } from "./money-shared";
 
 const KARATS = ["18", "21", "24", "999"];
@@ -151,12 +152,12 @@ export function SendTransferForm({ tr }: CustomFormProps) {
           {fld("to", m("to"), <Select id="f-to" name="to" value={toValue} onChange={(v) => change({ toTreasuryId: v })} options={targets.map((x) => [x.id, choiceText(x)] as Option)} placeholder={chooseTreasury} />)}
         </div>
         <div className="help" id="sx-none">{!mine.isLoading && !items.length ? m("noTreasuries") : from && targetsQ.data && !targets.length ? m("noTargets") : ""}</div>
-        {k === "egp" && <div id="sx-egp">{fld("amount", m("amount"), <input id="f-amount" type="text" inputMode="decimal" dir="ltr" autoComplete="off" value={draft.amount} onChange={(e) => change({ amount: e.target.value })} />, "0.00")}</div>}
+        {k === "egp" && <div id="sx-egp">{fld("amount", m("amount"), <Input id="f-amount" type="text" inputMode="decimal" dir="ltr" autoComplete="off" value={draft.amount} onChange={(e) => change({ amount: e.target.value })} />, "0.00")}</div>}
         {k === "gold" && (
           <div id="sx-gold">
-            {fld("pieceCode", m("pieceCode"), <input id="f-pieceCode" type="text" autoComplete="off" placeholder={m("pieceCodePlaceholder")} value={code} onChange={(e) => setCode(e.target.value)}
+            {fld("pieceCode", m("pieceCode"), <Input id="f-pieceCode" type="text" autoComplete="off" placeholder={m("pieceCodePlaceholder")} value={code} onChange={(e) => setCode(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); takeCode(); } }} />, m("pieceCodeHint"))}
-            <button type="button" className="btn quiet" id="sx-addpiece" onClick={takeCode}><Icon name="plus" />{m("addPiece")}</button>
+            <Button id="sx-addpiece" onClick={takeCode}><Icon name="plus" />{m("addPiece")}</Button>
             <p id="sx-scan" role="status" aria-live="polite" className={scan.ok ? "ok" : "err"}>{scan.text}</p>
             <div id="sx-pieces">
               {draft.pieces.length > 0 && (
@@ -165,7 +166,7 @@ export function SendTransferForm({ tr }: CustomFormProps) {
                     <li key={p.pieceCode}>
                       <span dir="ltr"><strong>{p.pieceCode}</strong></span> {p.itemName} · {p.karat}K · {milligramsText(p.weightMg)} {m("grams")}
                       {p.refused && <span className="err"> {p.refused}</span>}{" "}
-                      <button type="button" className="btn quiet sm" aria-label={m("removePiece", { code: p.pieceCode })} onClick={() => change({ pieces: draft.pieces.filter((_, j) => j !== i) })}><Icon name="trash" /></button>
+                      <Button size="sm" aria-label={m("removePiece", { code: p.pieceCode })} onClick={() => change({ pieces: draft.pieces.filter((_, j) => j !== i) })}><Icon name="trash" /></Button>
                     </li>
                   ))}
                 </ul>
@@ -174,14 +175,14 @@ export function SendTransferForm({ tr }: CustomFormProps) {
             <h3 className="grp-title">{m("bulkGold")}</h3>
             <div className="formgrid">
               {fld("goldKarat", m("karat"), <Select id="f-goldKarat" name="goldKarat" value={goldKarat} onChange={setGoldKarat} options={KARATS.map((x) => [x, `${x}K`] as Option)} placeholder={m("choose")} searchable={false} />)}
-              {fld("goldWeight", m("weightGrams"), <input id="f-goldWeight" type="text" inputMode="decimal" dir="ltr" autoComplete="off" value={goldWeight} onChange={(e) => setGoldWeight(e.target.value)} />, "0.000")}
+              {fld("goldWeight", m("weightGrams"), <Input id="f-goldWeight" type="text" inputMode="decimal" dir="ltr" autoComplete="off" value={goldWeight} onChange={(e) => setGoldWeight(e.target.value)} />, "0.000")}
             </div>
-            <button type="button" className="btn quiet" id="sx-addgold" onClick={addGold}><Icon name="plus" />{m("addGold")}</button>
+            <Button id="sx-addgold" onClick={addGold}><Icon name="plus" />{m("addGold")}</Button>
             {goldErr && <div className="err" id="sx-gold-err" role="alert">{goldErr}</div>}
             <div id="sx-golds">
               {draft.gold.map((g, i) => (
                 <div className="kv" key={g.karat}><span>{g.karat}K · {milligramsText(g.weightMg)} {m("grams")}</span>
-                  <button type="button" className="btn quiet sm" aria-label={m("removeGold", { karat: g.karat })} onClick={() => change({ gold: draft.gold.filter((_, j) => j !== i) })}><Icon name="trash" /></button></div>
+                  <Button size="sm" aria-label={m("removeGold", { karat: g.karat })} onClick={() => change({ gold: draft.gold.filter((_, j) => j !== i) })}><Icon name="trash" /></Button></div>
               ))}
             </div>
           </div>
@@ -190,7 +191,7 @@ export function SendTransferForm({ tr }: CustomFormProps) {
           {k === "egp" ? `EGP ${piastresText(amt ?? 0)}` : <>{m("totalPieces", { count: String(draft.pieces.length) })}{per.map((x) => <span key={x.kt} dir="ltr"> {x.kt}K: {milligramsText(x.mg)} {m("grams")}</span>)}</>}
         </div>
         {err && <div className="err" id="sx-err" role="alert">{err}</div>}
-        <div className="formbar"><button type="button" className="btn primary" id="sx-send" disabled={sending} onClick={send}>{sending ? m("sending") : m("send")}</button></div>
+        <div className="formbar"><Button variant="primary" id="sx-send" disabled={sending} onClick={send}>{sending ? m("sending") : m("send")}</Button></div>
       </form>
     </>
   );

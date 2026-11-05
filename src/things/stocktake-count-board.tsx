@@ -4,7 +4,7 @@
 // and GET /stock-counts/:id/pieces (counted, remaining, no longer in stock; paged, searched on the server).
 // Live: every few seconds while the page is visible and online (react-query pauses the interval when the tab is hidden and
 // when offline), and at once after each scan (the scan invalidates ["stock-count", id]). A closed count is frozen: no polling.
-import { Checkbox } from "@/components/ui";
+import { Button, Checkbox, DataTable, Input, Seg, TextButton, Td, Tr } from "@/components/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -111,68 +111,50 @@ export function Breakdown({ live }: { live: Live }) {
 
   const head = (key: SortKey, label: string, span = 1) => {
     const on = sort.key === key;
-    return (
-      <th colSpan={span} className={key === "name" ? "" : "num"} aria-sort={on ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
-        <button type="button" className="sc-sort" aria-label={m("sortBy", { col: label })} onClick={() => setSort(on ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: key === "name" ? 1 : -1 })}>
+    return {
+      colSpan: span, num: key !== "name", ariaSort: (on ? (sort.dir === 1 ? "ascending" : "descending") : "none") as "ascending" | "descending" | "none",
+      label: (
+        <TextButton className="sc-sort" aria-label={m("sortBy", { col: label })} onClick={() => setSort(on ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: key === "name" ? 1 : -1 })}>
           {label}{on && <span className="arr" aria-hidden>{sort.dir === 1 ? "↑" : "↓"}</span>}
-        </button>
-      </th>
-    );
+        </TextButton>
+      ),
+    };
   };
-  const pair = (t: Tally, cls = "") => <><td className={`num ${cls}`} dir="ltr">{t.pieces.toLocaleString("en-US")}</td><td className={`num ${cls}`} dir="ltr">{milligramsText(t.weightMg)}</td></>;
-  const leftCells = (l: Line) => l.remaining.pieces > 0 ? pair(l.remaining, "sc-left") : <td colSpan={2} className="num sc-done"><Icon name="check" size={14} />{m("done")}</td>;
+  const pair = (t: Tally, cls = "") => <><Td num className={cls} dir="ltr">{t.pieces.toLocaleString("en-US")}</Td><Td num className={cls} dir="ltr">{milligramsText(t.weightMg)}</Td></>;
+  const leftCells = (l: Line) => l.remaining.pieces > 0 ? pair(l.remaining, "sc-left") : <Td num colSpan={2} className="sc-done"><Icon name="check" size={14} />{m("done")}</Td>;
   const nameCols = tab === "item" ? 4 : 1;
 
   return (
     <section aria-labelledby="sc-bd-title" id="sc-breakdown">
       <h3 id="sc-bd-title" className="grp-title">{m("breakdown")}</h3>
       <div className="sc-tools">
-        <div className="seg" role="group" aria-label={m("breakdown")}>
-          {(["item", "karat", "category"] as Tab[]).map((k) => (
-            <button key={k} type="button" id={`sc-bd-${k}`} aria-pressed={tab === k} onClick={() => { setTab(k); setSearch(""); }}>
-              {m(k === "karat" ? "byKarat" : k === "item" ? "byItem" : "byCategory")}
-            </button>
-          ))}
-        </div>
+        <Seg label={m("breakdown")} value={tab} onChange={(k) => { setTab(k); setSearch(""); }}
+          items={(["item", "karat", "category"] as Tab[]).map((k) => ({ id: k, label: m(k === "karat" ? "byKarat" : k === "item" ? "byItem" : "byCategory"), attrs: { id: `sc-bd-${k}` } }))} />
         {tab !== "karat" && (
           <label className="search sc-search"><Icon name="search" size={16} />
-            <input id="sc-bd-search" type="search" value={search} placeholder={m("searchBreakdown")} aria-label={m("searchBreakdown")} onChange={(e) => setSearch(e.target.value)} />
+            <Input id="sc-bd-search" type="search" value={search} placeholder={m("searchBreakdown")} aria-label={m("searchBreakdown")} onChange={(e) => setSearch(e.target.value)} />
           </label>
         )}
         <Checkbox id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={setNotDoneFirst}>{m("notDoneFirst")}</Checkbox>
       </div>
-      <div className="table sc-table">
-        <table id="sc-bd-table">
-          <thead>
-            <tr>
-              {tab === "item" ? <>{head("name", m("item"))}<th>{m("itemCode")}</th><th>{m("category")}</th><th>{m("karat")}</th></> : head("name", tab === "karat" ? m("karat") : m("category"))}
-              {head("expected", m("expected"), 2)}{head("counted", m("counted"), 2)}{head("remaining", leftLabel, 2)}
-            </tr>
-            <tr className="sc-sub">
-              <th colSpan={nameCols} />
-              {[0, 1, 2].flatMap((i) => [<th key={`p${i}`} className="num">{m("piecesCol")}</th>, <th key={`g${i}`} className="num">{m("gramsCol")}</th>])}
-            </tr>
-          </thead>
-          <tbody>
-            {shown.length === 0 && <tr><td colSpan={nameCols + 6} className="help">{m("noPieces")}</td></tr>}
-            {shown.map((l) => (
-              <tr key={l.key} className={l.remaining.pieces > 0 ? "sc-row-left" : ""}>
-                <td>{l.name}</td>
-                {tab === "item" && <><td dir="ltr">{l.code}</td><td>{l.category}</td><td dir="ltr">{l.karat}</td></>}
-                {pair(l.expected)}{pair(l.counted)}{leftCells(l)}
-              </tr>
-            ))}
-          </tbody>
-          {shown.length > 0 && (
-            <tfoot>
-              <tr className="foot">
-                <td colSpan={nameCols}>{m("expected")}: {live.totals.expected.pieces.toLocaleString("en-US")}</td>
-                {pair(live.totals.expected)}{pair(live.totals.counted)}{pair(live.totals.remaining, live.totals.remaining.pieces > 0 ? "sc-left" : "")}
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
+      <DataTable className="sc-table" tableId="sc-bd-table" subHeadClassName="sc-sub"
+        head={[...(tab === "item" ? [head("name", m("item")), m("itemCode"), m("category"), m("karat")] : [head("name", tab === "karat" ? m("karat") : m("category"))]), head("expected", m("expected"), 2), head("counted", m("counted"), 2), head("remaining", leftLabel, 2)]}
+        subHead={[{ label: null, colSpan: nameCols }, ...[0, 1, 2].flatMap((i) => [{ label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }])]}
+        foot={shown.length > 0 ? (
+          <tr className="foot">
+            <Td colSpan={nameCols}>{m("expected")}: {live.totals.expected.pieces.toLocaleString("en-US")}</Td>
+            {pair(live.totals.expected)}{pair(live.totals.counted)}{pair(live.totals.remaining, live.totals.remaining.pieces > 0 ? "sc-left" : "")}
+          </tr>
+        ) : undefined}>
+        {shown.length === 0 && <Tr><Td colSpan={nameCols + 6} className="help">{m("noPieces")}</Td></Tr>}
+        {shown.map((l) => (
+          <Tr key={l.key} className={l.remaining.pieces > 0 ? "sc-row-left" : ""}>
+            <Td>{l.name}</Td>
+            {tab === "item" && <><Td dir="ltr">{l.code}</Td><Td>{l.category}</Td><Td dir="ltr">{l.karat}</Td></>}
+            {pair(l.expected)}{pair(l.counted)}{leftCells(l)}
+          </Tr>
+        ))}
+      </DataTable>
     </section>
   );
 }
@@ -207,42 +189,32 @@ export function PieceLists({ id, live }: { id: string; live: Live }) {
     <section aria-labelledby="sc-pl-title" id="sc-pieces">
       <h3 id="sc-pl-title" className="grp-title">{m("piecesTitle")}</h3>
       <div className="sc-tools">
-        <div className="seg" role="group" aria-label={m("piecesTitle")}>
-          {tabs.map(([k, label]) => <button key={k} type="button" id={`sc-pl-${k}`} aria-pressed={list === k} onClick={() => { setList(k); setPage(1); }}>{label}</button>)}
-        </div>
+        <Seg label={m("piecesTitle")} value={list} onChange={(k) => { setList(k); setPage(1); }}
+          items={tabs.map(([k, label]) => ({ id: k, label, attrs: { id: `sc-pl-${k}` } }))} />
         <label className="search sc-search"><Icon name="search" size={16} />
-          <input id="sc-pl-search" type="search" value={typed} placeholder={m("searchPieces")} aria-label={m("searchPieces")} onChange={(e) => setTyped(e.target.value)} />
+          <Input id="sc-pl-search" type="search" value={typed} placeholder={m("searchPieces")} aria-label={m("searchPieces")} onChange={(e) => setTyped(e.target.value)} />
         </label>
       </div>
-      <div className="table sc-table" aria-busy={q.isFetching}>
-        <table id="sc-pl-table">
-          <thead>
-            <tr>
-              <th>{m("pieceCode")}</th><th>{m("item")}</th><th>{m("category")}</th><th>{m("karat")}</th><th className="num">{m("weight")}</th>
-              {scanned && <><th>{m("scannedAt")}</th><th>{m("scannedBy")}</th></>}
-            </tr>
-          </thead>
-          <tbody>
-            {data && data.items.length === 0 && <tr><td colSpan={scanned ? 7 : 5} className="help">{m("noPieces")}</td></tr>}
-            {data?.items.map((p) => (
-              <tr key={p.pieceCode}>
-                <td><span className="sc-code"><span dir="ltr">{p.pieceCode}</span><CopyButton text={p.pieceCode} size={16} /></span></td>
-                <td><span dir="ltr" className="sc-mute">{p.itemCode}</span> {p.itemName}</td>
-                <td>{p.categoryName}</td>
-                <td dir="ltr">{p.karat}</td>
-                <td className="num" dir="ltr">{milligramsText(p.weightMg)}</td>
-                {scanned && <><td dir="ltr">{timeText(p.scannedAt, locale, true)}</td><td>{p.scannedByName ?? "—"}</td></>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable id="sc-pl-table" className="sc-table" aria-busy={q.isFetching}
+        head={[m("pieceCode"), m("item"), m("category"), m("karat"), { label: m("weight"), num: true }, ...(scanned ? [m("scannedAt"), m("scannedBy")] : [])]}>
+        {data && data.items.length === 0 && <Tr><Td colSpan={scanned ? 7 : 5} className="help">{m("noPieces")}</Td></Tr>}
+        {data?.items.map((p) => (
+          <Tr key={p.pieceCode}>
+            <Td><span className="sc-code"><span dir="ltr">{p.pieceCode}</span><CopyButton text={p.pieceCode} size={16} /></span></Td>
+            <Td><span dir="ltr" className="sc-mute">{p.itemCode}</span> {p.itemName}</Td>
+            <Td>{p.categoryName}</Td>
+            <Td dir="ltr">{p.karat}</Td>
+            <Td num dir="ltr">{milligramsText(p.weightMg)}</Td>
+            {scanned && <><Td dir="ltr">{timeText(p.scannedAt, locale, true)}</Td><Td>{p.scannedByName ?? "—"}</Td></>}
+          </Tr>
+        ))}
+      </DataTable>
       {pages > 1 && (
         <div className="pager">
           <span>{m("pageOf", { page, pages })}</span>
           <span>
-            <button type="button" className="btn quiet" id="sc-pl-prev" disabled={page <= 1} onClick={() => setPage(page - 1)}>{m("prevPage")}</button>
-            <button type="button" className="btn quiet" id="sc-pl-next" disabled={page >= pages} onClick={() => setPage(page + 1)}>{m("nextPage")}</button>
+            <Button id="sc-pl-prev" disabled={page <= 1} onClick={() => setPage(page - 1)}>{m("prevPage")}</Button>
+            <Button id="sc-pl-next" disabled={page >= pages} onClick={() => setPage(page + 1)}>{m("nextPage")}</Button>
           </span>
         </div>
       )}
@@ -281,14 +253,12 @@ export function MissingPreview({ live }: { live: Live }) {
   return (
     <div id="sc-save-preview" className="sc-preview">
       <p><strong>{m("saveMissing", { count: m("scannedCount", { count: left.pieces }), w: milligramsText(left.weightMg) })}</strong></p>
-      <div className="table sc-table"><table>
-        <thead><tr><th>{m("karat")}</th><th className="num">{m("piecesCol")}</th><th className="num">{m("gramsCol")}</th></tr></thead>
-        <tbody>{karats.map((l) => <tr key={l.karat}><td dir="ltr">{l.karat}</td><td className="num">{l.remaining.pieces}</td><td className="num" dir="ltr">{milligramsText(l.remaining.weightMg)}</td></tr>)}</tbody>
-      </table></div>
-      <div className="table sc-table sc-preview-items"><table>
-        <thead><tr><th>{m("item")}</th><th>{m("karat")}</th><th className="num">{m("piecesCol")}</th><th className="num">{m("gramsCol")}</th></tr></thead>
-        <tbody>{items.map((l) => <tr key={`${l.itemId}:${l.karat}`}><td><span dir="ltr" className="sc-mute">{l.itemCode}</span> {l.itemName}</td><td dir="ltr">{l.karat}</td><td className="num">{l.remaining.pieces}</td><td className="num" dir="ltr">{milligramsText(l.remaining.weightMg)}</td></tr>)}</tbody>
-      </table></div>
+      <DataTable className="sc-table" head={[m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
+        {karats.map((l) => <Tr key={l.karat}><Td dir="ltr">{l.karat}</Td><Td num>{l.remaining.pieces}</Td><Td num dir="ltr">{milligramsText(l.remaining.weightMg)}</Td></Tr>)}
+      </DataTable>
+      <DataTable className="sc-table sc-preview-items" head={[m("item"), m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
+        {items.map((l) => <Tr key={`${l.itemId}:${l.karat}`}><Td><span dir="ltr" className="sc-mute">{l.itemCode}</span> {l.itemName}</Td><Td dir="ltr">{l.karat}</Td><Td num>{l.remaining.pieces}</Td><Td num dir="ltr">{milligramsText(l.remaining.weightMg)}</Td></Tr>)}
+      </DataTable>
       <p className="help">{m("saveFinal")}</p>
     </div>
   );

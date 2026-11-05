@@ -6,9 +6,11 @@ import { useMemo } from "react";
 import type { Column, LookupSpec, Row } from "@/lib/engine-types";
 import { milligramsText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
+import { Td } from "@/components/ui";
 import { useMe } from "@/lib/session";
 
-export const code6 = (n: unknown) => String(n ?? "").padStart(6, "0");
+import { code6 } from "@/lib/code6";
+export { code6 };
 export const KIND_TONE: Record<string, "good" | "warn" | "off"> = { egp: "good", gold: "warn", secondary: "off" };
 // The branch filter: the branch list accepts page + limit.
 export const branchSpec: LookupSpec = { path: "/branches", value: "id", label: "branchName" };
@@ -35,7 +37,7 @@ export const goldNode = (items: Row[] = []): ReactNode => lines(items.map((l) =>
 /** Totals row under a table: `cells` gives the ready text of the columns that add up; the first cell names the row. */
 export function foot(cols: Column[], name: string, cells: Record<string, ReactNode>): ReactNode {
   return cols.map((c, i) => (
-    <td key={c.key} className={["money", "weight", "int"].includes(c.type ?? "") || c.className === "num" ? "num" : ""}>{i === 0 ? name : (cells[c.key] ?? "")}</td>
+    <Td key={c.key} num={["money", "weight", "int"].includes(c.type ?? "") || c.className === "num"}>{i === 0 ? name : (cells[c.key] ?? "")}</Td>
   ));
 }
 

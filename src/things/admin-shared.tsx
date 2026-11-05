@@ -4,7 +4,7 @@
 // so it is sent only when the person changed it. Forced password change and the lock after 5 wrong passwords are backend behaviour only
 // (the form has no control for them; a locked account shows the locked badge and the Unlock action).
 // shortcut: the page's "back" button leaves without the unsaved-changes question (Cancel asks); upgrade when the engine exposes a leave guard.
-import { Checkbox, CheckInput } from "@/components/ui";
+import { Button, Checkbox, CheckInput, Input, Status } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
@@ -16,7 +16,8 @@ import { Kv, Ltr, Section, toast, useConfirm } from "@/components/engine";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
 import { JOBS, SECTIONS, type ScreenName, type Section as Sec } from "./admin-names";
 
-export const code6 = (n: unknown) => String(n).padStart(6, "0");   // userCodeText: six digits
+import { code6 } from "@/lib/code6";
+export { code6 };   // userCodeText: six digits
 export const TYPES = ["user", "admin", "super_admin"] as const;
 const GROUPS = ["sell", "stock", "finance", "people", "control"];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -70,7 +71,7 @@ export function UserRecord({ r, tr }: { r: Row; tr: Tr }) {
       </Section>
       <Section title={u("screens.heading")}>
         {r.userType === "user"
-          ? (r.screens?.length ? <div className="chips">{r.screens.map((k: string) => <span key={k} className="st off"><i />{keyName(tr, k)}</span>)}</div> : <p className="mute">{u("screens.none")}</p>)
+          ? (r.screens?.length ? <div className="chips">{r.screens.map((k: string) => <Status key={k} tone="off">{keyName(tr, k)}</Status>)}</div> : <p className="mute">{u("screens.none")}</p>)
           : <p className="mute">{u(`screens.fixed.${r.userType}`)}</p>}
       </Section>
     </>
@@ -211,29 +212,29 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
       const ids = inG.map((j) => j[0]).filter(givable), on = ids.filter((id) => jobs.has(id)).length, gname = t("jobs", `groups.${g}`);
       return <div key={g} style={{ marginTop: 12 }}>
         <div className="actions"><b>{gname}</b> <span dir="ltr" className="mute">{on}/{ids.length}</span>
-          {!preview && <><button type="button" className="btn quiet sm" disabled={on === ids.length} onClick={() => toggleJobs(ids, true)}>{u("jobs.selectAll")}</button>
-          <button type="button" className="btn quiet sm" disabled={on === 0} onClick={() => toggleJobs(ids, false)}>{u("jobs.unselectAll")}</button></>}</div>
+          {!preview && <><Button size="sm" disabled={on === ids.length} onClick={() => toggleJobs(ids, true)}>{u("jobs.selectAll")}</Button>
+          <Button size="sm" disabled={on === 0} onClick={() => toggleJobs(ids, false)}>{u("jobs.unselectAll")}</Button></>}</div>
         <div style={grid}>{inG.map((j) => { const id = j[0], can = givable(id), keys = jobScreens(id), has = can && jobs.has(id), missing = keys.filter((k) => !screens.has(k));
           return <label key={id} style={box(has, preview || !can)}>
             <CheckInput data-job={id} checked={has} disabled={preview || !can} onChange={(v) => toggleJobs([id], v, false)} style={{ marginTop: 3 }} />
             <span><b style={{ fontWeight: 600 }}>{L(j[2], j[3])}</b>{!can && <> <span className="mute">{u("jobs.adminOnly")}</span></>}
               <span style={small}>{keys.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ")}</span>
-              {has && missing.length > 0 && !preview && <span className="note warn" style={{ display: "block", marginTop: 4 }}>{u("jobs.partMissing", { names: missing.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ") })} <button type="button" className="btn quiet sm" onClick={(e) => { e.preventDefault(); keys.forEach((k) => screens.add(k)); setScreens(new Set(screens)); mark(); }}>{u("jobs.giveMissing")}</button></span>}</span>
+              {has && missing.length > 0 && !preview && <span className="note warn" style={{ display: "block", marginTop: 4 }}>{u("jobs.partMissing", { names: missing.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ") })} <Button size="sm" onClick={(e) => { e.preventDefault(); keys.forEach((k) => screens.add(k)); setScreens(new Set(screens)); mark(); }}>{u("jobs.giveMissing")}</Button></span>}</span>
           </label>; })}</div></div>; });
   };
   const switcher = (off: boolean) => <div className="seg" role="tablist" aria-label={u("jobs.tabs")}>{(["job", "screen"] as const).map((k) => <button key={k} type="button" disabled={off} role="tab" aria-pressed={shownTab === k} aria-selected={shownTab === k} onClick={() => setTab(k)}>{u(k === "job" ? "jobs.byJob" : "jobs.byScreen")}</button>)}</div>;
   const perm = ty !== "user" && ty
     ? <><p className="mute">{u(`screens.fixed.${ty}`)}</p><p className="mute">{u("jobs.all")}</p></>
-    : permQ.isError ? <><div className="note warn">{c("couldNotLoad")}</div><button type="button" className="btn quiet" onClick={() => permQ.refetch()}>{c("retry")}</button></>
+    : permQ.isError ? <><div className="note warn">{c("couldNotLoad")}</div><Button onClick={() => permQ.refetch()}>{c("retry")}</Button></>
     : !loaded ? <div className="skeleton" aria-busy="true"><i /><i /><i /></div>
     : !ty ? <><p className="mute">{L("اختر نوع المستخدم لتحديد وظائفه وشاشاته.", "Choose a user type to give it jobs and screens.")}</p>{switcher(true)}<div aria-hidden="true">{jobCards(true).slice(0, 1)}</div></>
     : <>
       <div className="actions" style={{ justifyContent: "space-between" }}>{switcher(false)}<b dir="auto" aria-live="polite">{summary}</b></div>
       {shownTab === "screen" ? (() => { const open = offered.filter((k) => screens.has(k)).length; return <>
         <div className="actions"><span dir="ltr" aria-live="polite">{u("screens.count", { open, all: offered.length })}</span>
-          <button type="button" className="btn quiet sm" disabled={open === offered.length} onClick={() => toggleScreens(offered, true)}>{u("screens.selectAll")}</button>
-          <button type="button" className="btn quiet sm" disabled={open === 0} onClick={() => toggleScreens(offered, false)}>{u("screens.unselectAll")}</button></div>
-        <input id="screen-q" placeholder={L("ابحث عن شاشة", "Search screens")} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" aria-label={L("ابحث عن شاشة", "Search screens")} />
+          <Button size="sm" disabled={open === offered.length} onClick={() => toggleScreens(offered, true)}>{u("screens.selectAll")}</Button>
+          <Button size="sm" disabled={open === 0} onClick={() => toggleScreens(offered, false)}>{u("screens.unselectAll")}</Button></div>
+        <Input id="screen-q" placeholder={L("ابحث عن شاشة", "Search screens")} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" aria-label={L("ابحث عن شاشة", "Search screens")} />
         {mods.map((m0) => { const m = { ...m0, list: m0.list.filter((x) => !ql || `${x.name} ${m0.name}`.toLowerCase().includes(ql)) }; if (!m.list.length) return null; const keys = m.list.map((x) => x.key), on = keys.filter((k) => screens.has(k)).length;
           return <div key={m.id} style={{ marginTop: 12 }}>
             <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: m.name })} label={<><b>{m.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span> <span className="mute">· {u("screens.selectAll")}</span></>} />
@@ -248,8 +249,8 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
       <Section title={u("screens.heading")} wide>{perm}{permErr && <div className="err" role="alert">{permErr}</div>}</Section>
       {alert && <div className="err" role="alert">{alert}</div>}
       <div className="formbar">
-        <button type="button" className="btn primary" id="save" disabled={saving} onClick={save}>{saving ? c("saving") : adding ? c("save") : c("saveChanges")}</button>
-        <button type="button" className="btn quiet" id="cancel" onClick={leave}>{c("cancel")}</button>
+        <Button variant="primary" id="save" disabled={saving} onClick={save}>{saving ? c("saving") : adding ? c("save") : c("saveChanges")}</Button>
+        <Button id="cancel" onClick={leave}>{c("cancel")}</Button>
         <span className="mute">{note || (dirty ? c("unsavedChanges") : "")}</span>
       </div>
     </>

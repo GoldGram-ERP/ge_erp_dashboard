@@ -1,4 +1,5 @@
 "use client";
+import { DataTable, Status, Td, Tr } from "@/components/ui";
 // A piece's whole story (the lead, 2026-11-02): where it is now and what it was, then every sale and return, then every branch transfer. Read only; nothing here
 // puts the piece on an invoice. Drawn inline (no side sheet). A number opens its record when the person's screens allow it.
 import type { ReactNode } from "react";
@@ -17,12 +18,9 @@ function History({ name, title, empty, cols, rows, keyOf }: { name: string; titl
     <section data-history-section={name} aria-labelledby={`history-${name}`}>
       <h3 id={`history-${name}`} className="grp-title">{title}</h3>
       {rows.length === 0 ? <p data-history-empty className="hint">{empty}</p> : (
-        <div className="table" style={{ overflowX: "auto" }}>
-          <table>
-            <thead><tr>{cols.map((c) => <th key={c.key} className={c.end ? "num" : undefined}>{c.label}</th>)}</tr></thead>
-            <tbody>{rows.map((r) => <tr key={keyOf(r)} data-history-row>{cols.map((c) => <td key={c.key} className={c.end ? "num" : undefined}>{c.draw(r)}</td>)}</tr>)}</tbody>
-          </table>
-        </div>
+        <DataTable style={{ overflowX: "auto" }} head={cols.map((c) => ({ label: c.label, num: c.end }))}>
+          {rows.map((r) => <Tr key={keyOf(r)} data-history-row>{cols.map((c) => <Td key={c.key} num={c.end}>{c.draw(r)}</Td>)}</Tr>)}
+        </DataTable>
       )}
     </section>
   );
@@ -55,7 +53,7 @@ export function PieceStory({ r }: { r: Row }) {
     { key: "pieceCode", label: t("pieceCode"), draw: (x) => <Ltr>{x.pieceCode}</Ltr> },
     { key: "documentNumber", label: t("invoiceOrReturnNumber"), draw: (x) => (
       <>{link(x.kind === "sale" ? (may("gold-sales/sales-invoices-list", "gold-sales/sales-invoices") ? `/sales/invoices?open=${x.id}` : null) : may("gold-sales/returns-list", "gold-sales/returns") ? `/sales/returns?open=${x.id}` : null, code6(x.documentNumber))}
-        {x.kind === "return" && <> <span className="st warn"><i />{t("returnBadge")}</span></>}{x.deleted && <> <span className="st off"><i />{t("deletedBadge")}</span></>}</>) },
+        {x.kind === "return" && <> <Status tone="warn">{t("returnBadge")}</Status></>}{x.deleted && <> <Status tone="off">{t("deletedBadge")}</Status></>}</>) },
     { key: "date", label: t("saleOrReturnDate"), draw: (x) => day(x.date) },
     { key: "customerName", label: t("customerName"), draw: (x) => name(x.customerName) },
     { key: "itemName", label: t("itemName"), draw: (x) => name(x.itemName) },

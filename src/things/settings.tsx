@@ -3,7 +3,7 @@
 // Ported from docs/nav-preview/app/things/settings.js. Admin and Super admin only. Limits: names 200, address 500, phone 500, footer 2000; the logo is kept
 // to 90,000 characters (dashboard) although the backend would take more. The logo is a data URL inside the row; null removes it.
 // shortcut: the shell's header brand is not refreshed after a save (a reload shows it), as in the HTML.
-import { FileInput } from "@/components/ui";
+import { FileInput, Button } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
@@ -107,8 +107,8 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
             <div id="logo-box">
               <div>{logo ? <img src={logo} alt={m("logoAlt")} style={{ maxHeight: 72, maxWidth: 160 }} /> : <span className="mute">{m("noLogo")}</span>}</div>
               <div className="actions">
-                <button type="button" className="btn quiet sm" id="logo-pick" onClick={() => fileRef.current?.click()}>{logo ? m("changeLogo") : m("uploadLogo")}</button>
-                {logo && <button type="button" className="btn quiet sm danger" id="logo-rm" onClick={() => { setLogo(null); setLogoName(""); setLogoDirty(true); key.current = newSaveKey(); }}>{m("removeLogo")}</button>}
+                <Button size="sm" id="logo-pick" onClick={() => fileRef.current?.click()}>{logo ? m("changeLogo") : m("uploadLogo")}</Button>
+                {logo && <Button size="sm" danger id="logo-rm" onClick={() => { setLogo(null); setLogoName(""); setLogoDirty(true); key.current = newSaveKey(); }}>{m("removeLogo")}</Button>}
               </div>
               <FileInput ref={fileRef} id="logo-file" accept="image/*" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
               <div className="mute">{logoName ? m("logoChosen", { name: logoName }) : logo ? m("logoKept") : ""}</div>
@@ -132,8 +132,8 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
       </div>
       {alert && <div className="err" id="st-alert" role="alert">{alert}</div>}
       <div className="formbar">
-        <button type="button" className="btn primary" id="st-save" disabled={saving} onClick={() => void submit()}>{saving ? c("saving") : c("saveChanges")}</button>
-        <button type="button" className="btn quiet" id="st-cancel" onClick={() => void leave()}>{c("cancel")}</button>
+        <Button variant="primary" id="st-save" disabled={saving} onClick={() => void submit()}>{saving ? c("saving") : c("saveChanges")}</Button>
+        <Button id="st-cancel" onClick={() => void leave()}>{c("cancel")}</Button>
         <span className="mute" id="st-note">{note}</span>
       </div>
       {dialog}

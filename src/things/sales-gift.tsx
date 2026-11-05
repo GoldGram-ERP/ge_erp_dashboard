@@ -1,7 +1,7 @@
 "use client";
 // The gift invoice (backend #169, dashboard #7): a switch on the new invoice that reveals the recipient, and a print box on the
 // invoice view. The printed invoice carries the recipient and never the real buyer or the seller; the buyer stays on the screens.
-import { SwitchInput } from "@/components/ui";
+import { Button, SwitchInput } from "@/components/ui";
 import { useState } from "react";
 import type { Row } from "@/lib/engine-types";
 import { latinNumber } from "@/lib/format";
@@ -63,7 +63,7 @@ export function GiftPrintBox({ row, tr }: { row: Row; tr: Tr }) {
           <SwitchInput id="f-showPrices" checked={prices} onChange={setPrices} />
           <span><b>{sg(tr, "showPrices")}</b> <span className="help">{sg(tr, "showPricesHint")}</span></span>
         </label>
-        <button type="button" className="btn primary" id="print-gift" style={{ marginTop: 10 }} onClick={print}>{tr.t("gold-sales", "prints.layouts.gift")}</button>
+        <Button variant="primary" id="print-gift" style={{ marginTop: 10 }} onClick={print}>{tr.t("gold-sales", "prints.layouts.gift")}</Button>
       </div>
     </Section>
   );

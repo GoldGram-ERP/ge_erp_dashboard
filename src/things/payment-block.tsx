@@ -7,6 +7,7 @@ import type { Row } from "@/lib/engine-types";
 import { milligramsText, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { Icon, Kv, Ltr } from "@/components/engine";
+import { Button, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, sg } from "./sales-form-parts";
 import { bankPaid, cashPaid, linePriceOf, type Bank } from "./sales-invoices-math";
 
@@ -43,13 +44,13 @@ export function PaymentBlock({ tr, cash, onCash, banks, onBanks, accounts, error
             </div>
             <div className="field" data-k={`bank${i}Amount`} data-err={errors[`bank${i}Amount`] ? "" : undefined}>
               <label htmlFor={`bm${i}`}>{i === 0 ? sg(tr, "bankAmount") : sg(tr, "bankAmountN", { number: i + 1 })}</label>
-              <input id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} style={{ textAlign: "end" }} aria-invalid={!!errors[`bank${i}Amount`]} onChange={(e) => set(i, { amount: e.target.value })} />{err(`bank${i}Amount`)}
+              <Input id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} style={{ textAlign: "end" }} aria-invalid={!!errors[`bank${i}Amount`]} onChange={(e) => set(i, { amount: e.target.value })} />{err(`bank${i}Amount`)}
             </div>
-            <div className="bank-rm"><button type="button" className="btn quiet sm danger" data-rmbank={i} aria-label={sg(tr, "removeBankRow", { number: i + 1 })} onClick={() => onBanks(banks.filter((_, j) => j !== i))}><Icon name="trash" size={15} />{sg(tr, "remove")}</button></div>
+            <div className="bank-rm"><Button size="sm" danger data-rmbank={i} aria-label={sg(tr, "removeBankRow", { number: i + 1 })} onClick={() => onBanks(banks.filter((_, j) => j !== i))}><Icon name="trash" size={15} />{sg(tr, "remove")}</Button></div>
           </div>
         ))}
       </div>
-      <button type="button" className="btn quiet sm" data-addbank onClick={() => onBanks([...banks, blankBank()])}><Icon name="plus" size={15} />{banks.length ? sg(tr, "addBankRow") : sg(tr, "addBank")}</button>
+      <Button size="sm" data-addbank onClick={() => onBanks([...banks, blankBank()])}><Icon name="plus" size={15} />{banks.length ? sg(tr, "addBankRow") : sg(tr, "addBank")}</Button>
       <div id="paySumErr">{err("sum")}</div>
       {sumLabel && <div className="pay-sum"><span className="help">{sumLabel}</span><b dir="ltr" id="paySum" data-summary>{piastresText(cashPaid(cash) + bankPaid(banks))}</b></div>}
     </div>

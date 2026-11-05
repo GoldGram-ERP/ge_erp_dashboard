@@ -1,4 +1,5 @@
 "use client";
+import { DataTable, Input, Status, Td, Tr as TRow } from "@/components/ui";
 // تحويلات الخزن: money/transfers = treasuries/{treasury-transfers, in-transit}. Ported from docs/nav-preview/app/things/treasury-transfers.js.
 // Views: transfers by box (incoming, sent, all) and status, the in-transit report. A row opens the transfer with its pieces, gold lines and state.
 // State machine: sent -> accepted | refused | cancelled, final after that. Accept / refuse / cancel are the record's actions; Send is its own page.
@@ -39,7 +40,7 @@ function CheckBox({ r, m }: { r: Row; m: (k: string, v?: Record<string, string>)
     <>
       <div className="field" data-k="chk">
         <label htmlFor="chk">{m("checkPiece")}</label>
-        <input id="chk" autoComplete="off" onKeyDown={(e) => { if (e.key !== "Enter") return; e.preventDefault(); const el = e.currentTarget; const v = el.value.trim(); el.value = ""; take(v); }} />
+        <Input id="chk" autoComplete="off" onKeyDown={(e) => { if (e.key !== "Enter") return; e.preventDefault(); const el = e.currentTarget; const v = el.value.trim(); el.value = ""; take(v); }} />
         <div className="help" id="chk-note" role="status" aria-live="polite">{note}</div>
       </div>
       <PieceTicks r={r} ticked={ticked} m={m} />
@@ -48,7 +49,7 @@ function CheckBox({ r, m }: { r: Row; m: (k: string, v?: Record<string, string>)
 }
 function PieceTicks({ r, ticked, m }: { r: Row; ticked: string[]; m: (k: string) => string }) {
   if (!ticked.length) return null;
-  return <div>{ticked.map((c) => <span key={c} className="st good" data-checked={c}><i />{c} {m("checkedMark")}</span>)}</div>;
+  return <div>{ticked.map((c) => <Status key={c} tone="good" data-checked={c}>{c} {m("checkedMark")}</Status>)}</div>;
 }
 
 export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
@@ -158,10 +159,9 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
           </Section>
           {r.pieces.length > 0 && (
             <Section title={m("piecesList")}>
-              <div className="table" style={{ overflowX: "auto" }}><table>
-                <thead><tr><th>{m("pieceCode")}</th><th>{L("الصنف", "Item")}</th><th>{m("karat")}</th><th className="num">{m("weightGrams")}</th></tr></thead>
-                <tbody>{(r.pieces as Row[]).map((p) => <tr key={p.pieceCode} data-pc={p.pieceCode}><td dir="ltr">{p.pieceCode}</td><td>{p.itemName}</td><td dir="ltr">{p.karat}</td><td className="num">{milligramsText(p.weightMg)}</td></tr>)}</tbody>
-              </table></div>
+              <DataTable style={{ overflowX: "auto" }} head={[m("pieceCode"), L("الصنف", "Item"), m("karat"), { label: m("weightGrams"), num: true }]}>
+                {(r.pieces as Row[]).map((p) => <TRow key={p.pieceCode} data-pc={p.pieceCode}><Td dir="ltr">{p.pieceCode}</Td><Td>{p.itemName}</Td><Td dir="ltr">{p.karat}</Td><Td num>{milligramsText(p.weightMg)}</Td></TRow>)}
+              </DataTable>
             </Section>
           )}
           {r.gold.length > 0 && <Section title={m("bulkGold")}>{(r.gold as Row[]).map((g) => <Kv key={g.karat} k={`${g.karat}K`}><Ltr>{milligramsText(g.weightMg)}</Ltr></Kv>)}</Section>}

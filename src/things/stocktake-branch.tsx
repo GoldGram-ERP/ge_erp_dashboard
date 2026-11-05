@@ -1,4 +1,5 @@
 "use client";
+import { DataTable, Td, Tr as TRow } from "@/components/ui";
 // جرد الفرع: stock/branch-stock (stock-by-category, stock-by-item, sales-by-item). READ ONLY. Ported from docs/nav-preview/app/things/stocktake-branch.js.
 // Stock by category / by item: one row per category or item, a weight and a count per karat that has stock, then totals and the weight as 21 karat.
 // An item row opens its pieces (the branch-stock report filtered by the item, first 100 by code). Sales by item: sold lines grouped by item name and karat.
@@ -114,10 +115,9 @@ export const makeConfigWith = (treasuries: GoldTreasury[], lists: Lists): MakeCo
       const line = p.total > rows.length ? m("branchStock.piecesFirst", { shown: rows.length, total: p.total }) : m("branchStock.pieces", { count: p.total, shown: String(p.total) });
       return <>
         <h3 className="grp-title">{m("branchStock.piecesTitle")} · {r.name}</h3><div className="help">{line}</div>
-        <div className="table" style={{ overflowX: "auto" }}><table>
-          <thead><tr><th>{m("branchStock.columns.code")}</th><th>{m("branchStock.karat")}</th><th className="num">{m("branchStock.columns.weight")}</th><th className="num">{m("branchStock.columns.tagPrice")}</th></tr></thead>
-          <tbody>{rows.map((x) => <tr key={x.pieceCode}><td dir="ltr">{x.pieceCode}</td><td dir="ltr">{karatName(x.karat)}</td><td className="num">{milligramsText(x.weightMg)}</td><td className="num">{piastresText(x.tagPrice)}</td></tr>)}</tbody>
-        </table></div>
+        <DataTable style={{ overflowX: "auto" }} head={[m("branchStock.columns.code"), m("branchStock.karat"), { label: m("branchStock.columns.weight"), num: true }, { label: m("branchStock.columns.tagPrice"), num: true }]}>
+          {rows.map((x) => <TRow key={x.pieceCode}><Td dir="ltr">{x.pieceCode}</Td><Td dir="ltr">{karatName(x.karat)}</Td><Td num>{milligramsText(x.weightMg)}</Td><Td num>{piastresText(x.tagPrice)}</Td></TRow>)}
+        </DataTable>
       </>;
     },
     actions: [],

@@ -2,7 +2,7 @@
 // المستخدمين: administration/users (add / edit), administration/users-list (list + record) and "assign jobs" (PUT /users/job-holders/{jobId}).
 // Ported from docs/nav-preview/app/things/users.js. List sends only: search, page, order=newest, type, locked=only, deleted=only (Super admin). Page size is the backend's 20.
 // Admin: reads every user, manages plain Users only (mayManage). Delete refusals (ownAccount, lastSuperAdmin, isBranchAdmin, notAllowed) show their errors.json text.
-import { Checkbox } from "@/components/ui";
+import { Checkbox, Button, Input, Status } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
@@ -39,12 +39,12 @@ function Holders({ row, close, reload, tr }: CustomFormProps) {
         {err ? <div className="note warn">{err}</div> : !people ? <div className="skeleton" aria-busy="true"><i /><i /><i /></div>
           : people.length === 0 ? <p className="mute">{a("noUsers")}</p>
           : <>
-            <input id="hp-q" placeholder={a("searchUser")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={a("searchUser")} autoComplete="off" />
+            <Input id="hp-q" placeholder={a("searchUser")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={a("searchUser")} autoComplete="off" />
             <p dir="ltr" aria-live="polite">{a("count", { on: on.size, all: people.length })}</p>
             {list.map((p) => <Checkbox key={p.id} checked={on.has(p.id)} onChange={(v) => { const n = new Set(on); v ? n.add(p.id) : n.delete(p.id); setOn(n); key.current = newSaveKey(); }}>{p.name} <bdi dir="ltr" className="mute">{p.username}</bdi></Checkbox>)}
           </>}
       </div>
-      <div className="formbar"><button type="button" className="btn primary" id="hp-save" disabled={!people || saving} onClick={save}>{a("save")}</button><button type="button" className="btn quiet" onClick={close}>{t("common", "cancel")}</button></div>
+      <div className="formbar"><Button variant="primary" id="hp-save" disabled={!people || saving} onClick={save}>{a("save")}</Button><Button onClick={close}>{t("common", "cancel")}</Button></div>
     </>
   );
 }
@@ -75,7 +75,7 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
       paging: { sizeParam: null },
       onRow: (row, h) => h.open(row),
       columns: [
-        { key: "userCode", label: u("userCode"), render: (r) => <><Ltr>{code6(r.userCode)}</Ltr>{r.deletedAt ? <> <span className="st off"><i />{u("deletedBadge")}</span></> : r.locked ? <> <span className="st warn"><i />{u("lockedBadge")}</span></> : null}</> },
+        { key: "userCode", label: u("userCode"), render: (r) => <><Ltr>{code6(r.userCode)}</Ltr>{r.deletedAt ? <> <Status tone="off">{u("deletedBadge")}</Status></> : r.locked ? <> <Status tone="warn">{u("lockedBadge")}</Status></> : null}</> },
         { key: "username", label: u("username"), render: (r) => <bdi dir="ltr">{r.username}</bdi> },
         { key: "email", label: u("email"), render: (r) => (r.needsEmail ? "—" : <bdi dir="ltr">{r.email}</bdi>) },
         { key: "userType", label: u("userType"), get: (r) => typeName(tr, r.userType) },

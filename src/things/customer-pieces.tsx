@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui";
 // قطع مرتجعة (ليست من مبيعاتنا): buy/returned-pieces (issue #4, backend #167). A piece a customer brings back is BOUGHT from them (owner, 2026-11-05):
 // one purchase document of N pieces of an item, paid in full, each piece in stock with its label. It is then sold like any piece.
 // Open to whoever holds the Purchase coding screen (the backend's screen map: Purchase coding owns customer-pieces).
@@ -59,7 +60,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       { key: "customerPhone", label: cp("customerPhone"), render: (r) => <Ltr>{r.customerPhone}</Ltr> },
       { key: "createdAt", label: cp("createdAt"), type: "date" },
       { key: "reprint", label: cp("reprint"), sortable: false, render: (r) => (r.deletedAt ? null
-        : <button type="button" className="btn quiet sm" data-reprint={r.code} aria-label={cp("reprintCode", { code: r.code })} onClick={(e) => { e.stopPropagation(); reprint(r); }}>{cp("reprint")}</button>) },
+        : <Button size="sm" data-reprint={r.code} aria-label={cp("reprintCode", { code: r.code })} onClick={(e) => { e.stopPropagation(); reprint(r); }}>{cp("reprint")}</Button>) },
     ],
     rowClass: (r) => (r.deletedAt ? "deleted" : ""),
   };

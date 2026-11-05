@@ -101,7 +101,7 @@ export function Kv({ k, children }: { k: string; children?: ReactNode }) {
 export const Ltr = ({ children }: { children: ReactNode }) => <span dir="ltr">{children}</span>;
 
 // ───── Segmented control with a sliding highlight ─────
-export function Seg<T extends string>({ label, items, value, onChange, className = "" }: { label: string; items: { id: T; label: string }[]; value: T; onChange: (v: T) => void; className?: string }) {
+export function Seg<T extends string>({ label, items, value, onChange, className = "", attrs }: { label: string; items: { id: T; label: ReactNode; attrs?: Record<string, string> }[]; value: T; onChange: (v: T) => void; className?: string; attrs?: Record<string, string> }) {
   const box = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<{ x: number; w: number } | null>(null);
   useLayoutEffect(() => {
@@ -109,9 +109,9 @@ export function Seg<T extends string>({ label, items, value, onChange, className
     setThumb(on ? { x: on.offsetLeft, w: on.offsetWidth } : null);
   }, [value, items.length]);
   return (
-    <div ref={box} className={`seg ${className}`} role="group" aria-label={label}>
+    <div ref={box} className={`seg ${className}`} role="group" aria-label={label} {...attrs}>
       {thumb && <span className="thumb" style={{ width: thumb.w, transform: `translateX(${thumb.x}px)` }} />}
-      {items.map((i) => <button key={i.id} type="button" aria-pressed={i.id === value} onClick={() => onChange(i.id)}>{i.label}</button>)}
+      {items.map((i) => <button key={i.id} type="button" aria-pressed={i.id === value} onClick={() => onChange(i.id)} {...i.attrs}>{i.label}</button>)}
     </div>
   );
 }

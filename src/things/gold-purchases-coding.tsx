@@ -1,4 +1,5 @@
 "use client";
+import { Button, DataTable, Input, Td, Tr } from "@/components/ui";
 // Purchase coding for one invoice, as a full page (forms.code). Port of gold-purchases-coding.js.
 // Each line not yet coded gets one piece per unit of its quantity. One source (owner, 2026-11-04): a piece takes the item's weight and
 // workmanship per gram, typed on the Items screen only; here they are read only and nothing is typed. The piece code is the system's.
@@ -90,7 +91,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
     <>
       <div className="card"><div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between", alignItems: "center" }}>
         <h3 style={{ margin: 0 }}>{m("invoiceNo")} <span dir="ltr">{code6(coding.invoiceNumber)}</span> <span className="sub" dir="ltr">{dateText(coding.date)}</span></h3>
-        <div className="actions"><button className="btn quiet" type="button" id="cd-pieces" onClick={() => window.location.assign(`/${tr.locale}/buy/purchases?view=pieces&invoiceNumber=${coding.invoiceNumber}`)}>{m("invoicePieces")}</button></div>
+        <div className="actions"><Button id="cd-pieces" onClick={() => window.location.assign(`/${tr.locale}/buy/purchases?view=pieces&invoiceNumber=${coding.invoiceNumber}`)}>{m("invoicePieces")}</Button></div>
       </div></div>
       {made.length > 0 && <div id="cd-made"><LabelsCard tr={tr} title={m("madeLabels")} labels={made.map(labelOf)} /></div>}
       {openLines.length ? (
@@ -115,19 +116,19 @@ export function CodingForm({ row, tr }: CustomFormProps) {
                 {Array.from({ length: Math.min(open.quantity, ROWS_SHOWN) }, (_, j) => (
                   <div role="group" className="formgrid" key={j} style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, marginTop: 10 }} aria-label={m("pieceNumber", { number: j + 1 })}>
                     <div className="field"><label htmlFor={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`}>{m("pieceCode")}</label>
-                      <input id={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`} disabled dir="ltr" style={{ textAlign: "start" }} readOnly value={nextCode.data ? String(nextCode.data.next + offsets[i] + j) : m("codeAuto")} />
+                      <Input id={i === 0 && j === 0 ? "pc-next" : `pc-${i}-${j}`} disabled dir="ltr" style={{ textAlign: "start" }} readOnly value={nextCode.data ? String(nextCode.data.next + offsets[i] + j) : m("codeAuto")} />
                       {!nextCode.data && <div className="help">{m("codeAuto")}</div>}</div>
                     <div className="field"><label htmlFor={`w-${i}-${j}`}>{m("weight")}</label>
-                      <input id={`w-${i}-${j}`} data-f="weight" dir="ltr" readOnly placeholder="—" value={weight} /></div>
+                      <Input id={`w-${i}-${j}`} data-f="weight" dir="ltr" readOnly placeholder="—" value={weight} /></div>
                     <div className="field"><label htmlFor={`m-${i}-${j}`}>{m("makingChargePerGram")}</label>
-                      <input id={`m-${i}-${j}`} data-f="makingChargePerGram" dir="ltr" readOnly placeholder="—" value={making} /></div>
+                      <Input id={`m-${i}-${j}`} data-f="makingChargePerGram" dir="ltr" readOnly placeholder="—" value={making} /></div>
                   </div>
                 ))}
                 {open.quantity > ROWS_SHOWN && <p className="help" data-more={i}>{nextCode.data ? m("moreUnitsTo", { count: open.quantity - ROWS_SHOWN, last: nextCode.data.next + offsets[i] + open.quantity - 1 }) : m("moreUnits", { count: open.quantity - ROWS_SHOWN })}</p>}
               </div>
             );
           })}
-          <div className="formbar"><button className="btn primary" id="cd-save" disabled={busy} onClick={save}><Icon name="plus" />{c("save")}</button></div>
+          <div className="formbar"><Button variant="primary" id="cd-save" disabled={busy} onClick={save}><Icon name="plus" />{c("save")}</Button></div>
         </>
       ) : <div className="note">{m("allCoded")}</div>}
       {shown.length > 0 && <div id="cd-shown"><LabelsCard tr={tr} title={m("pieceLabel")} labels={shown.map(labelOf)} /></div>}
@@ -136,20 +137,19 @@ export function CodingForm({ row, tr }: CustomFormProps) {
           {codedLines.map((line) => (
             <div style={{ marginBottom: 14 }} key={line.lineId}>
               <h3>{m("lineNumber", { number: line.lineNumber })} · {line.itemName} <span className="sub" dir="ltr">{code6(line.itemCode)}</span></h3>
-              <div className="table"><table>
-                <thead><tr><th>{m("pieceCode")}</th><th className="num">{m("weight")}</th><th className="num">{m("makingChargePerGram")}</th><th className="num">{m("weight21")}</th><th className="num">{m("totalWage")}</th><th>{m("actions")}</th></tr></thead>
-                <tbody>{(line.pieces as Row[]).map((p) => (
-                  <tr key={p.id} data-piece={p.pieceCode}>
-                    <td className="id" dir="ltr">{p.pieceCode}</td><td className="num">{milligramsText(p.weight)}</td>
-                    <td className="num">{p.makingChargePerGram == null ? "—" : piastresText(p.makingChargePerGram)}</td>
-                    <td className="num">{p.weight21 == null ? "—" : milligramsText(p.weight21)}</td>
-                    <td className="num">{p.totalWage == null ? "—" : piastresText(p.totalWage)}</td>
-                    <td>
-                      <button type="button" className="btn quiet sm" data-print-piece={p.id} aria-label={m("printPiece", { code: p.pieceCode })} onClick={() => { setShown([allPieces.find((x) => x.id === p.id)!]); setMade([]); }}><Icon name="print" size={15} />{c("print")}</button>{" "}
-                      <button type="button" className="btn quiet sm danger" data-del-piece={p.id} aria-label={m("deletePiece", { code: p.pieceCode })} onClick={() => removePiece(p)}><Icon name="trash" size={15} />{c("delete")}</button>
-                    </td>
-                  </tr>))}</tbody>
-              </table></div>
+              <DataTable head={[m("pieceCode"), { label: m("weight"), num: true }, { label: m("makingChargePerGram"), num: true }, { label: m("weight21"), num: true }, { label: m("totalWage"), num: true }, m("actions")]}>
+                {(line.pieces as Row[]).map((p) => (
+                  <Tr key={p.id} data-piece={p.pieceCode}>
+                    <Td className="id" dir="ltr">{p.pieceCode}</Td><Td num>{milligramsText(p.weight)}</Td>
+                    <Td num>{p.makingChargePerGram == null ? "—" : piastresText(p.makingChargePerGram)}</Td>
+                    <Td num>{p.weight21 == null ? "—" : milligramsText(p.weight21)}</Td>
+                    <Td num>{p.totalWage == null ? "—" : piastresText(p.totalWage)}</Td>
+                    <Td>
+                      <Button size="sm" data-print-piece={p.id} aria-label={m("printPiece", { code: p.pieceCode })} onClick={() => { setShown([allPieces.find((x) => x.id === p.id)!]); setMade([]); }}><Icon name="print" size={15} />{c("print")}</Button>{" "}
+                      <Button size="sm" danger data-del-piece={p.id} aria-label={m("deletePiece", { code: p.pieceCode })} onClick={() => removePiece(p)}><Icon name="trash" size={15} />{c("delete")}</Button>
+                    </Td>
+                  </Tr>))}
+              </DataTable>
             </div>))}
         </div>
       )}

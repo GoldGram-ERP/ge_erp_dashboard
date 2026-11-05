@@ -9,6 +9,7 @@ import { latinNumber, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { Icon, toast } from "@/components/engine";
+import { Button } from "@/components/ui";
 import { paymentErrors, paymentKeyOf, sentBanks, type Bank } from "./sales-invoices-math";
 import { Choice, ErrBox, TextBox, allPages, code6, fe } from "./sales-form-parts";
 import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
@@ -112,8 +113,8 @@ export function ExpenseForm({ kind, close, reload, tr }: CustomFormProps & { kin
           banks={banks} onBanks={(b) => { edited(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
       </div>
       <div className="formbar" id="sec-save">
-        <button type="submit" className="btn primary" id="save"><Icon name="check" />{saving ? t("common", "saving") : t("common", "save")}</button>
-        <button type="button" className="btn quiet" id="cancel" onClick={close}>{t("common", "cancel")}</button>
+        <Button type="submit" variant="primary" id="save"><Icon name="check" />{saving ? t("common", "saving") : t("common", "save")}</Button>
+        <Button id="cancel" onClick={close}>{t("common", "cancel")}</Button>
       </div>
     </form>
   );
