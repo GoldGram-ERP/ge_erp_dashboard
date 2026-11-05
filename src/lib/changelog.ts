@@ -1,0 +1,150 @@
+// What's new, version by version, in plain words, for the Admin and the Super admin only (owner, 2026-11-05).
+// One entry per released dashboard version, newest first. Write for a person who runs the shop, not for a developer:
+// what they can now do or no longer have to worry about, and where to see it. Every line is in Arabic and English.
+//
+// How to add one when you land a change: put a line under the version that will carry it (add the version block on top
+// if it is not there yet: the person who cuts the release uses the same number). `route` is a menu address
+// (src/nav/tree.ts): the page shows "where" (Group > Screen) from the real menu names and a button that opens it.
+// A line with no `route` is a change without one screen (the look of every form, a fix everywhere): it shows no button.
+import type { Me } from "@/stores/ui";
+
+export type ChangeKind = "new" | "better" | "fixed";
+export type Change = { kind: ChangeKind; ar: string; en: string; route?: string };
+export type Release = { version: string; date: string; changes: Change[] };
+
+export const CHANGELOG: Release[] = [
+  {
+    version: "1.0.16",
+    date: "2026-11-05",
+    changes: [
+      { kind: "new", route: "/whats-new", en: "What's new: this page. For the Admin and the Super admin only: every version in plain words, where to see it in the system, and one tap to open the screen.", ar: "المستجدات: هذه الصفحة. للمدير والمدير العام فقط: كل إصدار بكلام واضح، وأين تراه في النظام، وبضغطة واحدة تفتح الشاشة." },
+      { kind: "fixed", route: "/buy/returned-pieces", en: "Returned pieces: the Super admin and an Admin now choose the branch the piece goes into. Before, saving a piece as Super admin was refused because the Super admin has no branch of their own.", ar: "القطع المرتجعة: المدير العام والمدير يختاران الآن الفرع الذي تدخل إليه القطعة. قبل ذلك كان الحفظ يُرفض للمدير العام لأنه لا يتبع فرعاً واحداً." },
+    ],
+  },
+  {
+    version: "1.0.15",
+    date: "2026-11-05",
+    changes: [
+      { kind: "better", en: "Jobs are hidden everywhere (the menu tab, the job bar, the search results and the Jobs pages) until their problems are fixed. Nothing was deleted; they come back when we turn them on.", ar: "تم إخفاء المهام في كل مكان (تبويب القائمة وشريط المهمة ونتائج البحث وصفحات المهام) إلى أن تُصلح مشاكلها. لم يُحذف شيء، وستعود عند تشغيلها." },
+    ],
+  },
+  {
+    version: "1.0.14",
+    date: "2026-11-05",
+    changes: [
+      { kind: "better", en: "The Jobs tab was removed from the side menu until its problems are fixed.", ar: "تمت إزالة تبويب المهام من القائمة الجانبية إلى أن تُصلح مشاكله." },
+    ],
+  },
+  {
+    version: "1.0.13",
+    date: "2026-11-05",
+    changes: [
+      { kind: "new", route: "/sales/invoices", en: "Payments: pay with cash and as many bank accounts as you need, until the total is reached. The same payment block is now on sales invoices, reservations, sales returns, expenses and expense refunds.", ar: "الدفع: ادفع نقداً وبعدد ما تحتاج من الحسابات البنكية حتى يكتمل الإجمالي. نفس خانة الدفع صارت في فواتير المبيعات والحجوزات والمرتجعات والمصروفات ومرتجعات المصروفات." },
+      { kind: "new", route: "/sales/invoices", en: "Sales invoices and reservations show the totals split: total without workmanship, workmanship, total with workmanship, the cash discount, what is paid and what is left.", ar: "فواتير المبيعات والحجوزات تعرض الإجمالي مقسّماً: الإجمالي بدون المصنعية، والمصنعية، والإجمالي مع المصنعية، والخصم النقدي، والمدفوع، والمتبقي." },
+      { kind: "better", route: "/sales/reservations", en: "Reservation prices are worked out by the system from the item, its weight and today's gold price. Nobody types a price any more.", ar: "سعر الحجز يحسبه النظام من الصنف ووزنه وسعر الذهب اليوم. لم يعد أحد يكتب السعر." },
+      { kind: "better", route: "/expenses/expenses", en: "Expenses and expense refunds open as full pages (not a side panel) so they can hold any number of bank rows.", ar: "المصروفات ومرتجعاتها تُفتح كصفحة كاملة (وليس لوحة جانبية) لتتسع لأي عدد من الحسابات البنكية." },
+    ],
+  },
+  {
+    version: "1.0.12",
+    date: "2026-11-05",
+    changes: [
+      { kind: "fixed", en: "A long name in the side menu now wraps inside its row instead of running under the pin button.", ar: "الاسم الطويل في القائمة الجانبية صار يلتف داخل سطره بدل أن يمتد تحت زر التثبيت." },
+    ],
+  },
+  {
+    version: "1.0.11",
+    date: "2026-11-05",
+    changes: [
+      { kind: "new", route: "/buy/returned-pieces", en: "Returned pieces (not from us): enter a piece a customer brings back, save it into stock, and print its label in one step. Search by code or phone, reprint the label, or delete it while it is still unsold.", ar: "القطع المرتجعة (ليست منا): سجّل قطعة أحضرها العميل، واحفظها في المخزون، واطبع ملصقها في خطوة واحدة. ابحث بالكود أو الهاتف، وأعد طباعة الملصق، أو احذفها ما دامت غير مباعة." },
+    ],
+  },
+  {
+    version: "1.0.10",
+    date: "2026-11-05",
+    changes: [
+      { kind: "better", route: "/buy/purchases", en: "Purchases: the weight of a line is the item's weight times the count, shown but not typed. Coding a line asks for nothing to type. An item that is switched off or has no weight, workmanship or cashback is refused with a clear message.", ar: "المشتريات: وزن البند هو وزن الصنف في العدد، يظهر ولا يُكتب. وتكويد البند لا يطلب كتابة شيء. والصنف الموقوف أو الناقص الوزن أو المصنعية أو الكاش باك يُرفض برسالة واضحة." },
+    ],
+  },
+  {
+    version: "1.0.9",
+    date: "2026-11-05",
+    changes: [
+      { kind: "better", route: "/buy/items", en: "Items: the item name is typed straight on the item form (there is no separate New item name form), and workmanship is always per gram.", ar: "الأصناف: اسم الصنف يُكتب مباشرة في نموذج الصنف (لا يوجد نموذج منفصل لاسم الصنف)، والمصنعية دائماً لكل جرام." },
+      { kind: "better", en: "Safer sign-in: stricter browser security, and the sign-in page clears the previous person's data from the browser.", ar: "تسجيل دخول أكثر أماناً: حماية أشد في المتصفح، وصفحة الدخول تمسح بيانات الشخص السابق من المتصفح." },
+      { kind: "better", en: "Easier to use for everyone: better contrast, clearer names for fields and dates, and page titles that screen readers can read.", ar: "أسهل في الاستخدام للجميع: تباين ألوان أوضح، وأسماء أوضح للحقول والتواريخ، وعناوين صفحات تقرؤها برامج القراءة." },
+    ],
+  },
+  {
+    version: "1.0.7",
+    date: "2026-11-04",
+    changes: [
+      { kind: "better", en: "A field you cannot change (an item code, the next number) now looks faded, the same way everywhere.", ar: "الحقل الذي لا يمكن تغييره (كود الصنف، الرقم القادم) يظهر الآن باهتاً بنفس الشكل في كل مكان." },
+    ],
+  },
+  {
+    version: "1.0.6",
+    date: "2026-11-04",
+    changes: [
+      { kind: "better", route: "/", en: "Every time on screen (Home, the activity log) uses the 12-hour clock.", ar: "كل الأوقات على الشاشة (الرئيسية وسجل النشاط) بنظام الـ 12 ساعة." },
+    ],
+  },
+  {
+    version: "1.0.5",
+    date: "2026-11-04",
+    changes: [
+      { kind: "fixed", en: "A new user who must change the password at the first sign-in can now do it (before, the screen could leave them stuck).", ar: "المستخدم الجديد الذي يجب أن يغيّر كلمة السر عند أول دخول يستطيع ذلك الآن (قبل ذلك كانت الشاشة قد تتركه عالقاً)." },
+      { kind: "better", route: "/sales/invoices", en: "A sales invoice with no pieces yet says \"No pieces yet\" instead of showing only the headings.", ar: "فاتورة المبيعات التي لم تُضف إليها قطع بعد تكتب \"لا توجد قطع بعد\" بدل إظهار العناوين فقط." },
+    ],
+  },
+  {
+    version: "1.0.4",
+    date: "2026-11-04",
+    changes: [
+      { kind: "new", route: "/sales/returns", en: "A camera button next to the piece code on returns and sales invoices, to scan the code with the phone.", ar: "زر كاميرا بجوار كود القطعة في المرتجعات وفواتير المبيعات لمسح الكود بالهاتف." },
+    ],
+  },
+  {
+    version: "1.0.3",
+    date: "2026-11-04",
+    changes: [
+      { kind: "new", route: "/buy/items", en: "Items now hold their weight, workmanship per gram, cashback per gram and an Active switch (only an Admin can switch an item off). An example box shows what one piece costs at today's price.", ar: "الأصناف صارت تحمل وزنها والمصنعية لكل جرام والكاش باك لكل جرام ومفتاح التفعيل (والمدير وحده يوقف الصنف). وصندوق مثال يوضح تكلفة قطعة واحدة بسعر اليوم." },
+      { kind: "new", route: "/sales/invoices", en: "Gift invoice: switch it on in a new sales invoice, type the person it is for, and print it with their name and phone. The real buyer stays recorded for us and is never printed. The seller's name is not printed on sales invoices.", ar: "فاتورة الهدية: فعّلها في فاتورة المبيعات الجديدة واكتب اسم المُهدى إليه لتُطبع باسمه وهاتفه. يبقى المشتري الفعلي مسجلاً عندنا ولا يُطبع أبداً. واسم البائع لا يُطبع على فواتير المبيعات." },
+      { kind: "new", route: "/sales/pieces", en: "Gold stock: tap a total row to open exactly its pieces.", ar: "أرصدة الذهب: اضغط على صف الإجمالي لتفتح قطعه بالضبط." },
+      { kind: "fixed", en: "A heading and its count no longer touch each other, and hint text in code boxes shows correctly in Arabic.", ar: "العنوان وعدده لم يعودا ملتصقين، والنص الإرشادي في خانات الكود يظهر سليماً بالعربية." },
+    ],
+  },
+  {
+    version: "1.0.2",
+    date: "2026-11-04",
+    changes: [
+      { kind: "new", route: "/stock/branch-stock", en: "Reports: filters at the top of every print page, Excel and Print for Stock by category and Stock by item, and Print for treasury balances, in transit and the statement.", ar: "التقارير: فلاتر أعلى كل صفحة طباعة، وإكسل وطباعة لرصيد المجموعات والأصناف، وطباعة لأرصدة الخزائن والمنقول والكشف." },
+      { kind: "better", en: "The Save and Cancel bar at the bottom of a form is now a solid bar that floats over the page.", ar: "شريط الحفظ والإلغاء أسفل النموذج صار شريطاً ثابتاً يطفو فوق الصفحة." },
+      { kind: "better", en: "The connection status and the language switch sit on one line at the bottom of the menu.", ar: "حالة الاتصال ومفتاح اللغة على سطر واحد أسفل القائمة." },
+    ],
+  },
+  {
+    version: "1.0.1",
+    date: "2026-11-04",
+    changes: [
+      { kind: "new", route: "/", en: "The new dashboard: the same system with a new design, a menu by area of work, search for pages and pieces, and Arabic and English.", ar: "اللوحة الجديدة: نفس النظام بتصميم جديد، وقائمة حسب مجال العمل، وبحث في الصفحات والقطع، بالعربية والإنجليزية." },
+    ],
+  },
+];
+
+// Only the Admin and the Super admin see it (owner, 2026-11-05).
+export const canSeeChangelog = (userType: Me["userType"] | undefined | null): boolean => userType === "admin" || userType === "super_admin";
+
+export const latestVersion = (): string => CHANGELOG[0].version;
+
+// "1.0.16" > "1.0.9": numbers, not text.
+export function compareVersions(a: string, b: string): number {
+  const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const d = (pa[i] ?? 0) - (pb[i] ?? 0); if (d) return d; }
+  return 0;
+}
+
+// The versions a person has not looked at yet: everything newer than the last one they saw (nothing seen: all).
+export const unseenCount = (seen: string | null | undefined): number => CHANGELOG.filter((r) => !seen || compareVersions(r.version, seen) > 0).length;
+
+export const SEEN_KEY = "ge-erp:whats-new-seen";

@@ -9,6 +9,7 @@ import { useUi, type Me } from "@/stores/ui";
 import { useTodo } from "@/components/jobs/todo";
 import { JobBar } from "@/components/jobs/job-bar";
 import { JOBS_ENABLED } from "@/lib/jobs/enabled";
+import { SEEN_KEY, canSeeChangelog, unseenCount } from "@/lib/changelog";
 import { ChangePassword } from "./change-password";
 import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
@@ -38,6 +39,16 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const ui = useUi();
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
+  // The Admin and the Super admin get What's new from the version label; a dot says there is a version they have not looked at.
+  const showLog = canSeeChangelog(me.userType);
+  const [seenLog, setSeenLog] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    const read = () => { try { setSeenLog(localStorage.getItem(SEEN_KEY)); } catch { setSeenLog(null); } };
+    read();
+    window.addEventListener("ge-erp:whats-new-seen", read); window.addEventListener("storage", read);
+    return () => { window.removeEventListener("ge-erp:whats-new-seen", read); window.removeEventListener("storage", read); };
+  }, []);
+  const unseenLog = showLog && seenLog !== undefined && unseenCount(seenLog) > 0;
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
@@ -152,7 +163,9 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           </div>
           </div>
           <div className="me" id="me">
-            <div className="who"><b>{me.name}</b><small>{t(`app.userType.${me.userType}`)}</small><span className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</span></div>
+            <div className="who"><b>{me.name}</b><small>{t(`app.userType.${me.userType}`)}</small>{showLog
+              ? <Link className="ver" id="app-version" dir="ltr" href="/whats-new" title={t("app.whatsNew.link")} aria-label={`${t("app.whatsNew.link")} v${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}{unseenLog ? <i className="wn-dot" aria-hidden="true" /> : null}</Link>
+              : <span className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</span>}</div>
             <span className="actions">
               <Link className="ic-btn" href="/account" title={t("app.myAccount")} aria-label={t("app.myAccount")}><Icon name="profile" /></Link>
               <button className="ic-btn" type="button" title={t("app.signOut")} aria-label={t("app.signOut")} onClick={signOut}><Icon name="out" /></button>
