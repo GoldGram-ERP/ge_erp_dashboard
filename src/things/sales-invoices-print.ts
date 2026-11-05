@@ -67,6 +67,18 @@ function header(d: any) {
 // customer block filled from the invoice (a dotted line where there is nothing to fill); the lines; the price of each karat the invoice
 // holds; gold, making and the total, and the total in words; how it was paid; signatures; the shop's foot note. The a4, gift and star
 // layouts all use it. A gift prints the recipient in the buyer's place with no National ID, and no prices unless asked at the print.
+// The fixed foot of the shop's invoice (owner, 2026-11-05): always printed. The first line is the shop's numbers; the rest are its terms.
+// The foot is Arabic text, so it is always right to left, whatever the language of the page (an English page would put the stops and the order of the first line wrong).
+// A footer saved in Settings (invoiceFooter) replaces it, line for line, for a shop that changes its wording.
+const EM = "\u2003\u2003";
+export const DEFAULT_FOOTER = [
+  ["س.ت 295852", "ملف ضريبي 774-088-346", "الرقم المختصر 17937"].join(EM),
+  "السعر شامل الضريبة والمصنعية والتغليف ومصاريف هيئة الدمغة والموازين المصرية.",
+  "برجاء الاحتفاظ بهذه الفاتورة وتقديمها في حالة الاسترداد والرغبة في بيع المنتجات المذكورة أعلاه، أو صورة إلكترونية منها.",
+  "الهدايا في العروض لا يوجد لها قيمة استرداد. · الذهب المباع لا يُرد ولا يُستبدل.",
+];
+// Numbers keep their own direction inside Arabic text (346-088-774 must not read backwards).
+const footLine = (x: string) => esc(x).replace(/[0-9][0-9\-/.]*[0-9]|[0-9]/g, (m) => `<bdi dir="ltr">${m}</bdi>`);
 const money = (a: any) => { const t = amountText(a); return t === null ? "" : typeof a === "number" ? "LE " + t : t; };
 const blankLine = '<span class="blank"></span>';
 const fld = (label: string, html: string) => `<div class="fld"><span>${esc(label)}</span>${html || blankLine}</div>`;
@@ -94,7 +106,8 @@ function a4(d: any) {
   const words = withPrice && typeof d.totals.total === "number" ? `<p class="words"><span>${esc(p("totalInWords"))}</span> ${esc([p("onlyPrefix"), amountInWords(d.totals.total, inArabic ? "ar" : "en"), p("onlySuffix")].filter(Boolean).join(" "))}</p>` : "";
   const paid = d.payments.filter((x: any) => amountText(x.amount) !== null);
   const how = withPrice && paid.length ? `<p class="pay"><span>${esc(p("paymentMethod"))}:</span>${paid.map((x: any) => `<span class="tick">☑ ${esc(methodLabel(x))} ${ltr(money(x.amount))}</span>`).join("")}</p>` : "";
-  const foot = String(d.footer ?? "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+  const saved = String(d.footer ?? "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+  const foot = saved.length ? saved : DEFAULT_FOOTER;
   return `<article class="pre" data-layout="${esc(d.layout)}"><div class="top"></div>
     <div class="phead"><div class="doc"><b>${esc(p("title"))}</b><span>${esc(p("titleSub"))}</span></div>
       <dl class="meta"><dt>${esc(p("invoiceNumber"))}</dt><dd>${ltr(`INV/${year}/${String(d.invoiceNumber).padStart(6, "0")}`)}</dd><dt>${esc(p("date"))}</dt><dd>${ltr(`${d.invoiceTime ? d.invoiceTime + " · " : ""}${dmy(d.invoiceDate)}`)}</dd></dl></div>
@@ -103,7 +116,7 @@ function a4(d: any) {
       <tfoot><tr><td>${esc(p("total"))} · ${esc(p("lines"))}: ${ltr(d.totals.lineCount)}</td><td>${ltr(gramsText(d.totals.weight))}</td><td colspan="${withPrice ? 4 : 1}"></td></tr></tfoot></table>
     ${withPrice ? `<div class="tot">${box}${sums}</div>` : ""}${words}${how}
     <div class="sigs"><div><i></i><span>${esc(p("receiver"))}</span></div><div><i></i><span>${esc(p("sellerCode"))}</span></div><div><i></i><span>${esc(p("stamp"))}</span></div></div>
-    ${foot.length ? `<footer class="pfoot"><b>${esc(foot[0])}</b>${foot.slice(1).map((x) => `<span>${esc(x)}</span>`).join("")}</footer>` : ""}</article>`;
+    <footer class="pfoot" dir="rtl" lang="ar"><b>${footLine(foot[0])}</b>${foot.slice(1).map((x) => `<span>${footLine(x)}</span>`).join("")}</footer></article>`;
 }
 
 // 80 mm paper: every line a small block that wraps; the receipt keeps the header, the total and the payments.

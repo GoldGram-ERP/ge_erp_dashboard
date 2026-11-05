@@ -20,7 +20,7 @@ const invoice = (over: Record<string, any> = {}) => ({
   layout: "a4", shopName: "GoldGram", branchName: "كايرو بيزنس بلازا", invoiceNumber: 142, invoiceDate: "2026-10-21", invoiceTime: "18:03",
   isGift: false, customerName: "أحمد محمد علي", customerPhone: "01012345678", nationalId: "29001011234567",
   karatPrices: [{ karat: "24", pricePerGram: 684_200 }, { karat: "21", pricePerGram: 598_500 }],
-  footer: "ملف ضريبي 346-088-774\nالأسعار شاملة الضريبة.",
+  footer: null,
   lines: [line(1, "21", 5000, 2_992_500, 24_944), line(2, "24", 1000, 684_200, 24_944)],
   totals: { lineCount: 2, weight: 6000, goldTotal: 3_676_700, makingTotal: 49_888, grossTotal: 3_726_588, goldValue: 3_676_700, makingCharge: 49_888, discount: 0, total: 3_726_588, paid: 3_726_588 },
   payments: [{ kind: "cash", label: null, amount: 3_726_588 }],
@@ -34,10 +34,24 @@ describe("the preprinted invoice", () => {
     expect(html).toContain("فقط وقدره سبعة وثلاثون ألفاً ومائتان وخمسة وستون جنيهاً وثمانية وثمانون قرشاً لا غير");
     expect(html).toContain("LE 37,265.88");
     expect(html).toContain("☑ نقدي");
-    expect(html).toContain("ملف ضريبي 346-088-774");
+    expect(html).toContain("774-088-346");
     mkdirSync("e2e-tests/.shots", { recursive: true });
     writeFileSync("e2e-tests/.shots/invoice-preprinted-ar.html", html);
     writeFileSync("e2e-tests/.shots/invoice-preprinted-en.html", renderInvoice(invoice(), tFor("en"), false));
+  });
+
+  it("always prints the shop's fixed foot, and a footer saved in Settings replaces it", () => {
+    const fixed = ["295852", "774-088-346", "17937", "السعر شامل الضريبة والمصنعية", "برجاء الاحتفاظ بهذه الفاتورة", "الذهب المباع لا يُرد ولا يُستبدل"];
+    for (const layout of ["a4", "gift", "star"]) {
+      const html = renderInvoice(invoice({ layout, footer: null }), tFor("ar"), true);
+      for (const part of fixed) expect(html, `${layout}: ${part}`).toContain(part);
+    }
+    const english = renderInvoice(invoice({ footer: null }), tFor("en"), false);
+    expect(english).toContain("295852");
+    expect(english).toContain('<footer class="pfoot" dir="rtl" lang="ar">');   // Arabic text stays right to left on an English page   // the shop's wording, in any language
+    const own = renderInvoice(invoice({ footer: "ملف ضريبي 111-222-333" }), tFor("ar"), true);
+    expect(own).toContain("111-222-333");
+    expect(own).not.toContain("295852");
   });
 
   it("lists the price of each karat on the invoice, and only those", () => {
