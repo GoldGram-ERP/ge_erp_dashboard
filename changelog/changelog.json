@@ -19,6 +19,12 @@
     "en": "The Sales desk has a new look: one calm ticket for the pieces, with the price, the total and the WhatsApp message beside it.",
     "ar": "مكتب المبيعات شكله اتغير: تذكرة واحدة هادية للقطع، والسعر والإجمالي ورسالة الواتساب جنبها.",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "fixed",
+    "en": "The page-size list under every table now opens right under its field (it used to open above it and off to the side).",
+    "ar": "قايمة «في الصفحة» تحت كل جدول بقت بتفتح تحت الخانة بالظبط، بعد ما كانت بتفتح فوقها وبعيدة عنها.",
+    "route": "/control/security"
    }
   ]
  },

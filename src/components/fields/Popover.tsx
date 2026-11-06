@@ -13,9 +13,12 @@ export function Popover({ trigger, onClose, className, children, role, id, label
     const t = trigger.current, p = pop.current;
     if (!t || !p) return;
     const r = t.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
-    // The popup is measured before its minWidth (the trigger's width) applies, and its final width is the larger of the two: measuring only
-    // offsetWidth put a narrow list 'trigger width minus list width' too far right in RTL (right edge = r.right - w, not r.right - width).
-    const below = vh - r.bottom - 12, above = r.top - 12, h = p.offsetHeight, w = Math.max(p.offsetWidth, r.width);
+    // Measure the popup AT ITS FINAL SIZE: the trigger's width as its min-width (it replaces the stylesheet's 160 px minimum) and no height cap.
+    // Measured before that, a narrow list (the pager's size select, 95 px) was 160+ px wide when measured and 95 px when shown, so in RTL its
+    // right edge landed (measured width - final width) px to the left of the trigger's, and a flipped-above popup the same.
+    p.style.minWidth = `${r.width}px`;
+    p.style.maxHeight = "";
+    const below = vh - r.bottom - 12, above = r.top - 12, h = p.offsetHeight, w = p.offsetWidth;
     const up = h > below && above > below, room = Math.max(140, (up ? above : below) - 4), hh = Math.min(h, room);
     const rtl = getComputedStyle(t).direction === "rtl";
     setPos({ minWidth: r.width, maxHeight: room, left: Math.max(8, Math.min(rtl ? r.right - w : r.left, vw - w - 8)), top: up ? r.top - 4 - hh : r.bottom + 4, side: up ? "up" : "down" });
