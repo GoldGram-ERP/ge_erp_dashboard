@@ -55,7 +55,7 @@ async function sortEveryColumn(browser: any, table: string, lang: string, label:
     const dirs: string[] = [];
     for (let round = 0; round < 3; round++) {
       await browser.locator(`${table} thead tr:first-child th:nth-child(${col.i + 1}) .th-sort`).click();
-      await sleep(900); // server lists refetch
+      await sleep(server ? 900 : 150); // server lists refetch; a browser sort is immediate
       const s = await snap(browser, table);
       const me = s.cols[col.i];
       expect(me.aria, `${label} "${col.label}" round ${round + 1} aria-sort`).toMatch(/ascending|descending/);

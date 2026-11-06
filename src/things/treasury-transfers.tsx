@@ -1,5 +1,5 @@
 "use client";
-import { DataTable, Input, Status, Td, Tr as TRow, useTableSort } from "@/components/ui";
+import { DataTable, Input, SortedTable, Status, Td, Tr as TRow } from "@/components/ui";
 // تحويلات الخزن: money/transfers = treasuries/{treasury-transfers, in-transit}. Ported from docs/nav-preview/app/things/treasury-transfers.js.
 // Views: transfers by box (incoming, sent, all) and status, the in-transit report. A row opens the transfer with its pieces, gold lines and state.
 // State machine: sent -> accepted | refused | cancelled, final after that. Accept / refuse / cancel are the record's actions; Send is its own page.
@@ -50,15 +50,6 @@ function CheckBox({ r, m }: { r: Row; m: (k: string, v?: Record<string, string>)
 function PieceTicks({ r, ticked, m }: { r: Row; ticked: string[]; m: (k: string) => string }) {
   if (!ticked.length) return null;
   return <div>{ticked.map((c) => <Status key={c} tone="good" data-checked={c}>{c} {m("checkedMark")}</Status>)}</div>;
-}
-
-function TransferPieces({ pieces, m, itemLabel }: { pieces: Row[]; m: (k: string) => string; itemLabel: string }) {
-  const s = useTableSort(pieces, { code: { kind: "text", get: (p) => p.pieceCode }, item: { kind: "text", get: (p) => p.itemName }, karat: { kind: "text", get: (p) => p.karat }, weight: { kind: "number", get: (p) => p.weightMg } });
-  return (
-    <DataTable tableId="transfer-pieces" style={{ overflowX: "auto" }} head={[s.col("code", m("pieceCode")), s.col("item", itemLabel), s.col("karat", m("karat")), s.col("weight", m("weightGrams"), { num: true })]}>
-      {s.rows.map((p) => <TRow key={p.pieceCode} data-pc={p.pieceCode}><Td dir="ltr">{p.pieceCode}</Td><Td>{p.itemName}</Td><Td dir="ltr">{p.karat}</Td><Td num>{milligramsText(p.weightMg)}</Td></TRow>)}
-    </DataTable>
-  );
 }
 
 export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
@@ -168,7 +159,11 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
           </Section>
           {r.pieces.length > 0 && (
             <Section title={m("piecesList")}>
-              <TransferPieces pieces={r.pieces as Row[]} m={m} itemLabel={L("الصنف", "Item")} />
+              <SortedTable tableId="transfer-pieces" rows={r.pieces as Row[]} rowKey={(p) => p.pieceCode} rowProps={(p) => ({ "data-pc": p.pieceCode })} cols={[
+                { key: "code", label: m("pieceCode"), kind: "text", get: (p) => p.pieceCode, show: (p) => p.pieceCode, ltr: true },
+                { key: "item", label: L("الصنف", "Item"), kind: "text", get: (p) => p.itemName, show: (p) => p.itemName },
+                { key: "karat", label: m("karat"), kind: "text", get: (p) => p.karat, show: (p) => p.karat, ltr: true },
+                { key: "weight", label: m("weightGrams"), kind: "number", get: (p) => p.weightMg, show: (p) => milligramsText(p.weightMg), num: true }]} />
             </Section>
           )}
           {r.gold.length > 0 && <Section title={m("bulkGold")}>{(r.gold as Row[]).map((g) => <Kv key={g.karat} k={`${g.karat}K`}><Ltr>{milligramsText(g.weightMg)}</Ltr></Kv>)}</Section>}

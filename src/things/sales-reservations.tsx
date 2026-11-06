@@ -3,7 +3,7 @@
 // Parity: a reservation has exactly two actions, Create sales invoice and Delete (Delete = cancel; no refund screen, no stock moves).
 // The list takes only search, fromDate, toDate, deleted, page (20 a page); the reports take their filters, sort, order, page, pageSize.
 import { api } from "@/lib/api";
-import { DataTable, Td, Tr as TRow, useTableSort } from "@/components/ui";
+import { DataTable, SortedTable, Td, Tr as TRow } from "@/components/ui";
 import type { Column, CustomFormProps, MakeConfig, Row, ThingConfig, ViewConfig } from "@/lib/engine-types";
 import { intText, latinNumber, piastresText } from "@/lib/format";
 import { canOpen } from "@/nav/tree";
@@ -14,17 +14,6 @@ import { Kv, Ltr, Section, ThingPage, cellNode } from "@/components/engine";
 import { ReservationForm } from "./sales-reservation-form";
 import { code6 } from "./sales-form-parts";
 import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
-
-type Say = (k: string, v?: Record<string, string>) => string;
-function ReservationLines({ lines, m, si }: { lines: Row[]; m: Say; si: Say }) {
-  const s = useTableSort(lines, { n: { kind: "number", get: (l) => l.lineNumber }, item: { kind: "text", get: (l) => l.itemName }, karat: { kind: "text", get: (l) => l.karat },
-    qty: { kind: "number", get: (l) => l.quantity }, price: { kind: "number", get: (l) => l.linePrice }, disc: { kind: "number", get: (l) => l.cashDiscount ?? 0 } });
-  return (
-    <DataTable tableId="reservation-lines" style={{ overflowX: "auto" }} head={[s.col("n", si("lineHeading")), s.col("item", m("item")), s.col("karat", si("karat")), s.col("qty", m("quantity"), { num: true }), s.col("price", m("linePrice"), { num: true }), s.col("disc", si("cashDiscount"), { num: true })]}>
-      {s.rows.map((l: Row) => <TRow key={l.lineNumber}><Td>{l.lineNumber}</Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td><Td num>{intText(l.quantity)}</Td><Td num>{piastresText(l.linePrice)}</Td><Td num>{piastresText(l.cashDiscount ?? 0)}</Td></TRow>)}
-    </DataTable>
-  );
-}
 
 export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
   const { t, L } = tr;
@@ -132,7 +121,13 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
               <Kv k={si("customerName")}>{r.customerName ?? ""}</Kv><Kv k={si("customerPhone")}><Ltr>{r.customerPhone ?? ""}</Ltr></Kv><Kv k={si("nationalId")}><Ltr>{r.nationalId ?? ""}</Ltr></Kv>
             </Section>
             <Section title={m("items")} wide>
-              <ReservationLines lines={r.lines} m={m} si={si} />
+              <SortedTable tableId="reservation-lines" rows={r.lines as Row[]} rowKey={(l) => String(l.lineNumber)} cols={[
+                { key: "n", label: si("lineHeading"), kind: "number", get: (l) => l.lineNumber, show: (l) => l.lineNumber },
+                { key: "item", label: m("item"), kind: "text", get: (l) => l.itemName, show: (l) => l.itemName },
+                { key: "karat", label: si("karat"), kind: "text", get: (l) => l.karat, show: (l) => l.karat, ltr: true },
+                { key: "qty", label: m("quantity"), kind: "number", get: (l) => l.quantity, show: (l) => intText(l.quantity), num: true },
+                { key: "price", label: m("linePrice"), kind: "number", get: (l) => l.linePrice, show: (l) => piastresText(l.linePrice), num: true },
+                { key: "disc", label: si("cashDiscount"), kind: "number", get: (l) => l.cashDiscount ?? 0, show: (l) => piastresText(l.cashDiscount ?? 0), num: true }]} />
             </Section>
             <Section title={m("payment")}>
               <Kv k={si("cash")}><Ltr>{piastresText(r.cash)}</Ltr></Kv>
