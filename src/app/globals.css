@@ -97,9 +97,18 @@ h1{font-size:24px;line-height:1.3;font-weight:700;text-wrap:balance}
 .table{flex:1;min-height:120px;overflow:auto;background:var(--surface);border-radius:14px;box-shadow:0 0 0 1px var(--line)}
 table{width:100%;border-collapse:separate;border-spacing:0}
 th{background:#fbf9f2;text-align:start;padding:0 16px;height:var(--h-th);font-weight:600;font-size:12.5px;color:var(--mute);border-bottom:1px solid var(--line);white-space:nowrap}
-th[data-sort]{cursor:pointer;user-select:none}
-th[data-sort]:hover{color:var(--ink)}
-th .arr{margin-inline-start:4px;opacity:.7}
+th[data-sort=on]{user-select:none}
+th[data-sort=on]:hover{color:var(--ink)}
+/* sort header: a real button inside the header's own padding (so its text lines up with the cells); label and arrow never wrap; the hit area grows to 44 px with a pseudo element, the row stays 32 px */
+.th-sort{position:relative;display:inline-flex;align-items:center;gap:6px;padding:0;font:inherit;color:inherit;background:none;border:0;border-radius:4px;cursor:pointer;white-space:nowrap;line-height:1.4;text-align:start}
+.th-sort::after{content:"";position:absolute;inset:-13px -8px}
+.th-sort:hover{color:var(--ink)}
+.th-sort:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+th.num .th-sort{justify-content:flex-start}
+.th-label{white-space:nowrap}
+.sort-arrow{flex:none;color:var(--line);opacity:.9}
+.sort-arrow[data-dir=idle]{color:var(--mute);opacity:.35}
+.sort-arrow[data-dir=asc],.sort-arrow[data-dir=desc]{color:var(--gold);opacity:1}
 td{padding:0 16px;height:var(--h-row);border-bottom:1px solid var(--line-soft);white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis}
 tbody tr:last-child td{border-bottom:0}
 tr.row{cursor:pointer;transition:background .12s}
@@ -527,7 +536,6 @@ aside::-webkit-scrollbar-thumb{background:#cfc4a6;border-radius:10px;border:2px 
 .table tr.grp td{height:var(--h-row);background:var(--gold-wash);color:var(--gold);font-weight:700}
 .table tr.foot td{height:var(--h-row);background:var(--gold-tint);color:var(--ink);font-weight:700}
 .table tr.foot td:first-child{color:var(--gold)}
-.table th[data-sort]:hover{color:var(--ink)}
 .table .empty{background:transparent}
 .pager{padding:12px 6px 0}
 

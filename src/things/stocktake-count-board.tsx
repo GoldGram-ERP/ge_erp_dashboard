@@ -82,11 +82,12 @@ export function Summary({ live, updatedAt, paused }: { live: Live; updatedAt: nu
 
 // ───── Breakdown: by karat, by item, by category; sortable, searchable, the unfinished first ─────
 type Tab = "karat" | "item" | "category";
-type SortKey = "name" | "expected" | "counted" | "remaining";
+type SortKey = "name" | "code" | "category" | "karat" | "expected" | "counted" | "remaining";
+const TEXT_KEYS = ["name", "code", "category", "karat"];
 type AnyLine = Line & { key: string; name: ReactNode; text: string; code?: number; karat?: string; category?: string };
 
 export function Breakdown({ live }: { live: Live }) {
-  const { m } = useM();
+  const { m, locale } = useM();
   const closed = live.status === "closed";
   const [tab, setTab] = useState<Tab>("item");
   const [search, setSearch] = useState("");
@@ -102,22 +103,19 @@ export function Breakdown({ live }: { live: Live }) {
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = q ? lines.filter((l) => l.text.toLowerCase().includes(q)) : [...lines];
-    const by = (a: AnyLine, b: AnyLine) => (sort.key === "name" ? a.text.localeCompare(b.text) : a[sort.key].pieces - b[sort.key].pieces || a[sort.key].weightMg - b[sort.key].weightMg);
+    const text = (l: AnyLine) => (sort.key === "name" ? l.text : sort.key === "code" ? String(l.code ?? "").padStart(9, "0") : String((sort.key === "category" ? l.category : l.karat) ?? ""));
+    const by = (a: AnyLine, b: AnyLine) => (TEXT_KEYS.includes(sort.key) ? text(a).localeCompare(text(b), locale, { numeric: true, sensitivity: "base" }) : a[sort.key as "expected"].pieces - b[sort.key as "expected"].pieces || a[sort.key as "expected"].weightMg - b[sort.key as "expected"].weightMg);
     return list.sort((a, b) =>
       (notDoneFirst ? Number(b.remaining.pieces > 0) - Number(a.remaining.pieces > 0) : 0)
       || sort.dir * by(a, b)
       || (a.code ?? 0) - (b.code ?? 0));
-  }, [lines, search, sort, notDoneFirst]);
+  }, [lines, search, sort, notDoneFirst, locale]);
 
   const head = (key: SortKey, label: string, span = 1) => {
     const on = sort.key === key;
     return {
-      colSpan: span, num: key !== "name", ariaSort: (on ? (sort.dir === 1 ? "ascending" : "descending") : "none") as "ascending" | "descending" | "none",
-      label: (
-        <TextButton className="sc-sort" aria-label={m("sortBy", { col: label })} onClick={() => setSort(on ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: key === "name" ? 1 : -1 })}>
-          {label}{on && <span className="arr" aria-hidden>{sort.dir === 1 ? "↑" : "↓"}</span>}
-        </TextButton>
-      ),
+      colSpan: span, num: !TEXT_KEYS.includes(key), label,
+      sort: { kind: (TEXT_KEYS.includes(key) ? "text" : "number") as "text" | "number", dir: on ? (sort.dir === 1 ? "asc" : "desc") as "asc" | "desc" : null, onSort: () => setSort(on ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: TEXT_KEYS.includes(key) ? 1 : -1 }) },
     };
   };
   const pair = (t: Tally, cls = "") => <><Td num className={cls} dir="ltr">{t.pieces.toLocaleString("en-US")}</Td><Td num className={cls} dir="ltr">{milligramsText(t.weightMg)}</Td></>;
@@ -138,8 +136,8 @@ export function Breakdown({ live }: { live: Live }) {
         <Checkbox id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={setNotDoneFirst}>{m("notDoneFirst")}</Checkbox>
       </div>
       <DataTable className="sc-table" tableId="sc-bd-table" subHeadClassName="sc-sub"
-        head={[...(tab === "item" ? [head("name", m("item")), m("itemCode"), m("category"), m("karat")] : [head("name", tab === "karat" ? m("karat") : m("category"))]), head("expected", m("expected"), 2), head("counted", m("counted"), 2), head("remaining", leftLabel, 2)]}
-        subHead={[{ label: null, colSpan: nameCols }, ...[0, 1, 2].flatMap((i) => [{ label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }])]}
+        head={[...(tab === "item" ? [head("name", m("item")), head("code", m("itemCode")), head("category", m("category")), head("karat", m("karat"))] : [head("name", tab === "karat" ? m("karat") : m("category"))]), head("expected", m("expected"), 2), head("counted", m("counted"), 2), head("remaining", leftLabel, 2)]}
+        subHead={[{ label: null, colSpan: nameCols, sortable: false as const }, ...[0, 1, 2].flatMap(() => [{ label: m("piecesCol"), num: true, sortable: false as const }, { label: m("gramsCol"), num: true, sortable: false as const }])]}   /* the group header above sorts by pieces, then grams */
         foot={shown.length > 0 ? (
           <tr className="foot">
             <Td colSpan={nameCols}>{m("expected")}: {live.totals.expected.pieces.toLocaleString("en-US")}</Td>
@@ -195,7 +193,7 @@ export function PieceLists({ id, live }: { id: string; live: Live }) {
           <Input id="sc-pl-search" type="search" value={typed} placeholder={m("searchPieces")} aria-label={m("searchPieces")} onChange={(e) => setTyped(e.target.value)} />
         </label>
       </div>
-      <DataTable id="sc-pl-table" className="sc-table" aria-busy={q.isFetching}
+      <DataTable fixedOrder id="sc-pl-table" className="sc-table" aria-busy={q.isFetching}
         head={[m("pieceCode"), m("item"), m("category"), m("karat"), { label: m("weight"), num: true }, ...(scanned ? [m("scannedAt"), m("scannedBy")] : [])]}>
         {data && data.items.length === 0 && <Tr><Td colSpan={scanned ? 7 : 5} className="help">{m("noPieces")}</Td></Tr>}
         {data?.items.map((p) => (
@@ -253,10 +251,10 @@ export function MissingPreview({ live }: { live: Live }) {
   return (
     <div id="sc-save-preview" className="sc-preview">
       <p><strong>{m("saveMissing", { count: m("scannedCount", { count: left.pieces }), w: milligramsText(left.weightMg) })}</strong></p>
-      <DataTable className="sc-table" head={[m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
+      <DataTable fixedOrder className="sc-table" head={[m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
         {karats.map((l) => <Tr key={l.karat}><Td dir="ltr">{l.karat}</Td><Td num>{l.remaining.pieces}</Td><Td num dir="ltr">{milligramsText(l.remaining.weightMg)}</Td></Tr>)}
       </DataTable>
-      <DataTable className="sc-table sc-preview-items" head={[m("item"), m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
+      <DataTable fixedOrder className="sc-table sc-preview-items" head={[m("item"), m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
         {items.map((l) => <Tr key={`${l.itemId}:${l.karat}`}><Td><span dir="ltr" className="sc-mute">{l.itemCode}</span> {l.itemName}</Td><Td dir="ltr">{l.karat}</Td><Td num>{l.remaining.pieces}</Td><Td num dir="ltr">{milligramsText(l.remaining.weightMg)}</Td></Tr>)}
       </DataTable>
       <p className="help">{m("saveFinal")}</p>

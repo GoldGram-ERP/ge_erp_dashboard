@@ -167,7 +167,7 @@ export async function layoutAudit(browser: any, root = 'body', opts: { bars?: bo
         const cell = cells[col]; col += span;
         if (!cell || span !== 1 || !(th.textContent ?? '').trim() || !(cell.textContent ?? '').trim()) continue;
         const text = (el: Element) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
-        const a = text(th), b = text(cell);
+        const a = text(th.querySelector('.th-label') ?? th), b = text(cell); // a sort header: the label, not its arrow
         const hdrEnd = Math.abs((rtl ? a.left : a.right) - (rtl ? b.left : b.right)) <= 2, hdrStart = Math.abs((rtl ? a.right : a.left) - (rtl ? b.right : b.left)) <= 2;
         if (!hdrEnd && !hdrStart) { const tr = R(th), cr = R(cell), tcs = getComputedStyle(th), ccs = getComputedStyle(cell); out.push(`table column not aligned: "${(th.textContent ?? '').trim().slice(0, 18)}" header text x=${Math.round(a.left)}..${Math.round(a.right)} (box ${Math.round(tr.left)}..${Math.round(tr.right)}, ${tcs.textAlign}/${tcs.direction}) cell text x=${Math.round(b.left)}..${Math.round(b.right)} (box ${Math.round(cr.left)}..${Math.round(cr.right)}, ${ccs.textAlign}/${ccs.direction}, ${cell.tagName}.${cell.className})`); }
       }
@@ -217,6 +217,20 @@ export async function layoutAudit(browser: any, root = 'body', opts: { bars?: bo
           if (w > 300 && w > 4 * extent) out.push(`bar stretched: ${name(e)} ${Math.round(w)}px for ${Math.round(extent)}px of content`);
         }
       }
+    }
+    // 7 sortable tables: every header with a title is a sort button (aria-sort + a real <button>) or declared non-sortable; none is a dead title
+    for (const th of Array.from(base.querySelectorAll('table th')).filter(shown)) {
+      const t = (th.textContent ?? '').trim(), st = (th as HTMLElement).dataset.sort;
+      if (st === 'on') {
+        const b = th.querySelector('button.th-sort'), a = th.getAttribute('aria-sort');
+        if (!b) out.push(`sort header without a button: "${t.slice(0, 18)}"`);
+        if (a !== 'ascending' && a !== 'descending' && a !== 'none') out.push(`sort header without aria-sort: "${t.slice(0, 18)}"`);
+        const svg = th.querySelector('.sort-arrow'); const w = svg ? R(svg).width : 0;
+        if (!svg || w < 11 || w > 14.5) out.push(`sort arrow size ${w}px: "${t.slice(0, 18)}"`);
+        const bb = b ? R(b) : null, tb = R(th);
+        if (bb && (bb.right > tb.right + 1 || bb.left < tb.left - 1)) out.push(`sort button wider than its header: "${t.slice(0, 18)}"`);
+        const lbl = th.querySelector('.th-label'); if (lbl && R(lbl).height > fsz(lbl) * 2.2) out.push(`sort label wraps: "${t.slice(0, 18)}"`);
+      } else if (t && st !== 'off') out.push(`dead table header (not sortable, not declared): "${t.slice(0, 18)}" in ${th.closest('table')?.id || name(th.closest('table') ?? th)}`);
     }
     return out;
   }, root, Boolean(opts.bars))) as string[];

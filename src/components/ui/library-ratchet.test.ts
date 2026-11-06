@@ -48,6 +48,11 @@ const legacy: Record<string, string> = {};
 const current = Object.fromEntries(files.map((f) => [f, Object.fromEntries(Object.entries(ratchet).map(([k, re]) => [k, count(read(f), re)]))]));
 
 describe("one component library", () => {
+  it("no raw <table>, <th> or <td> anywhere but the DataTable component (zero, no baseline)", () => {
+    const all = [...screens, "src/components"].flatMap(walk).filter((f) => f !== "src/components/ui/DataTable.tsx" && !/\.test\./.test(f));
+    expect(all.filter((f) => count(read(f), /<(?:table|thead|tbody|tfoot|th|td)/g) > 0)).toEqual([]);
+  });
+
   it("the library folder is the single entry point", () => {
     expect(existsSync(path.join(root, "src/components/ui/index.ts"))).toBe(true);
   });

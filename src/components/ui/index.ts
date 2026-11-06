@@ -6,7 +6,7 @@ export { Checkbox, CheckInput, SwitchInput } from "./Checkbox";
 export { Modal } from "./Modal";
 export { Button, TextButton, type ButtonProps } from "./Button";
 export { Badge, Status, Bubble } from "./Badge";
-export { DataTable, Tr, Td, Th } from "./DataTable";
+export { DataTable, Tr, Td, Th, useTableSort } from "./DataTable";
 export { Input, Textarea } from "./Input";
 export { Disclosure } from "./Disclosure";
 export { FileInput } from "./FileInput";

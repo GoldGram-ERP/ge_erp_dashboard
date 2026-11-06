@@ -159,7 +159,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
           </Section>
           {r.pieces.length > 0 && (
             <Section title={m("piecesList")}>
-              <DataTable style={{ overflowX: "auto" }} head={[m("pieceCode"), L("الصنف", "Item"), m("karat"), { label: m("weightGrams"), num: true }]}>
+              <DataTable fixedOrder style={{ overflowX: "auto" }} head={[m("pieceCode"), L("الصنف", "Item"), m("karat"), { label: m("weightGrams"), num: true }]}>
                 {(r.pieces as Row[]).map((p) => <TRow key={p.pieceCode} data-pc={p.pieceCode}><Td dir="ltr">{p.pieceCode}</Td><Td>{p.itemName}</Td><Td dir="ltr">{p.karat}</Td><Td num>{milligramsText(p.weightMg)}</Td></TRow>)}
               </DataTable>
             </Section>

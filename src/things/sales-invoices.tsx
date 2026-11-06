@@ -180,7 +180,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
             <Kv k={m("customerName")}>{r.customerName ?? ""}</Kv><Kv k={m("customerPhone")}><Ltr>{r.customerPhone ?? ""}</Ltr></Kv><Kv k={m("nationalId")}><Ltr>{r.nationalId ?? ""}</Ltr></Kv>
           </Section>
           <Section title={m("pieces")} wide>
-            <DataTable style={{ overflowX: "auto" }} head={heads.map(([k, n]) => ({ label: m(k), num: n }))}>
+            <DataTable fixedOrder style={{ overflowX: "auto" }} head={heads.map(([k, n]) => ({ label: m(k), num: n }))}>
               {(r.lines as Row[]).map((l) => (
                 <Tr key={l.lineNumber}>
                   <Td>{l.lineNumber}</Td><Td dir="ltr">{l.pieceCode}</Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td>

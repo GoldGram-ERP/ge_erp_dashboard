@@ -26,6 +26,12 @@
     "en": "The page-size list under every table now opens right under its field (it used to open above it and off to the side).",
     "ar": "قايمة «في الصفحة» تحت كل جدول بقت بتفتح تحت الخانة بالظبط، بعد ما كانت بتفتح فوقها وبعيدة عنها.",
     "route": "/control/security"
+   },
+   {
+    "kind": "better",
+    "en": "Every table header now sorts: tap a title to sort, tap again to flip, and the arrow shows which column is sorted.",
+    "ar": "كل عناوين الجداول بقت بتترتب: دوس على العنوان يترتب، دوس تاني يتعكس، والسهم بيوريك العمود اللي مترتب عليه دلوقتي.",
+    "route": "/buy/items"
    }
   ]
  },

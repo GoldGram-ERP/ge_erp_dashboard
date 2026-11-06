@@ -157,7 +157,7 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
       </form>
       <div className="card">
         <h3>{m("lines")} <span className="sub">{m("linesOf", { count: lines.length })}</span></h3>
-        <DataTable tableClassName="lines" bodyId="inv-lines" head={[{ label: "#", num: true }, <>{m("item")} *</>, <>{m("quantity")} *</>, m("weight"), ""]}>{lines.map((l, i) => (
+        <DataTable fixedOrder tableClassName="lines" bodyId="inv-lines" head={[{ label: "#", num: true }, <>{m("item")} *</>, <>{m("quantity")} *</>, m("weight"), ""]}>{lines.map((l, i) => (
             <Tr key={i} data-i={i}>
               <Td num>{i + 1}</Td>
               <Td><div className="field" data-k={`lines.${i}.itemId`}>

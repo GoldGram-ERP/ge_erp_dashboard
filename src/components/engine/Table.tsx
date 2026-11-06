@@ -4,6 +4,8 @@ import { dateText, dateTimeText, intText, milligramsText, piastresText } from "@
 import type { Column, Row, ViewConfig } from "@/lib/engine-types";
 import type { ViewState } from "@/lib/fields";
 import { useT, type Tr } from "@/lib/t";
+import { DataTable, Td, Tr as TableRow } from "@/components/ui/DataTable";
+import { kindOfType, nextDir, sortRows } from "@/lib/sort";
 
 const isNum = (c: Pick<Column, "type">) => c.type === "money" || c.type === "weight" || c.type === "int";
 const TONES = ["good", "warn", "info", "off"];
@@ -30,15 +32,28 @@ export function cellNode(col: Pick<Column, "key" | "type" | "get" | "render" | "
 }
 const sumText = (type: "money" | "weight" | "int", n: number) => (type === "weight" ? milligramsText(n) : type === "int" ? intText(n) : piastresText(n));
 
+/** How a column sorts: on the server through the view's sort param, in the browser when the whole list is loaded, or not at all (a paged list whose backend takes no sort for it). */
+export const sortKeyOf = (view: ViewConfig, c: Column, whole: boolean): string | null => {
+  if (c.sortable === false && !c.sortKey) return null;
+  if (view.sort) return c.sortKey ?? c.key;
+  return whole ? c.sortKey ?? c.key : null;   // a paged list with no sort param on its backend is sorted here only when its one page is the whole list
+};
+export const sortKeysOf = (view: ViewConfig) => view.columns.map((c) => sortKeyOf(view, c, true)).filter((k): k is string => !!k);
+
 type Props = {
-  view: ViewConfig; rows: Row[]; vs: ViewState; answer: unknown; unit: string; selected?: string | null;
-  onSort: (key: string) => void; onRow: (row: Row) => void; flashId?: string | null;
+  view: ViewConfig; rows: Row[]; vs: ViewState; answer: unknown; unit: string; whole: boolean; selected?: string | null;
+  onSort: (key: string, dir: "asc" | "desc") => void; onRow: (row: Row) => void; flashId?: string | null;
 };
 
-export function Table({ view, rows, vs, answer, unit, selected, onSort, onRow, flashId }: Props) {
+export function Table({ view, rows: given, vs, answer, unit, whole, selected, onSort, onRow, flashId }: Props) {
   const tr = useT();
+  let rows = given;
   const cols = view.columns, key = view.rowKey ?? "id";
-  const sortable = (c: Column) => (view.sort ? (c.sortKey ?? (c.sortable === false ? null : c.key)) : null);
+  const sortable = (c: Column) => sortKeyOf(view, c, whole);
+  if (!view.sort && whole && vs.sort) {   // the whole list is here: sort it here
+    const sc = cols.find((c) => c.key === vs.sort!.key);
+    if (sc) rows = sortRows(rows, (r) => (sc.get ? sc.get(r) : r[sc.key]), kindOfType(sc.type), vs.sort.dir, tr.locale);
+  }
   const g = vs.group !== "" ? view.groupBy?.[+vs.group] : null;
   const sumIdx = view.sum ? cols.findIndex((c) => c.key === view.sum!.key) : -1;
 
@@ -46,10 +61,10 @@ export function Table({ view, rows, vs, answer, unit, selected, onSort, onRow, f
     const k = String(r[key]);
     const open = () => view.onRow !== false && onRow(r);
     return (
-      <tr key={k} className={`row ${view.rowClass?.(r) ?? ""}${flashId === k ? " flash" : ""}`} tabIndex={view.onRow === false ? undefined : 0} data-k={k} aria-selected={selected === k}
+      <TableRow key={k} className={`row ${view.rowClass?.(r) ?? ""}${flashId === k ? " flash" : ""}`} tabIndex={view.onRow === false ? undefined : 0} data-k={k} aria-selected={selected === k}
         onClick={open} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}>
-        {cols.map((c, i) => <td key={c.key} className={`${isNum(c) ? "num " : ""}${i === 0 ? "id " : ""}${c.className ?? ""}`}>{cellNode(c, r, tr)}</td>)}
-      </tr>
+        {cols.map((c, i) => <Td key={c.key} className={`${isNum(c) ? "num " : ""}${i === 0 ? "id " : ""}${c.className ?? ""}`.trim()}>{cellNode(c, r, tr)}</Td>)}
+      </TableRow>
     );
   };
 
@@ -60,32 +75,21 @@ export function Table({ view, rows, vs, answer, unit, selected, onSort, onRow, f
     body = [...by].map(([k, rs]) => (
       <Fragment key={k}>
         {sumIdx >= 0 ? (
-          <tr className="grp"><td colSpan={sumIdx}>{k}<span className="cnt">{intText(rs.length)} {unit}</span></td><td className="num">{sumText(view.sum!.type, rs.reduce((a, r) => a + Number(r[view.sum!.key] ?? 0), 0))}</td><td colSpan={cols.length - sumIdx - 1} /></tr>
-        ) : <tr className="grp"><td colSpan={cols.length}>{k}<span className="cnt">{intText(rs.length)} {unit}</span></td></tr>}
+          <TableRow className="grp"><Td colSpan={sumIdx}>{k}<span className="cnt">{intText(rs.length)} {unit}</span></Td><Td num>{sumText(view.sum!.type, rs.reduce((a, r) => a + Number(r[view.sum!.key] ?? 0), 0))}</Td><Td colSpan={cols.length - sumIdx - 1} /></TableRow>
+        ) : <TableRow className="grp"><Td colSpan={cols.length}>{k}<span className="cnt">{intText(rs.length)} {unit}</span></Td></TableRow>}
         {rs.map(tableRow)}
       </Fragment>
     ));
   } else body = rows.map(tableRow);
 
+  const head = cols.map((c) => {
+    const sk = sortable(c), on = !!sk && vs.sort?.key === sk;
+    return { label: c.label, num: isNum(c), ...(!sk ? { sortable: false as const } :  { sort: { kind: kindOfType(c.type), dir: on ? vs.sort!.dir : null, onSort: () => onSort(sk, nextDir(kindOfType(c.type), on ? vs.sort!.dir : null)) } }) };
+  });
   return (
-    <table>
-      <thead>
-        <tr>
-          {cols.map((c) => {
-            const sk = sortable(c), on = !!sk && vs.sort?.key === sk;
-            return (
-              <th key={c.key} className={isNum(c) ? "num" : undefined} data-sort={sk || undefined} aria-sort={on ? (vs.sort!.dir === "asc" ? "ascending" : "descending") : undefined}
-                tabIndex={sk ? 0 : undefined} onClick={sk ? () => onSort(sk) : undefined} onKeyDown={sk ? (e) => { if (e.key === "Enter") onSort(sk); } : undefined}>
-                {c.label}{on && <span className="arr">{vs.sort!.dir === "asc" ? "▲" : "▼"}</span>}
-              </th>
-            );
-          })}
-        </tr>
-      </thead>
-      <tbody>
-        {body}
-        {view.footer && <tr className="foot">{view.footer(rows, answer)}</tr>}
-      </tbody>
-    </table>
+    <DataTable bare head={head}>
+      {body}
+      {view.footer && <TableRow className="foot">{view.footer(rows, answer)}</TableRow>}
+    </DataTable>
   );
 }

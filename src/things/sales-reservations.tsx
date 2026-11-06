@@ -121,7 +121,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
               <Kv k={si("customerName")}>{r.customerName ?? ""}</Kv><Kv k={si("customerPhone")}><Ltr>{r.customerPhone ?? ""}</Ltr></Kv><Kv k={si("nationalId")}><Ltr>{r.nationalId ?? ""}</Ltr></Kv>
             </Section>
             <Section title={m("items")} wide>
-              <DataTable style={{ overflowX: "auto" }} head={[si("lineHeading"), m("item"), si("karat"), { label: m("quantity"), num: true }, { label: m("linePrice"), num: true }, { label: si("cashDiscount"), num: true }]}>
+              <DataTable fixedOrder style={{ overflowX: "auto" }} head={[si("lineHeading"), m("item"), si("karat"), { label: m("quantity"), num: true }, { label: m("linePrice"), num: true }, { label: si("cashDiscount"), num: true }]}>
                 {r.lines.map((l: Row) => <TRow key={l.lineNumber}><Td>{l.lineNumber}</Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td><Td num>{intText(l.quantity)}</Td><Td num>{piastresText(l.linePrice)}</Td><Td num>{piastresText(l.cashDiscount ?? 0)}</Td></TRow>)}
               </DataTable>
             </Section>

@@ -137,7 +137,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
           {codedLines.map((line) => (
             <div style={{ marginBottom: 14 }} key={line.lineId}>
               <h3>{m("lineNumber", { number: line.lineNumber })} · {line.itemName} <span className="sub" dir="ltr">{code6(line.itemCode)}</span></h3>
-              <DataTable head={[m("pieceCode"), { label: m("weight"), num: true }, { label: m("makingChargePerGram"), num: true }, { label: m("weight21"), num: true }, { label: m("totalWage"), num: true }, m("actions")]}>
+              <DataTable fixedOrder head={[m("pieceCode"), { label: m("weight"), num: true }, { label: m("makingChargePerGram"), num: true }, { label: m("weight21"), num: true }, { label: m("totalWage"), num: true }, m("actions")]}>
                 {(line.pieces as Row[]).map((p) => (
                   <Tr key={p.id} data-piece={p.pieceCode}>
                     <Td className="id" dir="ltr">{p.pieceCode}</Td><Td num>{milligramsText(p.weight)}</Td>

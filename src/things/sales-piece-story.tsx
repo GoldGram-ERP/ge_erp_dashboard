@@ -18,7 +18,7 @@ function History({ name, title, empty, cols, rows, keyOf }: { name: string; titl
     <section data-history-section={name} aria-labelledby={`history-${name}`}>
       <h3 id={`history-${name}`} className="grp-title">{title}</h3>
       {rows.length === 0 ? <p data-history-empty className="hint">{empty}</p> : (
-        <DataTable style={{ overflowX: "auto" }} head={cols.map((c) => ({ label: c.label, num: c.end }))}>
+        <DataTable fixedOrder style={{ overflowX: "auto" }} head={cols.map((c) => ({ label: c.label, num: c.end }))}>
           {rows.map((r) => <Tr key={keyOf(r)} data-history-row>{cols.map((c) => <Td key={c.key} num={c.end}>{c.draw(r)}</Td>)}</Tr>)}
         </DataTable>
       )}

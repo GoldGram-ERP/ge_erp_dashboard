@@ -43,7 +43,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         <Kv k={m("purchaseInvoices.date")}><Ltr>{dateText(r.date)}</Ltr></Kv><Kv k={L("تاريخ الإضافة", "Created")}><Ltr>{dateTimeText(r.createdAt)}</Ltr></Kv>
       </Section>
       <Section title={m("purchaseInvoices.lines")} wide>
-        <DataTable head={[{ label: m("purchaseInvoices.lineHeading"), num: true }, m("purchaseInvoices.item"), { label: m("purchaseInvoices.quantity"), num: true }, { label: m("purchaseInvoices.weight"), num: true }, m("purchaseCoding.title")]}>
+        <DataTable fixedOrder head={[{ label: m("purchaseInvoices.lineHeading"), num: true }, m("purchaseInvoices.item"), { label: m("purchaseInvoices.quantity"), num: true }, { label: m("purchaseInvoices.weight"), num: true }, m("purchaseCoding.title")]}>
           {((r.lines ?? []) as Row[]).map((l) => (
             <Tr key={l.lineNumber}><Td num>{l.lineNumber}</Td><Td>{itemCell(l)}</Td><Td num>{l.quantity}</Td><Td num>{milligramsText(l.weight)}</Td><Td>{l.coded ? L("مكوّد", "Coded") : L("بانتظار التكويد", "Waiting")}</Td></Tr>))}
         </DataTable>

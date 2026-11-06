@@ -115,7 +115,7 @@ export const makeConfigWith = (treasuries: GoldTreasury[], lists: Lists): MakeCo
       const line = p.total > rows.length ? m("branchStock.piecesFirst", { shown: rows.length, total: p.total }) : m("branchStock.pieces", { count: p.total, shown: String(p.total) });
       return <>
         <h3 className="grp-title">{m("branchStock.piecesTitle")} · {r.name}</h3><div className="help">{line}</div>
-        <DataTable style={{ overflowX: "auto" }} head={[m("branchStock.columns.code"), m("branchStock.karat"), { label: m("branchStock.columns.weight"), num: true }, { label: m("branchStock.columns.tagPrice"), num: true }]}>
+        <DataTable fixedOrder style={{ overflowX: "auto" }} head={[m("branchStock.columns.code"), m("branchStock.karat"), { label: m("branchStock.columns.weight"), num: true }, { label: m("branchStock.columns.tagPrice"), num: true }]}>
           {rows.map((x) => <TRow key={x.pieceCode}><Td dir="ltr">{x.pieceCode}</Td><Td dir="ltr">{karatName(x.karat)}</Td><Td num>{milligramsText(x.weightMg)}</Td><Td num>{piastresText(x.tagPrice)}</Td></TRow>)}
         </DataTable>
       </>;

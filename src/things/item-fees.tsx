@@ -133,7 +133,7 @@ export default function Page() {
             : shownRows.length === 0
               ? <EmptyState title={L("لا توجد أصناف مطابقة", "No matching items")} text={L("غيّر البحث أو المرشحات.", "Change the search or the filters.")} />
               : (
-                <DataTable tableId="fees-table" bodyId="fees-body" head={[m("cols.itemName"), m("cols.categoryName"), m("cols.karat"), { label: m("weightG"), num: true }, { label: m("workmanshipValue"), num: true }, { label: m("cashbackValue"), num: true }]}>
+                <DataTable fixedOrder tableId="fees-table" bodyId="fees-body" head={[m("cols.itemName"), m("cols.categoryName"), m("cols.karat"), { label: m("weightG"), num: true }, { label: m("workmanshipValue"), num: true }, { label: m("cashbackValue"), num: true }]}>
                   {shownRows.map((r) => {
                     const rs = rowState(r, edits);
                     const cell = (f: Field) => {

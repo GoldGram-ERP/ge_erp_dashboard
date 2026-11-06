@@ -17,7 +17,7 @@ import { Select } from "../fields/Select";
 import { FilterFields, useFieldsForm } from "../fields/useFieldsForm";
 import { FormPage, FormSheet } from "./FormView";
 import { RecordSheet } from "./RecordSheet";
-import { Table } from "./Table";
+import { Table, sortKeysOf } from "./Table";
 import { exportActions } from "@/things/report-export";
 import { EmptyState, Icon, Seg, Skeleton, ToastHost, toast, useConfirm } from "./ui";
 
@@ -66,7 +66,7 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   const [picked, setPicked] = useState<Row | null>(null);                            // the row clicked for the record sheet; the sheet itself lives in the address (?open=)
   const [flashId, setFlashId] = useState<string | null>(null);
   const unit = cfg.unit ?? L("سجل", "records");
-  const filterNames = useMemo(() => cfg.views.flatMap((v) => (v.filters ?? []).map((f) => f.name)), [cfg]);
+  const filterNames = useMemo(() => ["sort", "dir", ...cfg.views.flatMap((v) => (v.filters ?? []).map((f) => f.name))], [cfg]);
 
   let vs: ViewState | null = null;
   if (view) {
@@ -86,6 +86,9 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
     rel = JSON.stringify(hit);
     if (mem.applied !== search) {
       mem.applied = search;
+      // ?sort=<column>&dir=asc|desc: the sorted column survives a refresh, like the filters do (a key the view cannot sort by is ignored)
+      const sk = dl.query.sort, sd = dl.query.dir;
+      if (sk && (sd === "asc" || sd === "desc") && sortKeysOf(view).includes(sk)) vs.sort = { key: sk, dir: sd };
       if (hit.length) {
         for (const [k, v] of hit) { if (k === "q") vs.q = v; else if (k === "chip") vs.chip = v; else vs.filters[k] = v; }
         vs.page = 1;
@@ -149,7 +152,7 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
     <div className="thing-root fill" style={{ position: "relative", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
       <Header cfg={cfg} creates={creates} actions={actions} view={view} vs={vs} onCreate={(id) => openForm(id)} reload={reload} />
       {views.length > 1 && <Seg className="page" label={L("العرض", "View")} items={views.map((v) => ({ id: v.id, label: v.label }))} value={view.id} onChange={(id) => { pickView(cfg.id, id); bump((n) => n + 1); go({ view: id }, true); }} />}
-      <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm}
+      <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} sortToUrl={(k, d) => go({ sort: k, dir: d })} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm}
         jump={(j) => go({ view: j.view, ...Object.fromEntries(Object.entries(j.filters ?? {}).map(([k, v]) => [k, v === undefined || v === null ? null : String(v)])) }, true)} />
       {opened && rec && (
         <RecordSheet rec={rec} full={opened.full} row={opened.row} onClose={closeRecord} reload={reload} openForm={openForm} />
@@ -184,8 +187,8 @@ function Header({ cfg, creates, actions, view, vs, onCreate, reload }: { cfg: Th
   );
 }
 
-function ViewBody({ cfg, view, vs, set, chips, unit, flashId, onRow, openForm, jump }: {
-  cfg: ThingConfig; view: ViewConfig; vs: ViewState; set: (p: Partial<ViewState>) => void; chips: NonNullable<ViewConfig["chips"]>;
+function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, openForm, jump }: {
+  cfg: ThingConfig; view: ViewConfig; vs: ViewState; set: (p: Partial<ViewState>) => void; sortToUrl: (key: string, dir: "asc" | "desc") => void; chips: NonNullable<ViewConfig["chips"]>;
   unit: string; flashId: string | null; onRow: (row: Row) => void; openForm: (id: string, row?: Row | null) => void; jump: (j: RowJump) => void;
 }) {
   const tr = useT();
@@ -291,8 +294,8 @@ function ViewBody({ cfg, view, vs, set, chips, unit, flashId, onRow, openForm, j
             <EmptyState title={filtered ? L("لا توجد نتائج", "No results") : L("لا توجد سجلات بعد", "No records yet")} text={filtered ? L("جرّب كلمة أخرى أو غيّر الفلاتر.", "Try another word or change the filters.") : ""}>
               {filtered && <button type="button" className="btn quiet" id="clear" onClick={clear}>{L("مسح البحث والفلاتر", "Clear search and filters")}</button>}
             </EmptyState>
-          ) : <Table view={view} rows={rows} vs={vs} answer={answer} unit={unit} flashId={flashId}
-              onSort={(k) => set({ sort: { key: k, dir: vs.sort?.key === k && vs.sort.dir === "asc" ? "desc" : "asc" }, page: 1 })}
+          ) : <Table view={view} rows={rows} vs={vs} answer={answer} unit={unit} flashId={flashId} whole={!paging || (Number.isFinite(total) && total <= rows.length && vs.page === 1)}
+              onSort={(k, dir) => { set({ sort: { key: k, dir }, page: 1 }); sortToUrl(k, dir); }}
               onRow={(r) => {
                 if (typeof view.onRow !== "function") return onRow(r);
                 const j = view.onRow(r, { open: onRow, openForm, filters: vs.filters });
