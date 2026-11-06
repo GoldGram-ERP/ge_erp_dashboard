@@ -1,5 +1,5 @@
 import { afterAll } from 'e2e';
-import { test, expect, seed, LANGS, layoutAudit, MAIN_BRANCH } from './lib.ts';
+import { test, expect, seed, LANGS, layoutAudit, MAIN_BRANCH, apiAs, stamp } from './lib.ts';
 
 // Every sortable table header: tap cycles natural direction -> flipped -> back, rows reorder against an independent sort, aria-sort follows,
 // only the sorted column shows the active arrow, empties come last. One table per kind: a categories-style server report (text + numbers),
@@ -11,13 +11,13 @@ afterAll(async () => { for (const s of S) await s.remove(); });
 type Snap = { cols: { i: number; start: number; sortable: boolean; aria: string | null; arrow: string | null; label: string; kind: string; thH: number }[]; rows: string[][]; active: number };
 const snap = (browser: any, table: string): Promise<Snap> => browser.evaluate((sel: string) => {
   const t = document.querySelector(sel) as HTMLTableElement;
-  const ths = Array.from(t.querySelectorAll('thead tr:first-child th')) as HTMLTableCellElement[];
+  const ths = Array.from(t.querySelectorAll(':scope > thead > tr:first-child > th')) as HTMLTableCellElement[];
   let start = 0;
   const cols = ths.map((th, i) => {
     const c = { i, start, sortable: th.dataset.sort === 'on', aria: th.getAttribute('aria-sort'), arrow: th.querySelector('.sort-arrow')?.getAttribute('data-dir') ?? null, label: (th.textContent ?? '').trim(), kind: th.dataset.kind ?? '', thH: Math.round(th.getBoundingClientRect().height) };
     start += th.colSpan || 1; return c;
   });
-  const rows = Array.from(t.querySelectorAll('tbody tr')).filter((r) => !r.classList.contains('grp') && !r.classList.contains('foot')).map((r) => Array.from(r.children).map((c) => (c.textContent ?? '').trim()));
+  const rows = Array.from(t.querySelectorAll(':scope > tbody > tr')).filter((r) => !r.classList.contains('grp') && !r.classList.contains('foot')).map((r) => Array.from(r.children).map((c) => (c.textContent ?? '').trim()));
   return { cols, rows, active: cols.filter((c) => c.arrow === 'asc' || c.arrow === 'desc').length };
 }, table);
 
@@ -74,6 +74,21 @@ async function sortEveryColumn(browser: any, table: string, lang: string, label:
     seen.push(col.label);
   }
   return seen;
+}
+
+// A second branch with its own admin (a branch needs one) and its gold treasury, plus the main branch's gold treasury: the two ends of a piece transfer.
+async function twoBranches(api: any, tag: string) {
+  const u = await api('POST', '/users', { username: `e2es${tag.toLowerCase()}`, email: `e2es${tag.toLowerCase()}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'admin', branchId: MAIN_BRANCH });
+  expect(u.status).toBe(201);
+  const b = await api('POST', '/branches', { branchName: `E2E Sort ${tag}`, adminUserId: u.body.id });
+  expect(b.status).toBe(201);
+  const gold = async (branchId: string) => (await api('GET', `/treasuries?branchId=${branchId}`)).body.items.find((t: any) => t.kind === 'gold').id as string;
+  const name = `e2es${tag.toLowerCase()}`;
+  const first = await apiAs(name, 'E2e-Temp-Pass-9876'); // a new account must set its own password before anything else answers
+  const cp = await first('POST', '/access/forced-password-change', { newPassword: 'E2e-Own-Pass-5432-x' });
+  expect(cp.status, JSON.stringify(cp.body)).toBeLessThan(300);
+  const other = await apiAs(name, 'E2e-Own-Pass-5432-x');
+  return { other, mainGold: await gold(MAIN_BRANCH), otherGold: await gold(b.body.id), drop: async () => { await api('DELETE', `/branches/${b.body.id}`); await api('DELETE', `/users/${u.body.id}`); } };
 }
 
 for (const lang of LANGS) {
@@ -144,5 +159,51 @@ for (const lang of LANGS) {
     expect((await sortEveryColumn(browser, '#reservation-lines', lang, 'reservation lines', false)).length).toBe(6);
     await shot(`sort-after-click-${lang}-reservation-lines`);
     await S[0].api('DELETE', `/reservations/${res.body.id}`); S[0].created.reservations.pop();
+  });
+
+  // the piece story: sales and returns of one piece, and its branch transfers (each section sorted by its own headers, in the browser)
+  test(`headers sort: piece story, sales and transfers (${lang})`, { tags: ['e2e', 'tables'], requires: ['browser'] }, async ({ go, browser, shot }) => {
+    const s = await seed(); S.push(s);
+    const [sold, moved] = s.pieces;
+    const sale = (pay: object) => s.api('POST', '/sales-invoices', { branchId: MAIN_BRANCH, invoiceType: 'sale', customerName: 'E2E Customer', customerPhone: '01012345678', lines: [{ pieceCode: sold.pieceCode }], ...pay });
+    for (let i = 0; i < 2; i++) { // sale, return, sale: three rows, two types
+      const total = (await sale({ cash: 1 })).body.values.total as number;
+      const inv = await sale({ cash: total }); expect(inv.status).toBe(201); s.created.invoices.push(inv.body.id);
+      if (i === 0) { const ret = await s.api('POST', '/returns', { branchId: MAIN_BRANCH, date: s.day, pieceCode: sold.pieceCode, cashRefund: total }); expect(ret.status, JSON.stringify(ret.body)).toBe(201); s.created.returns.push(ret.body.id); }
+    }
+    const tag = stamp(); const br = await twoBranches(s.api, tag);
+    try {
+      const hop = async (from: any, fromT: string, to: any, toT: string) => { // sent by one branch's admin, accepted by the other's
+        const t = await from('POST', '/treasury-transfers', { fromTreasuryId: fromT, toTreasuryId: toT, pieceCodes: [moved.pieceCode] });
+        expect(t.status, JSON.stringify(t.body)).toBe(201);
+        const a = await to('POST', `/treasury-transfers/${t.body.id}/accept`); expect(a.status, JSON.stringify(a.body)).toBeLessThan(300);
+      };
+      await hop(s.api, br.mainGold, br.other, br.otherGold); await hop(br.other, br.otherGold, s.api, br.mainGold); await hop(s.api, br.mainGold, br.other, br.otherGold);
+      await go('superadmin', `/sales/pieces?view=lookup&pieceCode=${sold.pieceCode}`, lang);
+      await expect.poll(() => browser.locator('[data-history-section=sales] [data-history-row]').count(), { timeout: 20_000 }).toBe(3);
+      const t1 = '[data-history-section=sales] table';
+      expect((await sortEveryColumn(browser, t1, lang, 'piece story sales', false)).length).toBeGreaterThanOrEqual(8);
+      await shot(`sort-after-click-${lang}-piece-story-sales`);
+      await go('superadmin', `/sales/pieces?view=lookup&pieceCode=${moved.pieceCode}`, lang);
+      await expect.poll(() => browser.locator('[data-history-section=transfers] [data-history-row]').count(), { timeout: 20_000 }).toBe(3);
+      const t2 = '[data-history-section=transfers] table';
+      expect((await sortEveryColumn(browser, t2, lang, 'piece story transfers', false)).length).toBeGreaterThanOrEqual(7);
+      await shot(`sort-after-click-${lang}-piece-story-transfers`);
+    } finally { await br.drop(); }
+  });
+
+  // the pieces list inside a treasury transfer sheet: three pieces of two items sent together
+  test(`headers sort: treasury transfer pieces (${lang})`, { tags: ['e2e', 'tables'], requires: ['browser'] }, async ({ go, browser, shot }) => {
+    const a = await seed(), b = await seed(); S.push(a, b);
+    const br = await twoBranches(a.api, stamp());
+    try {
+      const t = await a.api('POST', '/treasury-transfers', { fromTreasuryId: br.mainGold, toTreasuryId: br.otherGold, pieceCodes: [a.pieces[0].pieceCode, b.pieces[0].pieceCode, a.pieces[1].pieceCode, b.pieces[1].pieceCode] });
+      expect(t.status, JSON.stringify(t.body)).toBe(201);
+      await go('superadmin', `/money/transfers?open=${t.body.id}`, lang);
+      await expect.poll(() => browser.locator('#transfer-pieces tbody tr').count(), { timeout: 20_000 }).toBe(4);
+      expect((await sortEveryColumn(browser, '#transfer-pieces', lang, 'transfer pieces', false)).length).toBe(4);
+      await shot(`sort-after-click-${lang}-transfer-pieces`);
+      expect((await a.api('POST', `/treasury-transfers/${t.body.id}/cancel`)).status).toBeLessThan(300); // the pieces go back to the main branch
+    } finally { await br.drop(); }
   });
 }
