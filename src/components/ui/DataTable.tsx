@@ -60,11 +60,11 @@ export function useTableSort<T>(rows: readonly T[], cols: Record<string, { kind:
 }
 
 /** A read-only list sorted in the browser by every column: one `cols` entry per column says how to sort it (`kind`, `get`) and how to draw it (`show`). Cells are Td, `ltr` for codes and numbers typed left to right. */
-export function SortedTable<T>({ rows, rowKey, rowProps, cols, tableId }: { rows: readonly T[]; rowKey: (r: T) => string; rowProps?: (r: T) => Record<string, string>; tableId?: string;
+export function SortedTable<T>({ rows, rowKey, rowProps, cols, tableId, className }: { rows: readonly T[]; rowKey: (r: T) => string; rowProps?: (r: T) => Record<string, string>; tableId?: string; className?: string;
   cols: { key: string; label: ReactNode; kind: SortKind; get: (r: T) => unknown; show: (r: T) => ReactNode; num?: boolean; ltr?: boolean }[] }) {
   const s = useTableSort(rows, Object.fromEntries(cols.map((c) => [c.key, { kind: c.kind, get: c.get }])));
   return (
-    <DataTable tableId={tableId} style={{ overflowX: "auto" }} head={cols.map((c) => s.col(c.key, c.label, { num: c.num }))}>
+    <DataTable tableId={tableId} className={className} style={{ overflowX: "auto" }} head={cols.map((c) => s.col(c.key, c.label, { num: c.num }))}>
       {s.rows.map((r) => <Tr key={rowKey(r)} {...rowProps?.(r)}>{cols.map((c) => <Td key={c.key} num={c.num} dir={c.ltr ? "ltr" : undefined}>{c.show(r)}</Td>)}</Tr>)}
     </DataTable>
   );

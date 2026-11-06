@@ -1,5 +1,5 @@
 "use client";
-import { DataTable, Td, Tr } from "@/components/ui";
+import { SortedTable } from "@/components/ui";
 // المشتريات: purchase-invoices (+ list), purchase-coding, pieces-list. ONE page, three tabs: purchase invoices (history; "new" and edit are a full page),
 // pieces (GET /pieces), purchase coding (find an invoice by number, code its lines). Port of docs/nav-preview/app/things/gold-purchases.js.
 // Decisions (specs/gold-accounts.json): the list takes no branch filter and no `order`; delete is offered on every live invoice and the backend refuses with
@@ -43,10 +43,12 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         <Kv k={m("purchaseInvoices.date")}><Ltr>{dateText(r.date)}</Ltr></Kv><Kv k={L("تاريخ الإضافة", "Created")}><Ltr>{dateTimeText(r.createdAt)}</Ltr></Kv>
       </Section>
       <Section title={m("purchaseInvoices.lines")} wide>
-        <DataTable fixedOrder head={[{ label: m("purchaseInvoices.lineHeading"), num: true }, m("purchaseInvoices.item"), { label: m("purchaseInvoices.quantity"), num: true }, { label: m("purchaseInvoices.weight"), num: true }, m("purchaseCoding.title")]}>
-          {((r.lines ?? []) as Row[]).map((l) => (
-            <Tr key={l.lineNumber}><Td num>{l.lineNumber}</Td><Td>{itemCell(l)}</Td><Td num>{l.quantity}</Td><Td num>{milligramsText(l.weight)}</Td><Td>{l.coded ? L("مكوّد", "Coded") : L("بانتظار التكويد", "Waiting")}</Td></Tr>))}
-        </DataTable>
+        <SortedTable tableId="purchase-invoice-lines" rows={(r.lines ?? []) as Row[]} rowKey={(l) => String(l.lineNumber)} cols={[
+          { key: "n", label: m("purchaseInvoices.lineHeading"), kind: "number", get: (l) => l.lineNumber, show: (l) => l.lineNumber, num: true },
+          { key: "item", label: m("purchaseInvoices.item"), kind: "text", get: (l) => l.itemName, show: (l) => itemCell(l) },
+          { key: "qty", label: m("purchaseInvoices.quantity"), kind: "number", get: (l) => l.quantity, show: (l) => l.quantity, num: true },
+          { key: "w", label: m("purchaseInvoices.weight"), kind: "number", get: (l) => l.weight, show: (l) => milligramsText(l.weight), num: true },
+          { key: "coded", label: m("purchaseCoding.title"), kind: "text", get: (l) => (l.coded ? 1 : 0), show: (l) => (l.coded ? L("مكوّد", "Coded") : L("بانتظار التكويد", "Waiting")) }]} />
       </Section>
       <Section title={m("purchaseInvoices.totals")}>
         <Kv k={m("purchaseInvoices.totalQuantity")}><Ltr>{r.totals?.totalQuantity}</Ltr></Kv><Kv k={m("purchaseInvoices.totalWeight")}><Ltr>{milligramsText(r.totals?.totalWeight)}</Ltr></Kv>

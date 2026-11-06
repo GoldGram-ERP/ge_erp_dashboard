@@ -5,7 +5,7 @@
 // Decisions kept from the HTML: cash discount sent as cashDiscount {kind,value}; line limit 100; a saved invoice is never edited;
 // the list pages at 20 and refuses unknown params (the history strips pageSize/sort/order before asking).
 import { api, ApiFailure } from "@/lib/api";
-import { DataTable, Status, Td, Tr } from "@/components/ui";
+import { SortedTable, Status, Td, Tr } from "@/components/ui";
 import type { Column, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
 import { addDays, intText, latinNumber, milligramsText, monthStart, piastresText, today } from "@/lib/format";
 import { useSession } from "@/stores/session";
@@ -162,7 +162,6 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       }),
       render: (r) => {
         const tot = r.totals;
-        const heads: [string, boolean?][] = [["lineHeading"], ["pieceCode"], ["item"], ["karat"], ["weight", true], ["weight24", true], ["pricePerGram24", true], ["goldValue", true], ["makingCharge", true], ["cashDiscount", true], ["linePrice", true]];
         const dash = (v: unknown, f: (x: any) => string) => (v === null || v === undefined ? "—" : f(v));
         return <>
           {r.deletedAt && <div className="note warn">{m("deletedBadge")}</div>}
@@ -180,14 +179,18 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
             <Kv k={m("customerName")}>{r.customerName ?? ""}</Kv><Kv k={m("customerPhone")}><Ltr>{r.customerPhone ?? ""}</Ltr></Kv><Kv k={m("nationalId")}><Ltr>{r.nationalId ?? ""}</Ltr></Kv>
           </Section>
           <Section title={m("pieces")} wide>
-            <DataTable fixedOrder style={{ overflowX: "auto" }} head={heads.map(([k, n]) => ({ label: m(k), num: n }))}>
-              {(r.lines as Row[]).map((l) => (
-                <Tr key={l.lineNumber}>
-                  <Td>{l.lineNumber}</Td><Td dir="ltr">{l.pieceCode}</Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td>
-                  <Td num>{milligramsText(l.weight)}</Td><Td num>{dash(l.weight24Mg, milligramsText)}</Td><Td num>{dash(l.pricePerGram24, piastresText)}</Td>
-                  <Td num>{piastresText(l.goldValue)}</Td><Td num>{piastresText(l.makingCharge)}</Td><Td num>{piastresText(l.cashDiscount)}</Td><Td num>{piastresText(l.linePrice)}</Td>
-                </Tr>))}
-            </DataTable>
+            <SortedTable tableId="invoice-lines" rows={r.lines as Row[]} rowKey={(l) => String(l.lineNumber)} cols={[
+              { key: "n", label: m("lineHeading"), kind: "number", get: (l) => l.lineNumber, show: (l) => l.lineNumber },
+              { key: "pc", label: m("pieceCode"), kind: "text", get: (l) => l.pieceCode, show: (l) => l.pieceCode, ltr: true },
+              { key: "item", label: m("item"), kind: "text", get: (l) => l.itemName, show: (l) => l.itemName },
+              { key: "karat", label: m("karat"), kind: "text", get: (l) => l.karat, show: (l) => l.karat, ltr: true },
+              { key: "w", label: m("weight"), kind: "number", get: (l) => l.weight, show: (l) => milligramsText(l.weight), num: true },
+              { key: "w24", label: m("weight24"), kind: "number", get: (l) => l.weight24Mg, show: (l) => dash(l.weight24Mg, milligramsText), num: true },
+              { key: "p24", label: m("pricePerGram24"), kind: "number", get: (l) => l.pricePerGram24, show: (l) => dash(l.pricePerGram24, piastresText), num: true },
+              { key: "gv", label: m("goldValue"), kind: "number", get: (l) => l.goldValue, show: (l) => piastresText(l.goldValue), num: true },
+              { key: "mc", label: m("makingCharge"), kind: "number", get: (l) => l.makingCharge, show: (l) => piastresText(l.makingCharge), num: true },
+              { key: "cd", label: m("cashDiscount"), kind: "number", get: (l) => l.cashDiscount, show: (l) => piastresText(l.cashDiscount), num: true },
+              { key: "lp", label: m("linePrice"), kind: "number", get: (l) => l.linePrice, show: (l) => piastresText(l.linePrice), num: true }]} />
           </Section>
           <Section title={m("payments")}>
             {r.reservation && <><Kv k={m("reservation")}><Ltr>{code6(r.reservation.reservationNumber)}</Ltr></Kv><Kv k={m("paidAhead")}><Ltr>{piastresText(r.reservation.paid)}</Ltr></Kv></>}

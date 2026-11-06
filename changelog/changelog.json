@@ -30,6 +30,12 @@
     "en": "In the Arabic totals bar, each number now sits right under the start of its label instead of at the far left of its cell.",
     "ar": "في شريط الإجماليات بالعربي، كل رقم بقى تحت أول اسمه بالظبط بدل ما كان في أقصى الشمال من الخانة.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "Saved invoice lines, purchase invoice lines and the missing-pieces preview of a stock count now sort by any column",
+    "ar": "بنود الفاتورة المحفوظة وبنود فاتورة الشراء ومعاينة الأصناف الناقصة في الجرد بقت تترتب بأي عمود",
+    "route": "/sales/invoices"
    }
   ]
  },

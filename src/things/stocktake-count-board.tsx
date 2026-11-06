@@ -4,7 +4,7 @@
 // and GET /stock-counts/:id/pieces (counted, remaining, no longer in stock; paged, searched on the server).
 // Live: every few seconds while the page is visible and online (react-query pauses the interval when the tab is hidden and
 // when offline), and at once after each scan (the scan invalidates ["stock-count", id]). A closed count is frozen: no polling.
-import { Button, Checkbox, DataTable, Input, Seg, TextButton, Td, Tr } from "@/components/ui";
+import { Button, Checkbox, DataTable, Input, Seg, SortedTable, TextButton, Td, Tr } from "@/components/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -139,10 +139,10 @@ export function Breakdown({ live }: { live: Live }) {
         head={[...(tab === "item" ? [head("name", m("item")), head("code", m("itemCode")), head("category", m("category")), head("karat", m("karat"))] : [head("name", tab === "karat" ? m("karat") : m("category"))]), head("expected", m("expected"), 2), head("counted", m("counted"), 2), head("remaining", leftLabel, 2)]}
         subHead={[{ label: null, colSpan: nameCols, sortable: false as const }, ...[0, 1, 2].flatMap(() => [{ label: m("piecesCol"), num: true, sortable: false as const }, { label: m("gramsCol"), num: true, sortable: false as const }])]}   /* the group header above sorts by pieces, then grams */
         foot={shown.length > 0 ? (
-          <tr className="foot">
+          <Tr className="foot">
             <Td colSpan={nameCols}>{m("expected")}: {live.totals.expected.pieces.toLocaleString("en-US")}</Td>
             {pair(live.totals.expected)}{pair(live.totals.counted)}{pair(live.totals.remaining, live.totals.remaining.pieces > 0 ? "sc-left" : "")}
-          </tr>
+          </Tr>
         ) : undefined}>
         {shown.length === 0 && <Tr><Td colSpan={nameCols + 6} className="help">{m("noPieces")}</Td></Tr>}
         {shown.map((l) => (
@@ -193,6 +193,7 @@ export function PieceLists({ id, live }: { id: string; live: Live }) {
           <Input id="sc-pl-search" type="search" value={typed} placeholder={m("searchPieces")} aria-label={m("searchPieces")} onChange={(e) => setTyped(e.target.value)} />
         </label>
       </div>
+      {/* fixedOrder: a server-paged list whose order is the list itself (newest scan / by code) and the backend takes no sort */}
       <DataTable fixedOrder id="sc-pl-table" className="sc-table" aria-busy={q.isFetching}
         head={[m("pieceCode"), m("item"), m("category"), m("karat"), { label: m("weight"), num: true }, ...(scanned ? [m("scannedAt"), m("scannedBy")] : [])]}>
         {data && data.items.length === 0 && <Tr><Td colSpan={scanned ? 7 : 5} className="help">{m("noPieces")}</Td></Tr>}
@@ -251,12 +252,15 @@ export function MissingPreview({ live }: { live: Live }) {
   return (
     <div id="sc-save-preview" className="sc-preview">
       <p><strong>{m("saveMissing", { count: m("scannedCount", { count: left.pieces }), w: milligramsText(left.weightMg) })}</strong></p>
-      <DataTable fixedOrder className="sc-table" head={[m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
-        {karats.map((l) => <Tr key={l.karat}><Td dir="ltr">{l.karat}</Td><Td num>{l.remaining.pieces}</Td><Td num dir="ltr">{milligramsText(l.remaining.weightMg)}</Td></Tr>)}
-      </DataTable>
-      <DataTable fixedOrder className="sc-table sc-preview-items" head={[m("item"), m("karat"), { label: m("piecesCol"), num: true }, { label: m("gramsCol"), num: true }]}>
-        {items.map((l) => <Tr key={`${l.itemId}:${l.karat}`}><Td><span dir="ltr" className="sc-mute">{l.itemCode}</span> {l.itemName}</Td><Td dir="ltr">{l.karat}</Td><Td num>{l.remaining.pieces}</Td><Td num dir="ltr">{milligramsText(l.remaining.weightMg)}</Td></Tr>)}
-      </DataTable>
+      <SortedTable className="sc-table" rows={karats} rowKey={(l) => l.karat} cols={[
+        { key: "karat", label: m("karat"), kind: "text", get: (l) => l.karat, show: (l) => l.karat, ltr: true },
+        { key: "pieces", label: m("piecesCol"), kind: "number", get: (l) => l.remaining.pieces, show: (l) => l.remaining.pieces, num: true },
+        { key: "grams", label: m("gramsCol"), kind: "number", get: (l) => l.remaining.weightMg, show: (l) => milligramsText(l.remaining.weightMg), num: true, ltr: true }]} />
+      <SortedTable className="sc-table sc-preview-items" rows={items} rowKey={(l) => `${l.itemId}:${l.karat}`} cols={[
+        { key: "item", label: m("item"), kind: "text", get: (l) => l.itemName, show: (l) => <><span dir="ltr" className="sc-mute">{l.itemCode}</span> {l.itemName}</> },
+        { key: "karat", label: m("karat"), kind: "text", get: (l) => l.karat, show: (l) => l.karat, ltr: true },
+        { key: "pieces", label: m("piecesCol"), kind: "number", get: (l) => l.remaining.pieces, show: (l) => l.remaining.pieces, num: true },
+        { key: "grams", label: m("gramsCol"), kind: "number", get: (l) => l.remaining.weightMg, show: (l) => milligramsText(l.remaining.weightMg), num: true, ltr: true }]} />
       <p className="help">{m("saveFinal")}</p>
     </div>
   );
