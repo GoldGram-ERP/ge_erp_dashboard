@@ -13,6 +13,11 @@
     "en": "Item fees, the pieces of an item in branch stock, reservation lines, a piece's history and the pieces of a treasury transfer can now be sorted by tapping a column header.",
     "ar": "جدول المصنعية والكاش باك، وقطع الصنف في جرد الفرع، وبنود الحجز، وتاريخ القطعة، وقطع تحويل الخزينة بقى ينفع ترتّبهم بالضغط على عنوان العمود.",
     "route": "/setup/item-fees"
+   },
+   {
+    "kind": "better",
+    "en": "New and record sheets are as tall as their content, checkbox filters sit beside their labels, and empty report screens and home cards are compact.",
+    "ar": "الشاشات الجانبية بقت على قد محتواها، وخانات الاختيار في الفلاتر جنب اسمها، وشاشات التقارير الفاضية وكروت الرئيسية بقت أصغر وأهدى."
    }
   ]
  },

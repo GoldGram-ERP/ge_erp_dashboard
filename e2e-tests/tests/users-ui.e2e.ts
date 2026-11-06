@@ -1,5 +1,5 @@
 import { afterAll } from 'e2e';
-import { test, expect, apiAs, stamp, capture, LANGS, type Lang } from './lib.ts';
+import { test, expect, apiAs, stamp, capture, MAIN_BRANCH, LANGS, type Lang } from './lib.ts';
 
 // Users page through the real UI: add (validation, By jobs, By screens, exact bodies), no Shortcuts in the form, then cleanup by API.
 const made: string[] = [];
@@ -58,7 +58,7 @@ test('users UI: Admin type needs no jobs or screens; record opens, locked user i
   expect(await browser.evaluate(() => document.querySelectorAll('#ws input[data-job], #ws input[data-screen]').length)).toBe(0);
   await shot('users-admin-no-access-boxes');
   // a plain user, locked by wrong passwords
-  const c = await api('POST', '/users', { username: name, email: `${name}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'user', branchId: 'a2deabe8-31a9-448e-95e5-04e74efceaee', screens: [], canUseTreasuries: false });
+  const c = await api('POST', '/users', { username: name, email: `${name}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'user', branchId: MAIN_BRANCH, screens: [], canUseTreasuries: false });
   expect(c.status).toBe(201); made.push(c.body.id);
   for (let i = 0; i < 6; i++) await apiAs(name, 'Wrong-Pass-0000');
   expect((await api('GET', `/users/${c.body.id}`)).body.locked).toBe(true);
