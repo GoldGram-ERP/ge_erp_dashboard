@@ -36,7 +36,7 @@ export function HomeView() {
   const find = (e: FormEvent) => { e.preventDefault(); if (q.trim()) router.push(`/sales/invoices?q=${encodeURIComponent(q.trim())}`); };
   return (
     <>
-      <div className="head"><div><h1>{h("welcome", { name: me.name })}</h1><div className="sub" dir="ltr" style={{ textAlign: "start" }}>{today()}</div></div></div>
+      <div className="head"><div><h1>{h("welcome", { name: me.name })}</h1><div className="sub" dir="ltr">{today()}</div></div></div>
       <div className="home">
         <section className="bubble b-price" aria-labelledby="hp-t"><span className="pill" id="hp-t">{t("app.home.price")}</span>
           {price.isPending ? <div className="skeleton"><i /><i /></div> : price.isError ? <p className="quiet-note">{h("priceLoadFailed")}</p> : !price.data ? <p className="quiet-note">{h("priceNeverEntered")}</p> : (

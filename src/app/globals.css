@@ -1091,3 +1091,6 @@ input[data-kind=note]{width:100%;max-width:35rem}
 .table.narrow{flex:none;align-self:flex-start;height:fit-content;width:fit-content;min-width:16.25rem;max-width:30rem}
 .wn{max-width:72ch}
 @media (max-width:43.6875rem){.filters .field,.filters .field:has(.sel-btn),.filters .field:has(.dp),.filters .field:has(input[data-kind]){width:100%;max-width:none}}
+/* A number is kept in left-to-right digit order with dir="ltr", but on a block that also flips its start edge to the LEFT, so in Arabic the number sat away from the label above it
+   (owner, the invoice totals bar). On an Arabic page such a block aligns to the page's start edge (right); the digits stay left-to-right. The Sales desk keeps its own layout. */
+html[dir=rtl] :is(b,strong,dd,div,p,small)[dir=ltr]:not(#sd *){text-align:right}

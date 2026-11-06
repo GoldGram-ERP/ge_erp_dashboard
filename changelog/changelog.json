@@ -24,6 +24,12 @@
     "en": "Short fields stay short: the session lock minutes, the scan box and the filters keep their own width, and the What's new page reads in a narrow column.",
     "ar": "الخانات القصيرة بقت قصيرة: دقايق قفل الجلسة وخانة المسح والفلاتر ليهم عرضهم، وصفحة الجديد بقت في عمود ضيق يتقري بسهولة.",
     "route": "/control/security"
+   },
+   {
+    "kind": "fixed",
+    "en": "In the Arabic totals bar, each number now sits right under the start of its label instead of at the far left of its cell.",
+    "ar": "في شريط الإجماليات بالعربي، كل رقم بقى تحت أول اسمه بالظبط بدل ما كان في أقصى الشمال من الخانة.",
+    "route": "/sales/invoices"
    }
   ]
  },
