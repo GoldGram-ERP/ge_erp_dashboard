@@ -1068,3 +1068,10 @@ td,.table td{font-size:var(--fs-table)}
 
 /* Arabic needs room inside a text box: an input clips what goes past its own box, and tall Arabic fonts are taller than 1.7 x the size, so the search box (as high as one line, 23.8 px, inside a 32 px label) cut the bottom of the letters. It fills its label, like the sidebar search. */
 .search input{align-self:stretch;height:100%}
+
+/* Widths follow the content (apple-design s18): a field is as wide as what it holds, never the whole column; an action bar is as wide as its buttons. */
+input[data-kind=money],input[data-kind=number]{width:100%;min-width:80px;max-width:140px}
+input[data-kind=date]{width:100%;min-width:140px;max-width:180px}
+input[data-kind=code],input[data-kind=phone]{width:100%;min-width:160px;max-width:240px}
+input[data-kind=text]{width:100%;min-width:200px;max-width:320px}
+@media (min-width:700px){.formbar:not(.sheet .formbar):not(#sd .formbar):not(dialog .formbar){width:fit-content;max-width:100%}}

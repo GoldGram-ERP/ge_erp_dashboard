@@ -120,7 +120,7 @@ export default function Page() {
             <div className="field"><label id="fee-bulk-field-label">{L("القيمة المراد ضبطها", "Value to set")}</label>
               <Seg label={L("القيمة المراد ضبطها", "Value to set")} value={bulkField} onChange={setBulkField} items={[{ id: "workmanship", label: m("workmanship"), attrs: { "data-f": "workmanship" } }, { id: "cashback", label: m("cashback"), attrs: { "data-f": "cashback" } }]} /></div>
             <div className="field"><label htmlFor="fee-bulk-value">{L("القيمة لكل جرام (ج.م)", "Value per gram (EGP)")}</label>
-              <Input id="fee-bulk-value" dir="ltr" inputMode="decimal" autoComplete="off" placeholder="0.00" aria-invalid={bulkValue !== "" && typedHundredths(bulkValue) === undefined} value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} />
+              <Input id="fee-bulk-value" kind="money" dir="ltr" inputMode="decimal" autoComplete="off" placeholder="0.00" aria-invalid={bulkValue !== "" && typedHundredths(bulkValue) === undefined} value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} />
               {bulkValue !== "" && typedHundredths(bulkValue) === undefined && <div className="err" role="alert">{m("commissionInvalid")}</div>}</div>
             <Button id="fee-bulk-apply" disabled={!bulkOk} onClick={() => setEdits(applyBulk(edits, shownRows, bulkField, bulkValue))}>{L(`تطبيق على الصفوف المصفّاة (${shownRows.length})`, `Apply to filtered rows (${shownRows.length})`)}</Button>
           </div>
@@ -141,7 +141,7 @@ export default function Page() {
                       return (
                         <Td num data-state={st} data-f={f}>
                           <div className="field" data-k={`${r.id}.${f}`}>
-                            <Input id={`fee-${f === "workmanship" ? "w" : "c"}-${r.id}`} dir="ltr" inputMode="decimal" autoComplete="off" aria-label={`${word(f)}: ${r.itemName}`} aria-invalid={bad}
+                            <Input id={`fee-${f === "workmanship" ? "w" : "c"}-${r.id}`} kind="money" dir="ltr" inputMode="decimal" autoComplete="off" aria-label={`${word(f)}: ${r.itemName}`} aria-invalid={bad}
                               value={shown(r, edits, f)} onChange={(e) => setEdits(setEdit(edits, r, f, e.target.value))} />
                             {st === "changed" && <div className="help"><Status tone="warn">{L("كانت", "was")} <Ltr>{r[f]}</Ltr></Status></div>}
                             {st === "invalid" && <div className="err" role="alert">{L("٠ أو أكثر، بخانتين عشريتين", "0 or more, 2 decimals")}</div>}

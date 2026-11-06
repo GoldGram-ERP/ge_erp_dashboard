@@ -7,6 +7,12 @@
     "en": "Search boxes now have room for Arabic letters: the bottom of letters with tails is no longer cut.",
     "ar": "خانات البحث بقى فيها مساحة للحروف العربي: ذيول الحروف مابقتش بتتقطع من تحت.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "Fields and bars now take the width of their content: the fee boxes are small and the save bar hugs its buttons.",
+    "ar": "الخانات والأشرطة بقت بعرض محتواها: خانات المصنعية والكاش باك صغيرة وشريط الحفظ على قد زراره.",
+    "route": "/setup/item-fees"
    }
   ]
  },
