@@ -1,0 +1,232 @@
+{
+ "src/app/globals.css": {
+  "U1": 0,
+  "T1": 0,
+  "C1": 1154
+ },
+ "src/app/[locale]/sign-in/page.tsx": {
+  "U1": 2,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/components/engine/FormView.tsx": {
+  "U1": 0,
+  "T1": 5,
+  "C1": 0
+ },
+ "src/components/engine/RecordSheet.tsx": {
+  "U1": 0,
+  "T1": 3,
+  "C1": 0
+ },
+ "src/components/engine/ThingPage.tsx": {
+  "U1": 2,
+  "T1": 8,
+  "C1": 0
+ },
+ "src/components/home/home-view.tsx": {
+  "U1": 1,
+  "T1": 2,
+  "C1": 0
+ },
+ "src/components/jobs/job-bar.tsx": {
+  "U1": 0,
+  "T1": 4,
+  "C1": 0
+ },
+ "src/components/jobs/jobs-pages.tsx": {
+  "U1": 0,
+  "T1": 1,
+  "C1": 0
+ },
+ "src/components/jobs/todo.tsx": {
+  "U1": 0,
+  "T1": 1,
+  "C1": 0
+ },
+ "src/components/label-qr.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 2
+ },
+ "src/components/shell/account-view.tsx": {
+  "U1": 0,
+  "T1": 2,
+  "C1": 0
+ },
+ "src/components/shell/change-password.tsx": {
+  "U1": 2,
+  "T1": 3,
+  "C1": 0
+ },
+ "src/components/shell/search-palette.tsx": {
+  "U1": 0,
+  "T1": 7,
+  "C1": 0
+ },
+ "src/components/shell/session-lock.tsx": {
+  "U1": 1,
+  "T1": 3,
+  "C1": 0
+ },
+ "src/components/shell/shell.tsx": {
+  "U1": 0,
+  "T1": 11,
+  "C1": 1
+ },
+ "src/things/admin-shared.tsx": {
+  "U1": 7,
+  "T1": 1,
+  "C1": 4
+ },
+ "src/things/cash-movement-form.tsx": {
+  "U1": 3,
+  "T1": 0,
+  "C1": 2
+ },
+ "src/things/control-security.tsx": {
+  "U1": 3,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/customer-pieces-form.tsx": {
+  "U1": 4,
+  "T1": 1,
+  "C1": 18
+ },
+ "src/things/expense-form.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/expenses.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 1
+ },
+ "src/things/gold-purchases-coding.tsx": {
+  "U1": 6,
+  "T1": 0,
+  "C1": 1
+ },
+ "src/things/gold-purchases-invoice.tsx": {
+  "U1": 3,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/gold-purchases.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/money-shared.tsx": {
+  "U1": 0,
+  "T1": 0,
+  "C1": 1
+ },
+ "src/things/payment-block.tsx": {
+  "U1": 2,
+  "T1": 1,
+  "C1": 0
+ },
+ "src/things/purchases-labels.tsx": {
+  "U1": 12,
+  "T1": 0,
+  "C1": 7
+ },
+ "src/things/sales-desk-form.tsx": {
+  "U1": 2,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/sales-desk.css": {
+  "U1": 12,
+  "T1": 0,
+  "C1": 109
+ },
+ "src/things/sales-form-parts.tsx": {
+  "U1": 5,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/sales-gift.tsx": {
+  "U1": 4,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/sales-invoices-form.tsx": {
+  "U1": 9,
+  "T1": 0,
+  "C1": 2
+ },
+ "src/things/sales-invoices.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/sales-piece-story.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/sales-reprint-form.tsx": {
+  "U1": 14,
+  "T1": 0,
+  "C1": 7
+ },
+ "src/things/sales-reservation-form.tsx": {
+  "U1": 5,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/sales-reservations.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/sales-returns-form.tsx": {
+  "U1": 3,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/settings.tsx": {
+  "U1": 2,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/stocktake-branch.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/stocktake-count-board.tsx": {
+  "U1": 1,
+  "T1": 1,
+  "C1": 0
+ },
+ "src/things/stocktake-count-camera.tsx": {
+  "U1": 4,
+  "T1": 0,
+  "C1": 3
+ },
+ "src/things/stocktake-count-scan.tsx": {
+  "U1": 10,
+  "T1": 0,
+  "C1": 2
+ },
+ "src/things/stocktake-count-start.tsx": {
+  "U1": 2,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/stocktake-count.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ },
+ "src/things/treasury-transfers.tsx": {
+  "U1": 1,
+  "T1": 0,
+  "C1": 0
+ }
+}
