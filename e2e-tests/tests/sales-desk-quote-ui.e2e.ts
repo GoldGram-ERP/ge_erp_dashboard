@@ -12,21 +12,21 @@ for (const lang of LANGS) {
     await app.open(`/${lang}/sales/desk?new=draft`);
     await expect.poll(() => browser.locator('#sd-total').count(), { timeout: 60000 }).toBe(1);
     await expect.poll(() => total(browser), { timeout: 30000 }).toBe('—');
-    await expect.poll(async () => { await browser.locator('#it0-btn').tap(); return browser.locator('[role=option]:has-text("Desk gold bar 21")').count(); }, { timeout: 30000 }).toBeGreaterThan(0);
+    await expect.poll(async () => { await browser.locator('#itadd-btn').tap(); return browser.locator('[role=option]:has-text("Desk gold bar 21")').count(); }, { timeout: 30000 }).toBeGreaterThan(0);
     await browser.locator('[role=option]:has-text("Desk gold bar 21")').first().tap();
     // 10 g x 5,125.50 + 10 g x 50 = 51,755.00 (the backend's number, rounded the reference way)
     await expect.poll(() => total(browser), { timeout: 15000 }).toBe('51755.00');
     await shot(`quote-${lang}-1-total`);
     // a typed price wins
+    await browser.locator('#sd-typeprice').tap();   // the typed-price field is revealed by its chip
     await browser.locator('#f-manualsell').fill('6255');
     await expect.poll(() => total(browser), { timeout: 15000 }).toBe('63050.00');
     // the discount is taken off the workmanship only: 5% of 500 = 25
-    await browser.locator('#sd-disc-on').tap();
+    await browser.locator('[data-disc="5"]').tap();
     await expect.poll(() => total(browser), { timeout: 15000 }).toBe('63025.00');
     await shot(`quote-${lang}-2-discount`);
     // Visa adds 2%
-    await browser.locator('#payment-btn').tap();
-    await browser.locator('[role=option]').last().tap();
+    await browser.locator('[data-pay="visa"]').tap();
     await expect.poll(() => total(browser), { timeout: 15000 }).not.toBe('63025.00');
     await shot(`quote-${lang}-3-visa`);
     // the WhatsApp text is the quoted numbers in the reference's words

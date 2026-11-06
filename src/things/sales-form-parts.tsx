@@ -87,9 +87,9 @@ export function DiscountBox({ tr, may, kind, disc, lockedValue, onKind, onDisc, 
 }
 
 /** A labelled text box with the HTML's ids (#f-<name>), help and error. */
-export function TextBox({ name, label, value, onChange, error, help, maxLength, ltr, disabled, onBlur, placeholder }: { name: string; label: string; value: string; onChange: (v: string) => void; error?: string; help?: string; maxLength?: number; ltr?: boolean; disabled?: boolean; onBlur?: () => void; placeholder?: string }) {
+export function TextBox({ name, label, value, onChange, error, help, maxLength, ltr, disabled, onBlur, placeholder, kind }: { kind?: "number" | "money" | "date" | "code" | "phone" | "id" | "name"; name: string; label: string; value: string; onChange: (v: string) => void; error?: string; help?: string; maxLength?: number; ltr?: boolean; disabled?: boolean; onBlur?: () => void; placeholder?: string }) {
   return (
-    <div className="field" data-k={name}>
+    <div className="field" data-k={name} data-kind={kind}>
       <label htmlFor={`f-${name}`}>{label}</label>
       <Input id={`f-${name}`} name={name} value={value} placeholder={placeholder} maxLength={maxLength} disabled={disabled} autoComplete="off" aria-invalid={!!error} aria-describedby={[help ? `f-${name}-help` : "", error ? `f-${name}-err` : ""].filter(Boolean).join(" ") || undefined} dir={ltr ? "ltr" : undefined} style={ltr ? { textAlign: "end" } : undefined}
         onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />

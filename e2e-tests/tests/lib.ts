@@ -134,8 +134,9 @@ export async function scan(browser: any): Promise<string[]> {
 
 // The machine eye of the e2ev "Eyes" mechanism: measures the rendered page and returns one text line per defect (empty = clean).
 // Run it on every state a UI test screenshots, on both targets and both languages, and `expect(await layoutAudit(browser, '#root')).toEqual([])`.
-export async function layoutAudit(browser: any, root = 'body'): Promise<string[]> {
-  return (await browser.evaluate((rootSel: string) => {
+// opts.bars (the sales desk): the owner's no-stretched-bar rule, see check 7. Other screens still have a full-width sticky .formbar, so it is opt-in until they are moved.
+export async function layoutAudit(browser: any, root = 'body', opts: { bars?: boolean } = {}): Promise<string[]> {
+  return (await browser.evaluate((rootSel: string, withBars: boolean) => {
     const out: string[] = [];
     const base = document.querySelector(rootSel) ?? document.body;
     const R = (e: Element) => e.getBoundingClientRect();
@@ -171,10 +172,10 @@ export async function layoutAudit(browser: any, root = 'body'): Promise<string[]
         if (!hdrEnd && !hdrStart) { const tr = R(th), cr = R(cell), tcs = getComputedStyle(th), ccs = getComputedStyle(cell); out.push(`table column not aligned: "${(th.textContent ?? '').trim().slice(0, 18)}" header text x=${Math.round(a.left)}..${Math.round(a.right)} (box ${Math.round(tr.left)}..${Math.round(tr.right)}, ${tcs.textAlign}/${tcs.direction}) cell text x=${Math.round(b.left)}..${Math.round(b.right)} (box ${Math.round(cr.left)}..${Math.round(cr.right)}, ${ccs.textAlign}/${ccs.direction}, ${cell.tagName}.${cell.className})`); }
       }
     }
-    // 6 size scale (globals.css :root --fs-*/--h-*; the sales desk, .desk-ref, keeps the reference's own sizes): the real sizes must equal the variables, desktop and phone
+    // 6 size scale (globals.css :root --fs-*/--h-*; the sales desk follows it too): the real sizes must equal the variables, desktop and phone
     const v = (n: string) => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n));
     const S = { fsBase: v('--fs-base'), fsTable: v('--fs-table'), fsTitle: v('--fs-title'), field: v('--h-field'), btn: v('--h-btn'), btnSm: v('--h-btn-sm'), row: v('--h-row'), th: v('--h-th') };
-    const shown = (e: Element) => { const r = R(e); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !e.closest('.desk-ref, #sd'); };
+    const shown = (e: Element) => { const r = R(e); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
     const fsz = (e: Element) => parseFloat(getComputedStyle(e).fontSize), off = (a: number, b: number) => Math.abs(a - b) > 0.6;
     const scale = (sel: string, label: string, hLo: number, hHi: number, fs?: number) => {
       for (const e of Array.from(base.querySelectorAll(sel)).filter(shown)) {
@@ -191,10 +192,32 @@ export async function layoutAudit(browser: any, root = 'body'): Promise<string[]
     // any other text bigger than the base size (title, logo, the home price figure and the scan board's hero numbers excepted) is a stray size
     const walker = document.createTreeWalker(base, NodeFilter.SHOW_TEXT); const stray = new Set<string>();
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      const p = n.parentElement; if (!p || !(n.nodeValue ?? '').trim() || !shown(p) || p.closest('h1, .price, .brand, .sc-tile-n, .sc-last-code')) continue;
+      const p = n.parentElement; if (!p || !(n.nodeValue ?? '').trim() || !shown(p) || p.closest('h1, .price, .brand, .sc-tile-n, .sc-last-code, .tk-n')) continue;
       if (fsz(p) > S.fsBase + 0.6) stray.add(`${name(p)} ${fsz(p)}px "${(n.nodeValue ?? "").trim().slice(0, 20)}" in ${p.parentElement ? name(p.parentElement) : ""}`);
     }
     for (const s of Array.from(stray).slice(0, 5)) out.push(`size scale: text bigger than ${S.fsBase}px: ${s}`);
+    // 7 (opt-in) bars and buttons hug their content, never the container (owner rule 2026-11-06). On desktop a fixed or sticky element holding 1 to 3 buttons and no table is narrower than 520 px;
+    // a button, or a bar / dock / actions strip, wider than 4x the width of what it holds (and wider than 160 / 300 px) is stretched.
+    if (withBars) {
+      const desktop = window.innerWidth > 700;
+      const count = (e: Element) => e.querySelectorAll('button, .btn').length;
+      for (const e of Array.from(base.querySelectorAll('*'))) {
+        const cs = getComputedStyle(e), w = R(e).width;
+        if (cs.display === 'none' || !w) continue;
+        if (desktop && (cs.position === 'fixed' || cs.position === 'sticky') && !e.querySelector('table') && count(e) >= 1 && count(e) <= 3 && w >= 520) out.push(`pinned bar stretched: ${name(e)} ${Math.round(w)}px with ${count(e)} buttons`);
+        if (e.matches('button, .btn')) {
+          const rg = document.createRange(); rg.selectNodeContents(e);
+          const cw = rg.getBoundingClientRect().width;
+          if (w > 160 && w > 4 * cw) out.push(`button stretched: ${name(e)} ${Math.round(w)}px for ${Math.round(cw)}px of content`);
+        }
+        if (/(^|[\s_-])(formbar|bar|dock|actions|strip)\b/.test(e.getAttribute('class') ?? '') && !e.matches('.seg')) {
+          const kids = Array.from(e.children).map(R).filter((r) => r.width > 0);
+          if (!kids.length) continue;
+          const extent = Math.max(...kids.map((r) => r.right)) - Math.min(...kids.map((r) => r.left));
+          if (w > 300 && w > 4 * extent) out.push(`bar stretched: ${name(e)} ${Math.round(w)}px for ${Math.round(extent)}px of content`);
+        }
+      }
+    }
     return out;
-  }, root)) as string[];
+  }, root, Boolean(opts.bars))) as string[];
 }

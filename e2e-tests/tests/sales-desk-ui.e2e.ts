@@ -33,15 +33,17 @@ for (const lang of LANGS) {
     await app.open(`/${lang}/sales/desk`);
     await shot(`desk-${lang}-1-list`);
     await app.open(`/${lang}/sales/desk?new=draft`);
+    await browser.locator('#sd #sd-customer .disc-head').tap();   // the customer block is a collapsed Disclosure
     await browser.locator('#sd #f-customerPhone').fill('٠١٠١٢٣٤٥٦٧٨');
     await browser.locator('#sd #f-customerName').fill(name);
     await browser.locator('#sd #f-nationalId').fill('٢٩٠٠١٠١٠١٢٣٤٥٦');
-    await browser.locator('#sd #it0-btn').tap();
+    await browser.locator('#sd #itadd-btn').tap();   // the one add-a-piece field: picking an item adds a row with count 1
     await browser.locator('[role=option]:has-text("Desk gold bar 21")').first().tap();
     await browser.locator('#sd #iq0').fill('2');
-    await browser.locator('#sd [data-addline]').tap();
-    await browser.locator('#sd #it1-btn').tap();
+    await browser.locator('#sd #itadd-btn').tap();
     await browser.locator('[role=option]:has-text("Desk ring")').first().tap();
+    await expect(browser.locator('#sd [data-line]')).toHaveCount(2);
+    await browser.locator('#sd #sec-payment > .disc-head').tap();   // "Save as draft" is a collapsed Disclosure
     await browser.locator('#sd #f-cash').fill('1000');
     await shot(`desk-${lang}-2-filled`);
     await browser.locator('#sd #sd-save').tap();
@@ -132,8 +134,7 @@ for (const lang of LANGS) {
 
 // Size and layout (apple-design section 18, e2ev rule 11): small, calm controls on desktop and phone, nothing wider than the screen.
 // The phone is never above the desktop by more than 4 px: the caps below are the desktop cap + 4 for the phone, and the same visuals are used.
-// The desk (.desk-ref: the three columns, planned payment and save bar) uses the reference calculator's sizes (owner-approved exception, docs/specs/sales-desk-reference.md section 5);
-// anything outside .desk-ref keeps the app-wide small scale. So the audit measures the two zones apart.
+// the whole desk follows the app-wide small scale.
 for (const lang of LANGS) {
   test(`sales desk: controls are small and nothing overflows, new and saved draft (${lang})`, { tags: ['e2e', 'desk'], requires: ['browser'] }, async ({ app, browser, shot }) => {
     await as('agent1', browser);
@@ -147,30 +148,24 @@ for (const lang of LANGS) {
       await expect.poll(() => browser.evaluate(() => !!document.querySelector('#sd #sd-save'))).toBe(true);
       const m = await browser.evaluate(() => {
         const phone = window.innerWidth <= 520;
-        const all = (sel: string, zone: 'desk' | 'rest') => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => (!!e.closest('.desk-ref')) === (zone === 'desk') && !e.closest('#sd-mobilebar'));
-        const max = (sel: string, zone: 'desk' | 'rest', f = (b: DOMRect) => b.height) => { let r = 0; all(sel, zone).forEach((e) => { const b = e.getBoundingClientRect(); if (b.width && b.height) r = Math.max(r, f(b)); }); return Math.round(r * 10) / 10; };
+        const all = (sel: string) => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => !e.closest('#sd-mobilebar'));
+        const max = (sel: string, f = (b: DOMRect) => b.height) => { let r = 0; all(sel).forEach((e) => { const b = e.getBoundingClientRect(); if (b.width && b.height) r = Math.max(r, f(b)); }); return Math.round(r * 10) / 10; };
         const save = document.querySelector('#sd-save')?.getBoundingClientRect().height ?? 0;
         const fieldSel = 'input:not([type=hidden]):not([type=checkbox]),select,.sel-btn', btnSel = 'button:not(.sel-btn):not(.seg button):not(#sd-save)';
         return {
           phone, save, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-          deskFields: max(fieldSel, 'desk'), deskButtons: max(btnSel, 'desk'), deskSeg: max('.seg button', 'desk'), deskIcons: max('svg', 'desk', (b) => Math.max(b.width, b.height)),
-          restFields: max(fieldSel, 'rest'), restButtons: max(btnSel, 'rest'), restSeg: max('.seg button', 'rest'), restIcons: max('svg', 'rest', (b) => Math.max(b.width, b.height)),
-          pinned: Array.from(document.querySelectorAll('#sd *')).filter((e) => e.id !== 'sd-mobilebar' && !e.closest('#sd-mobilebar') && !e.closest('#sec-save') && getComputedStyle(e).position === 'fixed').length,
+          fields: max(fieldSel), buttons: max(btnSel), seg: max('.seg button'), icons: max('svg', (b) => Math.max(b.width, b.height)),
+          pinned: Array.from(document.querySelectorAll('#sd *')).filter((e) => e.id !== 'sd-mobilebar' && !e.closest('#sd-mobilebar') && getComputedStyle(e).position === 'fixed').length,
         };
       });
       expect(m.overflow).toBe(0);
       expect(m.pinned).toBe(0);
-      // the desk columns: the reference's own sizes (44 px controls, 38 px toggles, plus borders)
-      expect(m.deskFields).toBeLessThanOrEqual(48);
-      expect(m.deskButtons).toBeLessThanOrEqual(48);
-      expect(m.deskSeg).toBeLessThanOrEqual(42);
-      expect(m.deskIcons).toBeLessThanOrEqual(20);
-      // the rest of the page: the app-wide small scale
-      expect(m.restFields).toBeLessThanOrEqual(m.phone ? 36 : 34);
-      expect(m.restButtons).toBeLessThanOrEqual(m.phone ? 36 : 34);
-      expect(m.save).toBeLessThanOrEqual(48);
-      expect(m.restSeg).toBeLessThanOrEqual(30);
-      expect(m.restIcons).toBeLessThanOrEqual(m.phone ? 18 : 20);
+      // the desk follows the app-wide small scale, like every screen (the .desk-ref exemption is gone)
+      expect(m.fields).toBeLessThanOrEqual(m.phone ? 36 : 34);
+      expect(m.buttons).toBeLessThanOrEqual(m.phone ? 36 : 34);
+      expect(m.save).toBeLessThanOrEqual(36);
+      expect(m.seg).toBeLessThanOrEqual(30);
+      expect(m.icons).toBeLessThanOrEqual(m.phone ? 18 : 20);
     }
   });
 }
@@ -184,30 +179,29 @@ for (const lang of LANGS) {
   test(`sales desk layout: no scrollbar on a control, count and price aligned, sizes on the scale (${lang})`, { tags: ['e2e', 'desk', 'layout'], requires: ['browser'] }, async ({ app, browser, shot }) => {
     await as('superadmin', browser);
     await app.open(`/${lang}/sales/desk?new=draft`);
+    await browser.locator('#sd #itadd-btn').tap();
+    await browser.locator('[role=option]:has-text("Desk gold bar 21")').first().tap();
     await browser.locator('#sd [data-line="0"]').waitFor();
     await shot(`desk-${lang}-layout`);
     const r = await browser.evaluate(() => {
       const rect = (e: Element) => e.getBoundingClientRect();
       const segs = Array.from(document.querySelectorAll('#sd .seg')).map((e) => { const cs = getComputedStyle(e); return { scrollX: /auto|scroll/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 1, scrollY: /auto|scroll/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 1 }; });
-      const row = document.querySelector('#sd [data-line="0"] .dr-row')!;
-      const kids = Array.from(row.children).map((e) => rect(e));
+      const row = document.querySelector('#sd [data-line="0"] .tk-in')!;
+      const kids = Array.from(row.children).filter((e) => !e.classList.contains('tk-item') || window.innerWidth > 700).map((e) => rect(e));   // on a phone the item name takes its own line
       const rowTopDiff = Math.max(...kids.map((k) => Math.abs((k.top + k.height / 2) - (kids[0].top + kids[0].height / 2))));
-      const inDesk = (sel: string) => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => !!e.closest('.desk-ref'));
-      const outDesk = (sel: string) => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => !e.closest('.desk-ref') && !e.closest('#sd-mobilebar'));
+      const outDesk = (sel: string) => Array.from(document.querySelectorAll(`#sd ${sel}`)).filter((e) => !e.closest('#sd-mobilebar'));
       const tall = (els: Element[], max: number) => els.filter((e) => rect(e).height > max).map((e) => `${e.tagName.toLowerCase()}.${(e.getAttribute('class') ?? '').replace(/ /g, '.')}#${e.id}:${Math.round(rect(e).height)}`);
       const fieldSel = '.field input:not([type=checkbox]):not([type=radio]), .sel-btn', btnSel = '.seg button, .btn:not(.primary)';
-      return { segs, rowTopDiff, fields: tall(outDesk(fieldSel), 36), buttons: tall(outDesk(btnSel), 36), deskFields: tall(inDesk(fieldSel), 48), deskButtons: tall(inDesk(btnSel), 48),
+      return { segs, rowTopDiff, fields: tall(outDesk(fieldSel), 36), buttons: tall(outDesk(btnSel), 36),
         wide: Array.from(document.querySelectorAll('#sd .sel-btn')).filter((e) => rect(e).width > 700).map((e) => e.id), pageWide: document.documentElement.scrollWidth > document.documentElement.clientWidth };
-    }) as { segs: { scrollX: boolean; scrollY: boolean }[]; rowTopDiff: number; fields: string[]; buttons: string[]; deskFields: string[]; deskButtons: string[]; wide: string[]; pageWide: boolean };
+    }) as { segs: { scrollX: boolean; scrollY: boolean }[]; rowTopDiff: number; fields: string[]; buttons: string[]; wide: string[]; pageWide: boolean };
     expect(r.segs.length).toBeGreaterThan(0);
     for (const s of r.segs) expect(s).toEqual({ scrollX: false, scrollY: false });
     expect(r.rowTopDiff, 'item, count and remove centred on one line').toBeLessThanOrEqual(1);
-    expect(r.deskFields, 'desk fields above 48px').toEqual([]);
-    expect(r.deskButtons, 'desk buttons above 48px').toEqual([]);
     expect(r.fields, 'fields/selects outside the desk columns above 36px').toEqual([]);
     expect(r.buttons, 'buttons/tabs outside the desk columns above 36px').toEqual([]);
     expect(r.wide, 'dropdowns wider than 700px (stretch slop)').toEqual([]);
     expect(r.pageWide).toBe(false);
-    expect(await layoutAudit(browser, '#sd'), 'layoutAudit').toEqual([]);
+    expect(await layoutAudit(browser, '#sd', { bars: true }), 'layoutAudit').toEqual([]);
   });
 }

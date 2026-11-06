@@ -869,44 +869,9 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .notif-empty b{color:var(--ink)}.notif-empty p{margin:0;font-size:13px;line-height:1.6}
 .notif-ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--gold-wash);color:var(--gold)}
 
-/* Sales desk (issue #6): the save bar stays on one row at 390 px so it does not cover the form; the saved number is the first thing seen */
-@media (max-width:520px){#sd .formbar{flex-wrap:nowrap;gap:6px;padding:8px}#sd .formbar .btn{flex:0 1 auto;min-width:0;padding-inline:12px;white-space:nowrap}#sd .formbar #sd-save{flex:1 1 auto}}
-#sd #sd-head{scroll-margin-top:12px}
-#sd .price-out{display:inline-block;min-width:110px;padding:10px 12px;border-radius:10px}
-#sd .kv{gap:12px;align-items:baseline}
 /* the engine table card is a block that scrolls: Tailwind has a .table utility (display:table) that made it as wide as its table, so on a phone the whole page scrolled sideways (worst in Arabic) */
 div.table{display:block}
 
-/* Sales desk, compact and calm (apple-design section 18): small visuals, the 44 px touch area comes from an invisible ::before, the phone is never bigger than the desktop */
-#sd{--sd-ctl:32px;--sd-btn:30px;--sd-ico:15px}
-#sd .card{padding:14px 16px;margin-bottom:10px;border-radius:12px}
-#sd .card h3,#sd .card>h3:first-child{width:fit-content;margin:0 0 8px;padding:1px 10px;font-size:12.5px;line-height:1.5}
-#sd .help{font-size:12.5px}
-#sd .formgrid{gap:10px}
-#sd .field label,#sd .field .flabel{margin-bottom:4px;font-size:12.5px}
-#sd .field input:not([type=checkbox]):not([type=radio]),#sd .field select,#sd .sel-btn{height:var(--sd-ctl);padding:0 10px;border-radius:8px;font-size:13px}
-#sd .btn{height:var(--sd-btn);padding:0 12px;border-radius:8px;font-size:13px;gap:6px;position:relative}
-#sd .btn.sm{height:28px;padding:0 10px;font-size:12.5px}
-#sd .btn::before,#sd .seg button::before,#sd .step-btn::before{content:"";position:absolute;inset:-7px -4px}
-/* The hit area above sticks out of the control, so the control must not scroll (its overflow made a scrollbar with arrows appear). */
-#sd .seg{overflow:visible}
-#sd .btn svg,#sd .sel-btn svg,#sd .copy-btn svg,#sd .step-btn svg{width:var(--sd-ico);height:var(--sd-ico)}
-#sd .seg{padding:2px;gap:2px;border-radius:9px;height:30px;box-sizing:border-box}
-#sd .seg button{height:26px;padding:0 12px;font-size:13px;border-radius:7px}
-#sd #sd-head [data-draft-number]{font-size:24px;font-weight:650}
-#sd .price-out{display:inline-flex;align-items:center;min-height:var(--sd-ctl);min-width:96px;padding:0 10px;border-radius:8px;font-size:13px}
-#sd .kv{padding:6px 0}
-#sd .copy-btn{min-width:var(--sd-btn);height:var(--sd-btn)}
-#sd .formbar{margin-top:14px;padding:8px 10px;border-radius:12px;gap:8px}
-#sd .formbar .btn{height:var(--sd-btn)}
-#sd .formbar #sd-save{height:32px}
-@media (pointer:coarse){#sd .copy-btn{min-width:var(--sd-btn);height:var(--sd-btn)}#sd .step-btn{min-width:32px;height:var(--sd-btn)}}
-@media (max-width:520px){
-  #sd{--sd-ctl:34px;--sd-btn:32px}
-  #sd .card{padding:10px 12px}
-  #sd .formbar #sd-save{height:38px}
-  #sd .btn.sm{height:30px}
-}
 
 
 /* ───── Stock count live board (stocktake-count-board.tsx): phone first; the tables scroll sideways inside their card ───── */
@@ -1013,7 +978,6 @@ html[dir=ltr] .bpr.card .kv span:last-child{text-align:left}
 .sel-search input:focus{box-shadow:inset 0 0 0 1px var(--gold),0 0 0 3px color-mix(in srgb,var(--gold) 16%,transparent)}
 .sel-pop li[role=option]{min-height:30px;padding-block:5px;font-size:13px}
 /* Width: a dropdown is as wide as its value needs, never the whole card (apple-design section 18, max-width slop). */
-#sd .field:has(.sel-btn){max-width:360px}
 
 /* Checkboxes, one calm look everywhere (apple-design section 18: library components, small, no browser default): 16 px box, gold check, soft focus ring. */
 input[type=checkbox]:not([role=switch]){appearance:none;-webkit-appearance:none;flex:none;display:inline-grid;place-content:center;width:16px;height:16px;margin:0;border-radius:5px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-strong);cursor:pointer;transition:background .12s,box-shadow .12s}
@@ -1055,6 +1019,12 @@ input[role=switch]:disabled{opacity:.5;cursor:not-allowed}
    The scale: text 14 (table 13.5), title 20, field and select 32 (phone 34), button 32 (small 28), table row 38, table head 32. */
 :root{--fs-base:14px;--fs-table:13.5px;--fs-title:20px;--h-field:32px;--h-btn:32px;--h-btn-sm:28px;--h-row:38px;--h-th:32px;--h-search:32px}
 @media (max-width:640px){:root{--h-field:34px;--h-btn:34px;--h-row:40px}}
+/* Short-kind fields (owner, 2026-11-06): a field is as wide as its data, counted in ch, never as wide as its container. Put data-kind="money|number|date|code|phone|id|name" on the .field and nothing else:
+   the width follows the kind, the field sits at the start of its cell, and a value never stretches across a card. Reuse it on every screen. */
+.field[data-kind]{width:fit-content;max-width:100%;justify-self:start;align-self:start}
+.field[data-kind] input:not([type=checkbox]):not([type=radio]),.field[data-kind] .sel-btn{width:calc(var(--kch) * 1ch + 26px);max-width:100%}
+.field[data-kind=number]{--kch:5} .field[data-kind=money]{--kch:12} .field[data-kind=date]{--kch:11} .field[data-kind=code]{--kch:12}
+.field[data-kind=phone]{--kch:14} .field[data-kind=id]{--kch:17} .field[data-kind=name]{--kch:24}
 h1{font-size:var(--fs-title)}
 .btn{padding:0 14px;font-size:13.5px}
 .btn.sm{padding:0 10px;font-size:13px}

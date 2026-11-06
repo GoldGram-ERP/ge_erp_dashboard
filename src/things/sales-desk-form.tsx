@@ -1,6 +1,6 @@
 "use client";
 import "./sales-desk.css";
-import { Button, Checkbox, Input, Seg, copyText } from "@/components/ui";
+import { Button, Disclosure, Input, Seg, TextButton, copyText } from "@/components/ui";
 // The Sales desk draft page (issue #6): ONE page for a new draft, an edit and an Admin opening it. Type -> customer -> item + count lines
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
@@ -19,11 +19,10 @@ import { PaymentBlock, TotalsBar, accountOptions, payErrorTexts, withoutPayError
 import { PieceScanner } from "./piece-scanner";
 import { LINES_MAX, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
-import { DISCOUNTS, PAYMENT_NAMES, karatFits, manualPrice, messageInput, paymentChoices, quoteBody, secondChoices, splitProblem, type Metal, type Operation, type Payment, type Quote, type Wrapping } from "./sales-desk-quote";
+import { DISCOUNTS, PAYMENT_NAMES, VISA_PERCENT, karatFits, manualPrice, messageInput, paymentChoices, quoteBody, secondChoices, splitProblem, type Metal, type Operation, type Payment, type Quote, type Wrapping } from "./sales-desk-quote";
 
 const trimZeros = (t: string) => t.replace(/\.0+$|(\.\d*?)0+$/, "$1");
 const INVOICES_KEY = "gold-sales/sales-invoices";
-const blank = (): DeskLine => ({ itemId: "", count: "1" });
 const banksOf = (d: Row | null): Bank[] => (d?.bankPayments ?? []).map((b: Row) => ({ bankAccountId: b.bankAccountId, amount: piastresInput(b.amount) }));
 type Scanned = { code: string; itemName: string; karat: string };
 
@@ -59,12 +58,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [lineMsg, setLineMsg] = useState<Record<string, string>>({});
   const [readAt, setReadAt] = useState("");
   const [tick, setTick] = useState(0);
-  const [dark, setDark] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("ge-erp:desk-theme") === "dark");
-  useEffect(() => { document.documentElement.dataset.deskTheme = dark ? "dark" : "light"; return () => { delete document.documentElement.dataset.deskTheme; }; }, [dark]);
-  const flipTheme = () => setDark((x) => { window.localStorage.setItem("ge-erp:desk-theme", x ? "light" : "dark"); return !x; });
+  const [typing, setTyping] = useState(false);
+  const [leaving, setLeaving] = useState<number | null>(null);
   const [branchId, setBranchId] = useState("");
   const [cust, setCust] = useState({ customerName: "", customerPhone: "", nationalId: "" });
-  const [lines, setLines] = useState<DeskLine[]>([blank()]);
+  const [lines, setLines] = useState<DeskLine[]>([]);
   const [cash, setCash] = useState("");
   const [banks, setBanks] = useState<Bank[]>([]);
   const [kind, setKind] = useState<DiscountKind>("amount");
@@ -92,7 +90,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const fill = (x: Row) => {
     setDraft(x); setType(x.invoiceType ?? "sale"); setBranchId(x.branchId ?? "");
     setCust({ customerName: x.customerName ?? "", customerPhone: x.customerPhone ?? "", nationalId: x.nationalId ?? "" });
-    setLines(x.lines?.length ? x.lines.map((l: Row) => ({ itemId: l.itemId, count: String(l.quantity) })) : [blank()]);
+    setLines(x.lines?.length ? x.lines.map((l: Row) => ({ itemId: l.itemId, count: String(l.quantity) })) : []);
     setCash(x.cash ? piastresInput(x.cash) : ""); setBanks(banksOf(x));
     setKind("amount"); setDisc(x.totals?.discount > 0 ? piastresInput(x.totals.discount) : "");
     setDirty(false); setErrs({}); setGeneral(""); setPayRefusal(null);
@@ -289,183 +287,207 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 
+  const rowItem = (id: string) => { const it = items.find((x) => x.id === id) ?? (draft?.lines ?? []).find((x: Row) => x.itemId === id); return { name: String(it?.itemName ?? ""), karat: String(it?.karat ?? "") }; };
+  const addItem = (id: string) => { if (id && lines.length < LINES_MAX) pick(() => setLines((ls) => [...ls, { itemId: id, count: "1" }])); };
+  const step = (i: number, by: number) => { const n = Math.min(999, Math.max(1, (parseInt(latinNumber(lines[i].count), 10) || 0) + by)); touch(); setLines((ls) => ls.map((x, j) => (j === i ? { ...x, count: String(n) } : x))); };
+  const dropLine = (i: number) => { touch(); setErrs({}); setLeaving(i); setTimeout(() => { setLines((ls) => ls.filter((_, j) => j !== i)); setLeaving(null); }, 180); };
+  const side = buy ? "buy" : "sell";
+  const manualOpen = typing || manual[side] !== "";
+  const shownPrice = (s: "sell" | "buy") => (price ? piastresText(metal === "silver" ? price.silverPrice : s === "sell" ? price.sellPrice : price.buyPrice) : "—");
+  const totalText = quote ? piastresText(quote.q.totalPiastres) : "—";
+  const statusText = price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading");
+  const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone);
+  const sel2 = secondChoices(operation, payment);
+
   return (
     <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }}>
-      <div className="desk-ref" data-theme={dark ? "dark" : "light"}>
       {dialog}
       <div id="banners">{general && <div className="note warn" role="alert"><b>{general}</b></div>}</div>
-
-      <div className="card" id="sd-head" aria-live="polite">
-        {draft ? <>
-          <div className="help">{d("draftNumberShort")}</div>
-          <div data-draft-number={draft.draftNumber} dir="ltr" style={{ fontSize: 26, fontWeight: 650, lineHeight: 1.15, letterSpacing: "-0.02em" }}>{draft.draftNumber}</div>
-          <div className="help" style={{ marginTop: 6 }}>{draft.branchName} · <Ltr>{draft.createdDay}</Ltr></div>
-          {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state} style={{ marginTop: 10 }}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
-        </> : <>
-          <h3 style={{ margin: 0 }}>{d("newDraft")}</h3>
-          <div className="help">{d("intro")}</div>
-          {isUser && <div className="help">{d("ownOnly")}</div>}
-        </>}
-        <Button size="sm" id="sd-theme" onClick={flipTheme}>{dark ? d("desk.light") : d("desk.dark")}</Button>
-        <div className="kv"><span>{d("goldPriceToday", { price: "" }).replace(/:\s*$/, "")}</span><span dir="ltr">{draft ? piastresText(draft.goldPrice21k) : price ? piastresText(price.sellPrice) : price === null ? d("goldNone") : ""}</span></div>
-      </div>
-
-      <div className="desk-cols layout">
-      <fieldset disabled={readonly || saving} className="desk-col">
-        <div className="card panel" id="sec-customer"><h3>{d("desk.operationData")}</h3>
-          <div className="operation-switches">
-            <div className="field"><span className="flabel" id="sd-op-l">{d("desk.operation")}</span>
-              <Seg label={d("desk.operation")} attrs={{ "aria-labelledby": "sd-op-l" }} value={operation}
-                onChange={(k) => pick(() => { setOperation(k); setPayment("cash"); setPayment2(""); setSplit(""); setPct(0); setType("sale"); })}
-                items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} /></div>
-            <div className="field"><span className="flabel" id="sd-metal-l">{d("desk.metal")}</span>
-              <Seg label={d("desk.metal")} attrs={{ "aria-labelledby": "sd-metal-l" }} value={metal}
-                onChange={(k) => pick(() => { setMetal(k); setLines([blank()]); })}
-                items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} /></div>
+      <div className="tk">
+        <header className="tk-head" id="sd-head" aria-live="polite">
+          <div className="tk-title">
+            {draft && <><span className="tk-quiet">{d("draftNumberShort")}</span><b data-draft-number={draft.draftNumber} dir="ltr">{draft.draftNumber}</b></>}
           </div>
-          <div className="sales-identity">
-            <div className="field" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
-              <Choice tr={tr} id="branchId" searchable={false} disabled={!isNew || isUser} options={isNew && !isUser ? branches.map((b) => [b.id, b.branchName]) : [[draft?.branchId ?? me?.branchId ?? "", branchLabel]]}
-                value={isNew && !isUser ? branchId : (draft?.branchId ?? me?.branchId ?? "")} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
-            <div className="field" data-seller><label htmlFor="sellerId">{d("desk.seller")}</label>
-              <Choice tr={tr} id="sellerId" searchable={false} disabled={isUser || !!draft}
-                options={isUser || draft ? [["me", sellerName]] : sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])}
-                value={isUser || draft ? "me" : sellerId} onChange={(v) => setSellerId(v)} /></div>
+          <div className="tk-chips">
+            {isNew && !isUser ? <>
+              <div className="field" data-kind="name" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
+                <Choice tr={tr} id="branchId" searchable={false} options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
+              <div className="field" data-kind="name" data-seller><label htmlFor="sellerId">{d("desk.seller")}</label>
+                <Choice tr={tr} id="sellerId" searchable={false} options={sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])} value={sellerId} onChange={(v) => setSellerId(v)} /></div>
+            </> : <>
+              <span className="tk-chip" data-k="branchId"><i>{d("branch")}</i>{branchLabel}</span>
+              <span className="tk-chip" data-seller><i>{d("desk.seller")}</i>{sellerName}</span>
+            </>}
+            <span className="tk-chip"><i>{L("التاريخ", "Date")}</i><Ltr>{draft?.createdDay ?? today()}</Ltr></span>
           </div>
-          <TextBox name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
-          <TextBox name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
-          <TextBox name="customerPhone" label={d("customerPhone")} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
-          <div className="field"><label htmlFor="payment">{d("desk.payment")}</label>
-            <Choice tr={tr} id="payment" searchable={false} options={paymentChoices(operation).map((k) => [k, d(`desk.pay.${k}`)])} value={payment}
-              onChange={(k) => pick(() => { setPayment((k || "cash") as Payment); if (k === "visa" || k === payment2) { setPayment2(""); setSplit(""); } })} /></div>
-          {secondChoices(operation, payment).length > 0 && <div className="field"><label htmlFor="payment2">{d("desk.payment2")}</label>
-            <Choice tr={tr} id="payment2" searchable={false} placeholder={d("desk.none")} options={secondChoices(operation, payment).map((k) => [k, d(`desk.pay.${k}`)])} value={payment2} onChange={(v) => pick(() => setPayment2(v as Payment | ""))} /></div>}
-          {second && <TextBox name="splitAmount" label={d("desk.split", { method: d(`desk.pay.${payment}`) })} value={split} ltr maxLength={14}
-            error={splitErr ? d(`desk.splitErr.${splitErr}`) : undefined} onChange={(v) => { touch(); setSplit(v); }} />}
-          {second && quote && !splitErr && <div className="payment-remaining"><span>{d(`desk.pay.${second}`)}</span><b dir="ltr" id="sd-remaining">{piastresText(quote.q.totalPiastres - (typedPiastres(split) ?? 0))}</b></div>}
-          {!buy && <div className="field"><span className="flabel" id="sd-type-l">{d("typeLabel")}</span>
-            <Seg label={d("typeLabel")} attrs={{ "aria-labelledby": "sd-type-l" }} value={type} onChange={(k) => { touch(); setType(k); }}
-              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} /></div>}
-        </div>
-      </fieldset>
+          <fieldset disabled={readonly || saving} className="tk-segs">
+            <Seg label={d("desk.operation")} value={operation}
+              onChange={(k) => pick(() => { setOperation(k); setPayment("cash"); setPayment2(""); setSplit(""); setPct(0); setType("sale"); })}
+              items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} />
+            <Seg label={d("desk.metal")} value={metal} onChange={(k) => pick(() => { setMetal(k); setLines([]); })}
+              items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} />
+            {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); setType(k); }}
+              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} />}
+          </fieldset>
+          {!draft && <p className="tk-quiet tk-intro">{d("intro")}{isUser ? ` ${d("ownOnly")}` : ""}</p>}
+          {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
+        </header>
 
-      <fieldset disabled={readonly || saving} className="desk-col">
-        <div className="card panel" id="sec-items"><div className="topline"><h3>{d("pieces")}</h3><span className="dr-pill">{d("desk.autoFees")}</span></div>
-          {metal === "silver" && <div className="wrapping-controls"><span id="sd-wrap-l">{d("desk.wrapping")}</span>
-            <Seg label={d("desk.wrapping")} attrs={{ "aria-labelledby": "sd-wrap-l" }} value={wrapping} onChange={(k) => pick(() => setWrapping(k))}
-              items={(["wrapped", "unwrapped"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-wrap": k } }))} /></div>}
-          <div id="lineRows">
-            {lines.map((l, i) => {
-              const set = (patch: Partial<DeskLine>) => { touch(); setLines((ls) => ls.map((x, j) => (j === i ? { ...x, ...patch } : x))); };
-              const priced = quote?.q.lines[i];
-              return (
-                <div data-line={i} key={i} data-p={priced ? priced.pricePiastres : undefined}>
-                  <div className="dr-row" data-k={`line${i}Item`}>
-                    <Choice tr={tr} id={`it${i}`} options={itemOptions} value={l.itemId} onChange={(v) => set({ itemId: v })} invalid={!!(errs[`line${i}Item`] || lineMsg[i])} />
-                    <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-label={d("count")} aria-invalid={!!errs[`line${i}Count`]} value={l.count} onChange={(e) => set({ count: e.target.value })} />
-                    <Button className="remove" aria-label={d("removeLine")} disabled={lines.length === 1} data-rmline={i} onClick={() => { touch(); setErrs({}); setLines((ls) => ls.filter((_, j) => j !== i)); }}>×</Button>
-                  </div>
-                  {err(`line${i}Item`)}{err(`line${i}Count`)}{lineMsg[i] && <ErrBox>{lineMsg[i]}</ErrBox>}
-                </div>
-              );
-            })}
-          </div>
-          {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
-          <Button className="secondary-full" data-addline aria-disabled={lines.length >= LINES_MAX} onClick={() => { if (lines.length < LINES_MAX) { touch(); setLines((ls) => [...ls, blank()]); } }}>+ {d("addLine")}</Button>
-          <Button className="clear-all" id="sd-clear" onClick={() => { touch(); setLines([blank()]); setPct(0); setManual({ sell: "", buy: "" }); setSplit(""); setPayment2(""); }}>{d("desk.clear")}</Button>
-          <h4>{d("desk.calc")}</h4>
-          {quoteMsg && <div className="note warn" role="alert" id="sd-quotemsg"><b>{quoteMsg}</b></div>}
-          {typedManual.invalid && <div className="note warn" role="alert" id="sd-manualmsg"><b>{d("desk.manualInvalid")}</b></div>}
-          <div className="field"><label htmlFor="sd-fees">{d("desk.fees", { kind: d(buy ? "desk.cashback" : "desk.workmanship") })}</label>
-            <Input id="sd-fees" readOnly dir="rtl" value={quote ? `${[...new Set(quote.q.lines.map((x) => trimZeros(piastresText(x.feePerGram))))].join(" + ")} = ${trimZeros(piastresText(quote.q.feeTotalPiastres))} ${d("desk.egp")}` : "—"} />
-            <div className="fee-small" id="sd-feeweights">{quote ? quote.q.lines.map((x) => `${trimZeros(milligramsText(x.weightMg))} ${d("desk.gram")} × ${x.quantity}`).join(" ، ") : ""}</div></div>
-          <div className="two">
-            <div className="dr-price"><small>{d("desk.weight")}</small><b id="sd-weight">{quote ? trimZeros(milligramsText(quote.q.weightMg)) : "0"}</b><small>{d("desk.gram")}</small></div>
-            <div className="dr-price"><small>{d("desk.units")}</small><b id="sd-units">{quote ? quote.q.units : "0"}</b><small>{d("desk.piece")}</small></div>
-          </div>
-          {!buy && <div className="discount">
-            <Checkbox checked={pct > 0} onChange={(on) => pick(() => setPct(on ? 5 : 0))} id="sd-disc-on">{d("desk.discountOn")}</Checkbox>
-            {pct > 0 && <Seg label={d("desk.discountPercent")} value={String(pct)} onChange={(k) => pick(() => setPct(Number(k)))}
-              items={DISCOUNTS.filter((n) => n > 0).map((n) => ({ id: String(n), label: `${n}%`, attrs: { "data-disc": String(n) } }))} />}
-          </div>}
-          <div className="summary"><span>{d("desk.total")}</span>
-            {quote && pct > 0 && !buy && <div className="muted" id="sd-before">{d("desk.before")}: {piastresText(quote.q.beforeDiscountPiastres)}</div>}
-            <strong id="sd-total" dir="ltr">{quote ? piastresText(quote.q.totalPiastres) : "—"}</strong><small>{d("desk.currency")}</small></div>
-        </div>
-      </fieldset>
-
-      <div className="desk-col preview-col">
-        <div className="card panel" id="sec-prices"><div className="topline"><h3>{d("desk.prices")}</h3><span className="dr-pill">{d("desk.every15")}</span></div>
-          <div className={`dr-status ${price ? "ok" : price === null ? "bad" : ""}`} id="sd-status">{price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading")}</div>
-          <div className="price-grid">
-            {(["sell", "buy"] as const).map((side) => (
-              <div className="dr-price" key={side}>
-                <small>{d(metal === "silver" ? `desk.${side}Silver` : `desk.${side}Price`)}</small>
-                <b id={`sd-${side}price`} dir="ltr">{price ? piastresText(metal === "silver" ? price.silverPrice : side === "sell" ? price.sellPrice : price.buyPrice) : "—"}</b>
-                <label className="override-label" htmlFor={`f-manual${side}`}>{d(side === "sell" ? "desk.manualSell" : "desk.manualBuy")}</label>
-                <Input id={`f-manual${side}`} className="manual-price" inputMode="decimal" autoComplete="off" dir="ltr" value={manual[side]} onChange={(e) => setManual((m) => ({ ...m, [side]: e.target.value }))} />
-                <small className={`mode${(side === "sell") === !buy && quote?.q.manualPriceUsed ? " manual-active" : ""}`} id={`sd-${side}mode`}>{(side === "sell") === !buy && quote?.q.manualPriceUsed ? d("desk.manualUsed") : d("desk.listUsed")}</small>
+        <div className="tk-grid">
+          <fieldset disabled={readonly || saving} className="tk-a">
+            <section id="sec-items" className="tk-ticket">
+              <div className="field tk-add" data-kind="name"><label htmlFor="itadd">{L("إضافة قطعة", "Add a piece")}</label>
+                <Choice tr={tr} id="itadd" options={itemOptions} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
+              {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
+              {metal === "silver" && lines.length > 0 && <div className="tk-wrap"><span className="tk-quiet">{d("desk.wrapping")}</span>
+                <Seg label={d("desk.wrapping")} value={wrapping} onChange={(k) => pick(() => setWrapping(k))}
+                  items={(["wrapped", "unwrapped"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-wrap": k } }))} /></div>}
+              {lines.length === 0 ? <p className="tk-empty" id="lineRows">{L("لا توجد قطع بعد. ابحث عن قطعة لإضافتها.", "No pieces yet. Search for one to add it.")}</p> :
+                <ul id="lineRows" className="tk-rows">
+                  {lines.map((l, i) => {
+                    const info = rowItem(l.itemId), priced = quote?.q.lines[i];
+                    return (
+                      <li data-line={i} key={i} data-p={priced ? priced.pricePiastres : undefined} className={`tk-row${leaving === i ? " is-leaving" : ""}`}>
+                        <div className="tk-clip">
+                          <div className="tk-in" data-k={`line${i}Item`}>
+                            <div className="tk-item"><b className="tk-name">{info.name}</b>
+                              {info.karat && <span className="tk-chip"><Ltr>{info.karat}</Ltr></span>}
+                              {priced && <span className="tk-w"><Ltr>{trimZeros(milligramsText(priced.weightMg))}</Ltr> {d("desk.gram")}</span>}</div>
+                            <div className="tk-qty" role="group" aria-label={d("count")}>
+                              <Button size="sm" aria-label={L("أنقص", "Less")} disabled={l.count === "1"} onClick={() => step(i, -1)}>−</Button>
+                              <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-label={d("count")} aria-invalid={!!errs[`line${i}Count`]} value={l.count} onChange={(e) => { touch(); setLines((ls) => ls.map((x, j) => (j === i ? { ...x, count: e.target.value } : x))); }} />
+                              <Button size="sm" aria-label={L("زِد", "More")} onClick={() => step(i, 1)}><Icon name="plus" size={14} /></Button>
+                            </div>
+                            <b className="tk-lp" dir="ltr">{priced ? piastresText(priced.pricePiastres) : "—"}</b>
+                            <Button size="sm" variant="plain" aria-label={d("removeLine")} data-rmline={i} onClick={() => dropLine(i)}><Icon name="trash" size={14} /></Button>
+                          </div>
+                          {err(`line${i}Item`)}{err(`line${i}Count`)}{lineMsg[i] && <ErrBox>{lineMsg[i]}</ErrBox>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>}
+              {lines.length > 0 && <TextButton id="sd-clear" onClick={() => { touch(); setLines([]); setPct(0); setManual({ sell: "", buy: "" }); setSplit(""); setPayment2(""); }}>{d("desk.clear")}</TextButton>}
+            </section>
+            <Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("بيانات العميل (اختياري)", "Customer (optional)")}>
+              <div className="tk-cgrid">
+                <TextBox kind="name" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
+                <TextBox kind="id" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
+                <TextBox kind="phone" name="customerPhone" label={d("customerPhone")} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
               </div>
-            ))}
+            </Disclosure>
+          </fieldset>
+
+          <div className="tk-b"><div className="tk-sticky">
+            <section className="tk-card" id="sec-prices">
+              <div className="tk-prices">
+                {(["sell", "buy"] as const).map((s) => (
+                  <div className="tk-pcell" key={s}><span className="tk-quiet">{d(metal === "silver" ? `desk.${s}Silver` : `desk.${s}Price`)}</span><b id={`sd-${s}price`} dir="ltr">{shownPrice(s)}</b></div>
+                ))}
+              </div>
+              <div className="tk-meta">
+                <span className={`tk-dot ${price ? "ok" : price === null ? "bad" : ""}`} id="sd-status" role="img" aria-label={statusText} title={statusText} />
+                <span className="tk-quiet" id="sd-readat">{readAt ? d("desk.readAt", { time: readAt }) : d("desk.noRead")}</span>
+                <Button size="sm" variant="plain" id="sd-refresh" aria-label={d("desk.refresh")} title={d("desk.refresh")} onClick={readPrice}><Icon name="refresh" size={14} /></Button>
+                <TextButton id="sd-typeprice" aria-expanded={manualOpen} onClick={() => setTyping((x) => !x)}>{L("اكتب سعرًا", "Type a price")}</TextButton>
+              </div>
+              {manualOpen && <div className="tk-manual"><div className="field" data-kind="money"><label htmlFor={`f-manual${side}`}>{d(buy ? "desk.manualBuy" : "desk.manualSell")}</label>
+                <Input id={`f-manual${side}`} inputMode="decimal" autoComplete="off" dir="ltr" value={manual[side]} onChange={(e) => setManual((m) => ({ ...m, [side]: e.target.value }))} /></div>
+                <small className={`tk-quiet${quote?.q.manualPriceUsed ? " tk-good" : ""}`} id={`sd-${side}mode`}>{quote?.q.manualPriceUsed ? d("desk.manualUsed") : d("desk.listUsed")}</small></div>}
+              {quoteMsg && <div className="note warn" role="alert" id="sd-quotemsg"><b>{quoteMsg}</b></div>}
+              {typedManual.invalid && <div className="note warn" role="alert" id="sd-manualmsg"><b>{d("desk.manualInvalid")}</b></div>}
+            </section>
+
+            <section className="tk-card tk-total" id="sec-total">
+              <span className="tk-quiet">{d("desk.total")}</span>
+              <div className="tk-nrow"><strong className="tk-n" id="sd-total" dir="ltr" key={totalText}>{totalText}</strong><span className="tk-quiet">{d("desk.egp")}</span></div>
+              <Disclosure id="sd-how" summary={L("كيف حُسب", "How it is worked out")}>
+                <dl className="tk-how">
+                  {quote && <><dt>{d("desk.before")}</dt><dd id="sd-before" dir="ltr">{piastresText(quote.q.beforeDiscountPiastres)}</dd>
+                    <dt>{d(buy ? "desk.cashback" : "desk.workmanship")}</dt><dd id="sd-fees" dir="ltr">{piastresText(quote.q.feeTotalPiastres)}</dd>
+                    {pct > 0 && !buy && <><dt>{d("desk.discountPercent")}</dt><dd dir="ltr">{pct}%</dd></>}
+                    {!buy && payment === "visa" && quote.cash && <><dt>{d("desk.pay.visa")} +{VISA_PERCENT}%</dt><dd dir="ltr">{piastresText(quote.q.totalPiastres)}</dd></>}
+                    <dt>{d("desk.weight")}</dt><dd id="sd-weight" dir="ltr">{trimZeros(milligramsText(quote.q.weightMg))}</dd>
+                    <dt>{d("desk.units")}</dt><dd id="sd-units" dir="ltr">{quote.q.units}</dd></>}
+                </dl>
+              </Disclosure>
+            </section>
+
+            <fieldset disabled={readonly || saving} className="tk-card tk-pay">
+              <div className="tk-prow"><span className="tk-quiet">{d("desk.payment")}</span>
+                <Seg label={d("desk.payment")} value={payment} onChange={(k) => pick(() => { setPayment(k); if (k === "visa" || k === payment2) { setPayment2(""); setSplit(""); } })}
+                  items={paymentChoices(operation).map((k) => ({ id: k, label: d(`desk.pay.${k}`), attrs: { "data-pay": k } }))} /></div>
+              {sel2.length > 0 && <div className="tk-prow"><span className="tk-quiet">{L("طريقة ثانية (اختياري)", "Second method (optional)")}</span>
+                <Seg label={d("desk.payment2")} value={payment2 || "none"} onChange={(k) => pick(() => setPayment2(k === "none" ? "" : (k as Payment)))}
+                  items={[{ id: "none", label: d("desk.none"), attrs: { "data-pay2": "none" } }, ...sel2.map((k) => ({ id: k as string, label: d(`desk.pay.${k}`), attrs: { "data-pay2": k } }))]} /></div>}
+              {second && <TextBox kind="money" name="splitAmount" label={d("desk.split", { method: d(`desk.pay.${payment}`) })} value={split} ltr maxLength={14}
+                error={splitErr ? d(`desk.splitErr.${splitErr}`) : undefined} onChange={(v) => { touch(); setSplit(v); }} />}
+              {second && quote && !splitErr && <div className="tk-remain"><span className="tk-quiet">{d(`desk.pay.${second}`)}</span><b dir="ltr" id="sd-remaining">{piastresText(quote.q.totalPiastres - (typedPiastres(split) ?? 0))}</b></div>}
+              {!buy && <div className="tk-prow"><span className="tk-quiet">{d("desk.discountPercent")}</span>
+                <Seg label={d("desk.discountPercent")} value={String(pct)} onChange={(k) => pick(() => setPct(Number(k)))}
+                  items={DISCOUNTS.map((n) => ({ id: String(n), label: `${n}%`, attrs: { "data-disc": String(n) } }))} /></div>}
+              {!buy && payment === "visa" && <p className="tk-quiet">{L(`الفيزا تضيف ${VISA_PERCENT}% على الإجمالي.`, `Visa adds ${VISA_PERCENT}% to the total.`)}</p>}
+            </fieldset>
+
+            <section className="tk-card" id="sec-wa">
+              <p id="wa-text" className="tk-bubble" dir="rtl">{waText || d("desk.waEmpty")}</p>
+              <Button variant="primary" id="sd-copy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button>
+            </section>
+          </div></div>
+
+          <div className="tk-c">
+            <fieldset disabled={readonly || saving} className="tk-save">
+              <Disclosure id="sec-payment" defaultOpen={canComplete} summary={L("حفظ كمسودة", "Save as draft")}>
+                <div className="tk-draft"><p className="tk-quiet">{d("plannedHelp")}</p>
+                  <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
+                  <div className="field" data-k="cashDiscount" data-kind="money"><label htmlFor="cashDiscount">{d("discount")}</label>
+                    <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
+                      error={dsc.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>
+                </div>
+              </Disclosure>
+            </fieldset>
+
+            {bar && <div className="tk-card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />
+              {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
+              {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
+
+            {canComplete && <div className="tk-card" id="sec-complete"><b>{d("complete")}</b><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
+              <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>
+                <div className="tk-codeRow">
+                  <div className="field" data-kind="code"><Input id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc}
+                    onChange={(e) => { setPc(e.target.value); setPcErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addCode(); } }} /></div>
+                  <Button id="sd-add" onClick={() => void addCode()}>{d("codeAdd")}</Button>
+                  <Button id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</Button>
+                </div>
+                {scanning && <PieceScanner label={d("codeLabel")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); void addCode(c); }} />}
+                <div className="help">{d("scanHelp")}</div>{pcErr && <ErrBox>{pcErr}</ErrBox>}</div>
+              <ul id="sd-need" className="tk-list">
+                {(draft!.lines as Row[]).map((l) => <li key={l.lineNumber} className="kv" data-need={l.itemName}><span>{l.itemName} · <Ltr>{l.karat}</Ltr></span><b dir="ltr">{d("scanned", { scanned: need(l), total: l.quantity })}</b></li>)}
+              </ul>
+              {scanned.length > 0 && <><div className="help">{d("scannedList")}</div>
+                <ul id="sd-codes" className="tk-list">{scanned.map((s) => <li key={s.code} className="kv" data-code={s.code} data-bad={codeErr[s.code] ? "" : undefined}>
+                  <span><Ltr>{s.code}</Ltr> · {s.itemName}{codeErr[s.code] && <ErrBox>{codeErr[s.code]}</ErrBox>}</span>
+                  <Button size="sm" danger aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></Button></li>)}</ul></>}
+              {mismatch.length > 0 && <ul id="sd-mismatch" className="note warn" role="alert">{mismatch.map((m, i) => <li key={i}>{d("mismatchRow", { item: String(m.itemName), karat: String(m.karat), expected: Number(m.expected), scanned: Number(m.scanned) })}</li>)}</ul>}
+              {payRefusal && <div className="note warn" role="alert" id="sd-payrefused"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
+              {completeMsg && <div className="note warn" role="alert" id="sd-completemsg"><b>{completeMsg}</b></div>}
+              <Button variant="primary" id="sd-complete" aria-disabled={!allScanned || completing || dirty} onClick={() => { if (allScanned && !dirty) void complete(); }}>{completing ? d("completing") : d("complete")}</Button>
+              {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
+            </div>}
+
+            {draft?.status === "completed" && <div className="tk-card" id="sd-done" role="status"><b>{d("completed", { number: draft.salesInvoiceNumber })}</b>
+              {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
+
+            <div className="tk-actions" id="sec-save">
+              {!readonly && !buy && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
+              {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
+              <Button id="sd-back" onClick={close}>{d("backToList")}</Button>
+            </div>
           </div>
-          <p className="muted" id="sd-readat">{readAt ? d("desk.readAt", { time: readAt }) : d("desk.noRead")}</p>
-          <Button className="secondary-full" id="sd-refresh" onClick={readPrice}>↻ {d("desk.refresh")}</Button>
         </div>
-        <div className="card panel" id="sec-wa"><div className="topline"><h3>{d("wa.title")}</h3><span className="dr-pill">{d("desk.live")}</span></div>
-          <pre id="wa-text" className="preview" dir="rtl">{waText || d("desk.waEmpty")}</pre>
-          <p className="muted">{d("wa.help")}</p>
-          <Button variant="primary" className="copy-full" id="sd-copy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button></div>
       </div>
-      </div>
-      <div className="mobile-bar" id="sd-mobilebar"><div className="mobile-total"><span>{d("desk.mobileTotal")}</span><b id="sd-mobiletotal" dir="ltr">{quote ? `${piastresText(quote.q.totalPiastres)} ${d("desk.egp")}` : "—"}</b></div>
-        <Button className="mobile-copy" id="sd-mobilecopy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button></div>
-
-      <fieldset disabled={readonly || saving} className="desk-pay">
-        <div className="card" id="sec-payment"><h3>{d("plannedPayment")}</h3><div className="help">{d("plannedHelp")}</div>
-          <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
-          <div className="field" data-k="cashDiscount" style={{ maxWidth: 420, marginTop: 14 }}><label htmlFor="cashDiscount">{d("discount")}</label>
-            <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
-              error={dsc.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>
-        </div>
-      </fieldset>
-
-      {bar && <div className="card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />
-        {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
-        {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
-
-      {canComplete && <div className="card" id="sec-complete"><h3>{d("complete")}</h3><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
-        <div className="field" data-k="pieceCode" style={{ marginTop: 10 }}><label htmlFor="sd-code">{d("scan")}</label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Input id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc} style={{ flex: "1 1 180px", fontFamily: "monospace" }}
-              onChange={(e) => { setPc(e.target.value); setPcErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addCode(); } }} />
-            <Button id="sd-add" onClick={() => void addCode()}>{d("codeAdd")}</Button>
-            <Button id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</Button>
-          </div>
-          {scanning && <PieceScanner label={d("codeLabel")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); void addCode(c); }} />}
-          <div className="help">{d("scanHelp")}</div>{pcErr && <ErrBox>{pcErr}</ErrBox>}</div>
-        <ul id="sd-need" style={{ listStyle: "none", padding: 0, margin: "10px 0" }}>
-          {(draft!.lines as Row[]).map((l) => <li key={l.lineNumber} className="kv" data-need={l.itemName}><span>{l.itemName} · <Ltr>{l.karat}</Ltr></span><b dir="ltr">{d("scanned", { scanned: need(l), total: l.quantity })}</b></li>)}
-        </ul>
-        {scanned.length > 0 && <><div className="help">{d("scannedList")}</div>
-          <ul id="sd-codes" style={{ listStyle: "none", padding: 0, margin: "6px 0" }}>{scanned.map((s) => <li key={s.code} className="kv" data-code={s.code} style={codeErr[s.code] ? { color: "var(--warn)" } : undefined}>
-            <span><Ltr>{s.code}</Ltr> · {s.itemName}{codeErr[s.code] && <ErrBox>{codeErr[s.code]}</ErrBox>}</span>
-            <Button size="sm" danger aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></Button></li>)}</ul></>}
-        {mismatch.length > 0 && <ul id="sd-mismatch" className="note warn" role="alert">{mismatch.map((m, i) => <li key={i}>{d("mismatchRow", { item: String(m.itemName), karat: String(m.karat), expected: Number(m.expected), scanned: Number(m.scanned) })}</li>)}</ul>}
-        {payRefusal && <div className="note warn" role="alert" id="sd-payrefused"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
-        {completeMsg && <div className="note warn" role="alert" id="sd-completemsg"><b>{completeMsg}</b></div>}
-        <Button variant="primary" style={{ marginTop: 8 }} id="sd-complete" aria-disabled={!allScanned || completing || dirty} onClick={() => { if (allScanned && !dirty) void complete(); }}>{completing ? d("completing") : d("complete")}</Button>
-        {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
-      </div>}
-
-      {draft?.status === "completed" && <div className="card" id="sd-done" role="status"><h3>{d("completed", { number: draft.salesInvoiceNumber })}</h3>
-        {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
-
-      <div className="formbar" id="sec-save">
-        {!readonly && !buy && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
-        {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
-        <Button id="sd-back" onClick={close}>{d("backToList")}</Button>
-      </div>
-      </div>
+      <div className="tk-dock" id="sd-mobilebar"><div className="tk-dtotal"><span className="tk-quiet">{d("desk.mobileTotal")}</span><b className="tk-n" id="sd-mobiletotal" dir="ltr" key={totalText}>{quote ? `${totalText} ${d("desk.egp")}` : "—"}</b></div>
+        <Button variant="primary" id="sd-mobilecopy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button></div>
     </form>
   );
 }
