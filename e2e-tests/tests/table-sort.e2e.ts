@@ -81,7 +81,7 @@ for (const lang of LANGS) {
     for (let i = 0; i < 3; i++) S.push(await seed());
     await go('superadmin', '/stock/branch-stock?view=by-category', lang);
     await browser.locator('#run').click();
-    await expect.poll(() => browser.locator('#tbl tbody tr').count()).toBeGreaterThan(2);
+    await expect.poll(() => browser.locator('#tbl tbody tr').count(), { timeout: 15_000 }).toBeGreaterThan(2); // a cold dev compile of the report page can take over 5 s
     await shot(`sort-before-click-${lang}-category`);
     const seen = await sortEveryColumn(browser, '#tbl table', lang, 'by-category', true);
     expect(seen.length).toBeGreaterThanOrEqual(4);
@@ -116,5 +116,33 @@ for (const lang of LANGS) {
     expect((await snap(browser, '#tbl table')).cols[0].aria).not.toBe(a);
     expect(await browser.evaluate(() => location.search)).toMatch(/sort=.*dir=(asc|desc)/);
     await shot(`sort-after-click-${lang}-karats`);
+  });
+
+  // the display tables that used to be fixedOrder: each is sorted in the browser by its own headers (rows against an independent sort)
+  test(`headers sort: item fees, branch-stock pieces, reservation lines (${lang})`, { tags: ['e2e', 'tables'], requires: ['browser'] }, async ({ go, browser, shot }) => {
+    while (S.length < 3) S.push(await seed());
+    await go('superadmin', '/setup/item-fees', lang);
+    await expect.poll(() => browser.locator('#fees-table tbody tr').count(), { timeout: 15_000 }).toBeGreaterThan(2);
+    expect((await sortEveryColumn(browser, '#fees-table', lang, 'item-fees', false)).length).toBeGreaterThanOrEqual(4);
+    await shot(`sort-after-click-${lang}-item-fees`);
+
+    await go('superadmin', '/stock/branch-stock?view=by-item', lang);
+    await browser.locator('#run').click();
+    await expect.poll(() => browser.locator('#tbl tbody tr').count(), { timeout: 15_000 }).toBeGreaterThan(0);
+    await browser.locator('#tbl tbody tr', { hasText: S[0].item.itemName }).first().click();
+    await expect.poll(() => browser.locator('#stock-pieces tbody tr').count(), { timeout: 15_000 }).toBeGreaterThan(2);
+    expect((await sortEveryColumn(browser, '#stock-pieces', lang, 'branch-stock pieces', false)).length).toBe(4);
+    await shot(`sort-after-click-${lang}-stock-pieces`);
+
+    const price = (n: number, s: (typeof S)[number]) => s.api('GET', `/reservations/line-price?itemId=${s.item.id}&quantity=${n}&date=${s.day}`).then((r) => r.body.linePrice as number);
+    const lines = [{ itemId: S[0].item.id, quantity: 1 }, { itemId: S[1].item.id, quantity: 3 }, { itemId: S[2].item.id, quantity: 2 }];
+    const cash = (await price(1, S[0])) + (await price(3, S[1])) + (await price(2, S[2]));
+    const res = await S[0].api('POST', '/reservations', { branchId: S[0].inv.branchId, date: S[0].day, employeeId: (await S[0].api('GET', '/access/me')).body.id, customerName: 'E2E Customer', customerPhone: '01012345678', lines, cash });
+    expect(res.status).toBe(201); S[0].created.reservations.push(res.body.id);
+    await go('superadmin', `/sales/reservations?open=${res.body.id}`, lang);
+    await expect.poll(() => browser.locator('#reservation-lines tbody tr').count(), { timeout: 15_000 }).toBe(3);
+    expect((await sortEveryColumn(browser, '#reservation-lines', lang, 'reservation lines', false)).length).toBe(6);
+    await shot(`sort-after-click-${lang}-reservation-lines`);
+    await S[0].api('DELETE', `/reservations/${res.body.id}`); S[0].created.reservations.pop();
   });
 }

@@ -1,5 +1,5 @@
 "use client";
-import { DataTable, Status, Td, Tr } from "@/components/ui";
+import { DataTable, Status, Td, Tr, useTableSort } from "@/components/ui";
 // A piece's whole story (the lead, 2026-11-02): where it is now and what it was, then every sale and return, then every branch transfer. Read only; nothing here
 // puts the piece on an invoice. Drawn inline (no side sheet). A number opens its record when the person's screens allow it.
 import type { ReactNode } from "react";
@@ -11,15 +11,16 @@ import { useT } from "@/lib/t";
 import { Kv, Ltr, Section } from "@/components/engine";
 import { code6 } from "./sales-form-parts";
 
-type Col = { key: string; label: string; end?: boolean; draw: (r: Row) => ReactNode };
+type Col = { key: string; label: string; end?: boolean; date?: boolean; draw: (r: Row) => ReactNode };
 
 function History({ name, title, empty, cols, rows, keyOf }: { name: string; title: string; empty: string; cols: Col[]; rows: Row[]; keyOf: (r: Row) => string }) {
+  const s = useTableSort(rows, Object.fromEntries(cols.map((c) => [c.key, { kind: c.end ? "number" : c.date ? "date" : "text", get: (r: Row) => r[c.key] }] as const)));
   return (
     <section data-history-section={name} aria-labelledby={`history-${name}`}>
       <h3 id={`history-${name}`} className="grp-title">{title}</h3>
       {rows.length === 0 ? <p data-history-empty className="hint">{empty}</p> : (
-        <DataTable fixedOrder style={{ overflowX: "auto" }} head={cols.map((c) => ({ label: c.label, num: c.end }))}>
-          {rows.map((r) => <Tr key={keyOf(r)} data-history-row>{cols.map((c) => <Td key={c.key} num={c.end}>{c.draw(r)}</Td>)}</Tr>)}
+        <DataTable style={{ overflowX: "auto" }} head={cols.map((c) => s.col(c.key, c.label, { num: c.end }))}>
+          {s.rows.map((r) => <Tr key={keyOf(r)} data-history-row>{cols.map((c) => <Td key={c.key} num={c.end}>{c.draw(r)}</Td>)}</Tr>)}
         </DataTable>
       )}
     </section>
@@ -54,7 +55,7 @@ export function PieceStory({ r }: { r: Row }) {
     { key: "documentNumber", label: t("invoiceOrReturnNumber"), draw: (x) => (
       <>{link(x.kind === "sale" ? (may("gold-sales/sales-invoices-list", "gold-sales/sales-invoices") ? `/sales/invoices?open=${x.id}` : null) : may("gold-sales/returns-list", "gold-sales/returns") ? `/sales/returns?open=${x.id}` : null, code6(x.documentNumber))}
         {x.kind === "return" && <> <Status tone="warn">{t("returnBadge")}</Status></>}{x.deleted && <> <Status tone="off">{t("deletedBadge")}</Status></>}</>) },
-    { key: "date", label: t("saleOrReturnDate"), draw: (x) => day(x.date) },
+    { key: "date", date: true, label: t("saleOrReturnDate"), draw: (x) => day(x.date) },
     { key: "customerName", label: t("customerName"), draw: (x) => name(x.customerName) },
     { key: "itemName", label: t("itemName"), draw: (x) => name(x.itemName) },
     { key: "karat", label: t("karat"), draw: (x) => <Ltr>{x.karat}</Ltr> },
@@ -66,8 +67,8 @@ export function PieceStory({ r }: { r: Row }) {
     { key: "documentNumber", label: t("transferNumber"), draw: (x) => link(may("treasuries/treasury-transfers") ? `/money/transfers?open=${x.id}` : null, code6(x.documentNumber)) },
     { key: "fromBranchName", label: t("fromBranch"), draw: (x) => name(x.fromBranchName) },
     { key: "toBranchName", label: t("toBranch"), draw: (x) => name(x.toBranchName) },
-    { key: "transferredOn", label: t("transferredOn"), draw: (x) => day(x.transferredOn) },
-    { key: "receivedOn", label: t("receivedOn"), draw: (x) => (x.receivedOn ? day(x.receivedOn) : <span className="hint">{t("notReceived")}</span>) },
+    { key: "transferredOn", date: true, label: t("transferredOn"), draw: (x) => day(x.transferredOn) },
+    { key: "receivedOn", date: true, label: t("receivedOn"), draw: (x) => (x.receivedOn ? day(x.receivedOn) : <span className="hint">{t("notReceived")}</span>) },
     { key: "pieceCode", label: t("pieceCode"), draw: (x) => <Ltr>{x.pieceCode}</Ltr> },
     { key: "itemName", label: t("itemName"), draw: (x) => name(x.itemName) },
     { key: "karat", label: t("karat"), draw: (x) => <Ltr>{x.karat}</Ltr> },

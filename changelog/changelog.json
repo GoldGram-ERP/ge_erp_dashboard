@@ -7,6 +7,12 @@
     "en": "Arabic text and placeholders in every field are no longer cut at the bottom (for example the read-only fields on the Security policy page).",
     "ar": "الكلام العربي والنص التوضيحي جوه كل الخانات مبقاش بيتقص من تحت، زي الخانات اللي بتتقرا بس في صفحة سياسة الأمان.",
     "route": "/control/security"
+   },
+   {
+    "kind": "better",
+    "en": "Item fees, the pieces of an item in branch stock, reservation lines, a piece's history and the pieces of a treasury transfer can now be sorted by tapping a column header.",
+    "ar": "جدول المصنعية والكاش باك، وقطع الصنف في جرد الفرع، وبنود الحجز، وتاريخ القطعة، وقطع تحويل الخزينة بقى ينفع ترتّبهم بالضغط على عنوان العمود.",
+    "route": "/setup/item-fees"
    }
   ]
  },

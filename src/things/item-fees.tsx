@@ -5,7 +5,7 @@
 // The rules (diff, bulk, validation, payload, refusals) are in item-fees-rules.ts and tested there.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, DataTable, Input, Select, Seg, Status, Td, Tr, EmptyState, Skeleton, Ltr, ToastHost, toast, useConfirm } from "@/components/ui";
+import { Button, DataTable, Input, Select, Seg, Status, Td, Tr, EmptyState, Skeleton, Ltr, ToastHost, toast, useConfirm, useTableSort } from "@/components/ui";
 import { api, ApiFailure, keepsKey, newSaveKey } from "@/lib/api";
 import type { Option } from "@/lib/engine-types";
 import { milligramsText } from "@/lib/format";
@@ -49,6 +49,9 @@ export default function Page() {
   // every edit is another attempt: a new save key, and the old refusal list is stale
   const setEdits = (next: Edits) => { key.current = newSaveKey(); setProblems([]); setEditsState(next); };
   const shownRows = useMemo(() => filterRows(rows, filters), [rows, filters]);
+  // the fee columns sort by the SAVED value, so a row never jumps away while its fee is being typed
+  const sorted = useTableSort(shownRows, { item: { kind: "text", get: (r) => r.itemName }, category: { kind: "text", get: (r) => r.categoryName }, karat: { kind: "number", get: (r) => r.karat },
+    weight: { kind: "number", get: (r) => r.weight }, workmanship: { kind: "number", get: (r) => r.workmanship }, cashback: { kind: "number", get: (r) => r.cashback } });
   const changes = useMemo(() => changesOf(rows, edits), [rows, edits]);
   const invalid = invalidCount(rows, edits);
   const dirty = changes.length > 0 || invalid > 0;
@@ -133,8 +136,8 @@ export default function Page() {
             : shownRows.length === 0
               ? <EmptyState title={L("لا توجد أصناف مطابقة", "No matching items")} text={L("غيّر البحث أو المرشحات.", "Change the search or the filters.")} />
               : (
-                <DataTable fixedOrder tableId="fees-table" bodyId="fees-body" head={[m("cols.itemName"), m("cols.categoryName"), m("cols.karat"), { label: m("weightG"), num: true }, { label: m("workmanshipValue"), num: true }, { label: m("cashbackValue"), num: true }]}>
-                  {shownRows.map((r) => {
+                <DataTable tableId="fees-table" bodyId="fees-body" head={[sorted.col("item", m("cols.itemName")), sorted.col("category", m("cols.categoryName")), sorted.col("karat", m("cols.karat")), sorted.col("weight", m("weightG"), { num: true }), sorted.col("workmanship", m("workmanshipValue"), { num: true }), sorted.col("cashback", m("cashbackValue"), { num: true })]}>
+                  {sorted.rows.map((r) => {
                     const rs = rowState(r, edits);
                     const cell = (f: Field) => {
                       const st = cellState(r, edits, f), bad = st === "invalid" || cellProblem(r.id, f);

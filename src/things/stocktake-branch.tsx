@@ -1,5 +1,5 @@
 "use client";
-import { DataTable, Td, Tr as TRow } from "@/components/ui";
+import { DataTable, Td, Tr as TRow, useTableSort } from "@/components/ui";
 // جرد الفرع: stock/branch-stock (stock-by-category, stock-by-item, sales-by-item). READ ONLY. Ported from docs/nav-preview/app/things/stocktake-branch.js.
 // Stock by category / by item: one row per category or item, a weight and a count per karat that has stock, then totals and the weight as 21 karat.
 // An item row opens its pieces (the branch-stock report filtered by the item, first 100 by code). Sales by item: sold lines grouped by item name and karat.
@@ -15,6 +15,15 @@ import { KARATS, code6, footerOf, useGoldTreasuries, useLists, type GoldTreasury
 
 let lastQuery: Record<string, string> = {};      // the filters of the last stock run: the pieces of an item are asked with them
 const PIECES = 100;
+
+function StockPieces({ rows, m, karatName }: { rows: Row[]; m: (k: string) => string; karatName: (k: string) => string }) {
+  const s = useTableSort(rows, { code: { kind: "text", get: (x) => x.pieceCode }, karat: { kind: "number", get: (x) => x.karat }, weight: { kind: "number", get: (x) => x.weightMg }, tag: { kind: "number", get: (x) => x.tagPrice } });
+  return (
+    <DataTable tableId="stock-pieces" style={{ overflowX: "auto" }} head={[s.col("code", m("branchStock.columns.code")), s.col("karat", m("branchStock.karat")), s.col("weight", m("branchStock.columns.weight"), { num: true }), s.col("tag", m("branchStock.columns.tagPrice"), { num: true })]}>
+      {s.rows.map((x) => <TRow key={x.pieceCode}><Td dir="ltr">{x.pieceCode}</Td><Td dir="ltr">{karatName(x.karat)}</Td><Td num>{milligramsText(x.weightMg)}</Td><Td num>{piastresText(x.tagPrice)}</Td></TRow>)}
+    </DataTable>
+  );
+}
 
 export const makeConfigWith = (treasuries: GoldTreasury[], lists: Lists): MakeConfig => (tr: Tr): ThingConfig => {
   const { t, L } = tr;
@@ -115,9 +124,7 @@ export const makeConfigWith = (treasuries: GoldTreasury[], lists: Lists): MakeCo
       const line = p.total > rows.length ? m("branchStock.piecesFirst", { shown: rows.length, total: p.total }) : m("branchStock.pieces", { count: p.total, shown: String(p.total) });
       return <>
         <h3 className="grp-title">{m("branchStock.piecesTitle")} · {r.name}</h3><div className="help">{line}</div>
-        <DataTable fixedOrder style={{ overflowX: "auto" }} head={[m("branchStock.columns.code"), m("branchStock.karat"), { label: m("branchStock.columns.weight"), num: true }, { label: m("branchStock.columns.tagPrice"), num: true }]}>
-          {rows.map((x) => <TRow key={x.pieceCode}><Td dir="ltr">{x.pieceCode}</Td><Td dir="ltr">{karatName(x.karat)}</Td><Td num>{milligramsText(x.weightMg)}</Td><Td num>{piastresText(x.tagPrice)}</Td></TRow>)}
-        </DataTable>
+        <StockPieces rows={rows} m={m} karatName={karatName} />
       </>;
     },
     actions: [],
