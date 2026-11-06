@@ -310,9 +310,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           </div>
           <div className="tk-chips">
             {isNew && !isUser ? <>
-              <div className="field" data-kind="name" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
+              <div className="field" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
                 <Choice tr={tr} id="branchId" searchable={false} options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
-              <div className="field" data-kind="name" data-seller><label htmlFor="sellerId">{d("desk.seller")}</label>
+              <div className="field" data-seller><label htmlFor="sellerId">{d("desk.seller")}</label>
                 <Choice tr={tr} id="sellerId" searchable={false} options={sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])} value={sellerId} onChange={(v) => setSellerId(v)} /></div>
             </> : <>
               <span className="tk-chip" data-k="branchId"><i>{d("branch")}</i>{branchLabel}</span>
@@ -329,14 +329,15 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); setType(k); }}
               items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} />}
           </fieldset>
-          {!draft && <p className="tk-quiet tk-intro">{d("intro")}{isUser ? ` ${d("ownOnly")}` : ""}</p>}
+          {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setPct(0); setManual({ sell: "", buy: "" }); setSplit(""); setPayment2(""); }}>{d("desk.clear")}</Button>}
+          {!draft && <p className="tk-quiet tk-intro">{L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
           {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </header>
 
         <div className="tk-grid">
           <fieldset disabled={readonly || saving} className="tk-a">
             <section id="sec-items" className="tk-ticket">
-              <div className="field tk-add" data-kind="name"><label htmlFor="itadd">{L("إضافة قطعة", "Add a piece")}</label>
+              <div className="field tk-add"><label htmlFor="itadd">{L("إضافة قطعة", "Add a piece")}</label>
                 <Choice tr={tr} id="itadd" options={itemOptions} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
               {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
               {metal === "silver" && lines.length > 0 && <div className="tk-wrap"><span className="tk-quiet">{d("desk.wrapping")}</span>
@@ -367,12 +368,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                     );
                   })}
                 </ul>}
-              {lines.length > 0 && <TextButton id="sd-clear" onClick={() => { touch(); setLines([]); setPct(0); setManual({ sell: "", buy: "" }); setSplit(""); setPayment2(""); }}>{d("desk.clear")}</TextButton>}
             </section>
             <Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("بيانات العميل (اختياري)", "Customer (optional)")}>
               <div className="tk-cgrid">
-                <TextBox kind="name" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
-                <TextBox kind="id" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
+                <TextBox kind="text" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
+                <TextBox kind="code" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
                 <TextBox kind="phone" name="customerPhone" label={d("customerPhone")} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
               </div>
             </Disclosure>
@@ -391,8 +391,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                 <Button size="sm" variant="plain" id="sd-refresh" aria-label={d("desk.refresh")} title={d("desk.refresh")} onClick={readPrice}><Icon name="refresh" size={14} /></Button>
                 <TextButton id="sd-typeprice" aria-expanded={manualOpen} onClick={() => setTyping((x) => !x)}>{L("اكتب سعرًا", "Type a price")}</TextButton>
               </div>
-              {manualOpen && <div className="tk-manual"><div className="field" data-kind="money"><label htmlFor={`f-manual${side}`}>{d(buy ? "desk.manualBuy" : "desk.manualSell")}</label>
-                <Input id={`f-manual${side}`} inputMode="decimal" autoComplete="off" dir="ltr" value={manual[side]} onChange={(e) => setManual((m) => ({ ...m, [side]: e.target.value }))} /></div>
+              {manualOpen && <div className="tk-manual"><div className="field"><label htmlFor={`f-manual${side}`}>{d(buy ? "desk.manualBuy" : "desk.manualSell")}</label>
+                <Input kind="money" id={`f-manual${side}`} inputMode="decimal" autoComplete="off" dir="ltr" value={manual[side]} onChange={(e) => setManual((m) => ({ ...m, [side]: e.target.value }))} /></div>
                 <small className={`tk-quiet${quote?.q.manualPriceUsed ? " tk-good" : ""}`} id={`sd-${side}mode`}>{quote?.q.manualPriceUsed ? d("desk.manualUsed") : d("desk.listUsed")}</small></div>}
               {quoteMsg && <div className="note warn" role="alert" id="sd-quotemsg"><b>{quoteMsg}</b></div>}
               {typedManual.invalid && <div className="note warn" role="alert" id="sd-manualmsg"><b>{d("desk.manualInvalid")}</b></div>}
@@ -440,7 +440,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               <Disclosure id="sec-payment" defaultOpen={canComplete} summary={L("حفظ كمسودة", "Save as draft")}>
                 <div className="tk-draft"><p className="tk-quiet">{d("plannedHelp")}</p>
                   <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
-                  <div className="field" data-k="cashDiscount" data-kind="money"><label htmlFor="cashDiscount">{d("discount")}</label>
+                  <div className="field" data-k="cashDiscount"><label htmlFor="cashDiscount">{d("discount")}</label>
                     <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
                       error={dsc.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>
                 </div>
@@ -454,7 +454,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {canComplete && <div className="tk-card" id="sec-complete"><b>{d("complete")}</b><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
               <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>
                 <div className="tk-codeRow">
-                  <div className="field" data-kind="code"><Input id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc}
+                  <div className="field"><Input kind="code" id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc}
                     onChange={(e) => { setPc(e.target.value); setPcErr(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addCode(); } }} /></div>
                   <Button id="sd-add" onClick={() => void addCode()}>{d("codeAdd")}</Button>
                   <Button id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</Button>

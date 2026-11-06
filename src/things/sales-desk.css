@@ -18,6 +18,7 @@
 #sd .seg .thumb{top:2px;bottom:2px;border-radius:8px}
 #sd .seg button{height:26px;padding:0 10px;font-size:13px;line-height:1.5;border-radius:8px}
 .tk-intro,.tk-head .note{flex-basis:100%;max-width:70ch;margin:0}
+.tk-clear{margin-inline-start:auto}
 .tk-head .note{width:fit-content;flex-basis:auto}
 
 /* two zones that follow the width: 1 column under 700, 2 from 700, the summary sticks from 1024 */
@@ -27,7 +28,7 @@
 .tk-c{grid-area:c;display:flex;flex-direction:column;gap:var(--tk-gap);align-items:flex-start;max-width:680px}
 .tk-c>.tk-card{align-self:stretch;max-width:520px}
 @container tk (min-width:700px){
-  .tk-grid{grid-template-columns:minmax(0,1fr) minmax(320px,380px);grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr}
+  .tk-grid{grid-template-columns:minmax(0,680px) minmax(320px,380px);justify-content:start;grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr}
 }
 @container tk (min-width:1024px){
   .tk-sticky{position:sticky;top:12px;max-height:calc(100dvh - 24px);overflow-y:auto;padding:2px}
@@ -39,7 +40,6 @@
 
 /* zone A: the ticket */
 .tk-ticket{display:grid;gap:10px;justify-items:start}
-.tk-add{--kch:28}
 .tk-wrap{display:flex;align-items:center;gap:8px}
 .tk-empty{color:var(--mute);margin:4px 0}
 .tk-rows{list-style:none;display:grid;gap:6px;width:100%}
@@ -56,6 +56,7 @@
 .tk-qty input:focus{box-shadow:inset 0 0 0 2px var(--gold)}
 .tk-lp{min-width:10ch;text-align:end;font-variant-numeric:tabular-nums;font-weight:600}
 .tk-cust .disc-head{margin-inline-start:-8px}
+.tk-save{width:fit-content;max-width:100%}
 .tk-cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),max-content));gap:10px 14px;align-items:start;padding-top:6px}
 
 /* zone B: the summary */

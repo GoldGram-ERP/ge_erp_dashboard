@@ -1019,12 +1019,6 @@ input[role=switch]:disabled{opacity:.5;cursor:not-allowed}
    The scale: text 14 (table 13.5), title 20, field and select 32 (phone 34), button 32 (small 28), table row 38, table head 32. */
 :root{--fs-base:14px;--fs-table:13.5px;--fs-title:20px;--h-field:32px;--h-btn:32px;--h-btn-sm:28px;--h-row:38px;--h-th:32px;--h-search:32px}
 @media (max-width:640px){:root{--h-field:34px;--h-btn:34px;--h-row:40px}}
-/* Short-kind fields (owner, 2026-11-06): a field is as wide as its data, counted in ch, never as wide as its container. Put data-kind="money|number|date|code|phone|id|name" on the .field and nothing else:
-   the width follows the kind, the field sits at the start of its cell, and a value never stretches across a card. Reuse it on every screen. */
-.field[data-kind]{width:fit-content;max-width:100%;justify-self:start;align-self:start}
-.field[data-kind] input:not([type=checkbox]):not([type=radio]),.field[data-kind] .sel-btn{width:calc(var(--kch) * 1ch + 26px);max-width:100%}
-.field[data-kind=number]{--kch:5} .field[data-kind=money]{--kch:12} .field[data-kind=date]{--kch:11} .field[data-kind=code]{--kch:12}
-.field[data-kind=phone]{--kch:14} .field[data-kind=id]{--kch:17} .field[data-kind=name]{--kch:24}
 h1{font-size:var(--fs-title)}
 .btn{padding:0 14px;font-size:13.5px}
 .btn.sm{padding:0 10px;font-size:13px}
@@ -1044,4 +1038,5 @@ input[data-kind=money],input[data-kind=number]{width:100%;min-width:80px;max-wid
 input[data-kind=date]{width:100%;min-width:140px;max-width:180px}
 input[data-kind=code],input[data-kind=phone]{width:100%;min-width:160px;max-width:240px}
 input[data-kind=text]{width:100%;min-width:200px;max-width:320px}
+.field:has(.sel-btn){max-width:320px} /* a select is as wide as its value, never the card (apple-design s18: 240-360) */
 @media (min-width:700px){.formbar:not(.sheet .formbar):not(#sd .formbar):not(dialog .formbar){width:fit-content;max-width:100%}}

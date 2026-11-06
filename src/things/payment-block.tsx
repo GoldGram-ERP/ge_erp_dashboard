@@ -38,13 +38,13 @@ export function PaymentBlock({ tr, cash, onCash, banks, onBanks, accounts, error
       <div id="banks" style={{ marginTop: 12 }}>
         {banks.map((b, i) => (
           <div className="formgrid bank-row" data-bank={i} key={i}>
-            <div className="field" data-kind="name" data-k={`bank${i}Account`} data-err={errors[`bank${i}Account`] ? "" : undefined}>
+            <div className="field" data-k={`bank${i}Account`} data-err={errors[`bank${i}Account`] ? "" : undefined}>
               <label htmlFor={`ba${i}`}>{i === 0 ? sg(tr, "bankAccount") : sg(tr, "bankAccountN", { number: i + 1 })}</label>
               <Choice tr={tr} id={`ba${i}`} options={accounts} value={b.bankAccountId} onChange={(v) => set(i, { bankAccountId: v })} />{err(`bank${i}Account`)}
             </div>
-            <div className="field" data-kind="money" data-k={`bank${i}Amount`} data-err={errors[`bank${i}Amount`] ? "" : undefined}>
+            <div className="field" data-k={`bank${i}Amount`} data-err={errors[`bank${i}Amount`] ? "" : undefined}>
               <label htmlFor={`bm${i}`}>{i === 0 ? sg(tr, "bankAmount") : sg(tr, "bankAmountN", { number: i + 1 })}</label>
-              <Input id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} style={{ textAlign: "end" }} aria-invalid={!!errors[`bank${i}Amount`]} onChange={(e) => set(i, { amount: e.target.value })} />{err(`bank${i}Amount`)}
+              <Input kind="money" id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} style={{ textAlign: "end" }} aria-invalid={!!errors[`bank${i}Amount`]} onChange={(e) => set(i, { amount: e.target.value })} />{err(`bank${i}Amount`)}
             </div>
             <div className="bank-rm"><Button size="sm" danger data-rmbank={i} aria-label={sg(tr, "removeBankRow", { number: i + 1 })} onClick={() => onBanks(banks.filter((_, j) => j !== i))}><Icon name="trash" size={15} />{sg(tr, "remove")}</Button></div>
           </div>
