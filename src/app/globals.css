@@ -1071,3 +1071,23 @@ input,textarea,select,.sel-btn{line-height:1.9}   /* the placeholder takes the i
 .empty svg{width:1.25rem;height:1.25rem}
 /* 12 the panel around an empty state shrinks to it (a short block, not a screen-high panel) */
 div.table:has(>.empty){flex:none;min-height:0}
+
+
+/* Width sweep (apple-design s18): a search/scan field hugs at 420; a scan row is an input of its kind beside a button of its content; filter fields keep their kind widths at the start edge; a short list and the release notes keep a reading width. */
+.search,.sc-search{flex:0 1 420px;max-width:420px;width:100%}
+.scanrow{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;width:fit-content;max-width:100%}
+.scanrow>div{flex:0 1 auto;min-width:0}
+input[data-kind=note]{width:100%;max-width:560px}
+.stepper{width:fit-content;max-width:100%}.stepper input{flex:0 1 auto;width:100%}
+.filters{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-start}
+.filters .field{flex:0 0 auto;width:auto;min-width:0}
+.filters .field input[data-kind]{width:100%}
+.filters .field:has(.sel-btn){width:240px}
+.filters .field:has(input[data-kind=money],input[data-kind=number]){width:140px}
+.filters .field:has(input[data-kind=code],input[data-kind=phone]){width:200px}
+.filters .field:has(input[data-kind=text]){width:240px}
+.filters .field:has(.dp){width:170px}
+.filters .field:has(input[data-kind=money],input[data-kind=number],input[data-kind=code],input[data-kind=phone],input[data-kind=text]) .sel-btn{max-width:100%}
+.table.narrow{flex:none;align-self:flex-start;height:fit-content;width:fit-content;min-width:260px;max-width:480px}
+.wn{max-width:72ch}
+@media (max-width:700px){.filters .field,.filters .field:has(.sel-btn),.filters .field:has(.dp),.filters .field:has(input[data-kind]){width:100%;max-width:none}}

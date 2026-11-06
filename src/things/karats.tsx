@@ -12,6 +12,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     keys: ["system-codes/karats", "system-codes/karats-list"],
     views: [{
       id: "list", label: m("title"), endpoint: "/karats", rowKey: "karat",
+      narrow: true,
       paging: false,       // the whole list at once, no parameters
       onRow: false,        // nothing to open
       columns: [{ key: "karat", label: m("karat"), render: (r) => <Ltr>{String(r.karat)}</Ltr> }],

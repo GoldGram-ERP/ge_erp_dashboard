@@ -49,7 +49,7 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
   if (failed) return <div className="note warn">{failed}</div>;
   if (!pol) return <Skeleton rows={3} />;
 
-  const locked = (label: string, value: string) => <div className="field"><label>{label}</label><Input disabled value={value} style={{ borderStyle: "dashed" }} readOnly /></div>;
+  const locked = (label: string, value: string, kind: "number" | "text" = "text") => <div className="field"><label>{label}</label><Input kind={kind} disabled value={value} style={{ borderStyle: "dashed" }} readOnly /></div>;
   async function save() {
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
     const typed = text.trim().replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
@@ -73,7 +73,7 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
       <div className="card">
         <h3 className="grp-title">{m("signIn")}</h3>
         <div className="formgrid">
-          {locked(m("maxFailedSignIns"), String(pol.maxFailedSignIns ?? 5))}
+          {locked(m("maxFailedSignIns"), String(pol.maxFailedSignIns ?? 5), "number")}
           {locked(m("lockMode"), m("lockModeValue"))}
           {locked(m("passwordLength"), m("passwordLengthValue", { min: pol.passwordMinLength ?? 8, max: pol.passwordMaxLength ?? 128 }))}
         </div>
@@ -82,7 +82,7 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
         <form id="sp" noValidate onSubmit={(e) => { e.preventDefault(); void save(); }}>
           <div className="field" data-k="inactivityMinutes">
             <label htmlFor="f-inactivityMinutes">{m("inactivityMinutes")} <span className="req" aria-hidden="true">*</span></label>
-            <Input id="f-inactivityMinutes" inputMode="numeric" dir="ltr" maxLength={5} autoComplete="off" value={text} aria-invalid={!!err} style={{ textAlign: "end" }}
+            <Input id="f-inactivityMinutes" kind="number" inputMode="numeric" dir="ltr" maxLength={5} autoComplete="off" value={text} aria-invalid={!!err} style={{ textAlign: "end" }}
               onChange={(e) => { setText(e.target.value); setErr(""); setDirty(true); key.current = newSaveKey(); setNote(c("unsavedChanges")); }} />
             <div className="help">{m("inactivityHint")}</div>
             {err && <div className="err" role="alert">{err}</div>}

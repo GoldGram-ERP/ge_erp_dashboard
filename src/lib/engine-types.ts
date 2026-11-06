@@ -65,6 +65,7 @@ export type RowJump = { view: string; filters?: Record<string, string | number |
 export type CreateButton = { form: string; label: string; keys?: string[] };
 
 export type ViewConfig = {
+  narrow?: boolean;                    // a short list (a few one-value rows): the table card is as wide as its content, at most 480 px
   id: string; label: string; keys?: string[];
   endpoint?: string;
   exportPath?: string;                 // the report address Excel and Print use when the view loads through `load`

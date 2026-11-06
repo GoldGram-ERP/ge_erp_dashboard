@@ -112,7 +112,7 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
           {field("date", "f-date-btn", `${rt("date")} *`, <DatePicker id="f-date" name="date" value={date} onChange={(v) => { edited(); setDate(v || date); }} max={isUser ? today() : undefined} required />)}
           {field("pieceCode", "pc", `${rt("pieceCode")} *`, <>
             <div style={{ display: "flex", gap: 8 }}>
-              <Input id="pc" dir="ltr" list="pcl" maxLength={20} autoComplete="off" value={piece} onChange={(e) => { edited(); setPiece(e.target.value); }} style={{ fontFamily: "monospace", flex: 1, minWidth: 0 }} />
+              <Input id="pc" kind="code" dir="ltr" list="pcl" maxLength={20} autoComplete="off" value={piece} onChange={(e) => { edited(); setPiece(e.target.value); }} style={{ fontFamily: "monospace", flex: 1, minWidth: 0 }} />
               <Button id="scan-piece" style={{ width: 42, padding: 0, flex: "none" }} title={t("gold-sales", "pieceLookUp.scanWithCamera")} aria-label={t("gold-sales", "pieceLookUp.scanWithCamera")} onClick={() => setScanning(true)}><Icon name="camera" size={18} /></Button>
             </div>
             {scanning && <PieceScanner label={rt("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { edited(); setPiece(c); setScanning(false); }} />}

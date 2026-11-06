@@ -282,7 +282,7 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
         ) : null}
       </div>
 
-      <div className="table" id="tbl">
+      <div className={view.narrow ? "table narrow" : "table"} id="tbl">
         {!vs.ran ? <EmptyState title={L("اختر الفلاتر ثم اضغط «" + view.runLabel + "»", "Pick the filters, then press “" + view.runLabel + "”")} />
           : q.isError ? (
             <div className="empty"><Icon name="alert" size={20} /><strong>{(q.error as any)?.error ? errorText((q.error as any).error) : L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")}</strong>

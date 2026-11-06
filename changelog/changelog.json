@@ -18,6 +18,12 @@
     "kind": "better",
     "en": "New and record sheets are as tall as their content, checkbox filters sit beside their labels, and empty report screens and home cards are compact.",
     "ar": "الشاشات الجانبية بقت على قد محتواها، وخانات الاختيار في الفلاتر جنب اسمها، وشاشات التقارير الفاضية وكروت الرئيسية بقت أصغر وأهدى."
+   },
+   {
+    "kind": "better",
+    "en": "Short fields stay short: the session lock minutes, the scan box and the filters keep their own width, and the What's new page reads in a narrow column.",
+    "ar": "الخانات القصيرة بقت قصيرة: دقايق قفل الجلسة وخانة المسح والفلاتر ليهم عرضهم، وصفحة الجديد بقت في عمود ضيق يتقري بسهولة.",
+    "route": "/control/security"
    }
   ]
  },

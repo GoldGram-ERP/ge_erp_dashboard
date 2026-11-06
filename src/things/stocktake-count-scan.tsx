@@ -176,11 +176,11 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
               </div>
               {camera && <div id="sc-cam"><CameraBox onCode={scanCode} onUnavailable={(why) => { setCamera(false); setCamNote(why === "denied" ? m("cameraDenied") : m("cameraUnsupported")); }} /></div>}
               {camNote && <p id="sc-note" role="status" className="help">{camNote}</p>}
-              <form id="sc-form" noValidate className="field" data-k="pieceCode" style={{ display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap" }}
+              <form id="sc-form" noValidate className="field scanrow" data-k="pieceCode"
                 onSubmit={(e) => { e.preventDefault(); if (code.trim() !== "") scanCode(code); }}>
-                <div style={{ flex: 1, minWidth: 200 }}>
+                <div>
                   <label htmlFor="sc-code">{m("pieceCode")}</label>
-                  <Input id="sc-code" ref={input} dir="ltr" autoComplete="off" maxLength={20} style={{ fontFamily: "monospace" }} value={code} aria-invalid={!!problem}
+                  <Input id="sc-code" kind="code" ref={input} dir="ltr" autoComplete="off" maxLength={20} style={{ fontFamily: "monospace" }} value={code} aria-invalid={!!problem}
                     onChange={(e) => { setCode(e.target.value); setProblem(""); }} />
                   {problem && <div id="sc-err" className="err" role="alert">{t("gold-sales", "pieceLookUp.notOurCode")}{problem === "arabicLayout" && <span style={{ display: "block" }}>{t("gold-sales", "pieceLookUp.switchKeyboard")}</span>}</div>}
                 </div>

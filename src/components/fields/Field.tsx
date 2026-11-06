@@ -44,7 +44,7 @@ function CodeField({ f, values }: { f: FieldConfig; values: Row }) {
   return (
     <div className={`field${f.wide ? " wide" : ""}`} data-k={f.name}>
       <label htmlFor={id}>{f.label}</label>
-      <input id={id} className="code-box" disabled dir="ltr" style={{ textAlign: "start" }} value={value} readOnly aria-describedby={`${id}-help`} />
+      <input id={id} className="code-box" data-kind="code" disabled dir="ltr" style={{ textAlign: "start" }} value={value} readOnly aria-describedby={`${id}-help`} />
       <div className="help" id={`${id}-help`}>{help}</div>
     </div>
   );
@@ -98,7 +98,7 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
   const numeric = NUMERIC.includes(f.type);
   const password = f.type === "password";
   const input = (
-    <input id={id} type={password && !shown ? "password" : "text"} value={String(value)} disabled={f.disabled} maxLength={f.maxLength}
+    <input id={id} type={password && !shown ? "password" : "text"} data-kind={f.type === "money" ? "money" : numeric ? "number" : f.wide ? "note" : "text"} value={String(value)} disabled={f.disabled} maxLength={f.maxLength}
       {...(numeric ? { inputMode: "decimal" as const, dir: "ltr" } : {})}
       placeholder={f.placeholder} autoComplete={f.autocomplete ?? "off"} aria-invalid={!!err || undefined} aria-describedby={describedBy}
       onBlur={onBlur} onChange={(e) => onChange(e.target.value)} />
