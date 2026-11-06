@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Search boxes now have room for Arabic letters: the bottom of letters with tails is no longer cut.",
+    "ar": "خانات البحث بقى فيها مساحة للحروف العربي: ذيول الحروف مابقتش بتتقطع من تحت.",
+    "route": "/sales/invoices"
+   }
+  ]
+ },
+ {
   "version": "1.0.30",
   "date": "2026-11-05",
   "changes": [

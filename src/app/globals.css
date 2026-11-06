@@ -1065,3 +1065,6 @@ h1{font-size:var(--fs-title)}
 td,.table td{font-size:var(--fs-table)}
 .table td{padding:0 14px}.table th{padding:0 14px}
 .lines td,.lines th{height:var(--h-row)}
+
+/* Arabic needs room inside a text box: an input clips what goes past its own box, and tall Arabic fonts are taller than 1.7 x the size, so the search box (as high as one line, 23.8 px, inside a 32 px label) cut the bottom of the letters. It fills its label, like the sidebar search. */
+.search input{align-self:stretch;height:100%}
