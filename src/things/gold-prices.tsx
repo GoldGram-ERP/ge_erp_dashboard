@@ -47,6 +47,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         endpoint: "/gold-prices",
         filters: [{ name: "fromDate", label: m("fromDate"), type: "date" }, { name: "toDate", label: m("toDate"), type: "date" }],
         paging: { sizeParam: null },   // `page` only
+        serverSort: { on: false, columns: { date: "date", sellPrice: "sellPrice", buyPrice: "buyPrice", silverPrice: "silverPrice" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
         onRow: false,                  // a saved set is not opened, edited or deleted
         columns: columns(),
         answerExtra: () => m("fixedNote"),

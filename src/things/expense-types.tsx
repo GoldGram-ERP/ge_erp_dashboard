@@ -29,6 +29,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       search: { param: "search", placeholder: m("searchPlaceholder") },
       chips: [{ id: "all", label: L("الكل", "All") }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
       paging: { sizeParam: null },   // the list takes `page` only (size fixed at 20)
+      serverSort: { on: false, columns: { expenseCode: "expenseCode", expenseTypeName: "expenseTypeName" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
       columns: [
         { key: "expenseCode", label: m("expenseCode"), get: (r) => code6(r.expenseCode), render: (r) => <><Ltr>{code6(r.expenseCode)}</Ltr>{r.deletedAt && <> {deleted}</>}</> },
         { key: "expenseTypeName", label: m("expenseTypeName"), render: (r) => <bdi dir="auto">{r.expenseTypeName}</bdi> },

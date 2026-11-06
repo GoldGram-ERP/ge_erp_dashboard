@@ -90,7 +90,8 @@ export function initialViewState(view: ViewConfig): ViewState {
     group: "", ran: !view.runLabel,
   };
 }
-export function buildQuery(view: ViewConfig, vs: ViewState): Query {
+/** `manyPages`: the list is known to have more than one page; only then does a ON serverSort send sort/dir (a one-page list sorts in the browser). */
+export function buildQuery(view: ViewConfig, vs: ViewState, o: { manyPages?: boolean } = {}): Query {
   const q: Query = { ...(view.query ?? {}) };
   const chip = view.chips?.find((c) => c.id === vs.chip);
   Object.assign(q, chip?.query ?? {});
@@ -102,6 +103,8 @@ export function buildQuery(view: ViewConfig, vs: ViewState): Query {
   }
   if (view.paging) { q[view.paging.param ?? "page"] = vs.page; if (view.paging.sizeParam !== null) q[view.paging.sizeParam ?? "pageSize"] = vs.size; }
   if (vs.sort && view.sort) { q[view.sort.param ?? "sort"] = vs.sort.key; q[view.sort.orderParam ?? "order"] = vs.sort.dir; }
+  const id = vs.sort && o.manyPages && view.serverSort?.on ? view.serverSort.columns[vs.sort.key] : undefined;
+  if (id) { q.sort = id; q.dir = vs.sort!.dir; }
   return q;
 }
 

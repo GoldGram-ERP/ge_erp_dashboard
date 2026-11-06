@@ -14,6 +14,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       id: "list", label: m("title"), endpoint: "/karats", rowKey: "karat",
       narrow: true,
       paging: false,       // the whole list at once, no parameters
+      serverSort: { on: false, columns: { karat: "karat" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
       onRow: false,        // nothing to open
       columns: [{ key: "karat", label: m("karat"), render: (r) => <Ltr>{String(r.karat)}</Ltr> }],
       answerExtra: () => m("fixedNote"),

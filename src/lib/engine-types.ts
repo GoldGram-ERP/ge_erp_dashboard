@@ -77,6 +77,11 @@ export type ViewConfig = {
   filters?: FilterConfig[];
   runLabel?: string;                   // report: nothing loads until this button is pressed
   columns: Column[];
+  /** Server sort for a PAGED list whose backend takes `sort`/`dir` (the view has no `sort` param above). Default OFF: omit it, or `on: false`.
+   *  To turn a screen on: set `on: true` here. ONLY after its backend is live (it answers 400 invalidFields `sort` for a column it does not know).
+   *  `columns` maps a column (its sortKey, else its key) to the backend column id. On, with more than one page: a header click sends sort=<id>&dir=asc|desc and the page goes back to 1;
+   *  one page: the browser sorts as before. A column not listed is not sortable on a multi-page list. */
+  serverSort?: { on?: boolean; columns: Record<string, string> };
   sort?: { param?: string; orderParam?: string; default?: { key: string; dir: "asc" | "desc" } };
   paging?: PagingConfig | false;
   groupBy?: { key?: string; get?: (row: Row) => string; label: string }[];

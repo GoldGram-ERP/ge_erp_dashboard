@@ -1,4 +1,5 @@
 "use client";
+import { sortKeyOf } from "@/lib/sort-keys";
 import { Fragment, type ReactNode } from "react";
 import { dateText, dateTimeText, intText, milligramsText, piastresText } from "@/lib/format";
 import type { Column, Row, ViewConfig } from "@/lib/engine-types";
@@ -32,12 +33,7 @@ export function cellNode(col: Pick<Column, "key" | "type" | "get" | "render" | "
 }
 const sumText = (type: "money" | "weight" | "int", n: number) => (type === "weight" ? milligramsText(n) : type === "int" ? intText(n) : piastresText(n));
 
-/** How a column sorts: on the server through the view's sort param, in the browser when the whole list is loaded, or not at all (a paged list whose backend takes no sort for it). */
-export const sortKeyOf = (view: ViewConfig, c: Column, whole: boolean): string | null => {
-  if (c.sortable === false && !c.sortKey) return null;
-  if (view.sort) return c.sortKey ?? c.key;
-  return whole ? c.sortKey ?? c.key : null;   // a paged list with no sort param on its backend is sorted here only when its one page is the whole list
-};
+export { sortKeyOf };
 export const sortKeysOf = (view: ViewConfig) => view.columns.map((c) => sortKeyOf(view, c, true)).filter((k): k is string => !!k);
 
 type Props = {

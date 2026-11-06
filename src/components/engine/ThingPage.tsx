@@ -194,7 +194,8 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
 }) {
   const tr = useT();
   const { L, errorText } = tr;
-  const query = buildQuery(view, vs);
+  const [manyPages, setManyPages] = useState(false);   // known from the first answer; only a serverSort that is ON reads it
+  const query = buildQuery(view, vs, { manyPages });
   const q = useQuery({
     queryKey: ["thing", cfg.id, view.id, query],
     enabled: vs.ran,
@@ -226,6 +227,8 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
     }
     if (view.answerExtra) sub += ` · ${view.answerExtra(answer)}`;
   }
+  const many = !!view.paging && Number.isFinite(total) && (total > rows.length || vs.page > 1);
+  useEffect(() => { if (answer && view.serverSort?.on) setManyPages(many); }, [answer, many, view.serverSort?.on]);
   useEffect(() => { const el = document.getElementById("sub"); if (el) el.textContent = sub; }, [sub]);
 
   // search, debounced

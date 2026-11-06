@@ -73,6 +73,7 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
         ...(viewer === "super_admin" ? [{ name: "deletedOnly", label: u("deletedOnly"), type: "checkbox" as const, toQuery: (v: unknown) => (v ? { deleted: "only" } : {}) }] : []),
       ],
       paging: { sizeParam: null },
+      serverSort: { on: false, columns: { userCode: "userCode", username: "username", userType: "userType" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
       onRow: (row, h) => h.open(row),
       columns: [
         { key: "userCode", label: u("userCode"), render: (r) => <><Ltr>{code6(r.userCode)}</Ltr>{r.deletedAt ? <> <Status tone="off">{u("deletedBadge")}</Status></> : r.locked ? <> <Status tone="warn">{u("lockedBadge")}</Status></> : null}</> },
