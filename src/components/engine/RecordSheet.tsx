@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import type { RecordConfig, Row } from "@/lib/engine-types";
 import { useT } from "@/lib/t";
 import { cellNode } from "./Table";
+import { Button } from "@/components/ui";
 import { Icon, Kv, Section, Sheet, toast, useConfirm } from "./ui";
 
 type Props = {
@@ -50,18 +51,18 @@ export function RecordSheet({ rec, full, row, onClose, reload, openForm }: Props
     <>
       <Sheet title={rec.title(full)} onRequestClose={onClose}
         footer={<>
-          {rec.edit && <button type="button" className="btn primary" data-edit onClick={() => { onClose(); openForm(rec.edit!, full); }}><Icon name="edit" />{L("تعديل", "Edit")}</button>}
+          {rec.edit && <Button variant="primary" data-edit onClick={() => { onClose(); openForm(rec.edit!, full); }}><Icon name="edit" />{L("تعديل", "Edit")}</Button>}
           {acts.map((a) => (
-            <button key={a.id} type="button" className={`btn quiet${a.danger ? " danger" : ""}`} disabled={busy || del.isPending} onClick={async () => {
+            <Button key={a.id} danger={!!a.danger} disabled={busy || del.isPending} onClick={async () => {
               if (busy) return;
               setBusy(true);
               try {
                 if (a.confirm && !(await confirm({ ...a.confirm, danger: a.danger }))) return;
                 await a.run(full, { reload, close: onClose, toast, openForm });
               } catch (e: any) { toast(tr.errorText(e?.error ?? { message: "unexpected" }), { error: true }); } finally { setBusy(false); }
-            }}>{a.icon && <Icon name={a.icon} />}{a.label}</button>
+            }}>{a.icon && <Icon name={a.icon} />}{a.label}</Button>
           ))}
-          {remove && <button type="button" className="btn quiet danger" data-remove disabled={del.isPending || busy} onClick={onDelete}><Icon name="trash" />{L("حذف", "Delete")}</button>}
+          {remove && <Button danger data-remove disabled={del.isPending || busy} onClick={onDelete}><Icon name="trash" />{L("حذف", "Delete")}</Button>}
         </>}>
         <div className="sections">{body}</div>
       </Sheet>

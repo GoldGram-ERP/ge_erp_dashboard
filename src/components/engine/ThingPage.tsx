@@ -19,6 +19,7 @@ import { FormPage, FormSheet } from "./FormView";
 import { RecordSheet } from "./RecordSheet";
 import { Table, sortKeysOf } from "./Table";
 import { exportActions } from "@/things/report-export";
+import { Button } from "@/components/ui";
 import { EmptyState, Icon, Seg, Skeleton, ToastHost, toast, useConfirm } from "./ui";
 
 export type Access = { canOpen?: (keys?: string[]) => boolean; isSuper?: boolean };
@@ -177,9 +178,9 @@ function Header({ cfg, creates, actions, view, vs, onCreate, reload }: { cfg: Th
     <div className="head">
       <div><h1>{cfg.title}</h1><div className="sub" id="sub" ref={sub} aria-live="polite">&nbsp;</div></div>
       <div className="actions">
-        {creates.map((c) => <button key={c.form + c.label} type="button" className="btn primary" onClick={() => onCreate(c.form)}><Icon name="plus" />{c.label}</button>)}
+        {creates.map((c) => <Button key={c.form + c.label} variant="primary" onClick={() => onCreate(c.form)}><Icon name="plus" />{c.label}</Button>)}
         {actions.map((a) => (
-          <button key={a.label} type="button" className="btn quiet" onClick={() => a.run({ query: buildQuery(view, vs), rows: [], reload, toast, confirm })}>{a.icon && <Icon name={a.icon} />}{a.label}</button>
+          <Button key={a.label} onClick={() => a.run({ query: buildQuery(view, vs), rows: [], reload, toast, confirm })}>{a.icon && <Icon name={a.icon} />}{a.label}</Button>
         ))}
         {confirmDialog}
       </div>
@@ -263,7 +264,7 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
       {(filters.length > 0 || view.runLabel) && (
         <div className="filters" id="filters" onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).matches("input")) { e.preventDefault(); apply(true); } }}>
           <FilterFields form={ff} fields={filters} />
-          {view.runLabel && <button type="button" className="btn primary" id="run" onClick={() => apply(true)}>{view.runLabel}</button>}
+          {view.runLabel && <Button variant="primary" id="run" onClick={() => apply(true)}>{view.runLabel}</Button>}
         </div>
       )}
       <div className="tools">
@@ -288,11 +289,11 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
             <div className="empty"><Icon name="alert" size={20} /><strong>{(q.error as any)?.error ? errorText((q.error as any).error) : L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")}</strong>
               {/* what the server answered, so a failure can be told apart without opening the network tab */}
               {(q.error as any)?.status !== undefined && <span className="help" dir="ltr" id="list-error-detail">{`HTTP ${(q.error as any).status} · ${(q.error as any).error?.message ?? ""}`}</span>}
-              <button type="button" className="btn quiet" id="retry" onClick={() => q.refetch()}><Icon name="refresh" />{L("إعادة المحاولة", "Try again")}</button></div>
+              <Button id="retry" onClick={() => q.refetch()}><Icon name="refresh" />{L("إعادة المحاولة", "Try again")}</Button></div>
           ) : !answer ? <Skeleton />
           : !rows.length ? (
             <EmptyState title={filtered ? L("لا توجد نتائج", "No results") : L("لا توجد سجلات بعد", "No records yet")} text={filtered ? L("جرّب كلمة أخرى أو غيّر الفلاتر.", "Try another word or change the filters.") : ""}>
-              {filtered && <button type="button" className="btn quiet" id="clear" onClick={clear}>{L("مسح البحث والفلاتر", "Clear search and filters")}</button>}
+              {filtered && <Button id="clear" onClick={clear}>{L("مسح البحث والفلاتر", "Clear search and filters")}</Button>}
             </EmptyState>
           ) : <Table view={view} rows={rows} vs={vs} answer={answer} unit={unit} flashId={flashId} whole={!paging || (Number.isFinite(total) && total <= rows.length && vs.page === 1)}
               onSort={(k, dir) => { set({ sort: { key: k, dir }, page: 1 }); sortToUrl(k, dir); }}
@@ -313,8 +314,8 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
                   options={(paging.sizes ?? [25, 50, 100]).map((n) => [String(n), String(n)] as [string, string])} />
               </label>
             )}
-            <button type="button" className="btn quiet sm" id="prev" disabled={vs.page <= 1} onClick={() => set({ page: vs.page - 1 })}>{L("السابق", "Previous")}</button>
-            <button type="button" className="btn quiet sm" id="next" disabled={vs.page >= pages} onClick={() => set({ page: vs.page + 1 })}>{L("التالي", "Next")}</button>
+            <Button size="sm" id="prev" disabled={vs.page <= 1} onClick={() => set({ page: vs.page - 1 })}>{L("السابق", "Previous")}</Button>
+            <Button size="sm" id="next" disabled={vs.page >= pages} onClick={() => set({ page: vs.page + 1 })}>{L("التالي", "Next")}</Button>
           </span>
         </div>
       )}

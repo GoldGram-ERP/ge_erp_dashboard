@@ -8,6 +8,7 @@ import type { FormConfig, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
 import { useT } from "@/lib/t";
 import { FormFields, useFieldsForm } from "../fields/useFieldsForm";
+import { Button } from "@/components/ui";
 import { Icon, Sheet, toast, useConfirm } from "./ui";
 
 type Props = { thingTitle: string; form: FormConfig; row: Row | null; onClose: () => void; onSaved: (answer: any) => void; onOpen?: (row: Row) => void };
@@ -73,8 +74,8 @@ export function FormSheet(props: Props) {
     <>
       <Sheet title={titleOf(form, row)} onRequestClose={request}
         footer={<>
-          <button type="button" className="btn primary" id="save" disabled={saving} onClick={submit}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</button>
-          <button type="button" className="btn quiet" onClick={request}>{L("إلغاء", "Cancel")}</button>
+          <Button variant="primary" id="save" disabled={saving} onClick={submit}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</Button>
+          <Button onClick={request}>{L("إلغاء", "Cancel")}</Button>
         </>}>
         {form.note && <div className="note">{form.note}</div>}
         <form id="form" noValidate onSubmit={(e) => { e.preventDefault(); submit(); }}>
@@ -97,8 +98,8 @@ function PlainPage(props: Props) {
         <FormFields form={f} fields={form.fields} values={values} />
       </form>
       <div className="formbar">
-        <button type="button" className="btn primary" id="save" disabled={saving} onClick={submit}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</button>
-        <button type="button" className="btn quiet" id="cancel" onClick={onClose}>{L("إلغاء", "Cancel")}</button>
+        <Button variant="primary" id="save" disabled={saving} onClick={submit}>{saving ? L("جارٍ الحفظ…", "Saving…") : L("حفظ", "Save")}</Button>
+        <Button id="cancel" onClick={onClose}>{L("إلغاء", "Cancel")}</Button>
       </div>
     </>
   );

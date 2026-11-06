@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { Link } from "@/i18n/navigation";
 import { Icon } from "@/components/shell/icon";
+import { Button } from "@/components/ui";
 import { findJob, firstShownStep, isVisible, jobName, runHref, type Lang } from "@/nav/jobs";
 import { handOverDone } from "@/lib/jobs/hand-over";
 import type { Me } from "@/stores/ui";
@@ -60,7 +61,7 @@ export function TodoPanel({ me, always }: { me: Me; always?: boolean }) {
           {data.handOvers.map(({ row, jobId, href }) => (
             <li className="jt-row" key={row.id} data-hand-over={jobId}><span className="jt-text">{t("todo.handOver", { job: jobName(findJob(jobId), lang), from: row.from })}</span>
               <Link className="jt-go" href={href}>{jobName(findJob(jobId), lang)}<span className="jt-arrow"><Icon name="back" size={16} /></span></Link>
-              <button type="button" className="btn quiet sm" onClick={() => done(row.id)}>{t("todo.handOverDone")}</button></li>
+              <Button size="sm" onClick={() => done(row.id)}>{t("todo.handOverDone")}</Button></li>
           ))}
         </ul>
       )}

@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Icon } from "@/components/shell/icon";
+import { Button } from "@/components/ui";
 import { useMe } from "@/lib/session";
 import { toast } from "@/lib/toast";
 import { findJob, isHalf, jobName, type Lang } from "@/nav/jobs";
@@ -130,7 +131,7 @@ function Bar({ job, index }: { job: any; index: number }) {
   return (
     <>
       <nav className="jobbar" data-job-bar aria-label={t("bar.label", { job: jobName(job, lang) })}>
-        <button type="button" className="btn quiet sm" data-jb="home" onClick={() => router.push("/jobs")}><Icon name="home" size={16} />{t("bar.home")}</button>
+        <Button size="sm" data-jb="home" onClick={() => router.push("/jobs")}><Icon name="home" size={16} />{t("bar.home")}</Button>
         <div className="jb-main" aria-live="polite">
           <h2 className="jb-title" data-job-title>{t("bar.stepOf", { n: index + 1, m: count })} · {L(step.title)}</h2>
           {!waiting && !mine ? <span className="hint" data-job-hint>{L(step.hint)}</span> : null}
@@ -146,9 +147,9 @@ function Bar({ job, index }: { job: any; index: number }) {
           {notYours.length ? <span className="jb-locked" data-job-locked><Icon name="lock" size={14} /> {t("bar.notYours", { names: names(notYours) })}</span> : null}
         </div>
         <div className="jb-btns">
-          <button type="button" className="btn quiet sm" data-jb="back" onClick={back}><Icon name="chev" size={16} />{t("bar.back")}</button>
-          {step.optional ? <button type="button" className="btn quiet sm" data-jb="skip" onClick={skip}>{t("bar.skip")}</button> : null}
-          <button type="button" className="btn primary sm" data-jb="next" onClick={runNext}>{t(isLast ? "bar.finish" : "bar.next")}<Icon name={isLast ? "check" : "back"} size={16} /></button>
+          <Button size="sm" data-jb="back" onClick={back}><Icon name="chev" size={16} />{t("bar.back")}</Button>
+          {step.optional ? <Button size="sm" data-jb="skip" onClick={skip}>{t("bar.skip")}</Button> : null}
+          <Button variant="primary" size="sm" data-jb="next" onClick={runNext}>{t(isLast ? "bar.finish" : "bar.next")}<Icon name={isLast ? "check" : "back"} size={16} /></Button>
         </div>
       </nav>
       {mine || waiting ? (
