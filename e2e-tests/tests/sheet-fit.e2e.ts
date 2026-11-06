@@ -99,7 +99,8 @@ for (const lang of LANGS) {
     expect(home.n).toBe(2);
     if (home.sameRow && Math.abs(home.hs[0] - home.hs[1]) > 2) bad.push(`home cards in one row differ in height: ${home.hs.join(' / ')}`);
     if (home.pad.some((p: number) => p > 12.5)) bad.push(`home card padding ${home.pad.join('/')} (max 12)`);
-    if (home.empty.some((h: number) => h > 130)) bad.push(`home empty card ${home.empty.join('/')} px tall (max 130)`);
+    if (!home.sameRow && home.empty.some((h: number) => h > 130))   // side by side, an empty card stretches to its neighbour (equal heights), which holds rows
+       bad.push(`home empty card ${home.empty.join('/')} px tall (max 130)`);
     await shot(`home-${lang}`);
     expect(bad).toEqual([]);
   });
