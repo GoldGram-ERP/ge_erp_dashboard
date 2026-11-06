@@ -1048,3 +1048,6 @@ input[data-kind=code],input[data-kind=phone]{width:100%;min-width:160px;max-widt
 input[data-kind=text]{width:100%;min-width:200px;max-width:320px}
 .field:has(.sel-btn){max-width:320px} /* a select is as wide as its value, never the card (apple-design s18: 240-360) */
 @media (min-width:700px){.formbar:not(.sheet .formbar):not(#sd .formbar):not(dialog .formbar){width:fit-content;max-width:100%}}
+/* Chrome lays an input's text and placeholder out in an inner editor as high as the input's line-height and clips to it, so 1.7 x cuts the descenders of tall Arabic fonts
+   even when the outer box is 32 px (owner, live: the read-only security-policy fields). One rule for every text control; the outer height stays var(--h-field) and the text stays centred. */
+input,textarea,select,.sel-btn{line-height:1.9}   /* the placeholder takes the input's line-height in Chrome (it ignores line-height on ::placeholder) */

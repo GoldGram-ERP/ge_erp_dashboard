@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Arabic text and placeholders in every field are no longer cut at the bottom (for example the read-only fields on the Security policy page).",
+    "ar": "الكلام العربي والنص التوضيحي جوه كل الخانات مبقاش بيتقص من تحت، زي الخانات اللي بتتقرا بس في صفحة سياسة الأمان.",
+    "route": "/control/security"
+   }
+  ]
+ },
+ {
   "version": "1.0.31",
   "date": "2026-11-06",
   "changes": [
