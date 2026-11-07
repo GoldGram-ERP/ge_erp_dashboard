@@ -45,7 +45,8 @@ for (const lang of LANGS) {
     });
     expect(m.stickyY).not.toMatch(/auto|scroll/); expect(m.stickyMax).toBe('none');
     expect(m.bubY).not.toMatch(/auto|scroll/); expect(m.bubMax).toBe('none');
-    if (m.fit !== null && m.wide >= 1024) expect(m.pos).toBe(m.h! + 24 <= m.vh ? 'sticky' : 'static');   // sticks only while it fits the screen
+    expect(m.fit).not.toBeNull();   // the summary measures itself even though it mounts after the draft loads
+    if (m.wide >= 1024) expect(m.pos).toBe(m.h! + 24 <= m.vh ? 'sticky' : 'static');   // sticks only while it fits the screen
     const bad = (await layoutAudit(browser, '#sd', { scroll: true })).filter((x) => x.startsWith('nested scroll'));
     expect(bad).toEqual([]);
   });

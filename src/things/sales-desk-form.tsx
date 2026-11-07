@@ -4,7 +4,7 @@ import { Button, Disclosure, Input, Seg, TextButton, copyText } from "@/componen
 // The Sales desk draft page (issue #6): ONE page for a new draft, an edit and an Admin opening it. Type -> customer -> item + count lines
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
@@ -72,9 +72,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [general, setGeneral] = useState("");
   const [payRefusal, setPayRefusal] = useState<{ total: number; paid: number } | null>(null);
   const [saving, setSaving] = useState(false);
-  const sumRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { // the summary sticks only while it fits the screen; taller, it flows with the page (never its own scrollbar)
-    const el = sumRef.current; if (!el) return;
+  // the summary sticks only while it fits the screen; taller, it flows with the page (never its own scrollbar). A callback ref: the column mounts after the draft loads.
+  const sumRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
     const fit = () => { el.dataset.fit = String(el.offsetHeight + 24 <= window.innerHeight); };
     const ro = new ResizeObserver(fit); ro.observe(el); window.addEventListener("resize", fit); fit();
     return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
