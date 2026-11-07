@@ -129,6 +129,9 @@ const purchases = (() => {
 })();
 screens.push(goldPrices, bankTransfers, returns, purchases);
 
+// The pager buttons are pressed by script: on a phone in Arabic the Next dev-tools badge (dev server only) sits over the Next button and takes the tap.
+const press = (browser: any, sel: string) => browser.evaluate((q: string) => { (document.querySelector(q) as HTMLButtonElement).click(); return null; }, sel);
+
 type Snap = { cols: { i: number; sortable: boolean; aria: string | null }[]; codes: number[]; pager: string; nextOff: boolean };
 const snap = (browser: any, numberCol: number): Promise<Snap> => browser.evaluate((nc: number) => {
   const t = document.querySelector('#tbl table') as HTMLTableElement;
@@ -175,12 +178,12 @@ for (const lang of LANGS) {
           seen.clear();
           await check(c, dir, 1, `${s.name} ${c.key} ${dir}`);
           if (dir === dirA) await shot(`server-sort-${s.name}-${lang}-${c.key}-p1`);
-          await browser.locator('#next').click();
+          await press(browser, '#next');
           await check(c, dir, 2, `${s.name} ${c.key} ${dir}`);
           if (dir === dirA) await shot(`server-sort-${s.name}-${lang}-${c.key}-p2`);
         }
         // back to page 1 for the next column (a header click on page 1 would also do, this keeps the sequence plain)
-        await browser.locator('#prev').click(); await sleep(400);
+        await press(browser, '#prev'); await sleep(400);
       }
     });
   }
