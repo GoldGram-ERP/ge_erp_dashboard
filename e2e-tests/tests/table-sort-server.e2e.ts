@@ -3,8 +3,8 @@ import { test, expect, seed, LANGS, MAIN_BRANCH, apiAs, stamp, cairoDay } from '
 
 // Paged lists that sort on the SERVER (ViewConfig.serverSort on): with more than one page a header click sends sort/dir, the page goes back to 1,
 // and what is shown is the first page of an independent sort of ALL the rows (fetched through the API), page 2 continues the same order.
-// Every sorted column here is a number or a date (no text column), so the independent sort compares values; tied rows may come in any order, so the
-// check compares each row's sort VALUE (looked up by the row's number) and that no row repeats between the two pages.
+// The independent sort compares values (a text column with the text order of the screen, ICU en-US, as the backend does); tied rows may come in any order,
+// so the check compares each row's sort VALUE (looked up by the row's number) and that no row repeats between the two pages.
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const PAGE = 20, MANY = 26;
 type Api = Awaited<ReturnType<typeof apiAs>>;
@@ -25,7 +25,7 @@ async function all(api: Api, path: string): Promise<Row[]> {
   return out;
 }
 
-type Screen = { name: string; path: string; list: string; numberKey: string; numberCol: number; sortable: { key: string; col: number; of: (r: Row) => number | string }[]; make: () => Promise<void>; drop: () => Promise<void> };
+type Screen = { name: string; path: string; list: string; numberKey: string; numberCol: number; sortable: { key: string; col: number; of: (r: Row) => number | string; text?: true }[]; make: () => Promise<void>; drop: () => Promise<void> };
 const made = new Map<string, Promise<void>>();
 const screens: Screen[] = [];
 afterAll(async () => { for (const s of screens) if (made.has(s.name)) await s.drop().catch(() => {}); });
@@ -127,7 +127,109 @@ const purchases = (() => {
   };
   return s;
 })();
-screens.push(goldPrices, bankTransfers, returns, purchases);
+
+// ---- shared by the screens below
+const textOrder = new Intl.Collator('en-US');
+const letter = (i: number) => String.fromCharCode(97 + ((i * 7) % MANY)); // 7 and 26 share no factor: every letter once, in an order unlike the order made
+const newAdmin = async (api: Api, name: string) => {
+  const u = await api('POST', '/users', { username: name, email: `${name}@example.com`, password: 'E2e-Temp-Pass-9876', userType: 'admin', branchId: MAIN_BRANCH });
+  expect(u.status, JSON.stringify(u.body)).toBe(201);
+  return u.body.id as string;
+};
+
+// ---- treasury transfers (the list, every box): cash sent from the main branch to another branch, then settled in different ways
+const TRANSFER_STATES = ['sent', 'accepted', 'refused', 'cancelled']; // the order of the status in the database
+const treasuryTransfers = (() => {
+  let api: Api, adminId = '', branchId = '', depositId = ''; const sentIds: string[] = [];
+  const s: Screen = {
+    name: 'treasury-transfers', path: '/money/transfers?chip=all', list: '/treasury-transfers?box=all', numberKey: 'documentNumber', numberCol: 0,
+    sortable: [{ key: 'documentNumber', col: 0, of: (r) => Number(r.documentNumber) }, { key: 'status', col: 1, of: (r) => TRANSFER_STATES.indexOf(r.status) }, { key: 'sentAt', col: 8, of: (r) => r.sentAt }],
+    async make() {
+      api = await apiAs('superadmin'); const tag = stamp().toLowerCase(); const adminName = `e2et${tag}`;
+      adminId = await newAdmin(api, adminName);
+      const b = await api('POST', '/branches', { branchName: `E2E Transfers ${tag}`, adminUserId: adminId }); expect(b.status, JSON.stringify(b.body)).toBe(201); branchId = b.body.id;
+      const egp = async (id: string) => (await api('GET', `/treasuries?branchId=${id}`)).body.items.find((t: any) => t.kind === 'egp').id as string;
+      const from = await egp(MAIN_BRANCH), to = await egp(branchId);
+      const first = await apiAs(adminName, 'E2e-Temp-Pass-9876'); // a new account must set its own password before anything else answers
+      expect((await first('POST', '/access/forced-password-change', { newPassword: 'E2e-Own-Pass-5432-x' })).status).toBeLessThan(300);
+      const other = await apiAs(adminName, 'E2e-Own-Pass-5432-x');
+      const dep = await api('POST', '/cash-movements', { branchId: MAIN_BRANCH, treasuryId: from, date: cairoDay(), movementType: 'deposit', amount: 10_000_000, note: 'E2E sort transfers' });
+      expect(dep.status, JSON.stringify(dep.body)).toBe(201); depositId = dep.body.id;
+      const plan = ['sent', 'accepted', 'sent', 'refused', 'cancelled', 'accepted', 'sent']; // by i % 7: all four states, with ties
+      for (let i = 0; i < MANY; i++) {
+        const t = await api('POST', '/treasury-transfers', { fromTreasuryId: from, toTreasuryId: to, amountPiastres: 1000 + i * 10 });
+        expect(t.status, JSON.stringify(t.body)).toBe(201);
+        const want = plan[i % 7];
+        const done = want === 'accepted' ? await other('POST', `/treasury-transfers/${t.body.id}/accept`)
+          : want === 'refused' ? await other('POST', `/treasury-transfers/${t.body.id}/refuse`, { reason: 'E2E sort' })
+          : want === 'cancelled' ? await api('POST', `/treasury-transfers/${t.body.id}/cancel`) : undefined;
+        if (done) expect(done.status, JSON.stringify(done.body)).toBeLessThan(300); else sentIds.push(t.body.id);
+      }
+    },
+    async drop() { // a settled transfer cannot be deleted; the ones still sent are cancelled, so the money goes back to the main treasury
+      for (const id of sentIds) await api('POST', `/treasury-transfers/${id}/cancel`);
+      await api('DELETE', `/cash-movements/${depositId}`); await api('DELETE', `/branches/${branchId}`); await api('DELETE', `/users/${adminId}`);
+    },
+  };
+  return s;
+})();
+
+// ---- users: 26 accounts of two types (the screen has no created-at column, so that backend sort stays unused)
+const users = (() => {
+  let api: Api; const ids: string[] = []; const USER_TYPES = ['user', 'admin', 'super_admin']; // the order of the type in the database
+  const s: Screen = {
+    name: 'users', path: '/setup/users', list: '/users', numberKey: 'userCode', numberCol: 0,
+    sortable: [{ key: 'userCode', col: 0, of: (r) => Number(r.userCode) }, { key: 'username', col: 1, of: (r) => r.username, text: true }, { key: 'userType', col: 3, of: (r) => USER_TYPES.indexOf(r.userType) }],
+    async make() {
+      api = await apiAs('superadmin'); const tag = stamp().toLowerCase();
+      for (let i = 0; i < MANY; i++) {
+        const name = `e2eu${tag}${letter(i)}`;
+        const u = await api('POST', '/users', { username: name, email: `${name}@example.com`, password: 'E2e-Temp-Pass-9876', userType: i % 3 ? 'user' : 'admin', branchId: MAIN_BRANCH });
+        expect(u.status, JSON.stringify(u.body)).toBe(201); ids.push(u.body.id);
+      }
+    },
+    async drop() { for (const id of ids) await api('DELETE', `/users/${id}`); },
+  };
+  return s;
+})();
+
+// ---- expense types: 26 names in an order unlike the order made
+const expenseTypes = (() => {
+  let api: Api; const ids: string[] = [];
+  const s: Screen = {
+    name: 'expense-types', path: '/expenses/expense-types', list: '/expense-types', numberKey: 'expenseCode', numberCol: 0,
+    sortable: [{ key: 'expenseCode', col: 0, of: (r) => Number(r.expenseCode) }, { key: 'expenseTypeName', col: 1, of: (r) => r.expenseTypeName, text: true }],
+    async make() {
+      api = await apiAs('superadmin'); const tag = stamp();
+      for (let i = 0; i < MANY; i++) {
+        const r = await api('POST', '/expense-types', { expenseTypeName: `E2E Sort ${tag} ${letter(i)}` });
+        expect(r.status, JSON.stringify(r.body)).toBe(201); ids.push(r.body.id);
+      }
+    },
+    async drop() { for (const id of ids) await api('DELETE', `/expense-types/${id}`); },
+  };
+  return s;
+})();
+
+// ---- branches: 26 branches, each with an admin of its own (a branch needs one)
+const branches = (() => {
+  let api: Api; const ids: string[] = []; const admins: string[] = [];
+  const s: Screen = {
+    name: 'branches', path: '/setup/branches', list: '/branches', numberKey: 'branchCode', numberCol: 0,
+    sortable: [{ key: 'branchCode', col: 0, of: (r) => Number(r.branchCode) }, { key: 'branchName', col: 1, of: (r) => r.branchName, text: true }],
+    async make() {
+      api = await apiAs('superadmin'); const tag = stamp().toLowerCase();
+      for (let i = 0; i < MANY; i++) {
+        const adminId = await newAdmin(api, `e2eb${tag}${letter(i)}`); admins.push(adminId);
+        const b = await api('POST', '/branches', { branchName: `E2E Sort ${tag} ${letter(i)}`, adminUserId: adminId });
+        expect(b.status, JSON.stringify(b.body)).toBe(201); ids.push(b.body.id);
+      }
+    },
+    async drop() { for (const id of ids) await api('DELETE', `/branches/${id}`); for (const id of admins) await api('DELETE', `/users/${id}`); },
+  };
+  return s;
+})();
+screens.push(goldPrices, bankTransfers, returns, purchases, treasuryTransfers, users, expenseTypes, branches);
 
 // The pager buttons are pressed by script: on a phone in Arabic the Next dev-tools badge (dev server only) sits over the Next button and takes the tap.
 const press = (browser: any, sel: string) => browser.evaluate((q: string) => { (document.querySelector(q) as HTMLButtonElement).click(); return null; }, sel);
@@ -156,7 +258,7 @@ for (const lang of LANGS) {
       // only the columns the backend sorts are sortable on this multi-page list
       expect(first.cols.filter((c) => c.sortable).map((c) => c.i), `${s.name}: sortable headers`).toEqual(s.sortable.map((c) => c.col));
 
-      const sorted = (c: (typeof s.sortable)[number], dir: 'asc' | 'desc') => { const k = rows.map(c.of); k.sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)); return dir === 'asc' ? k : k.reverse(); };
+      const sorted = (c: (typeof s.sortable)[number], dir: 'asc' | 'desc') => { const k = rows.map(c.of); k.sort(c.text ? (x, y) => textOrder.compare(String(x), String(y)) : (x, y) => (x < y ? -1 : x > y ? 1 : 0)); return dir === 'asc' ? k : k.reverse(); };
       const seen = new Set<number>();
       // waits for the list to show `page` of the asked order (the server answers after the click), then asserts it
       const check = async (c: (typeof s.sortable)[number], dir: 'asc' | 'desc', page: number, label: string) => {
