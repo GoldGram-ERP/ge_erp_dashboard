@@ -36,7 +36,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     chips: [{ id: "all", label: ALL }, { id: "deleted", label: si("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
     filters: [{ name: "fromDate", label: si("fromDate"), type: "date" }, { name: "toDate", label: si("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) }],
     paging: { sizeParam: null, sizes: [20], size: 20 },
-    serverSort: { on: false, columns: { date: "date", returnNumber: "returnNumber" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
+    serverSort: { on: true, columns: { date: "date", returnNumber: "returnNumber", refundTotal: "refundTotal" } },   // backend SALES_RETURN_SORT
     columns: columns(),
     rowClass: (r) => (r.deletedAt ? "deleted" : ""),
   };
