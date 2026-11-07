@@ -264,7 +264,7 @@ for (const lang of LANGS) {
       const check = async (c: (typeof s.sortable)[number], dir: 'asc' | 'desc', page: number, label: string) => {
         const want = sorted(c, dir).slice((page - 1) * PAGE, page * PAGE);
         const keysOf = async () => { const sn = await snap(browser, s.numberCol); return { sn, keys: sn.codes.map((n) => (byNumber.get(n) ? c.of(byNumber.get(n)!) : `unknown row ${n}`)) }; };
-        for (let t = 0; t < 40; t++) { const { sn, keys } = await keysOf(); if (JSON.stringify(keys) === JSON.stringify(want) && sn.cols[c.col].aria === (dir === 'asc' ? 'ascending' : 'descending')) break; await sleep(250); }
+        for (let t = 0; t < 40; t++) { const { sn, keys } = await keysOf(); if (JSON.stringify(keys) === JSON.stringify(want) && sn.codes.every((n) => !seen.has(n)) && sn.cols[c.col].aria === (dir === 'asc' ? 'ascending' : 'descending')) break; await sleep(250); }
         const { sn, keys } = await keysOf();
         expect(sn.cols[c.col].aria, `${label} aria-sort`).toBe(dir === 'asc' ? 'ascending' : 'descending');
         expect(keys, `${label}: page ${page} of the independent sort`).toEqual(want);
