@@ -77,7 +77,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       { name: "toDate", label: trr("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) },
     ],
     paging: { sizeParam: null, sizes: [20], size: 20 },
-    serverSort: { on: false, columns: { sentAt: "sentAt", documentNumber: "documentNumber", status: "status" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
+    serverSort: { on: true, columns: { sentAt: "sentAt", documentNumber: "documentNumber", status: "status" } },   // the backend takes sort/dir for this list (ge_erp_backend 0.1.23); see ViewConfig.serverSort
     columns: [
       { key: "documentNumber", label: L("رقم التحويل", "Transfer no."), render: (r) => <Ltr>{code6(r.documentNumber)}</Ltr> },
       { key: "status", label: L("الحالة", "Status"), type: "status", statuses },
