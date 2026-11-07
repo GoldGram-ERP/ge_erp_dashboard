@@ -11,38 +11,41 @@ test('text boxes have room for tall Arabic fonts on every page (ar)', { tags: ['
   for (const route of ROUTES) {
     await go('superadmin', route, 'ar');
     await browser.locator('h1, h2').first().waitFor({ timeout: 20_000 }).catch(() => {});
-    await browser.evaluate(() => new Promise((r) => setTimeout(r, 800)));
-    const hits = await browser.evaluate(() => {
+    // One evaluate per page, one walk over the DOM: read everything first, then measure each distinct (font size, tall font) once on a single twin
+    // (a twin per input per font laid the page out again hundreds of times and timed out on a rich database).
+    const hits = await browser.evaluate(async () => {
+      await new Promise((r) => setTimeout(r, 800));
       const TALL = ['Sakkal Majalla', 'Traditional Arabic', 'Arabic Typesetting'];
       const out: string[] = [];
-      const boxes = [...document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')].filter((e) => {
-        const t = (e as HTMLInputElement).type;
-        return e.getBoundingClientRect().width > 40 && e.getBoundingClientRect().height > 0 && !['checkbox', 'radio', 'hidden', 'range', 'file', 'color', 'button', 'submit'].includes(t);
-      });
-      for (const e of document.querySelectorAll<HTMLElement>('select, .sel-btn')) {
-        const cs = getComputedStyle(e), fs = parseFloat(cs.fontSize);
-        if (e.getBoundingClientRect().height > 0 && !(parseFloat(cs.lineHeight) >= fs * 1.85 - 0.5)) out.push(`${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}.${String(e.className).split(' ')[0]}: line-height ${cs.lineHeight} for ${fs}px text (< 1.85 x)`);
-      }
-      for (const e of boxes) {
-        const cs = getComputedStyle(e), fs = parseFloat(cs.fontSize), h = e.getBoundingClientRect().height, tag = `${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}.${String(e.className).split(' ')[0]}`;
+      const tagOf = (e: Element) => `${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''}.${String(e.className).split(' ')[0]}`;
+      const lineBad = (lh: string, fs: number) => !(parseFloat(lh) >= fs * 1.85 - 0.5);
+      const sizes = new Set<string>();
+      const boxes: { tag: string; input: boolean; fsText: string; fs: number; h: number; lh: string }[] = [];
+      for (const e of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLElement>('input, textarea, select, .sel-btn')) {
+        const r = e.getBoundingClientRect(), pick = e.matches('select, .sel-btn');
+        if (pick ? r.height <= 0 : !(r.width > 40 && r.height > 0 && !['checkbox', 'radio', 'hidden', 'range', 'file', 'color', 'button', 'submit'].includes((e as HTMLInputElement).type))) continue;
+        const cs = getComputedStyle(e), fs = parseFloat(cs.fontSize), tag = tagOf(e);
+        if (lineBad(cs.lineHeight, fs)) out.push(`${tag}: line-height ${cs.lineHeight} for ${fs}px text (< 1.85 x)`);
+        if (pick) continue;
         // Chrome lays an input's text and its placeholder out in an inner editor as high as the input's LINE-HEIGHT and clips to it: a tall Arabic
         // font is cut even when the outer box is 32 px (owner, live: 'حتى يفتحه مدير' in the read-only security-policy fields). So the line-height itself
         // must be >= 1.85 x the font size, read-only and disabled inputs included. (The placeholder takes the input's line-height: Chrome ignores
         // line-height on ::placeholder and reads it back as 'normal' even when forced, so the input's value is the one to assert.)
-        const lh = parseFloat(cs.lineHeight);
-        if (!(lh >= fs * 1.85 - 0.5)) out.push(`${tag}: line-height ${cs.lineHeight} for ${fs}px text (< 1.85 x)`);
-        if (e.tagName === 'INPUT' && h < fs * 1.85 - 0.5) out.push(`${tag}: ${h.toFixed(1)}px high for ${fs}px text (< 1.85 x)`);
-        for (const font of TALL) {
-          const twin = document.createElement('span');
-          twin.textContent = 'ابحث برقم الفاتورة ٠١٢ ڤ';
-          twin.style.cssText = `position:fixed;left:0;top:0;visibility:hidden;white-space:nowrap;line-height:normal;font-size:${cs.fontSize};font-family:"${font}",sans-serif`;
-          document.body.appendChild(twin);
-          const need = twin.getBoundingClientRect().height; twin.remove();
-          const probe = document.createElement('span');
-          probe.style.cssText = `font-family:"${font}",sans-serif`; document.body.appendChild(probe);
-          const usable = getComputedStyle(probe).fontFamily.includes(font); probe.remove();
-          if (e.tagName === 'INPUT' && usable && h + 0.5 < need && need <= fs * 2.2) out.push(`${tag}: ${h.toFixed(1)}px high, ${font} needs ${need.toFixed(1)}px`);
-        }
+        if (e.tagName === 'INPUT' && r.height < fs * 1.85 - 0.5) out.push(`${tag}: ${r.height.toFixed(1)}px high for ${fs}px text (< 1.85 x)`);
+        if (e.tagName === 'INPUT') { sizes.add(cs.fontSize); boxes.push({ tag, input: true, fsText: cs.fontSize, fs, h: r.height, lh: cs.lineHeight }); }
+      }
+      const need = new Map<string, number>();   // "font|size" -> height of the line-height:normal twin, once per distinct pair
+      const twin = document.createElement('span');
+      twin.textContent = 'ابحث برقم الفاتورة ٠١٢ ڤ';
+      document.body.appendChild(twin);
+      for (const size of sizes) for (const font of TALL) {
+        twin.style.cssText = `position:fixed;left:0;top:0;visibility:hidden;white-space:nowrap;line-height:normal;font-size:${size};font-family:"${font}",sans-serif`;
+        need.set(`${font}|${size}`, twin.getBoundingClientRect().height);
+      }
+      twin.remove();
+      for (const b of boxes) for (const font of TALL) {
+        const n = need.get(`${font}|${b.fsText}`)!;
+        if (b.h + 0.5 < n && n <= b.fs * 2.2) out.push(`${b.tag}: ${b.h.toFixed(1)}px high, ${font} needs ${n.toFixed(1)}px`);
       }
       return out;
     });
