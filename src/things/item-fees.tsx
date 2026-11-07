@@ -36,6 +36,9 @@ export default function Page() {
   const qc = useQueryClient();
   const [confirm, dialog] = useConfirm();
   const items = useQuery({ queryKey: ["item-fees"], queryFn: loadItems, staleTime: 0, refetchOnWindowFocus: false });
+  // The browser paints the remembered list first (stale-while-revalidate). In an editable grid that shows fees from before someone else's save, so the table waits for this visit's own answer.
+  const visitedAt = useRef(Date.now());
+  const fresh = items.data !== undefined && (items.dataUpdatedAt >= visitedAt.current || items.isError);
   const rows = useMemo(() => toRows(items.data ?? []), [items.data]);
   const [edits, setEditsState] = useState<Edits>({});
   const [filters, setFilters] = useState<Filters>({ q: "", categoryId: "", karat: "" });
@@ -110,9 +113,9 @@ export default function Page() {
   return (
     <div className="st-page" id="fees-page">
       <div className="head"><div><h1>{L("المصنعية والكاش باك", "Workmanship and cashback")}</h1><div className="sub">{L("عدّل المصنعية والكاش باك لكل جرام في أي صنف، ثم احفظ كل التعديلات دفعة واحدة.", "Edit the workmanship and cashback per gram of any item, then save all the changes at once.")}</div></div></div>
-      {items.isPending && <Skeleton rows={6} />}
+      {(items.isPending || (items.data !== undefined && !fresh)) && <Skeleton rows={6} />}
       {items.isError && <div className="note warn" role="alert">{c("couldNotLoad")}</div>}
-      {items.data && (
+      {items.data && fresh && (
         <>
           <div className="filters" id="fees-filters">
             <div className="field"><label htmlFor="fee-q">{c("search")}</label><Input id="fee-q" type="search" autoComplete="off" placeholder={m("searchPlaceholder")} value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} /></div>

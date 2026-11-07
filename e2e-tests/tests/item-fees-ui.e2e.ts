@@ -99,6 +99,33 @@ for (const lang of LANGS as Lang[]) {
     } finally { await remove(); }
   });
 
+  // The browser remembers the last list (stale-while-revalidate). On this editable grid the remembered numbers must never be painted into the
+  // cells: another user saved a fee since, and the slow reload (a big catalogue is many pages) would show the old value as if it were current.
+  test(`item fees: a reload never shows remembered fees from before another user's save (${lang})`, { tags: ['e2e', 'item-fees'], requires: ['browser'] }, async ({ go, browser, shot }) => {
+    const tag = stamp();
+    const { api, items, remove } = await seedItems(tag);
+    const A = items[0].id;
+    try {
+      await go('superadmin', GO, lang);
+      await browser.locator('#fee-q').fill(tag);
+      await expect.poll(() => browser.locator('#fees-body tr').count()).toBe(4);
+      await expect.poll(() => browser.evaluate((id: string) => String(localStorage.getItem('ge-erp:query')?.includes(id)), A)).toBe('true');   // the list is remembered (written after 1 s)
+      const saved = await api('PATCH', '/items/fees', { changes: [{ id: A, workmanshipValue: '20.00', cashbackValue: '1.00' }] });   // someone else saves
+      expect(saved.status).toBeLessThan(300);
+      await browser.route(/\/api\/items\?/, async (route: any) => { if (new URL(route.request.url).searchParams.get('page') === '1') await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });   // the first page of the list takes 3 s
+      await go('superadmin', GO, lang);
+      await browser.evaluate((id: string) => {
+        const w = window as any; w.__seen = [];
+        setInterval(() => { const v = (document.querySelector(`#fee-w-${id}`) as HTMLInputElement | null)?.value; if (v !== undefined) w.__seen.push(v); }, 50);
+      }, A);
+      await expect.poll(() => browser.evaluate((id: string) => (document.querySelector(`#fee-w-${id}`) as HTMLInputElement | null)?.value ?? '', A), { timeout: 30_000 }).toBe('20.00');
+      expect(await browser.evaluate(() => JSON.stringify([...new Set((window as any).__seen)]))).toBe('["20.00"]');   // never the remembered 12.00
+      await browser.locator('#fee-q').fill(tag);
+      await expect.poll(() => browser.locator('#fees-body tr').count()).toBe(4);
+      await shot(`item-fees-${lang}-8-fresh-after-reload`);
+    } finally { await remove(); }
+  });
+
   test(`item fees: a refusal from the backend saves nothing and is said (${lang})`, { tags: ['e2e', 'item-fees'], requires: ['browser'] }, async ({ go, browser, shot }) => {
     const tag = stamp();
     const { api, items, remove } = await seedItems(tag);
