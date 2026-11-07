@@ -37,6 +37,12 @@
     "en": "Saved invoice lines, purchase invoice lines and the missing-pieces preview of a stock count now sort by any column",
     "ar": "بنود الفاتورة المحفوظة وبنود فاتورة الشراء ومعاينة الأصناف الناقصة في الجرد بقت تترتب بأي عمود",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "The Sales desk now saves everything you chose with the draft (Sell or Buy, gold or silver, discount, typed price, payment methods) and opens it back exactly as it was. A Buy quote can be saved as a draft too, but it never becomes an invoice.",
+    "ar": "شاشة المبيعات دلوقتي بتحفظ كل اللي اخترته مع المسودة (بيع أو شراء، ذهب أو فضة، الخصم، السعر المكتوب، طرق الدفع) وبتفتحها زي ما كانت بالظبط. وعرض سعر الشراء بقى يتحفظ كمسودة كمان، بس عمره ما بيتحوّل لفاتورة.",
+    "route": "/sales/desk"
    }
   ]
  },
