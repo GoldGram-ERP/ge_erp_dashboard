@@ -79,7 +79,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     ],
     chips: chips("purchaseInvoices"),
     paging: { sizeParam: null },   // `page` only: a page is 20 rows, fixed by the backend
-    serverSort: { on: false, columns: { invoiceNumber: "invoiceNumber", date: "date" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
+    serverSort: { on: true, columns: { invoiceNumber: "invoiceNumber", date: "date", lineCount: "lineCount", totalQuantity: "totalQuantity", totalWeight: "totalWeight" } },   // backend PURCHASE_INVOICE_SORT
     sum: { key: "totalWeight", label: m("purchaseInvoices.totalWeight"), type: "weight" },
     columns: [
       { key: "invoiceNumber", label: m("purchaseInvoices.invoiceNumber"), get: (r) => code6(r.invoiceNumber) },
