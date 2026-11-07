@@ -3,7 +3,7 @@
 // Ported from docs/nav-preview/app/things/sales-invoices.js. History first (find-invoice is its search box), three reports as views,
 // "new" opens the invoice form as a page, a row opens the invoice (lines, payments, totals, print, delete).
 // Decisions kept from the HTML: cash discount sent as cashDiscount {kind,value}; line limit 100; a saved invoice is never edited;
-// the list pages at 20 and refuses unknown params (the history strips pageSize/sort/order before asking).
+// the list pages at 20 and refuses unknown params (the history strips pageSize/order before asking; sort and dir pass through, see serverSort).
 import { api, ApiFailure } from "@/lib/api";
 import { SortedTable, Status, Td, Tr } from "@/components/ui";
 import type { Column, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
@@ -35,7 +35,7 @@ async function findByPiece(code: string, signal?: AbortSignal) {
   }
 }
 async function loadHistory(query: Record<string, any>, { signal }: { signal?: AbortSignal }) {
-  const { pageSize: _p, sort: _s, order: _o, ...q } = query;          // the list takes none of them: its page is fixed
+  const { pageSize: _p, order: _o, ...q } = query;          // the list takes neither: its page is fixed; sort/dir (serverSort) go on
   const s = String(q.search ?? "").trim();
   const code = PIECE_CODE.test(latinNumber(s)) ? latinNumber(s) : "";
   if (code && /[A-Za-z]/.test(code)) return findByPiece(code, signal);
@@ -113,6 +113,8 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         // The branch filter is for an Admin and the Super admin; a User sells in their own branch.
         filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), { name: "invoiceType", label: m("invoiceType"), type: "select", options: ["sale", "delivery"].map((k) => [k, m(`invoiceTypes.${k}`)] as [string, string]), placeholder: ALL }, { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
         paging: { sizeParam: null, sizes: [20], size: 20 },
+        // The backend (0.1.23) sorts this list on these ids: the column keys. More than one page: the server sorts across pages; one page: the browser.
+        serverSort: { on: true, columns: Object.fromEntries(["invoiceNumber", "invoiceDate", "invoiceType", "customerName", "customerPhone", "sellerName", "lineCount", "cashTotal"].map((k) => [k, k])) },
         columns: historyCols,
         rowClass: (r) => (r.deletedAt ? "deleted" : ""),
         footer: footerOf(historyCols, m("invoicesCount"), (tot) => ({ lineCount: tot.pieces, cashTotal: tot.totalPiastres })),

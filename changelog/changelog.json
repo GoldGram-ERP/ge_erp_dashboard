@@ -32,6 +32,12 @@
     "en": "Treasury transfers, users, expense types and branches: when the list has more than one page, sorting by a column heading now orders all the rows, not just the page in front of you, and page 2 carries on in the same order.",
     "ar": "تحويلات الخزن، المستخدمين، أنواع المصروفات والفروع: لما القايمة تبقى أكتر من صفحة، الترتيب من عنوان العمود بقى على كل الصفوف مش على الصفحة اللي قدامك بس، والصفحة الثانية بتكمّل على نفس الترتيب.",
     "route": "/setup/users"
+   },
+   {
+    "kind": "fixed",
+    "en": "The sales invoices list can now be sorted by tapping a column header, and the order holds across all pages, not just the page on screen.",
+    "ar": "قايمة فواتير المبيعات بقى ينفع ترتّبها بالضغط على عنوان العمود، والترتيب بيشمل كل الصفحات مش الصفحة اللي قدامك بس.",
+    "route": "/sales/invoices"
    }
   ]
  },

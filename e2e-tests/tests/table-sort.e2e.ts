@@ -45,7 +45,8 @@ function expected(vals: string[], dir: 'asc' | 'desc', lang: string, numeric: bo
 }
 
 // server = the backend sorts (plain locale order, digits as text); a browser-sorted list uses numeric order and sorts a text-typed column of digits as text
-async function sortEveryColumn(browser: any, table: string, lang: string, label: string, server: boolean) {
+// pages = 2: a paged server list; the rows of page 1 and page 2 (after the Next button) together must be in order, so a sort that stayed inside one page fails
+async function sortEveryColumn(browser: any, table: string, lang: string, label: string, server: boolean, pages = 1) {
   const first = await snap(browser, table);
   const sortable = first.cols.filter((c) => c.sortable);
   expect(sortable.length, `${label}: sortable headers`).toBeGreaterThan(0);
@@ -63,7 +64,13 @@ async function sortEveryColumn(browser: any, table: string, lang: string, label:
       expect(s.active, `${label}: the arrow shows on one column only`).toBe(1);
       for (const o of s.cols) if (o.sortable && o.i !== col.i) expect(o.aria, `${label} "${o.label}" is not the sorted column`).toBe('none');
       dirs.push(me.aria!);
-      const vals = s.rows.map((r) => r[col.start] ?? '');
+      let rows = s.rows;
+      if (pages > 1) {
+        await browser.locator('#next').focus(); await browser.keyboard.press('Enter'); await sleep(900); // by key: on a phone the dev overlay badge sits over the Next button
+        rows = rows.concat((await snap(browser, table)).rows);
+        expect(rows.length, `${label} "${col.label}": two pages of rows`).toBeGreaterThan(s.rows.length);
+      }
+      const vals = rows.map((r) => r[col.start] ?? '');
       expect(vals, `${label} "${col.label}" ${me.aria}`).toEqual(expected(vals, me.aria === 'ascending' ? 'asc' : 'desc', lang, !server, me.kind));
       expect(me.thH, 'header row stays 32px').toBeLessThanOrEqual(33);
     }
@@ -104,19 +111,21 @@ for (const lang of LANGS) {
     expect(await layoutAudit(browser, '#tbl')).toEqual([]);
   });
 
-  test(`headers sort: money and date list, server (${lang})`, { tags: ['e2e', 'tables'], requires: ['browser'] }, async ({ go, browser, shot }) => {
-    const s = S[0] ?? (S[0] = await seed());
-    for (const p of s.pieces.slice(0, 3)) {
-      const mk = (pay: object) => s.api('POST', '/sales-invoices', { branchId: MAIN_BRANCH, invoiceType: 'sale', customerName: 'E2E Customer', customerPhone: '01012345678', lines: [{ pieceCode: p.pieceCode }], ...pay });
+  // more than one page (20 an invoice page): 24 invoices of this run plus whatever the database holds; the order must hold across the pages
+  test(`headers sort: money and date list, server, across pages (${lang})`, { tags: ['e2e', 'tables'], requires: ['browser'] }, async ({ go, browser, shot }) => {
+    while (S.length < 6) S.push(await seed());
+    for (const s of S.slice(0, 6)) for (const [i, p] of s.pieces.entries()) {
+      const mk = (pay: object) => s.api('POST', '/sales-invoices', { branchId: MAIN_BRANCH, invoiceType: 'sale', customerName: `E2E Customer ${(i * 7 + S.indexOf(s) * 3) % 11}`, customerPhone: `010123456${(i + S.indexOf(s)) % 10}0`, lines: [{ pieceCode: p.pieceCode }], ...pay });
       const total = (await mk({ cash: 1 })).body.values.total as number;
       const r = await mk({ cash: total }); expect(r.status).toBe(201); s.created.invoices.push(r.body.id);
     }
     await go('superadmin', '/sales/invoices', lang);
     await expect.poll(() => browser.locator('#tbl tbody tr').count()).toBeGreaterThan(2);
-    const seen = await sortEveryColumn(browser, '#tbl table', lang, 'sales-invoices', true);
-    expect(seen.length).toBeGreaterThanOrEqual(3);
+    await expect.poll(() => browser.locator('#next').isEnabled(), { timeout: 15_000 }).toBe(true); // a second page exists
+    const seen = await sortEveryColumn(browser, '#tbl table', lang, 'sales-invoices', true, 2);
+    expect(seen.length).toBeGreaterThanOrEqual(8); // number, date, type, customer, phone, seller, lines, total
     await shot(`sort-after-click-${lang}-invoices`);
-    for (const id of s.created.invoices.splice(0)) await s.api('DELETE', `/sales-invoices/${id}`); // the next language sells the same pieces
+    for (const s of S.slice(0, 6)) for (const id of s.created.invoices.splice(0)) { const d = await s.api('DELETE', `/sales-invoices/${id}`); expect(d.status, `delete invoice ${id}: ${JSON.stringify(d.body)}`).toBeLessThan(300); } // the next language sells the same pieces
   });
 
   test(`headers sort: whole list in the browser, keyboard, address (${lang})`, { tags: ['e2e', 'tables'], requires: ['browser'] }, async ({ go, browser, shot }) => {
@@ -144,6 +153,8 @@ for (const lang of LANGS) {
     await go('superadmin', '/stock/branch-stock?view=by-item', lang);
     await browser.locator('#run').click();
     await expect.poll(() => browser.locator('#tbl tbody tr').count(), { timeout: 15_000 }).toBeGreaterThan(0);
+    await browser.locator('#tbl thead tr:first-child th:nth-child(1) .th-sort').click(); // the code column starts ascending: a database with more than a page of items shows the newest first
+    await expect.poll(() => browser.locator('#tbl tbody tr', { hasText: S[0].item.itemName }).count(), { timeout: 15_000 }).toBeGreaterThan(0);
     await browser.locator('#tbl tbody tr', { hasText: S[0].item.itemName }).first().click();
     await expect.poll(() => browser.locator('#stock-pieces tbody tr').count(), { timeout: 15_000 }).toBeGreaterThan(2);
     expect((await sortEveryColumn(browser, '#stock-pieces', lang, 'branch-stock pieces', false)).length).toBe(4);
