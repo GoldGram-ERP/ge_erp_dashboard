@@ -19,6 +19,12 @@
     "en": "Workmanship and cashback: after you reload the page, the table waits for the saved values instead of showing the old ones for a moment.",
     "ar": "المصنعية والكاش باك: بعد ما تعمل ريلود للصفحة، الجدول بيستنى القيم المحفوظة بدل ما يعرض القيم القديمة لحظة.",
     "route": "/setup/item-fees"
+   },
+   {
+    "kind": "better",
+    "en": "Tables with more than one page (gold prices, bank transfers, returns, purchase invoices): sorting by a column heading now orders all the rows, not just the page in front of you, and page 2 carries on in the same order.",
+    "ar": "الجداول المقسمة على أكتر من صفحة (أسعار الدهب، التحويلات البنكية، المرتجعات، فواتير الشراء): الترتيب من عنوان العمود بقى على كل الصفوف مش على الصفحة اللي قدامك بس، والصفحة الثانية بتكمّل على نفس الترتيب.",
+    "route": "/setup/gold-prices"
    }
   ]
  },
