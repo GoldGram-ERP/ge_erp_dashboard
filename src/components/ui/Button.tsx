@@ -17,3 +17,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 export const TextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & { className?: string }>(function TextButton({ className = "", type = "button", ...rest }, ref) {
   return <button ref={ref} type={type} className={`tbtn${className ? ` ${className}` : ""}`} {...rest} />;
 });
+
+/** Shell chrome buttons that are not `.btn`: icon (`ic-btn`), pin, keyboard hint, palette row and more-link, section head. `bare` adds no class (a button styled by its parent, e.g. the language seg). */
+const CHROME = { icon: "ic-btn", pin: "pin", kbd: "kbd-btn", item: "pal-item", more: "pal-more", sec: "sec-head", bare: "" } as const;
+export const ChromeButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & { kind?: keyof typeof CHROME; className?: string }>(function ChromeButton({ kind = "icon", className = "", type = "button", ...rest }, ref) {
+  return <button ref={ref} type={type} className={[CHROME[kind], className].filter(Boolean).join(" ") || undefined} {...rest} />;
+});
