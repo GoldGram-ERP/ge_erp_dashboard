@@ -3,7 +3,7 @@
 // Views: the history of counts (button "Start a count"; an open or closed count opens its board (scan page; a closed one frozen), a deleted one its record sheet), the look-up of one previous
 // count (counters per karat), and the two missing-pieces reports (read only). Writes: start (stocktake-count-start), scan / camera / Save and close / Delete
 // (stocktake-count-scan), and Delete from the record sheet (soft; no stock moves). The stock-counts list takes search, fromDate, toDate, page, deleted (size fixed at 20).
-import { useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure } from "@/lib/api";
 import type { Column, CustomFormProps, FilterConfig, MakeConfig, RecordConfig, Row, ThingConfig, ViewConfig } from "@/lib/engine-types";
@@ -17,6 +17,13 @@ import { StartForm } from "./stocktake-count-start";
 import { code6, footerOf, nameOf, useLists, type Lists } from "./stocktake-shared";
 
 const CHIPS_MAX = 1000;
+
+// The form's component must keep its identity when the lists arrive (the config is rebuilt then): a new function there remounts the form and wipes what was picked.
+const ScanContext = createContext<(id: string) => void>(() => {});
+function StartEntry(p: CustomFormProps) {
+  const onScan = useContext(ScanContext), lists = useLists();
+  return <StartForm {...p} lists={lists} onStarted={(count) => onScan(count.id)} />;
+}
 
 export const makeConfigWith = (onScan: (id: string) => void, lists: Lists): MakeConfig => (tr: Tr): ThingConfig => {
   const { t, L } = tr;
@@ -160,7 +167,7 @@ export const makeConfigWith = (onScan: (id: string) => void, lists: Lists): Make
     keys: ["gold-stocktake/stock-count", "gold-stocktake/previous-counts", "gold-stocktake/missing-pieces", "gold-stocktake/missing-pieces-previous"],
     views: [history, previous(), missing(false), missing(true)],
     record,
-    forms: { start: { title: m("stockCount.add"), display: "page", fields: [], path: () => "/stock-counts", method: "POST", custom: (p: CustomFormProps) => <StartForm {...p} lists={lists} onStarted={(count) => onScan(count.id)} /> } },
+    forms: { start: { title: m("stockCount.add"), display: "page", fields: [], path: () => "/stock-counts", method: "POST", custom: StartEntry } },
   };
 };
 
@@ -172,5 +179,5 @@ export default function Page() {
   const initial = useJobIntent();
   const access = useAccess();
   if (scan) return <ScanPage id={scan} onClose={() => { setScan(null); qc.invalidateQueries({ queryKey: ["thing", "count"] }); }} />;
-  return <ThingPage make={make} access={access} initial={initial} />;
+  return <ScanContext.Provider value={setScan}><ThingPage make={make} access={access} initial={initial} /></ScanContext.Provider>;
 }
