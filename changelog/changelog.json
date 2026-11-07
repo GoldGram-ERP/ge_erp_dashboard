@@ -25,6 +25,12 @@
     "en": "Tables with more than one page (gold prices, bank transfers, returns, purchase invoices): sorting by a column heading now orders all the rows, not just the page in front of you, and page 2 carries on in the same order.",
     "ar": "الجداول المقسمة على أكتر من صفحة (أسعار الدهب، التحويلات البنكية، المرتجعات، فواتير الشراء): الترتيب من عنوان العمود بقى على كل الصفوف مش على الصفحة اللي قدامك بس، والصفحة الثانية بتكمّل على نفس الترتيب.",
     "route": "/setup/gold-prices"
+   },
+   {
+    "kind": "better",
+    "en": "Treasury transfers, users, expense types and branches: when the list has more than one page, sorting by a column heading now orders all the rows, not just the page in front of you, and page 2 carries on in the same order.",
+    "ar": "تحويلات الخزن، المستخدمين، أنواع المصروفات والفروع: لما القايمة تبقى أكتر من صفحة، الترتيب من عنوان العمود بقى على كل الصفوف مش على الصفحة اللي قدامك بس، والصفحة الثانية بتكمّل على نفس الترتيب.",
+    "route": "/setup/users"
    }
   ]
  },
