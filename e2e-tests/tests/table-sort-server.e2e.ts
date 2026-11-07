@@ -184,7 +184,7 @@ const users = (() => {
       api = await apiAs('superadmin'); const tag = stamp().toLowerCase();
       for (let i = 0; i < MANY; i++) {
         const name = `e2eu${tag}${letter(i)}`;
-        const u = await api('POST', '/users', { username: name, email: `${name}@example.com`, password: 'E2e-Temp-Pass-9876', userType: i % 3 ? 'user' : 'admin', branchId: MAIN_BRANCH });
+        const u = await api('POST', '/users', { username: name, email: `${name}@example.com`, password: 'E2e-Temp-Pass-9876', userType: i % 3 ? 'user' : 'admin', branchId: MAIN_BRANCH, ...(i % 3 ? { screens: ['system-codes/karats'] } : {}) });
         expect(u.status, JSON.stringify(u.body)).toBe(201); ids.push(u.body.id);
       }
     },
