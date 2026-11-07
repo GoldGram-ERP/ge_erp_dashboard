@@ -1,7 +1,10 @@
 import { test, expect, LANGS, NAV } from './lib.ts';
 
 // Every open dropdown (Select) sits under, or flipped above, its field: its START edge (right in Arabic, left in English) is within 1 px of the
-// field's, it is at least as wide as the field, it stays inside the screen, and its rows are at most 34 px (36 on a phone). Run over every page of
+// field's, it is at least as wide as the field, it stays inside the screen, and its rows are at most 34 px (36 on a phone).
+// A list may be WIDER than its field (long labels stay on one line with an ellipsis). Rule for the start edge: flush with the field's start edge
+// (within 1 px) when the list fits on screen from that edge (8 px margin); otherwise the list is shifted just enough to stay inside the screen,
+// so it must reach past the field's start edge (left edge <= the field's in English, right edge >= the field's in Arabic). Run over every page of
 // the nav tree, for the first selects of each page AND the pager's size select (#size, at the bottom of every paged list), once with the field where
 // it is and once scrolled to the bottom edge so the list has to flip above. Owner screenshots: the Sales desk list ~230 px to the right of its field
 // (RTL, popup measured before its min-width), then the pager's 95 px list ~105 px to the left and above (still measured before the min-width).
@@ -47,11 +50,11 @@ for (const lang of LANGS) for (const [ci, chunk] of CHUNKS.entries()) {
             const pop = [...document.querySelectorAll('.pop')].at(-1) as HTMLElement, p = pop.getBoundingClientRect();
             const rtl = getComputedStyle(document.documentElement).direction === 'rtl';
             const rows = [...pop.querySelectorAll<HTMLElement>('li[role=option]')].map((li) => li.getBoundingClientRect().height);
-            return { id: el.id, startGap: Math.round((rtl ? p.right - t.right : p.left - t.left) * 10) / 10, widthShort: Math.round((t.width - p.width) * 10) / 10, left: p.left, right: p.right, top: p.top, bottom: p.bottom, vw: innerWidth, vh: innerHeight, above: p.bottom <= t.top + 1, maxRow: rows.length ? Math.max(...rows) : 0 };
+            return { id: el.id, fits: rtl ? t.right - p.width >= 8 - 0.5 : t.left + p.width <= innerWidth - 8 + 0.5, past: rtl ? p.right >= t.right - 1 : p.left <= t.left + 1, startGap: Math.round((rtl ? p.right - t.right : p.left - t.left) * 10) / 10, widthShort: Math.round((t.width - p.width) * 10) / 10, left: p.left, right: p.right, top: p.top, bottom: p.bottom, vw: innerWidth, vh: innerHeight, above: p.bottom <= t.top + 1, maxRow: rows.length ? Math.max(...rows) : 0 };
           }, i);
           checked++; if (m.id.startsWith('size')) pager++;
           const where = `${route} ${m.id || '#' + i} (${placement}${m.above ? ', flipped above' : ''})`;
-          if (Math.abs(m.startGap) > 1) bad.push(`${where}: start edge ${m.startGap}px off its field`);
+          if (m.fits ? Math.abs(m.startGap) > 1 : !m.past) bad.push(`${where}: start edge ${m.startGap}px off its field`);
           if (m.widthShort > 1) bad.push(`${where}: ${m.widthShort}px narrower than its field`);
           if (m.left < -0.5 || m.right > m.vw + 0.5 || m.top < -0.5 || m.bottom > m.vh + 0.5) bad.push(`${where}: outside the screen (${Math.round(m.left)}..${Math.round(m.right)} x ${Math.round(m.top)}..${Math.round(m.bottom)} of ${m.vw}x${m.vh})`);
           if (m.maxRow > (m.vw < 700 ? 36 : 34) + 0.5) bad.push(`${where}: option rows ${m.maxRow}px high`);

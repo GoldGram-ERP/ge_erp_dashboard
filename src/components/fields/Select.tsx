@@ -102,7 +102,7 @@ export function Select({ id, name, value, onChange, onBlur, options, placeholder
             {shown.length ? shown.map(([v, l, dis], k) => (
               <li key={String(v)} role="option" id={`${pid}-${k}`} className={k === active ? "active" : undefined} aria-disabled={dis || undefined} aria-selected={String(v) === value}
                 onPointerUp={() => pick(k)} onPointerMove={() => k !== active && setActive(k)}>
-                {l}
+                <span className="lbl" title={l}>{l}</span>
                 <span className="tick"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span>
               </li>
             )) : <li className="sel-empty" role="presentation">{L("لا توجد نتائج", "No results")}</li>}

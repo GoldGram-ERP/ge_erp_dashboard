@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "On a phone, dropdowns with long names (branches, treasuries, items) now open right under their field with each name on one line, instead of wrapping and sliding off the screen.",
+    "ar": "على الموبايل، القوايم اللي فيها أسماء طويلة (فروع وخزن وأصناف) بقت بتفتح تحت الحقل على طول وكل اسم في سطر واحد، بدل ما كانت بتلف على سطرين وتطلع بره الشاشة.",
+    "route": "/money/transfers"
+   }
+  ]
+ },
+ {
   "version": "1.0.32",
   "date": "2026-11-07",
   "changes": [

@@ -21,7 +21,7 @@ export function Popover({ trigger, onClose, className, children, role, id, label
     const below = vh - r.bottom - 12, above = r.top - 12, h = p.offsetHeight, w = p.offsetWidth;
     const up = h > below && above > below, room = Math.max(140, (up ? above : below) - 4), hh = Math.min(h, room);
     const rtl = getComputedStyle(t).direction === "rtl";
-    setPos({ minWidth: r.width, maxHeight: room, left: Math.max(8, Math.min(rtl ? r.right - w : r.left, vw - w - 8)), top: up ? r.top - 4 - hh : r.bottom + 4, side: up ? "up" : "down" });
+    setPos({ minWidth: r.width, maxHeight: room, left: Math.max(8, Math.min(rtl ? r.right - w : r.left, vw - w - 8)), top: Math.max(8, Math.min(up ? r.top - 4 - hh : r.bottom + 4, vh - hh - 8)), side: up ? "up" : "down" });
   };
   useLayoutEffect(place, [watch]);
 
