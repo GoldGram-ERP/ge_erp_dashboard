@@ -10,6 +10,8 @@ import { isSuper } from "@/lib/session";
 import type { Me } from "@/stores/ui";
 import { matchesText } from "@/lib/search";
 import { NAV_LABELS } from "@/nav/labels.generated";
+import { ChromeButton } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Icon, jobIconName } from "./icon";
 
 export type Hit = { key: string; group: "pages" | "jobs" | "questions" | "find"; label: string; hint?: string; icon: string; href: string };
@@ -62,14 +64,14 @@ export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; on
   return (
     <dialog ref={ref} className="palette" aria-label={t("app.search")} onClose={onClose} onClick={(e) => { if (e.target === ref.current) onClose(); }}>
       <div className="pal-in"><Icon name="search" size={19} />
-        <input ref={input} value={q} role="combobox" aria-expanded="true" aria-controls="pal-list" aria-label={t("app.search")} placeholder={t("app.searchPlaceholder")} autoComplete="off"
+        <Input ref={input} value={q} role="combobox" aria-expanded="true" aria-controls="pal-list" aria-label={t("app.search")} placeholder={t("app.searchPlaceholder")} autoComplete="off"
           onChange={(e) => { setQ(e.target.value); setAt(0); }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") { e.preventDefault(); setAt((a) => Math.min(a + 1, hits.length - 1)); }
             else if (e.key === "ArrowUp") { e.preventDefault(); setAt((a) => Math.max(a - 1, 0)); }
             else if (e.key === "Enter") { e.preventDefault(); go(hits[at]); }
           }} />
-        <button type="button" className="ic-btn" aria-label={t("app.close")} title="Esc" onClick={onClose}><Icon name="x" size={16} /></button>
+        <ChromeButton aria-label={t("app.close")} title="Esc" onClick={onClose}><Icon name="x" size={16} /></ChromeButton>
       </div>
       <div className="pal-list" id="pal-list" role="listbox" aria-label={t("app.search")}>
         {hits.length === 0 ? <div className="pal-empty">{t("app.searchNone")}</div> : groupHits(hits).map(({ g, items }) => (
@@ -83,9 +85,9 @@ export function SearchPalette({ me, open, onClose }: { me: Me; open: boolean; on
 
 const Row = memo(function Row({ h, selected, onPick, onHover, idx }: { h: Hit; selected: boolean; onPick: (h: Hit) => void; onHover: (i: number) => void; idx: number }) {
   return (
-    <button className="pal-item" role="option" aria-selected={selected} onMouseEnter={() => onHover(idx)} onClick={() => onPick(h)}>
+    <ChromeButton kind="item" role="option" aria-selected={selected} onMouseEnter={() => onHover(idx)} onClick={() => onPick(h)}>
       <span className="ico"><Icon name={h.icon} size={18} /></span><span><b>{h.label}</b>{h.hint ? <small>{h.hint}</small> : null}</span>
-    </button>
+    </ChromeButton>
   );
 });
 
@@ -111,7 +113,7 @@ export function SidebarSearch({ me, onOpenSheet }: { me: Me; onOpenSheet: () => 
     <div className="usearch-box" ref={box}>
       <div className="usearch" id="usearch">
         <Icon name="search" size={17} />
-        <input id="usearch-input" value={q} role="combobox" aria-expanded={show} aria-controls="usearch-list" aria-label={t("app.search")} placeholder={t("app.search")} autoComplete="off"
+        <Input id="usearch-input" value={q} role="combobox" aria-expanded={show} aria-controls="usearch-list" aria-label={t("app.search")} placeholder={t("app.search")} autoComplete="off"
           onFocus={() => setFocus(true)}
           onChange={(e) => { setQ(e.target.value); setAt(0); setFocus(true); }}
           onKeyDown={(e) => {
@@ -120,18 +122,18 @@ export function SidebarSearch({ me, onOpenSheet }: { me: Me; onOpenSheet: () => 
             else if (e.key === "Enter") { e.preventDefault(); go(hits[at]); }
             else if (e.key === "Escape") { setQ(""); setFocus(false); (e.target as HTMLElement).blur(); }
           }} />
-        <button type="button" className="kbd-btn" title={t("app.searchSheet")} aria-label={`${t("app.searchSheet")} Ctrl K`} onClick={onOpenSheet}><kbd>Ctrl K</kbd></button>
+        <ChromeButton kind="kbd" title={t("app.searchSheet")} aria-label={`${t("app.searchSheet")} Ctrl K`} onClick={onOpenSheet}><kbd>Ctrl K</kbd></ChromeButton>
       </div>
       {show ? (
         <div className="usearch-pop" id="usearch-list" role="listbox" aria-label={t("app.search")}>
           {hits.length === 0 ? <div className="pal-empty">{t("app.searchNone")}</div> : groupHits(hits).map(({ g, items }) => (
             <div key={g}><div className="pal-grp">{t(`app.searchGroup.${g}`)}</div>
               {items.map((h) => { const idx = hits.indexOf(h); return (
-                <button key={h.key} className="pal-item" role="option" aria-selected={idx === at} onMouseMove={() => setAt(idx)} onClick={() => go(h)}>
+                <ChromeButton key={h.key} kind="item" role="option" aria-selected={idx === at} onMouseMove={() => setAt(idx)} onClick={() => go(h)}>
                   <span className="ico"><Icon name={h.icon} size={17} /></span><span><b>{h.label}</b>{h.hint ? <small>{h.hint}</small> : null}</span>
-                </button>); })}
+                </ChromeButton>); })}
             </div>))}
-          <button className="pal-more" type="button" onClick={onOpenSheet}>{t("app.searchSheet")} · Ctrl K</button>
+          <ChromeButton kind="more" onClick={onOpenSheet}>{t("app.searchSheet")} · Ctrl K</ChromeButton>
         </div>
       ) : null}
     </div>

@@ -9,6 +9,7 @@ import { JOBS, QUESTIONS, JOB_GROUPS, canAsk, findJob, firstShownStep, isHalf, i
 import { handOverSteps } from "@/lib/jobs/hand-over";
 import { clearRunMemory, runMemory } from "./job-bar";
 import { TodoPanel } from "./todo";
+import { Input } from "@/components/ui/Input";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function JobsPage({ kind }: { kind: "jobs" | "questions" | "todo" }) {
@@ -50,7 +51,7 @@ export function JobsPage({ kind }: { kind: "jobs" | "questions" | "todo" }) {
       {isJobs ? <TodoPanel me={me} /> : null}
       <div className="head"><div><h1 className="jobs-title" id="jobs-title">{t(isJobs ? "home.title" : "questions.title")}</h1></div>
         <Link className="btn quiet" href={isJobs ? "/jobs/questions" : "/jobs"}><Icon name={isJobs ? "ask" : "jobs"} />{t(isJobs ? "home.know" : "home.title")}</Link></div>
-      <label className="search jobs-search"><Icon name="search" /><input type="search" id="jobs-q" placeholder={label} aria-label={label} autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} autoFocus /></label>
+      <label className="search jobs-search"><Icon name="search" /><Input type="search" id="jobs-q" placeholder={label} aria-label={label} autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} autoFocus /></label>
       <div id="jobs-groups" className="jobs-groups">
         {found.length === 0 ? <p className="quiet-note" role="status">{items.length === 0 ? t(isJobs ? "home.none" : "questions.none") : t(isJobs ? "home.noResults" : "questions.noResults")}</p> :
           JOB_GROUPS.map((g) => {

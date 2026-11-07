@@ -2,6 +2,8 @@
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import { Link } from "@/i18n/navigation";
 import { toast } from "@/lib/toast";
@@ -72,15 +74,15 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
         {names.map((name) => (
           <div className="field" key={name}>
             <label htmlFor={`f-${name}`}>{label[name]}</label>
-            <input id={`f-${name}`} name={name} type={shown[name] ? "text" : "password"} value={v[name]} onChange={(e) => set(name, e.target.value)} autoComplete={name === "currentPassword" ? "current-password" : "new-password"} dir="ltr" style={{ textAlign: "start" }} aria-invalid={!!errs[name]} aria-describedby={errs[name] ? `e-${name}` : undefined} />
-            <button type="button" className="btn quiet sm" onClick={() => setShown((s) => ({ ...s, [name]: !s[name] }))}>{shown[name] ? sign("hidePassword") : sign("showPassword")}</button>
+            <Input id={`f-${name}`} name={name} type={shown[name] ? "text" : "password"} value={v[name]} onChange={(e) => set(name, e.target.value)} autoComplete={name === "currentPassword" ? "current-password" : "new-password"} dir="ltr" style={{ textAlign: "start" }} aria-invalid={!!errs[name]} aria-describedby={errs[name] ? `e-${name}` : undefined} />
+            <Button size="sm" onClick={() => setShown((s) => ({ ...s, [name]: !s[name] }))}>{shown[name] ? sign("hidePassword") : sign("showPassword")}</Button>
             {errs[name] ? <div className="err" id={`e-${name}`} role="alert">{errs[name]}</div> : null}
           </div>
         ))}
         <div className="note" id="pw-rules"><b>{rules("title")}</b>
           <div id="pw-rules-list">{checks.map(([txt, ok]) => <div key={txt}>{ok ? "✓" : "○"} {txt} <span className="sr-only">{ok ? rules("met") : rules("unmet")}</span></div>)}</div></div>
         {fail ? <div className="err" id="pw-err" role="alert">{fail}</div> : null}
-        <div className="formbar" style={{ position: "static" }}><button className="btn primary" id="pw-save" type="submit" disabled={busy}>{busy ? a("saving") : a("save")}</button></div>
+        <div className="formbar" style={{ position: "static" }}><Button variant="primary" id="pw-save" type="submit" disabled={busy}>{busy ? a("saving") : a("save")}</Button></div>
       </form>
     </div>
   );

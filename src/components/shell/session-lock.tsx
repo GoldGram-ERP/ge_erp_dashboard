@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { api, ApiFailure } from "@/lib/api";
 import type { Me } from "@/stores/ui";
 
@@ -72,9 +74,9 @@ export function SessionLock({ me, onSignOut }: { me: Me; onSignOut: () => void }
         <h2 id="lock-title">{t("title")}</h2>
         <p>{t("signedInAs")} <b>{me.name}</b></p>
         <p>{t("body")}</p>
-        <div className="field"><label htmlFor="lock-pw">{t("password")}</label><input id="lock-pw" ref={pw} type="password" autoComplete="current-password" dir="ltr" style={{ textAlign: "start" }} /></div>
+        <div className="field"><label htmlFor="lock-pw">{t("password")}</label><Input id="lock-pw" ref={pw} type="password" autoComplete="current-password" dir="ltr" style={{ textAlign: "start" }} /></div>
         <div className="err" id="lock-err" role="alert" hidden={!err}>{err}</div>
-        <div className="row"><button className="btn primary" id="lock-go" type="submit" disabled={busy}>{busy ? t("unlocking") : t("continue")}</button><button className="btn quiet" id="lock-out" type="button" onClick={onSignOut}>{t("signOut")}</button></div>
+        <div className="row"><Button variant="primary" id="lock-go" type="submit" disabled={busy}>{busy ? t("unlocking") : t("continue")}</Button><Button id="lock-out" onClick={onSignOut}>{t("signOut")}</Button></div>
       </form>
     </dialog>
   );

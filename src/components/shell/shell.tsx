@@ -11,6 +11,7 @@ import { JobBar } from "@/components/jobs/job-bar";
 import { JOBS_ENABLED } from "@/lib/jobs/enabled";
 import { SEEN_KEY, canSeeChangelog, unseenCount } from "@/lib/changelog";
 import { ChangePassword } from "./change-password";
+import { ChromeButton } from "@/components/ui/Button";
 import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
 import { SearchPalette, SidebarSearch } from "./search-palette";
@@ -111,10 +112,10 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
 
   const section = (id: string, icon: string, label: string, active: boolean, isOpen: boolean, items: ReactNode) => (
     <div className={`sec ${isOpen ? "open" : ""} ${active ? "has-active" : ""}`} key={id}>
-      <button className="sec-head" aria-expanded={isOpen} title={label}
+      <ChromeButton kind="sec" aria-expanded={isOpen} title={label}
         onClick={() => { if (ui.collapsed && !narrow()) { ui.setCollapsed(false); if (!isOpen) ui.toggleGroup(id); } else ui.toggleGroup(id); }}>
         <span className="ico"><Icon name={icon} size={19} /></span><span className="name">{label}</span><span className="chev"><Icon name="chev" size={16} /></span>
-      </button>
+      </ChromeButton>
       <div className="things"><div inert={!isOpen}><ul>{items}</ul></div></div>
     </div>
   );
@@ -124,7 +125,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
     return (
       <li className="row" key={leaf.route}>
         <Link className="thing" href={leaf.route} aria-current={isActive(leaf.route) ? "page" : undefined}>{label}</Link>
-        <button className="pin" aria-pressed={pinned} title={pinned ? t("app.unpin") : t("app.pin")} aria-label={pinLabel} onClick={() => { ui.togglePin(me.id, leaf.route); if (!open("pins")) ui.toggleGroup("pins"); }}><Icon name="pin" size={15} /></button>
+        <ChromeButton kind="pin" aria-pressed={pinned} title={pinned ? t("app.unpin") : t("app.pin")} aria-label={pinLabel} onClick={() => { ui.togglePin(me.id, leaf.route); if (!open("pins")) ui.toggleGroup("pins"); }}><Icon name="pin" size={15} /></ChromeButton>
       </li>
     );
   };
@@ -137,7 +138,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
         <>
           <div className="notif-scrim" onClick={() => setNotif(false)} />
           <section id="notif" className="notif" role="dialog" aria-modal="false" aria-labelledby="notif-title">
-            <header><h2 id="notif-title">{t("app.notifications.title")}</h2><button type="button" className="ic-btn" aria-label={t("app.notifications.close")} title={t("app.notifications.close")} onClick={() => setNotif(false)}><Icon name="x" size={16} /></button></header>
+            <header><h2 id="notif-title">{t("app.notifications.title")}</h2><ChromeButton aria-label={t("app.notifications.close")} title={t("app.notifications.close")} onClick={() => setNotif(false)}><Icon name="x" size={16} /></ChromeButton></header>
             <div className="notif-empty"><span className="notif-ico"><Icon name="bell" size={22} /></span><b>{t("app.notifications.progress")}</b><p>{t("app.notifications.empty")}</p></div>
           </section>
         </>
@@ -145,9 +146,9 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
       <aside id="side"><div className="side-inner">
         <div className="side-head">
           <div className="brand" id="brand">GoldGram</div>
-          <button className="ic-btn" id="notif-btn" type="button" aria-haspopup="dialog" aria-expanded={notif} title={t("app.notifications.title")} aria-label={t("app.notifications.title")} onClick={() => setNotif((v) => !v)}><Icon name="bell" size={18} /></button>
-          <button className="ic-btn" id="fold-all" type="button" title={allOpen ? t("app.foldAll") : t("app.unfoldAll")} aria-label={allOpen ? t("app.foldAll") : t("app.unfoldAll")} onClick={() => ui.setGroups(allOpen ? [] : allIds)}><Icon name={allOpen ? "fold" : "unfold"} /></button>
-          <button className="ic-btn" id="collapse" type="button" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></button>
+          <ChromeButton id="notif-btn" aria-haspopup="dialog" aria-expanded={notif} title={t("app.notifications.title")} aria-label={t("app.notifications.title")} onClick={() => setNotif((v) => !v)}><Icon name="bell" size={18} /></ChromeButton>
+          <ChromeButton id="fold-all" title={allOpen ? t("app.foldAll") : t("app.unfoldAll")} aria-label={allOpen ? t("app.foldAll") : t("app.unfoldAll")} onClick={() => ui.setGroups(allOpen ? [] : allIds)}><Icon name={allOpen ? "fold" : "unfold"} /></ChromeButton>
+          <ChromeButton id="collapse" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></ChromeButton>
         </div>
         <SidebarSearch me={me} onOpenSheet={() => setPalette(true)} />
         <nav id="nav" aria-label="GoldGram">
@@ -174,10 +175,10 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           <div className={`status ${health === "ok" ? "ok" : health === "bad" ? "bad" : ""}`} id="status" role="status" aria-live="polite" title={statusText}><i /><div><b>{statusText}</b></div></div>
           <div className="langbar" id="langbar">
             <div className="seg" role="group" aria-label={t("app.language")}>
-              <button aria-pressed={locale === "ar"} lang="ar" onClick={() => locale !== "ar" && router.replace(pathname, { locale: "ar" })}>العربية</button>
-              <button aria-pressed={locale === "en"} lang="en" onClick={() => locale !== "en" && router.replace(pathname, { locale: "en" })}>English</button>
+              <ChromeButton kind="bare" aria-pressed={locale === "ar"} lang="ar" onClick={() => locale !== "ar" && router.replace(pathname, { locale: "ar" })}>العربية</ChromeButton>
+              <ChromeButton kind="bare" aria-pressed={locale === "en"} lang="en" onClick={() => locale !== "en" && router.replace(pathname, { locale: "en" })}>English</ChromeButton>
             </div>
-            <button className="ic-btn short" title={other === "en" ? "English" : "العربية"} aria-label={other === "en" ? "EN English" : "ع العربية"} onClick={() => router.replace(pathname, { locale: other })}>{other === "en" ? "EN" : "ع"}</button>
+            <ChromeButton className="short" title={other === "en" ? "English" : "العربية"} aria-label={other === "en" ? "EN English" : "ع العربية"} onClick={() => router.replace(pathname, { locale: other })}>{other === "en" ? "EN" : "ع"}</ChromeButton>
           </div>
           </div>
           <div className="me" id="me">
@@ -186,13 +187,13 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
               : <span className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</span>}</div>
             <span className="actions">
               <Link className="ic-btn" href="/account" title={t("app.myAccount")} aria-label={t("app.myAccount")}><Icon name="profile" /></Link>
-              <button className="ic-btn" type="button" title={t("app.signOut")} aria-label={t("app.signOut")} onClick={signOut}><Icon name="out" /></button>
+              <ChromeButton title={t("app.signOut")} aria-label={t("app.signOut")} onClick={signOut}><Icon name="out" /></ChromeButton>
             </span>
           </div>
         </div>
       </div></aside>
       <div className="main">
-        <div className="topbar"><button className="ic-btn" id="trigger" type="button" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></button></div>
+        <div className="topbar"><ChromeButton id="trigger" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></ChromeButton></div>
         {me.mustChangePassword || !JOBS_ENABLED ? null : <Suspense><JobBar /></Suspense>}
         <main className="ws" id="ws">
           {me.mustChangePassword ? <ChangePassword forced /> : children}

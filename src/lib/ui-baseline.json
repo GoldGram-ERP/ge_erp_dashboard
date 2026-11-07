@@ -16,7 +16,7 @@
  },
  "src/components/engine/ThingPage.tsx": {
   "U1": 2,
-  "T1": 1,
+  "T1": 0,
   "C1": 0
  },
  "src/components/home/home-view.tsx": {
@@ -24,39 +24,24 @@
   "T1": 2,
   "C1": 0
  },
- "src/components/jobs/jobs-pages.tsx": {
-  "U1": 0,
-  "T1": 1,
-  "C1": 0
- },
  "src/components/label-qr.tsx": {
   "U1": 1,
   "T1": 0,
   "C1": 2
  },
- "src/components/shell/account-view.tsx": {
-  "U1": 0,
-  "T1": 2,
-  "C1": 0
- },
  "src/components/shell/change-password.tsx": {
   "U1": 2,
-  "T1": 3,
-  "C1": 0
- },
- "src/components/shell/search-palette.tsx": {
-  "U1": 0,
-  "T1": 7,
+  "T1": 0,
   "C1": 0
  },
  "src/components/shell/session-lock.tsx": {
   "U1": 1,
-  "T1": 3,
+  "T1": 0,
   "C1": 0
  },
  "src/components/shell/shell.tsx": {
   "U1": 0,
-  "T1": 11,
+  "T1": 0,
   "C1": 1
  },
  "src/things/admin-shared.tsx": {

@@ -1,6 +1,7 @@
 "use client";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { LEVELS, percentOf } from "@/lib/text-size";
 import { useMe } from "@/lib/session";
@@ -26,9 +27,9 @@ export function AccountView() {
           <Kv k={a("pages")} v={String(me.screens.length)} /><Kv k={a("cashDiscount")} v={me.canGiveCashDiscount ? a("allowed") : a("notAllowed")} /></div></div>)}
         <div className="grp-block kv-block"><h3 className="grp-title">{t("shell.userMenu.textSize")}</h3><div className="grp-panel">
           <div className="ts-row" role="group" aria-label={t("shell.userMenu.textSize")}>
-            <button className="btn quiet sm" id="ts-down" type="button" aria-disabled={textStep === 0} onClick={() => setTextStep(textStep - 1)}>{t("shell.userMenu.smallerText")}</button>
+            <Button size="sm" id="ts-down" aria-disabled={textStep === 0} onClick={() => setTextStep(textStep - 1)}>{t("shell.userMenu.smallerText")}</Button>
             <b dir="ltr" id="ts-now">{percentOf(textStep)}</b>
-            <button className="btn quiet sm" id="ts-up" type="button" aria-disabled={textStep === LEVELS.length - 1} onClick={() => setTextStep(textStep + 1)}>{t("shell.userMenu.largerText")}</button>
+            <Button size="sm" id="ts-up" aria-disabled={textStep === LEVELS.length - 1} onClick={() => setTextStep(textStep + 1)}>{t("shell.userMenu.largerText")}</Button>
           </div></div></div>
         <div className="grp-block kv-block"><h3 className="grp-title">{t("access.password.title")}</h3><div className="grp-panel"><ChangePassword /></div></div>
       </div>

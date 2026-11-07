@@ -19,7 +19,7 @@ import { FormPage, FormSheet } from "./FormView";
 import { RecordSheet } from "./RecordSheet";
 import { Table, sortKeysOf } from "./Table";
 import { exportActions } from "@/things/report-export";
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { EmptyState, Icon, Seg, Skeleton, ToastHost, toast, useConfirm } from "./ui";
 
 export type Access = { canOpen?: (keys?: string[]) => boolean; isSuper?: boolean };
@@ -274,7 +274,7 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
         {view.search && (
           <label className="search">
             <Icon name="search" />
-            <input id="q" placeholder={view.search.placeholder ?? L("بحث", "Search")} value={qText} aria-label={L("بحث", "Search")} autoComplete="off" onChange={(e) => setQText(e.target.value)} />
+            <Input id="q" placeholder={view.search.placeholder ?? L("بحث", "Search")} value={qText} aria-label={L("بحث", "Search")} autoComplete="off" onChange={(e) => setQText(e.target.value)} />
           </label>
         )}
         {chips.length > 1 && <Seg label={L("تصفية", "Filter")} items={chips} value={vs.chip} onChange={(id) => set({ chip: id, page: 1 })} />}
