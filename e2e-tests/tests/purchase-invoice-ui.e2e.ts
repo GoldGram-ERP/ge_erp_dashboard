@@ -1,4 +1,4 @@
-import { afterAll } from 'e2e';
+import { afterAll, test as plain } from 'e2e';
 import { test, expect, seed, capture, LANGS, M } from './lib.ts';
 
 // Gold purchase invoice through the real form (issue #2, owner 2026-11-04: one source). The weight is the item weight x the count,
@@ -68,7 +68,7 @@ for (const lang of LANGS) {
   });
 }
 
-test('purchase invoice API: a sent weight is refused, the coded seed invoice cannot be deleted', { tags: ['api', 'purchases'] }, async () => {
+plain('purchase invoice API: a sent weight is refused, the coded seed invoice cannot be deleted', { platforms: ['node'], tags: ['api', 'purchases'] }, async () => {
   S ??= await seed();
   const r = await S.api('POST', '/purchase-invoices', { date: S.day, branchId: S.inv.branchId, lines: [{ itemId: S.item.id, quantity: 1, weight: 5000 }] });
   expect(r.status).toBe(400);

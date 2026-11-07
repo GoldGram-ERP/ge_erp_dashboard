@@ -24,9 +24,10 @@ test('sales return UI: cash refund of a sold piece, body captured, saved', { tag
   await expect.poll(() => seen.length).toBe(1);
   expect(seen[0].body).toMatchObject({ pieceCode: code, cashRefund: 10000 });
   await shot('return-2-saved');
-  const list = (await S.api('GET', '/returns')).body.items as any[];
-  const mine = list.filter((r) => r.pieceCode === code || r.lines?.some?.((l: any) => l.pieceCode === code));
-  expect(mine.length).toBeGreaterThan(0);
+  // the request is captured when it leaves the browser: wait for the saved return to show in the list
+  const find = async () => ((await S.api('GET', '/returns')).body.items as any[]).filter((r) => r.pieceCode === code || r.lines?.some?.((l: any) => l.pieceCode === code));
+  await expect.poll(async () => (await find()).length, { timeout: 15_000 }).toBeGreaterThan(0);
+  const mine = await find();
   for (const r of mine) S.created.returns.push(r.id);
 });
 

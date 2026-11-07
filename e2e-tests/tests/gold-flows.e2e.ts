@@ -1,5 +1,6 @@
 import { afterAll, test as plain } from 'e2e';
 import { test, expect, seed, stamp, apiAs } from './lib.ts';
+import { code6 } from '../../src/lib/code6.ts';
 
 // Gold flows on the real backend: seeded through the API, driven through the UI where noted, cleaned through the normal Delete path.
 let S: Awaited<ReturnType<typeof seed>>;
@@ -37,12 +38,18 @@ plain('sales invoice API: cash, bank and mixed payment bodies, totals, delete', 
 
 test('sales invoice record sheet opens in the UI with print layouts and delete, no edit (en, ar)', { tags: ['e2e', 'sales'], requires: ['browser'] }, async ({ go, screen, browser, shot }) => {
   await need();
+  if (!S.created.invoices.length) { // each target seeds on its own, so the API test above has not run here: sell one piece for this test
+    const mk = (cash: number) => S.api('POST', '/sales-invoices', { branchId: (S as any).inv.branchId, invoiceType: 'sale', ...cust, lines: [{ pieceCode: S.pieces[0].pieceCode }], cash });
+    const sold = await mk((await mk(1)).body.values.total);
+    expect(sold.status).toBe(201);
+    S.created.invoices.push(sold.body.id);
+  }
   const id = S.created.invoices[0];
   const num = (await S.api('GET', `/sales-invoices/${id}`)).body.invoiceNumber;
   for (const lang of ['en', 'ar'] as const) {
     await go('superadmin', '/sales/invoices', lang);
     await shot(`sales-${lang}-list`);
-    await screen.getByText(String(num), { exact: true }).first().tap();
+    await screen.getByText(code6(num), { exact: true }).first().tap();
     await expect(browser.locator('[role=dialog]')).toBeVisible();
     await shot(`sales-${lang}-sheet`);
     await expect(screen.getByRole('button', lang === 'en' ? 'Edit' : 'تعديل')).toBeHidden();

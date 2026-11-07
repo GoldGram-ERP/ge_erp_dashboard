@@ -1,4 +1,6 @@
 import { test, expect, LANGS, M, NAV, canOpen, PASSWORD, apiAs, signInApi, type Lang } from './lib.ts';
+// On a phone the side menu is a drawer, closed after every page: open it to reach sign out and the language buttons.
+const menu = async (b: any) => { if (await b.evaluate(() => window.innerWidth <= 900)) { await b.locator('#trigger').tap(); await new Promise((r) => setTimeout(r, 700)); } };
 
 const T = (l: Lang, k: string) => M(l, 'access', k);
 
@@ -27,6 +29,7 @@ for (const lang of LANGS) {
     const hrefs = await browser.evaluate(() => [...document.querySelectorAll('#nav a[href]')].map((a) => a.getAttribute('href')));
     for (const h of want) expect(hrefs).toContain(h);
     expect(want.length).toBeGreaterThan(10);
+    await menu(browser);
     await screen.getByRole('button', M(lang, 'app', 'signOut')).tap();
     await expect(browser).toHaveURL(new RegExp(`/${lang}/sign-in`));
     expect((await browser.cookies()).some((c) => c.name.includes('session_token'))).toBe(false);
@@ -66,10 +69,12 @@ test('language switch flips dir and keeps the brand', { tags: ['smoke'], require
   const read = () => browser.evaluate(() => ({ dir: document.documentElement.dir, lang: document.documentElement.lang, brand: document.body.innerText.includes('GoldGram') }));
   expect(await read()).toMatchObject({ dir: 'rtl', lang: 'ar', brand: true });
   await shot('lang-ar');
+  await menu(browser);
   await screen.getByRole('button', 'English').tap();
   await expect(browser).toHaveURL(/\/en\/?$/);
   expect(await read()).toMatchObject({ dir: 'ltr', lang: 'en', brand: true });
   await shot('lang-en');
+  await menu(browser);
   await screen.getByRole('button', 'العربية').tap();
   await expect(browser).toHaveURL(/\/ar\/?$/);
   expect(await read()).toMatchObject({ dir: 'rtl', brand: true });
