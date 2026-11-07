@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { messageInput, paymentChoices, quoteBody, secondChoices, splitProblem, type Quote, type QuoteForm } from "./sales-desk-quote";
+import { deskChoices, messageInput, paymentChoices, quoteBody, restoreChoices, secondChoices, splitProblem, type DraftChoices, type Quote, type QuoteForm } from "./sales-desk-quote";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 
 const form: QuoteForm = { operation: "sell", metal: "gold", payment: "cash", discountPercent: 0, manualSell: "", manualBuy: "", wrapping: "wrapped", lines: [{ itemId: "a", count: "2" }] };
@@ -40,7 +40,45 @@ describe("payments", () => {
     expect(splitProblem("", 100)).toBe("required");
     expect(splitProblem("0", 100)).toBe("invalid");
     expect(splitProblem("1.01", 100)).toBe("tooBig");
-    expect(splitProblem("1", 100)).toBe("");
+    expect(splitProblem("0.99", 100)).toBe("");
+    expect(splitProblem("1", 100), "nothing would be left for the second method").toBe("tooBig");
+  });
+});
+
+// The desk's choices travel with a draft (backend 0.1.22): what is sent from the desk state and what the desk is rebuilt from.
+const lines = [{ itemId: "a", quantity: 2 }];
+describe("the choices a draft saves", () => {
+  it("a default sell says gold, no percent, no typed price and the one method for the whole total", () => {
+    expect(deskChoices(form, 1000, { split: "" }, lines)).toEqual({ operation: "sell", metal: "gold", paymentMethods: [{ method: "cash", amountPiastres: 1000 }], lines });
+  });
+  it("carries the percent on a sell only, both typed prices as sent (Latin digits), and the wrapping on silver lines only", () => {
+    expect(deskChoices({ ...form, discountPercent: 10, manualSell: "٦٢٥٥.5", manualBuy: "6100" }, 1000, { split: "" }, lines)).toMatchObject({ discountPercent: 10, manualSellPrice: "6255.5", manualBuyPrice: "6100" });
+    expect(deskChoices({ ...form, operation: "buy", discountPercent: 10 }, 1000, { split: "" }, lines)).not.toHaveProperty("discountPercent");
+    expect(deskChoices({ ...form, metal: "silver", wrapping: "unwrapped" }, 1000, { split: "" }, lines).lines).toEqual([{ itemId: "a", quantity: 2, wrapping: "unwrapped" }]);
+    expect(deskChoices(form, 1000, { split: "" }, lines).lines[0]).not.toHaveProperty("wrapping");
+  });
+  it("two methods: the first takes the split, the second the rest; Visa is alone", () => {
+    expect(deskChoices(form, 1000, { payment2: "instapay", split: "4.5" }, lines).paymentMethods).toEqual([{ method: "cash", amountPiastres: 450 }, { method: "instapay", amountPiastres: 550 }]);
+    expect(deskChoices({ ...form, payment: "visa" }, 1000, { split: "" }, lines).paymentMethods).toEqual([{ method: "visa", amountPiastres: 1000 }]);
+  });
+});
+
+describe("the desk rebuilt from a draft", () => {
+  const draft: DraftChoices = { operation: "buy", metal: "silver", discountPercent: 0, manualSellPrice: null, manualBuyPrice: "6100.50", payByVisa: false, totals: { discount: 0 },
+    paymentMethods: [{ method: "cash", amountPiastres: 450 }, { method: "bank_transfer", amountPiastres: 550 }], lines: [{ wrapping: "unwrapped" }] };
+  it("restores Buy/Silver, wrapping, typed prices and the split exactly", () => {
+    expect(restoreChoices(draft)).toEqual({ operation: "buy", metal: "silver", wrapping: "unwrapped", payment: "cash", payment2: "bank_transfer", split: "4.50", pct: 0, manual: { sell: "", buy: "6100.50" }, typedDiscount: "" });
+  });
+  it("a percent discount is the percent, never a typed amount; a typed discount stays typed", () => {
+    expect(restoreChoices({ ...draft, operation: "sell", discountPercent: 10, totals: { discount: 5000 } })).toMatchObject({ pct: 10, typedDiscount: "" });
+    expect(restoreChoices({ ...draft, operation: "sell", discountPercent: 0, totals: { discount: 5000 } })).toMatchObject({ pct: 0, typedDiscount: "50.00" });
+  });
+  it("an older draft (no desk fields) is a gold sell paid in cash, or by Visa when it was", () => {
+    expect(restoreChoices({ totals: { discount: 0 }, lines: [{ wrapping: null }] })).toEqual({ operation: "sell", metal: "gold", wrapping: "wrapped", payment: "cash", payment2: "", split: "", pct: 0, manual: { sell: "", buy: "" }, typedDiscount: "" });
+    expect(restoreChoices({ payByVisa: true, paymentMethods: null, totals: { discount: 0 } }).payment).toBe("visa");
+  });
+  it("one method restores with no second", () => {
+    expect(restoreChoices({ ...draft, paymentMethods: [{ method: "instapay", amountPiastres: 1000 }] })).toMatchObject({ payment: "instapay", payment2: "", split: "" });
   });
 });
 

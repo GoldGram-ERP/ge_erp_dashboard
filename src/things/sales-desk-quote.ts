@@ -1,6 +1,6 @@
 // The Sales desk's link to the backend quote (docs/specs/sales-desk-reference.md sections 4 and 6): the request body from the form, and the
 // WhatsApp builder's input from the answer. No price arithmetic here: every number shown comes from POST /sales-desk/quote.
-import { latinNumber, typedPiastres } from "@/lib/format";
+import { latinNumber, piastresInput, typedPiastres } from "@/lib/format";
 import type { DeskMessageInput } from "./sales-desk-whatsapp";
 
 export type Operation = "sell" | "buy";
@@ -69,5 +69,30 @@ export function messageInput(f: QuoteForm, q: Quote, cash: Quote | null, p: Mess
 export function splitProblem(split: string, total: number): "" | "required" | "invalid" | "tooBig" {
   if (split.trim() === "") return "required";
   const v = typedPiastres(split);
-  return v === undefined || v <= 0 ? "invalid" : v > total ? "tooBig" : "";
+  return v === undefined || v <= 0 ? "invalid" : v >= total ? "tooBig" : "";   // the second method must be left something
+}
+
+export type Chosen = { method: Payment; amountPiastres: number };
+/** The desk's choices a draft keeps (backend 0.1.22), from the desk state: `total` is the quote's total (the one method takes all of it), `lines` the item + count lines to send. */
+export function deskChoices(f: QuoteForm, total: number, p: { payment2?: Payment; split: string }, lines: { itemId: string; quantity: number }[]) {
+  const sell = f.operation === "sell", sellPrice = manualPrice(f.manualSell).value, buyPrice = manualPrice(f.manualBuy).value;
+  const first = p.payment2 ? typedPiastres(p.split) ?? 0 : total;
+  const paymentMethods: Chosen[] = [{ method: f.payment, amountPiastres: first }, ...(p.payment2 ? [{ method: p.payment2, amountPiastres: total - first }] : [])];
+  return {
+    operation: f.operation, metal: f.metal, ...(sell && f.discountPercent ? { discountPercent: f.discountPercent } : {}),
+    ...(sellPrice ? { manualSellPrice: sellPrice } : {}), ...(buyPrice ? { manualBuyPrice: buyPrice } : {}), paymentMethods,
+    lines: lines.map((l) => (f.metal === "silver" ? { ...l, wrapping: f.wrapping } : l)),
+  };
+}
+
+export type DraftChoices = { operation?: Operation; metal?: Metal; discountPercent?: number; manualSellPrice?: string | null; manualBuyPrice?: string | null; payByVisa?: boolean; paymentMethods?: Chosen[] | null;
+  totals?: { discount?: number }; lines?: { wrapping?: Wrapping | null }[] };
+/** The desk state a saved draft is rebuilt from; an older draft (no desk fields) is a gold sell paid in cash. */
+export function restoreChoices(x: DraftChoices) {
+  const methods = x.paymentMethods ?? [], pct = x.discountPercent ?? 0, discount = x.totals?.discount ?? 0;
+  return {
+    operation: x.operation ?? "sell", metal: x.metal ?? "gold", wrapping: x.lines?.[0]?.wrapping ?? "wrapped",
+    payment: methods[0]?.method ?? (x.payByVisa ? "visa" : "cash"), payment2: methods[1]?.method ?? "", split: methods[1] ? piastresInput(methods[0].amountPiastres) : "",
+    pct, manual: { sell: x.manualSellPrice ?? "", buy: x.manualBuyPrice ?? "" }, typedDiscount: pct === 0 && discount > 0 ? piastresInput(discount) : "",
+  } as { operation: Operation; metal: Metal; wrapping: Wrapping; payment: Payment; payment2: Payment | ""; split: string; pct: number; manual: { sell: string; buy: string }; typedDiscount: string };
 }
