@@ -84,6 +84,9 @@
 .tk-list{list-style:none;margin:6px 0}
 .tk-list .kv{gap:24px}
 .tk-list [data-bad]{color:var(--warn)}
+/* the amounts strip on a saved draft follows the app text size, like the rest of the desk */
+#sd #tot{grid-template-columns:repeat(auto-fit,minmax(12ch,1fr));width:min(100%,60ch);margin-top:0}
+#sd #tot [data-cell] b{font-size:var(--fs-base);font-weight:650;overflow-wrap:normal}
 .tk-actions{display:flex;flex-wrap:wrap;gap:8px;width:fit-content;max-width:100%;align-self:flex-end}
 
 /* phone: one column, the bottom dock holds the total and Copy */

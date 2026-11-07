@@ -171,6 +171,13 @@ Object.assign(APP, {
 
 // The Sales desk (issue #6, backend #168): a sales agent's numbered drafts, edited until Cairo midnight, completed by an Admin who scans the real pieces.
 Object.assign(APP, {
+  "gold-sales.salesDesk.buyQuoteNote": ["عرض سعر الشراء بيتحفظ كمسودة بس، ومش بيتحوّل لفاتورة أبدًا.", "A Buy quote is saved as a draft only. It is never completed into an invoice."],
+  "gold-sales.salesDesk.refused.discountPercent": ["مينفعش خصم بالنسبة مع خصم نقدي مكتوب. اختار واحد منهم بس.", "A percent discount cannot go with a typed cash discount. Use only one of them."],
+  "gold-sales.salesDesk.refused.discountNotAllowed": ["مفيش عندك صلاحية الخصم النقدي، فمينفعش تحفظ مسودة فيها خصم.", "You do not have the cash discount permission, so a draft with a discount cannot be saved."],
+  "gold-sales.salesDesk.refused.paymentMethods": ["طرق الدفع مش مظبوطة: مجموع المبالغ أكتر من الإجمالي، أو الطرق دي مينفعش تتجمع مع بعض.", "The payment methods are not valid: the amounts together are more than the total, or these methods cannot go together."],
+  "gold-sales.salesDesk.refused.visaAlone": ["الفيزا لازم تكون طريقة الدفع الوحيدة: شيل الكاش والحسابات البنكية المخططة.", "Visa must be the only payment: remove the planned cash and bank rows."],
+  "gold-sales.salesDesk.refused.payByVisa": ["الشراء مينفعش يتدفع بالفيزا.", "A Buy cannot be paid by Visa."],
+  "gold-sales.salesDesk.refused.operation": ["مسودة الشراء مش بتتحوّل لفاتورة.", "A Buy draft cannot be completed into an invoice."],
   "gold-sales.salesDesk.day": ["اليوم", "Day"],
   "gold-sales.salesDesk.total": ["الإجمالي", "Total"],
   "gold-sales.salesDesk.customerCol": ["العميل", "Customer"],

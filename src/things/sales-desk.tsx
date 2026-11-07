@@ -4,6 +4,7 @@
 import type { MakeConfig, ThingConfig } from "@/lib/engine-types";
 import { piastresText } from "@/lib/format";
 import { Ltr, ThingPage } from "@/components/engine";
+import { Status } from "@/components/ui";
 import { useAccess } from "./sales-access";
 import { DraftForm, OpenByNumber } from "./sales-desk-form";
 
@@ -28,7 +29,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       ],
       paging: { sizeParam: null, sizes: [20], size: 20 },
       columns: [
-        { key: "draftNumber", label: d("draftNumberShort"), render: (r) => <Ltr>{r.draftNumber}</Ltr> },
+        { key: "draftNumber", label: d("draftNumberShort"), render: (r) => <><Ltr>{r.draftNumber}</Ltr> {r.operation === "buy" && <Status tone="warn" data-operation="buy">{d("desk.buy")}</Status>}</> },
         { key: "customerName", label: d("customerCol") },
         { key: "customerPhone", label: d("phoneCol"), render: (r) => <Ltr>{r.customerPhone}</Ltr> },
         { key: "total", label: d("total"), render: (r) => <Ltr>{piastresText(r.totals?.total ?? 0)}</Ltr>, className: "num" },
