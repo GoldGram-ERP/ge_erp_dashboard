@@ -1012,12 +1012,18 @@ input[role=switch]:checked::before{inset-inline-start:14px}
 input[role=switch]:focus-visible{outline:2px solid color-mix(in srgb,var(--gold) 45%,transparent);outline-offset:2px}
 input[role=switch]:disabled{opacity:.5;cursor:not-allowed}
 
-/* Disclosure (the library Disclosure): a small button with a chevron that turns, never a native <details>. */
-.disc-head{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;border-radius:8px;font-size:13px;color:var(--ink-2);cursor:pointer;transition:background .15s}
-.disc-head:hover{background:var(--gold-wash)}
-.disc-head svg{flex:none;transform:rotate(-90deg);transition:transform .18s var(--calm)}
-.disc-head[aria-expanded=true] svg{transform:rotate(90deg)}
-.disc-body{padding:4px 8px 0}
+/* Disclosure (the library Disclosure): a tappable row, label first and a chevron at the trailing end that turns 180deg; hugs its content, 44px hit area, opens with a short height + opacity transition. */
+.disc-head{position:relative;display:inline-flex;align-items:center;gap:.5rem;width:fit-content;max-width:100%;min-height:2rem;padding:.25rem .75rem;line-height:1.4;border-radius:9px;border:0;background:var(--gold-wash);box-shadow:inset 0 0 0 1px var(--line);font:inherit;font-size:.84rem;font-weight:550;color:var(--ink);cursor:pointer;transition:background .15s,transform .12s var(--calm)}
+.disc-head::after{content:"";position:absolute;inset:-4px -2px}
+.disc-head:hover{background:color-mix(in srgb,var(--gold-wash) 70%,var(--gold-tint))}
+.disc-head:active{transform:scale(.98)}
+.disc-head:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gold) 55%,transparent);outline-offset:.125rem}
+.disc-chev{flex:none;color:var(--mute);transition:transform .16s ease}
+.disc-head[aria-expanded=true] .disc-chev{transform:rotate(180deg)}
+.disc-body{display:grid;grid-template-rows:1fr;padding-top:.5rem;animation:disc-in .16s ease}
+.disc-body>div{min-height:0}
+@keyframes disc-in{from{grid-template-rows:0fr;opacity:0;overflow:hidden}to{grid-template-rows:1fr;opacity:1;overflow:hidden}}
+@media (prefers-reduced-motion:reduce){.disc-chev{transition:none}.disc-body{animation:none}.disc-head{transition:none}.disc-head:active{transform:none}}
 /* TextButton (the library TextButton): looks like text, still a real button. */
 .tbtn{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
 .tbtn:focus-visible{outline:2px solid color-mix(in srgb,var(--gold) 45%,transparent);outline-offset:2px;border-radius:4px}

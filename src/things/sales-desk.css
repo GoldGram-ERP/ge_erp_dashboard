@@ -31,9 +31,9 @@
   .tk-grid{grid-template-columns:minmax(0,680px) minmax(320px,380px);justify-content:start;grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr}
 }
 @container tk (min-width:1024px){
-  .tk-sticky{position:sticky;top:12px;max-height:calc(100dvh - 24px);overflow-y:auto;padding:2px}
+  .tk-sticky[data-fit=true]{position:sticky;top:12px}  /* sticks only while the whole summary fits the screen; taller, it flows with the page (one scroll per screen) */
 }
-.tk-sticky{display:grid;gap:12px}
+.tk-sticky{display:grid;gap:12px;padding:2px}
 .tk-card{background:var(--surface);border-radius:12px;box-shadow:0 0 0 1px var(--line);padding:12px 14px;display:grid;gap:10px;justify-items:start;min-width:0}
 #sd fieldset.tk-card{padding:12px 14px}
 .tk-card .disc,.tk-card .field{justify-self:start}
@@ -55,7 +55,6 @@
 .tk-qty input{width:calc(6ch + 16px);height:var(--h-btn-sm);padding:0 6px;border:0;border-radius:8px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);outline:0;text-align:center;font:inherit;font-variant-numeric:tabular-nums;color:var(--ink)}
 .tk-qty input:focus{box-shadow:inset 0 0 0 2px var(--gold)}
 .tk-lp{min-width:10ch;text-align:end;font-variant-numeric:tabular-nums;font-weight:600}
-.tk-cust .disc-head{margin-inline-start:-8px}
 .tk-save{width:fit-content;max-width:100%}
 .tk-cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),max-content));gap:10px 14px;align-items:start;padding-top:6px}
 
@@ -76,7 +75,7 @@
 .tk-pay{gap:12px}
 .tk-prow{display:grid;gap:4px;justify-items:start}
 .tk-remain{display:flex;align-items:center;gap:12px}
-.tk-bubble{width:fit-content;max-width:100%;max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;padding:10px 14px;font-size:13px;line-height:1.75;border-radius:16px;border-end-start-radius:5px;background:color-mix(in srgb,var(--gold-tint) 55%,#fff);box-shadow:inset 0 0 0 1px var(--line)}
+.tk-bubble{width:fit-content;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;padding:10px 14px;font-size:13px;line-height:1.75;border-radius:16px;border-end-start-radius:5px;background:color-mix(in srgb,var(--gold-tint) 55%,#fff);box-shadow:inset 0 0 0 1px var(--line)}
 
 /* zone C: save as draft, totals, complete; an action bar hugs its buttons and sits at the end edge, never full width (owner rule 2026-11-06) */
 .tk-draft{display:grid;gap:12px;justify-items:start;padding-top:4px}

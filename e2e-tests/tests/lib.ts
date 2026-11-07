@@ -135,8 +135,8 @@ export async function scan(browser: any): Promise<string[]> {
 // The machine eye of the e2ev "Eyes" mechanism: measures the rendered page and returns one text line per defect (empty = clean).
 // Run it on every state a UI test screenshots, on both targets and both languages, and `expect(await layoutAudit(browser, '#root')).toEqual([])`.
 // opts.bars (the sales desk): the owner's no-stretched-bar rule, see check 7. Other screens still have a full-width sticky .formbar, so it is opt-in until they are moved.
-export async function layoutAudit(browser: any, root = 'body', opts: { bars?: boolean } = {}): Promise<string[]> {
-  return (await browser.evaluate((rootSel: string, withBars: boolean) => {
+export async function layoutAudit(browser: any, root = 'body', opts: { bars?: boolean; scroll?: boolean } = {}): Promise<string[]> {
+  return (await browser.evaluate((rootSel: string, withBars: boolean, withScroll: boolean) => {
     const out: string[] = [];
     const base = document.querySelector(rootSel) ?? document.body;
     const R = (e: Element) => e.getBoundingClientRect();
@@ -218,6 +218,27 @@ export async function layoutAudit(browser: any, root = 'body', opts: { bars?: bo
         }
       }
     }
+    // 8 (opt-in, opts.scroll) ONE vertical scroll per screen (owner rule 2026-11-07): the work area (.ws / the page) is the only vertical scroller on content.
+    // A content element that really scrolls vertically (or is capped with a max-height + overflow) inside the page, or inside another scroller, is a nested scroll.
+    // Exempt, with reasons: the side nav (its own column), a modal sheet / dialog body (scrolls its own body when taller than the screen), popup lists (overlays; open one is the only scrollable thing).
+    // Tables scroll horizontally only: a table wrapper that scrolls vertically is flagged too.
+    if (withScroll) {
+      const EXEMPT = 'aside, nav, .sheet, dialog, [role=dialog], .sel-pop, .usearch-pop, .notif, .pal-list';
+      const sc = (e: Element, y = true) => { const cs = getComputedStyle(e); return /auto|scroll|overlay/.test(y ? cs.overflowY : cs.overflowX); };
+      for (const e of Array.from(base.querySelectorAll('*'))) {
+        if (e.closest(EXEMPT) || !shown(e) || e.matches('html, body') ) continue;
+        const cs = getComputedStyle(e);
+        const scrolls = sc(e) && e.scrollHeight > e.clientHeight + 1;
+        const capped = sc(e) && cs.maxHeight !== 'none' && !e.matches('.ws');
+        if (scrolls || capped) {
+          const outer = e.parentElement?.closest('.ws, [class]') ?? null;
+          let a: Element | null = e.parentElement; let inside = false;
+          while (a && a !== document.body) { if (a.matches('.ws') || (sc(a) && a.scrollHeight > a.clientHeight + 1)) { inside = true; break; } a = a.parentElement; }
+          void outer;
+          if (inside || capped) out.push(`nested scroll: ${name(e)} ${scrolls ? 'scrolls' : 'is capped'} (scrollHeight ${e.scrollHeight}, clientHeight ${e.clientHeight}, max-height ${cs.maxHeight}) inside ${a ? name(a) : 'the page'}`);
+        }
+      }
+    }
     // 7 sortable tables: every header with a title is a sort button (aria-sort + a real <button>) or declared non-sortable; none is a dead title
     for (const th of Array.from(base.querySelectorAll('table th')).filter(shown)) {
       const t = (th.textContent ?? '').trim(), st = (th as HTMLElement).dataset.sort;
@@ -233,5 +254,5 @@ export async function layoutAudit(browser: any, root = 'body', opts: { bars?: bo
       } else if (t && st !== 'off') out.push(`dead table header (not sortable, not declared): "${t.slice(0, 18)}" in ${th.closest('table')?.id || name(th.closest('table') ?? th)}`);
     }
     return out;
-  }, root, Boolean(opts.bars))) as string[];
+  }, root, Boolean(opts.bars), Boolean(opts.scroll))) as string[];
 }

@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Sales desk: the summary and the WhatsApp message no longer scroll inside the page, and the show / hide rows (customer, save as draft) now look like buttons with an arrow.",
+    "ar": "شاشة البيع: الملخص ورسالة الواتساب مبقوش بيعملوا سكرول جوه الصفحة، وصفوف إظهار/إخفاء (بيانات العميل وحفظ كمسودة) بقت شكلها زرار وفيها سهم.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.33",
   "date": "2026-11-07",
   "changes": [

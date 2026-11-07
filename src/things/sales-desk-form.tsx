@@ -72,6 +72,13 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [general, setGeneral] = useState("");
   const [payRefusal, setPayRefusal] = useState<{ total: number; paid: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const sumRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { // the summary sticks only while it fits the screen; taller, it flows with the page (never its own scrollbar)
+    const el = sumRef.current; if (!el) return;
+    const fit = () => { el.dataset.fit = String(el.offsetHeight + 24 <= window.innerHeight); };
+    const ro = new ResizeObserver(fit); ro.observe(el); window.addEventListener("resize", fit); fit();
+    return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
+  }, []);
   const saveKey = useRef(newSaveKey());
   const touch = () => { saveKey.current = newSaveKey(); setDirty(true); setGeneral(""); setPayRefusal(null); };
 
@@ -388,7 +395,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             </Disclosure>
           </fieldset>
 
-          <div className="tk-b"><div className="tk-sticky">
+          <div className="tk-b"><div className="tk-sticky" ref={sumRef}>
             <section className="tk-card" id="sec-prices">
               <div className="tk-prices">
                 {(["sell", "buy"] as const).map((s) => (
