@@ -30,7 +30,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       search: { param: "search", placeholder: m("searchPlaceholder") },
       chips: [{ id: "all", label: L("الكل", "All") }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
       paging: { sizeParam: null },
-      serverSort: { on: false, columns: { branchCode: "branchCode", branchName: "branchName" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
+      serverSort: { on: true, columns: { branchCode: "branchCode", branchName: "branchName" } },   // the backend takes sort/dir for this list (ge_erp_backend 0.1.23); see ViewConfig.serverSort
       columns: [
         { key: "branchCode", label: m("branchCode"), get: (r) => code(r.branchCode) },
         { key: "branchName", label: m("branchName") },
