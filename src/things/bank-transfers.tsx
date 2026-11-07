@@ -29,7 +29,7 @@ export function buildConfig(tr: Tr, me?: Me | null): ThingConfig {
       { name: "toDate", label: m("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) },
     ],
     paging: { sizeParam: null },      // the list takes only `page`
-    serverSort: { on: false, columns: { date: "date", documentNumber: "documentNumber", amount: "amount" } },   // OFF until the backend takes sort/dir for this list; see ViewConfig.serverSort
+    serverSort: { on: true, columns: { date: "date", documentNumber: "documentNumber", amount: "amount" } },   // backend BANK_TRANSFER_SORT
     columns: [
       { key: "documentNumber", label: m("documentNumber"), render: (r) => <><Ltr>{code6(r.documentNumber)}</Ltr>{r.deletedAt && <> <span className="st off"><i />{m("deletedBadge")}</span></>}</> },
       { key: "branchName", label: m("branchName") },
