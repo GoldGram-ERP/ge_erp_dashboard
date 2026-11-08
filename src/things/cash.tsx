@@ -1,13 +1,13 @@
 "use client";
 // حركات النقدية: money/cash = cash-accounts/{cash-movements, cash-movements-history, safe-statement, safe-balances}. Ported from docs/nav-preview/app/things/cash.js.
-// Views: movement history EGP and gold (dates, search, deleted-only for the Super admin), safe statement, safe balances.
-// A row of the history opens the movement. Add pages: cash-movement-form.tsx (one per asset). Delete: cash movements only.
+// Views: movement history EGP (dates, search, deleted-only for the Super admin), safe statement, safe balances. No gold movements screen.
+// A row of the history opens the movement. Add page: cash-movement-form.tsx (EGP). Delete: cash movements only.
 import type { Column, FilterConfig, MakeConfig, ThingConfig, ViewConfig } from "@/lib/engine-types";
 import { dateTimeText, dateText, milligramsText, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { ThingPage, Kv, Ltr, Section, cellNode } from "@/components/engine";
 import { useAccess } from "./sales-access";
-import { EgpMovementForm, GoldMovementForm } from "./cash-movement-form";
+import { EgpMovementForm } from "./cash-movement-form";
 import { branchSpec, code6, dict, foot, moneyNode, useMakeConfig } from "./money-shared";
 
 export function buildConfig(tr: Tr, isSuper: boolean): ThingConfig {
@@ -43,25 +43,6 @@ export function buildConfig(tr: Tr, isSuper: boolean): ThingConfig {
       { key: "date", label: m("date"), type: "date" },
       { key: "note", label: m("note"), render: note },
       { key: "amount", label: m("amount"), type: "money" },
-    ],
-  };
-
-  // The bulk gold movements (GET /gold-movements): page, dates and deleted only.
-  const gold: ViewConfig = {
-    id: "gold", label: `${m("listTitle")} · ${m("gold")}`, keys: ["cash-accounts/cash-movements-history"],
-    endpoint: "/gold-movements", rowKey: "id",
-    filters: [from(m("fromDate")), to(m("toDate")), ...deletedBox()],
-    paging: { sizeParam: null, sizes: [20], size: 20 },
-    rowClass: (r) => (r.deletedAt ? "deleted" : ""),
-    columns: [
-      { key: "documentNumber", label: m("code"), render: num },
-      { key: "date", label: m("date"), type: "date" },
-      { key: "branchName", label: m("branchName") },
-      { key: "treasuryName", label: m("treasury"), render: (r) => <>{r.treasuryName} <Ltr>{code6(r.treasuryCode)}</Ltr></> },
-      { key: "movementType", label: m("movementType"), type: "status", statuses: typeBadge },
-      { key: "karat", label: m("karat"), render: (r) => <Ltr>{r.karat}</Ltr> },
-      { key: "weightMg", label: m("weight"), type: "weight" },
-      { key: "note", label: m("note"), render: note },
     ],
   };
 
@@ -112,11 +93,10 @@ export function buildConfig(tr: Tr, isSuper: boolean): ThingConfig {
     title: m("title"),
     unit: L("حركة", "movement"),
     keys: ["cash-accounts/cash-movements", "cash-accounts/cash-movements-history", "cash-accounts/safe-statement", "cash-accounts/safe-balances"],
-    views: [egp, gold, statement, balances].map(withRow),
-    // Header buttons: one per asset (the dashboard has one form with an Asset toggle, default EGP).
+    views: [egp, statement, balances].map(withRow),
+    // One header button: the EGP movement. There is no gold movement screen or button (the business has cash only).
     create: [
       { form: "createEgp", label: `${m("add")} · ${m("egp")}`, keys: ["cash-accounts/cash-movements"] },
-      { form: "createGold", label: `${m("add")} · ${m("gold")}`, keys: ["cash-accounts/cash-movements"] },
     ],
     record: {
       title: (r) => `${m("recordNo")} ${code6(r.documentNumber)}`,
@@ -147,7 +127,6 @@ export function buildConfig(tr: Tr, isSuper: boolean): ThingConfig {
     },
     forms: {
       createEgp: { display: "page", title: `${m("new")} · ${m("egp")}`, fields: [], path: () => "/cash-movements", custom: EgpMovementForm },
-      createGold: { display: "page", title: `${m("new")} · ${m("gold")}`, fields: [], path: () => "/gold-movements", custom: GoldMovementForm },
     },
   };
 }

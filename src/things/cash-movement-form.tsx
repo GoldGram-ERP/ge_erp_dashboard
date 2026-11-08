@@ -22,7 +22,6 @@ const AMOUNT_MAX = 9_999_999_999_999;   // piastres, backend cap
 const WEIGHT_MAX_MG = 9_999_999_999;
 
 export const EgpMovementForm = (p: CustomFormProps) => <MovementForm kind="egp" {...p} />;
-export const GoldMovementForm = (p: CustomFormProps) => <MovementForm kind="gold" {...p} />;
 
 function MovementForm({ kind, tr, close }: CustomFormProps & { kind: "egp" | "gold" }) {
   const { t, L } = tr;
