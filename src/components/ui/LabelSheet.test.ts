@@ -25,3 +25,19 @@ describe("label sheet", () => {
     expect(pageSize("a4")).toBe("A4;margin:10.7mm 4.7mm");
   });
 });
+
+describe("the text of a label fits its size", () => {
+  it("a 30 x 10 mm tag sets its four lines small (5.5pt, tight lines) so the code and the price are not cut off; an A4 label keeps 7pt", () => {
+    const tag = html(1, "tag"), a4 = html(1, "a4");
+    expect(tag).toContain("width:30mm;height:10mm");
+    expect(tag).toContain("font-size:5.5pt");
+    expect(tag).toContain("line-height:1.1");
+    expect(a4).toContain("font-size:7pt");
+    expect(a4).toContain("line-height:1.3");
+  });
+  it("four lines of 5.5pt at line height 1.1 are at most the 10 mm of the label", () => {
+    const mm = (pt: number) => (pt * 25.4) / 72;
+    expect(4 * mm(5.5) * 1.1).toBeLessThanOrEqual(10);
+    expect(4 * mm(7) * 1.3).toBeGreaterThan(10);   // why the 7pt text was cut off
+  });
+});

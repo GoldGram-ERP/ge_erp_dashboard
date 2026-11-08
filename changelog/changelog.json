@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Piece labels (30 x 10 mm): the text is smaller and tighter so the piece code, the name, the karat and weight, and the price all fit; before, the code and the price were cut off.",
+    "ar": "ملصقات القطع (٣٠ × ١٠ مم): الكلام بقى أصغر ومضغوط شوية عشان كود القطعة والاسم والعيار والوزن والسعر كلهم يظهروا؛ قبل كده الكود والسعر كانوا بيتقطعوا.",
+    "route": "/sales/pieces"
+   }
+  ]
+ },
+ {
   "version": "1.0.52",
   "date": "2026-11-08",
   "changes": [
