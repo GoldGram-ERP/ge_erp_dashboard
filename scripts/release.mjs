@@ -17,6 +17,22 @@ const runNpm = (args) =>
     ? run("cmd", ["/c", "npm.cmd", ...args])
     : run("npm", args);
 
+// Two people must never cut the same version (owner, 2026-11-08). Before anything is bumped: look at what GitHub already has.
+// Refuse while this branch is behind origin/main, and refuse when the next tag exists locally or on GitHub; the message says what to do.
+const out = (cmd, args) => execFileSync(cmd, args, { encoding: "utf8" }).trim();
+run("git", ["fetch", "origin", "--tags", "--force", "--quiet"]);
+const behind = Number(out("git", ["rev-list", "--count", "HEAD..origin/main"]));
+if (behind > 0) {
+  console.error(`Not releasing: this branch is ${behind} commit(s) behind origin/main (someone pushed). Run \`git rebase origin/main\`, then \`npm run release\` again so the version follows the latest one on GitHub.`);
+  process.exit(1);
+}
+const [maj, min, pat] = JSON.parse(readFileSync("package.json", "utf8")).version.split(".").map(Number);
+const next = `v${maj}.${min}.${pat + 1}`;
+if (out("git", ["tag", "-l", next]) || out("git", ["ls-remote", "--tags", "origin", next])) {
+  console.error(`Not releasing: tag ${next} already exists (local or on GitHub). Pull the latest, check package.json matches the newest GitHub release, then try again.`);
+  process.exit(1);
+}
+
 const skipLog = process.argv.includes("--skip-changelog");
 if (!skipLog) stampNext(load(), "0.0.0", ""); // refuse before any bump when there are no lines
 runNpm(["version", "patch", "--no-git-tag-version"]);
@@ -32,3 +48,4 @@ run("git", ["commit", "-q", "-m", `Version ${version}`]);
 run("git", ["tag", "-a", `v${version}`, "-m", `Version ${version}`]);
 
 console.log(version);
+console.log(`Next: git push origin HEAD:main --follow-tags, then npm run release:publish (creates the GitHub release v${version} beside the tag).`);
