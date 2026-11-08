@@ -456,6 +456,8 @@
    "fromDate": "From date",
    "toDate": "To date",
    "balanceBefore": "Balance before",
+   "balanceAfter": "Closing balance",
+   "net": "Net",
    "accountRequired": "Choose the account.",
    "types": {
     "deposit": "Deposit",
@@ -2851,7 +2853,8 @@
   "statement": {
    "title": "Treasury statement",
    "opening": "Opening balance",
-   "closing": "Closing balance"
+   "closing": "Closing balance",
+   "net": "Net of the period"
   },
   "branch": "Branch",
   "treasury": "Treasury",
@@ -2886,7 +2889,8 @@
    "date": "Date",
    "movementKind": "Movement",
    "in": "In",
-   "out": "Out"
+   "out": "Out",
+   "balance": "Balance"
   },
   "lineKinds": {
    "deposit": "Deposit",
