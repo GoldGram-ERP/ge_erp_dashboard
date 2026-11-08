@@ -16,6 +16,7 @@ import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
 import { SearchPalette, SidebarSearch } from "./search-palette";
 import { DASHBOARD_VERSION } from "@/version";
+import { identifyForRum } from "@/lib/rum";
 
 const JOBS_ITEMS = [["", "jobsHome"], ["questions", "jobsQuestions"], ["todo", "jobsTodo"]] as const;
 const narrow = () => matchMedia("(max-width:900px)").matches;
@@ -27,6 +28,8 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const me = data ?? initialMe;
   const t = useTranslations();
   const pathname = usePathname();
+  // Real user monitoring: the session belongs to this user id and role, nothing more (src/lib/rum.ts).
+  useEffect(() => identifyForRum(me), [me.id, me.userType]); // eslint-disable-line react-hooks/exhaustive-deps
   // WCAG 2.4.2: each route gets a title from its page heading ("Users - GoldGram").
   useEffect(() => {
     let n = 0;

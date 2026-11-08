@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { csp } from "../../next.config.mjs";
-import { RUM_DATA_ORIGIN, RUM_SCRIPT_ORIGIN, RUM_TOKEN, rumSnippet } from "./rum";
+import { identifyForRum, RUM_DATA_ORIGIN, RUM_SCRIPT_ORIGIN, RUM_TOKEN, rumIdentity, rumSnippet } from "./rum";
 
 describe("Better Stack real user monitoring tag", () => {
   test("is added to production builds, with the token and the dashboard version", () => {
@@ -24,6 +24,28 @@ describe("Better Stack real user monitoring tag", () => {
 
   test("the shipped token is a plain token", () => {
     expect(rumSnippet(RUM_TOKEN, "1.0.38", "production")).not.toBeNull();
+  });
+});
+
+describe("identifying the signed-in person", () => {
+  const me = { id: "42", name: "Ahmed Ali", username: "ahmed.ali", email: "ahmed@gold-era.com", userType: "admin" };
+
+  test("sends only the internal id and the role, never a name, username or email", () => {
+    expect(rumIdentity(me)).toEqual({ id: "42", user_type: "admin" });
+    expect(JSON.stringify(rumIdentity(me))).not.toMatch(/Ahmed|ahmed|gold-era/);
+  });
+
+  test("calls the tag with that identity", () => {
+    const calls: unknown[][] = [];
+    identifyForRum(me, { betterstack: (...a) => calls.push(a) });
+    expect(calls).toEqual([["user", { id: "42", user_type: "admin" }]]);
+  });
+
+  test("does nothing without a signed-in person or without the tag", () => {
+    const calls: unknown[][] = [];
+    identifyForRum(null, { betterstack: (...a) => calls.push(a) });
+    identifyForRum(me, {});
+    expect(calls).toEqual([]);
   });
 });
 
