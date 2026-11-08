@@ -147,6 +147,10 @@ tr.flash td{animation:flash 1.6s ease-out}
 .field[data-err] input,.field[data-err] select,.field[data-err] textarea{box-shadow:inset 0 0 0 2px var(--warn)}
 .field .err{color:var(--warn);font-size:12.5px;margin-top:4px}
 .field .help{color:var(--mute);font-size:12.5px;margin-top:4px}
+/* A row of fields that sit side by side (filters, scan row, desk header) is bottom-aligned, so an error or help line under ONE field used to push its neighbours down and break the label line (Arabic and English alike). Here the message hangs under its own field without taking row height; the row makes room only while a message shows. */
+:is(.filters,.scanrow,.tk-chips)>.field{position:relative}
+:is(.filters,.scanrow,.tk-chips)>.field>:is(.err,.help){position:absolute;inset-inline-start:0;top:100%;margin-top:2px;max-width:max(100%,220px);white-space:normal;line-height:1.3}
+:is(.filters,.scanrow,.tk-chips):has(>.field>:is(.err,.help)){padding-bottom:30px}
 .field.check{display:flex;align-items:center;gap:8px}
 .field.check input{width:18px;height:18px;accent-color:var(--gold)}
 .field.check label{margin:0;font-size:13px;color:var(--ink);font-weight:500}
