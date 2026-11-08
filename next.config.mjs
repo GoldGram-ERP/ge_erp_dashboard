@@ -7,13 +7,16 @@ const apiUrl = process.env.API_URL?.replace(/\/$/, "");
 
 // CSP: scripts only from this site. 'unsafe-inline' stays for script-src because Next's hydration data and the before-paint snippet are inline
 // and the print windows (about:blank, they inherit this policy) use onclick; shortcut: move to a per-request nonce in proxy.ts to drop it.
+// The one outside party is Better Stack real user monitoring (src/lib/rum.ts): its tag script, and where it sends what it collects.
+export const RUM_SCRIPT_ORIGIN = "https://betterstack.net";
+export const RUM_DATA_ORIGIN = "https://*.betterstackdata.com";
 export const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
+  `script-src 'self' 'unsafe-inline' ${RUM_SCRIPT_ORIGIN}${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  `connect-src 'self' ${RUM_SCRIPT_ORIGIN} ${RUM_DATA_ORIGIN}`,
   "media-src 'self' blob:",
   "worker-src 'self' blob:",
   "frame-src 'none'",

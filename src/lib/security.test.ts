@@ -9,7 +9,9 @@ describe("response headers", () => {
     const h = Object.fromEntries(rules[0].headers.map((x: any) => [x.key, x.value]));
     expect(h["Content-Security-Policy"]).toBe(csp);
     expect(csp).toMatch(/script-src 'self'/);
-    expect(csp).not.toMatch(/script-src[^;]*https?:/);
+    // The one outside script origin is Better Stack's monitoring tag (src/lib/rum.ts); nothing else.
+    const scriptSrc = csp.split("; ").find((d: string) => d.startsWith("script-src ")) ?? "";
+    expect(scriptSrc.match(/https?:\/\/[^\s;]+/g) ?? []).toEqual(["https://betterstack.net"]);
     for (const d of ["frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'", "form-action 'self'", "connect-src 'self'"]) expect(csp).toContain(d);
     expect(h["Strict-Transport-Security"]).toMatch(/max-age=\d{7,}/);
     expect(h["Permissions-Policy"]).toContain("camera=(self)");
