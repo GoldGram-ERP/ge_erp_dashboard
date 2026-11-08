@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales desk: the customer section title no longer says optional.",
+    "ar": "مكتب المبيعات: عنوان قسم العميل مبقاش مكتوب فيه اختياري.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.48",
   "date": "2026-11-08",
   "changes": [

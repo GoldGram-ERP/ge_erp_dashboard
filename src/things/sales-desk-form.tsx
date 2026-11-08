@@ -393,7 +393,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                 </ul>}
             </section>}
             {stepBranch && <Divider />}
-            {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust tk-reveal" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("بيانات العميل (اختياري)", "Customer (optional)")}>
+            {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust tk-reveal" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("بيانات العميل", "Customer")}>
               <div className="tk-cgrid">
                 <TextBox kind="text" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
                 <TextBox kind="code" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
