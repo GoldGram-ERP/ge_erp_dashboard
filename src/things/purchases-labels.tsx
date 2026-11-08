@@ -12,7 +12,7 @@ import { printLabels } from "@/components/ui/label-print";
 const pc = (tr: Tr, k: string, v?: Record<string, string | number>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
 
 // label = { pieceCode, labelKind: "qr"|"barcode", itemName, karat, weight (mg), tagPrice (piastres, 0 = none) }
-export const labelOf = (p: Row) => ({ pieceCode: p.pieceCode, labelKind: p.labelKind, itemName: p.itemName, karat: p.karat, weight: p.weight, tagPrice: p.tagPrice });
+export const labelOf = (p: Row) => ({ pieceCode: p.pieceCode, labelKind: p.labelKind, itemName: p.itemNickname ?? p.itemName, karat: p.karat, weight: p.weight, tagPrice: p.tagPrice });
 
 /** The labels card: title, count, layout choice, Print (the print happens in its own window: see label-print.tsx). */
 export function LabelsCard({ title, labels, tr }: { title: string; labels: Row[]; tr: Tr }) {

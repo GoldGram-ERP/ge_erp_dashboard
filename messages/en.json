@@ -1141,6 +1141,8 @@
    "properties": "Properties",
    "itemCode": "Item code",
    "itemName": "Item name",
+   "nickname": "Nickname",
+   "nicknameHelp": "Printed on the piece label and the sales invoice instead of the item name. Leave empty to print the item name.",
    "coding": "Coding",
    "coded": "Coded",
    "notCoded": "Not coded",

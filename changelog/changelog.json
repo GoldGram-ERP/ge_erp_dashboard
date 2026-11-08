@@ -13,6 +13,12 @@
     "en": "An expense type or a bank account that live documents still use can no longer be deleted: the message says how many of each (delete those first). The branch message now counts every kind too.",
     "ar": "نوع المصروف أو الحساب البنكي اللي لسه فيه مستندات شغالة مبقاش ينفع يتحذف: الرسالة بتقول كام مستند من كل نوع (احذفها الأول). ورسالة الفرع كمان بقت بتعدّ كل الأنواع.",
     "route": "/money/banks"
+   },
+   {
+    "kind": "new",
+    "en": "Items: a new Nickname field (create and edit). When an item has one, the piece label and the sales invoice print show it instead of the item name; everywhere else the item name stays.",
+    "ar": "الأصناف: حقل جديد اسم الشهرة (في الإضافة والتعديل). لو الصنف ليه اسم شهرة، ملصق القطعة وفاتورة البيع بيطبعوه بدل البيان؛ وفي أي مكان تاني البيان زي ما هو.",
+    "route": "/buy/items"
    }
   ]
  },

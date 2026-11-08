@@ -104,7 +104,7 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
       {kind === "category" && <><Kv k={m("categories.categoryCode")}><Ltr>{code6(r.categoryCode)}</Ltr></Kv><Kv k={m("categories.categoryName")}>{r.categoryName}</Kv><Kv k={m("categories.qrLabel")}>{yesNo(r.qrLabel)}</Kv></>}
       {kind === "name" && <><Kv k={m("itemNames.itemNameCode")}><Ltr>{code6(r.itemNameCode)}</Ltr></Kv><Kv k={m("itemNames.itemName")}>{r.itemName}</Kv><Kv k={m("itemNames.categoryId")}>{r.categoryName}</Kv></>}
       {kind === "item" && <>
-        <Kv k={m("items.itemCode")}><Ltr>{code6(r.itemCode)}</Ltr></Kv><Kv k={m("items.itemName")}>{r.itemName}</Kv><Kv k={m("items.coding")}>{m(r.isCoded ? "items.coded" : "items.notCoded")}</Kv>
+        <Kv k={m("items.itemCode")}><Ltr>{code6(r.itemCode)}</Ltr></Kv><Kv k={m("items.itemName")}>{r.itemName}</Kv><Kv k={m("items.nickname")}>{r.nickname || "—"}</Kv><Kv k={m("items.coding")}>{m(r.isCoded ? "items.coded" : "items.notCoded")}</Kv>
         <Kv k={m("items.itemType")}>{m(`items.itemTypes.${r.itemType}`)}</Kv><Kv k={m("items.categoryId")}>{r.categoryName}</Kv><Kv k={m("items.karat")}><Ltr>{r.karat}</Ltr></Kv>
         <Kv k={m("items.weightG")}><Ltr>{r.weight == null ? "" : milligramsText(r.weight)}</Ltr></Kv>
         <Kv k={m("items.workmanship")}>{charge(r.workmanshipMode, r.workmanshipValue)}</Kv><Kv k={m("items.cashback")}>{charge(r.cashbackMode, r.cashbackValue)}</Kv>
@@ -244,6 +244,8 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
       { name: "itemCode", label: m("items.itemCode"), type: "code", documentType: "item", hint: m("items.autoHint"), section: details },
       { name: "categoryId", label: m("items.categoryId"), type: "select", required: true, options: (cats.data ?? []).map((x) => [x.id, x.categoryName] as Option), placeholder: c("choose"), section: details },
       { name: "itemName", label: m("items.itemName"), type: "text", required: true, maxLength: 100, section: details },
+      // Optional: printed on the piece labels and the sales invoice print instead of the item name (issue #183)
+      { name: "nickname", label: m("items.nickname"), type: "text", maxLength: 100, help: m("items.nicknameHelp"), section: details },
       { name: "isCoded", label: m("items.coding"), type: "select", required: true, searchable: false, options: [["true", m("items.coded")], ["false", m("items.notCoded")]], section: details },
       { name: "itemType", label: m("items.itemType"), type: "select", required: true, searchable: false, options: [["gold", m("items.itemTypes.gold")], ["other_or_silver", m("items.itemTypes.other_or_silver")]], section: details },
       { name: "karat", label: m("items.karat"), type: "select", required: true, searchable: false, options: karatOptions, placeholder: c("choose"), help: m("items.karatHelp"), section: details },
@@ -259,7 +261,7 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cats.data, karats.data, price.data, price.isPending, itemType, canSwitch, tr]);
   const values = useMemo<Row>(() => (row
-    ? { ...row, isCoded: String(row.isCoded), weight: row.weight ?? "", workmanshipValue: hundredthsOf(row.workmanshipValue), cashbackValue: hundredthsOf(row.cashbackValue), isActive: row.isActive !== false }
+    ? { ...row, nickname: row.nickname ?? "", isCoded: String(row.isCoded), weight: row.weight ?? "", workmanshipValue: hundredthsOf(row.workmanshipValue), cashbackValue: hundredthsOf(row.cashbackValue), isActive: row.isActive !== false }
     : { isCoded: "true", itemType: "gold", isActive: true }), [row]);
   const f = useFieldsForm(fields, values);
   useEffect(() => {
@@ -279,7 +281,7 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
     setSaving(true);
     try {
       const body = {
-        itemName: v.itemName, isCoded: v.isCoded === "true", itemType: v.itemType, categoryId: v.categoryId, karat: v.karat, weight: v.weight,
+        itemName: v.itemName, nickname: String(v.nickname ?? "").trim() || null, isCoded: v.isCoded === "true", itemType: v.itemType, categoryId: v.categoryId, karat: v.karat, weight: v.weight,
         workmanshipMode: "per_gram", workmanshipValue: valueText(BigInt(v.workmanshipValue)), cashbackMode: "per_gram", cashbackValue: valueText(BigInt(v.cashbackValue)),
         ...(canSwitch ? { isActive: v.isActive } : {}),   // a normal user never sends it: the item keeps its state
       };
