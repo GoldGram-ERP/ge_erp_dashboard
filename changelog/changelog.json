@@ -1,6 +1,7 @@
 [
  {
-  "version": "next",
+  "version": "1.0.57",
+  "date": "2026-11-08",
   "changes": [
    {
     "kind": "fixed",
