@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales desk: each area is its own titled bubble instead of divider lines.",
+    "ar": "مكتب المبيعات: كل منطقة بقت في فقاعة بعنوانها بدل الخطوط الفاصلة.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.50",
   "date": "2026-11-08",
   "changes": [

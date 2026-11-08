@@ -9,7 +9,6 @@ export { Badge, Status, Bubble } from "./Badge";
 export { DataTable, Tr, Td, Th, useTableSort, SortedTable } from "./DataTable";
 export { Input, Textarea } from "./Input";
 export { Disclosure } from "./Disclosure";
-export { Divider, SectionTitle } from "./Divider";
 export { FileInput } from "./FileInput";
 export { Field, fieldId } from "../fields/Field";
 export { Select, useLabelFallback } from "../fields/Select";
