@@ -4,7 +4,7 @@
 /* GE ERP: design mockup. Operate surface: beige neutrals, gold only for the current item and the main action.
    Arabic: letter-spacing stays 0 (it breaks the joins); leading is taller than Latin. */
 :root{
-  --bg:#faf8f3; --side:#f2ede1; --surface:#fff;
+  --bg:#faf8f3; --side:#f2ede1; --surface:#fff; --bubble:#eee8d6;
   --line:#e8e1d0; --line-soft:#f0ebdd; --line-strong:#d9cfb4;
   --ink:#2b2519; --ink-2:#4a4232; --mute:#6b6149;
   --gold:#6f5110; --gold-ink:#fff; --gold-tint:#efe6cf; --gold-wash:#f6f0df;
@@ -411,7 +411,7 @@ input::placeholder,textarea::placeholder{font-family:var(--font);letter-spacing:
 
 /* section panel: the rows under a title bubble sit in a soft off-white bubble (not the gold of the title), as label + value pairs:
    labels in one column, each value starting right after the longest label, in Arabic and in English */
-.grp-panel{align-self:stretch;background:#f6f4ee;border-radius:22px;padding:12px 26px;margin:0 0 6px;display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:28px;align-items:baseline}
+.grp-panel{align-self:stretch;background:var(--bubble);border-radius:22px;padding:12px 26px;margin:0 0 6px;display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:28px;align-items:baseline}
 .grp-panel .kv{display:contents}
 .grp-panel .kv span{padding:9px 0;text-align:start}
 .grp-panel .kv span:first-child{color:var(--mute)}
@@ -459,12 +459,12 @@ a.btn.primary{color:var(--gold-ink)}
 /* ───── one block style for the whole app: sections of a record, of a form, of a page card ───── */
 .sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:6px 22px;align-content:start;max-width:1500px}
 .sections > :not(.grp-block){grid-column:1/-1}
-.grp-panel{background:#f6f4ee;border-radius:22px;padding:14px 26px}
+.grp-panel{background:var(--bubble);border-radius:22px;padding:14px 26px}
 .grp-panel.formgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px 18px;align-items:start}
 .grp-panel.formgrid .wide{grid-column:1/-1}
 .grp-panel .field input:not([type=checkbox]):not([type=radio]),.grp-panel .field textarea,.grp-panel .sel-btn,.grp-panel .dp-btn{background:#fff}
-.card{background:#f6f4ee;box-shadow:none;border-radius:22px;padding:16px 24px}
-.filters{background:#f6f4ee;box-shadow:none;border-radius:22px}
+.card{background:var(--bubble);box-shadow:none;border-radius:22px;padding:16px 24px}
+.filters{background:var(--bubble);box-shadow:none;border-radius:22px}
 .sheet .body > form{display:block}
 
 /* form fields share the row; only `wide` fields take it whole (the full-width rule is for record rows and notes) */
@@ -473,7 +473,7 @@ a.btn.primary{color:var(--gold-ink)}
 .sections > .grp-block:only-child{margin-top:4px}
 
 /* list pages: the table sits in the same off-white bubble; rows are separated by space and a faint line, not a grid */
-.table{background:#f6f4ee;box-shadow:none;border-radius:22px;padding:6px 12px}
+.table{background:var(--bubble);box-shadow:none;border-radius:22px;padding:6px 12px}
 .table th{background:transparent;border-bottom:1px solid rgba(60,45,10,.10)}
 .table td{border-bottom:1px solid rgba(60,45,10,.06)}
 .table tr.row:hover td{background:rgba(255,255,255,.75)}
@@ -528,7 +528,7 @@ aside::-webkit-scrollbar-thumb{background:#cfc4a6;border-radius:10px;border:2px 
 /* ───── the global table, redesigned so each part is its own thing ─────
    header: plain muted labels on the bubble; rows: separate white bars with space between; group lines: gold-wash bars;
    totals: a gold-tint bar. No grid lines anywhere. */
-.table{background:#f6f4ee;padding:10px 14px 12px}
+.table{background:var(--bubble);padding:10px 14px 12px}
 .table table{border-collapse:separate;border-spacing:0 8px}
 .table th{background:transparent;border:0;height:var(--h-th);padding:0 18px;color:#6a6048;font-weight:700;font-size:12.5px;letter-spacing:0}
 .table td{border:0;height:var(--h-row);padding:0 18px;background:#fff;transition:background .15s var(--calm)}
@@ -805,7 +805,7 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 /* No bubble around a table: a section whose only content is a table shows that table directly (the same single off-white card as a list page),
    not a table card inside another panel. */
 .grp-panel:has(> .table:only-child),.grp-panel:has(> div:only-child > .table:only-child){background:transparent;box-shadow:none;padding:0;border-radius:0}
-.grp-panel > .table:only-child,.grp-panel > div:only-child > .table:only-child{background:#f6f4ee;margin-block:0;border-radius:22px;padding:6px 12px}
+.grp-panel > .table:only-child,.grp-panel > div:only-child > .table:only-child{background:var(--bubble);margin-block:0;border-radius:22px;padding:6px 12px}
 
 /* A piece's story is not a table of rows: it shows straight on the page, so the list table that carries it loses its card, its header, its row lines and
    its white cell. Only the story's own tables (sales, returns, transfers) keep their card, header and rows. */
@@ -1116,3 +1116,16 @@ html[dir=rtl] :is(b,strong,dd,div,p,small)[dir=ltr]:not(#sd *){text-align:right}
 .filters-bar .fb-chip b{font-weight:600;color:var(--mute)}
 .filters-bar .fb-none{color:var(--mute);font-size:.8rem}
 @media print{.filters-bar{display:none!important}}
+
+/* ONE bubble for every area (owner, 2026-11-08): sheets, forms, cards and the sales desk share a visible warm panel with a fine edge under a gold title pill. A collapsible area is the same bubble: its title pill is the toggle. */
+.grp-block .grp-title{display:inline-flex;align-items:center;gap:.5em;padding:.3rem 1rem;border:0;border-radius:999px;background:var(--gold-tint);color:var(--gold);font:inherit;font-size:.9rem;font-weight:700;line-height:1.5}
+button.grp-title{cursor:pointer}
+button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gold) 55%,transparent);outline-offset:.125rem}
+.grp-toggle .disc-chev{transition:transform .16s ease}
+.grp-toggle[aria-expanded=true] .disc-chev{transform:rotate(180deg)}
+.grp-panel,.card,.filters,.table:not(.grp-panel .table){background:var(--bubble);box-shadow:0 0 0 .0625rem var(--line-strong)}
+.grp-panel .table{box-shadow:none}
+@media (prefers-reduced-motion:reduce){.grp-toggle .disc-chev{transition:none}}
+/* never a bubble inside the bubble: a Disclosure inside a card or panel is a plain toggle row, not a second gold pill */
+.grp-panel .disc-head,.card .disc-head,.tk-card .disc-head{background:transparent;padding-inline:0;font-weight:600}
+.grp-panel .disc-head:hover,.card .disc-head:hover,.tk-card .disc-head:hover{background:transparent;text-decoration:underline}

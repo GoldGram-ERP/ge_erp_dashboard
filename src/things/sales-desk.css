@@ -34,7 +34,7 @@
   .tk-sticky[data-fit=true]{position:sticky;top:12px}  /* sticks only while the whole summary fits the screen; taller, it flows with the page (one scroll per screen) */
 }
 .tk-sticky{display:grid;gap:12px;padding:2px}
-.tk-card{background:var(--surface);border-radius:12px;box-shadow:0 0 0 1px var(--line);padding:12px 14px;display:grid;gap:10px;justify-items:start;min-width:0}
+.tk-card{background:var(--bubble);border-radius:1.4rem;box-shadow:0 0 0 .0625rem var(--line-strong);padding:12px 14px;display:grid;gap:10px;justify-items:start;min-width:0}
 #sd fieldset.tk-card{padding:12px 14px}
 .tk-card .disc,.tk-card .field{justify-self:start}
 

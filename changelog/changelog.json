@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "One visible bubble per area everywhere (same colour, fine edge); collapsible areas are a single bubble with the title as the toggle.",
+    "ar": "فقاعة واحدة واضحة لكل منطقة في كل مكان (نفس اللون وبحدّ رفيع)، والمناطق القابلة للطي بقت فقاعة واحدة وعنوانها هو الزرار.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.52",
   "date": "2026-11-08",
   "changes": [
