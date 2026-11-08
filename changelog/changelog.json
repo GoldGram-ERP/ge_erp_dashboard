@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "The sales desk Copy button is now the shared animated Copy button, and every screen uses that one button.",
+    "ar": "زرار النسخ في مكتب المبيعات بقى هو زرار النسخ المتحرك الموحّد، وكل الشاشات بتستخدمه."
+   }
+  ]
+ },
+ {
   "version": "1.0.38",
   "date": "2026-11-08",
   "changes": [

@@ -1,6 +1,6 @@
 "use client";
 import "./sales-desk.css";
-import { Button, Disclosure, Input, Seg, TextButton, copyText } from "@/components/ui";
+import { Button, Disclosure, Input, Seg, TextButton } from "@/components/ui";
 // The Sales desk draft page (issue #6): ONE page for a new draft, an edit and an Admin opening it. Type -> customer -> item + count lines
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
@@ -296,7 +296,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const splitErr = second && quote ? splitProblem(split, quote.q.totalPiastres) : "";
   const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), payment2: second, split })) : "";
   const typedManual = manualPrice(operation === "sell" ? manual.sell : manual.buy);
-  const copy = async () => toast((await copyText(waText)) ? d("desk.copied") : t("common", "offline"), { error: false });
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
@@ -448,7 +447,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
             <section className="tk-card" id="sec-wa">
               <p id="wa-text" className="tk-bubble" dir="rtl">{waText || d("desk.waEmpty")}</p>
-              <Button variant="primary" id="sd-copy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button>
+              <CopyButton id="sd-copy" text={waText} disabled={!waText} label={d("desk.copy")}>{d("desk.copy")}</CopyButton>
             </section>
           </div></div>
 
@@ -505,7 +504,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         </div>
       </div>
       <div className="tk-dock" id="sd-mobilebar"><div className="tk-dtotal"><span className="tk-quiet">{d("desk.mobileTotal")}</span><b className="tk-n" id="sd-mobiletotal" dir="ltr" key={totalText}>{quote ? `${totalText} ${d("desk.egp")}` : "—"}</b></div>
-        <Button variant="primary" id="sd-mobilecopy" disabled={!waText} onClick={() => void copy()}>{d("desk.copy")}</Button></div>
+        <CopyButton id="sd-mobilecopy" text={waText} disabled={!waText} label={d("desk.copy")}>{d("desk.copy")}</CopyButton></div>
     </form>
   );
 }

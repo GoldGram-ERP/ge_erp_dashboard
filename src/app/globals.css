@@ -842,15 +842,18 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .copy-btn{position:relative;display:inline-grid;place-items:center;min-width:36px;height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:var(--mute);cursor:pointer;transition:background .15s,color .15s,transform .1s ease-out}
 @media (pointer:coarse){.copy-btn{min-width:44px;height:44px}}
 .copy-btn:hover{background:var(--gold-wash);color:var(--ink)}.copy-btn:active{transform:scale(.92)}
-.copy-btn>.copy-ico,.copy-btn>.copy-ok{grid-area:1/1;display:block}
-.copy-btn>.copy-ico{transition:opacity .16s ease,transform .3s cubic-bezier(.2,.9,.3,1)}
-.copy-btn>.copy-ok{opacity:0;transform:scale(.55);transition:opacity .12s ease,transform .1s ease}
-.copy-btn>.copy-ok path{stroke-dasharray:1;stroke-dashoffset:1}
-.copy-btn.done{background:#e6efe1;color:#2f6b3a}
-.copy-btn.done>.copy-ico{opacity:0;transform:scale(.6)}
-.copy-btn.done>.copy-ok{opacity:1;transform:scale(1);transition:opacity .12s ease,transform .38s cubic-bezier(.2,.9,.3,1)}
-.copy-btn.done>.copy-ok path{stroke-dashoffset:0;transition:stroke-dashoffset .3s ease-out .05s}
-@media (prefers-reduced-motion:reduce){.copy-btn>.copy-ico,.copy-btn>.copy-ok,.copy-btn.done>.copy-ok{transition:opacity .15s ease!important;transform:none!important}.copy-btn>.copy-ok path,.copy-btn.done>.copy-ok path{stroke-dashoffset:0;transition:none!important}}
+.copy-btn .copy-mark{display:inline-grid;place-items:center}
+.copy-btn .copy-ico,.copy-btn .copy-ok{grid-area:1/1;display:block}
+.copy-btn .copy-ico{transition:opacity .16s ease,transform .3s cubic-bezier(.2,.9,.3,1)}
+.copy-btn .copy-ok{opacity:0;transform:scale(.55);transition:opacity .12s ease,transform .1s ease}
+.copy-btn .copy-ok path{stroke-dasharray:1;stroke-dashoffset:1}
+.copy-btn.solid{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--h-btn);padding:0 16px;font-weight:600;background:var(--gold);color:var(--gold-ink);white-space:nowrap}
+.copy-btn.solid:hover:not(:disabled){background:#5d430c;color:var(--gold-ink)}.copy-btn:disabled{opacity:.5;cursor:not-allowed}
+.copy-btn.done{background:#e6efe1;color:#2f6b3a}.copy-btn.solid.done{background:#e6efe1;color:#2f6b3a}
+.copy-btn.done .copy-ico{opacity:0;transform:scale(.6)}
+.copy-btn.done .copy-ok{opacity:1;transform:scale(1);transition:opacity .12s ease,transform .38s cubic-bezier(.2,.9,.3,1)}
+.copy-btn.done .copy-ok path{stroke-dashoffset:0;transition:stroke-dashoffset .3s ease-out .05s}
+@media (prefers-reduced-motion:reduce){.copy-btn>.copy-ico,.copy-btn>.copy-ok,.copy-btn.done .copy-ok{transition:opacity .15s ease!important;transform:none!important}.copy-btn .copy-ok path,.copy-btn.done .copy-ok path{stroke-dashoffset:0;transition:none!important}}
 /* Money field with -5 / +5 pound steps: the input keeps the middle, the buttons sit on its two sides */
 .stepper{display:flex;align-items:center;gap:6px}.stepper input{flex:1;min-width:0;text-align:center;font-variant-numeric:tabular-nums}
 .step-btn{flex:none;min-width:44px;height:36px;padding:0 8px;border:0;border-radius:10px;background:var(--gold-wash);color:var(--ink);font:inherit;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s,transform .1s ease-out}

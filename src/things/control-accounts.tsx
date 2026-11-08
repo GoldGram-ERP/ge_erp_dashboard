@@ -10,6 +10,7 @@ import type { Tr } from "@/lib/t";
 import { ThingPage, Kv, Ltr, Section, toast } from "@/components/engine";
 import { UserForm, UserRecord, code6, nameOfUser, typeName } from "./admin-shared";
 import { useAccess } from "./sales-access";
+import { copyText } from "@/components/ui";
 
 const ADMIN_TYPES = ["admin", "super_admin"] as const;
 const MAX_FAILED = 5;   // MAX_FAILED_SIGN_INS, the number the locked list shows as the reason
@@ -30,7 +31,7 @@ function tempDialog(m: (k: string, v?: Record<string, any>) => string, name: str
     const end = () => { d.close(); d.remove(); resolve(); };
     done.onclick = end;
     d.addEventListener("cancel", (e) => { e.preventDefault(); end(); });
-    copy.onclick = async () => { try { await navigator.clipboard.writeText(password); copy.textContent = m("lockedAccounts.copied"); } catch { /* the text is selectable */ } };
+    copy.onclick = async () => { if (await copyText(password)) copy.textContent = m("lockedAccounts.copied"); /* else the text is selectable */ };
     d.showModal();
   });
 }
