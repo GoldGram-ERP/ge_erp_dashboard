@@ -148,10 +148,10 @@ tr.flash td{animation:flash 1.6s ease-out}
 .err{color:var(--warn);font-size:.78rem;margin-top:.25rem}
 .field .err{color:var(--warn);font-size:12.5px;margin-top:4px}
 .field .help{color:var(--mute);font-size:12.5px;margin-top:4px}
-/* A row of fields that sit side by side (filters, scan row, desk header) is bottom-aligned, so an error or help line under ONE field used to push its neighbours down and break the label line (Arabic and English alike). Here the message hangs under its own field without taking row height; the row makes room only while a message shows. */
+/* A row of fields that sit side by side (filters, scan row, desk header) is bottom-aligned, so an ERROR line under ONE field used to push its neighbours down and break the label line (Arabic and English alike). Here the message hangs under its own field without taking row height; the row makes room only while a message shows. */
 :is(.filters,.scanrow,.tk-chips)>.field{position:relative}
-:is(.filters,.scanrow,.tk-chips)>.field>:is(.err,.help){position:absolute;inset-inline-start:0;top:100%;margin-top:.125rem;max-width:max(100%,14rem);white-space:normal;line-height:1.3}
-:is(.filters,.scanrow,.tk-chips):has(>.field>:is(.err,.help)){padding-bottom:1.9rem}
+:is(.filters,.scanrow,.tk-chips)>.field>.err{position:absolute;inset-inline-start:0;top:100%;margin-top:.125rem;max-width:max(100%,14rem);white-space:normal;line-height:1.3}
+:is(.filters,.scanrow,.tk-chips):has(>.field>.err){padding-bottom:1.9rem}
 .field.check{display:flex;align-items:center;gap:8px}
 .field.check input{width:18px;height:18px;accent-color:var(--gold)}
 .field.check label{margin:0;font-size:13px;color:var(--ink);font-weight:500}
