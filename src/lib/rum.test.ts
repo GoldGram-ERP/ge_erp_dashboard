@@ -28,17 +28,27 @@ describe("Better Stack real user monitoring tag", () => {
 });
 
 describe("identifying the signed-in person", () => {
-  const me = { id: "42", name: "Ahmed Ali", username: "ahmed.ali", email: "ahmed@gold-era.com", userType: "admin" };
+  const me = { id: "42", name: "Ahmed Ali", username: "ahmed.ali", userCode: 12, email: "ahmed@gold-era.com", phone: "01000000000", userType: "admin" };
 
-  test("sends only the internal id and the role, never a name, username or email", () => {
-    expect(rumIdentity(me)).toEqual({ id: "42", user_type: "admin" });
-    expect(JSON.stringify(rumIdentity(me))).not.toMatch(/Ahmed|ahmed|gold-era/);
+  test("sends the id, the login username, the user code and the role", () => {
+    expect(rumIdentity(me)).toEqual({ id: "42", username: "ahmed.ali", user_code: 12, user_type: "admin" });
+  });
+
+  test("never sends the full name, an email or a phone", () => {
+    const sent = JSON.stringify(rumIdentity(me));
+    expect(sent).not.toMatch(/Ahmed Ali|gold-era|01000000000/);
+    expect(Object.keys(rumIdentity(me)).sort()).toEqual(["id", "user_code", "user_type", "username"]);
+  });
+
+  test("leaves the user code out until the API sends it", () => {
+    expect(rumIdentity({ id: "42", username: "ahmed.ali", userType: "user" })).toEqual({ id: "42", username: "ahmed.ali", user_type: "user" });
+    expect(rumIdentity({ id: "42", username: "ahmed.ali", userCode: null, userType: "user" })).not.toHaveProperty("user_code");
   });
 
   test("calls the tag with that identity", () => {
     const calls: unknown[][] = [];
     identifyForRum(me, { betterstack: (...a) => calls.push(a) });
-    expect(calls).toEqual([["user", { id: "42", user_type: "admin" }]]);
+    expect(calls).toEqual([["user", { id: "42", username: "ahmed.ali", user_code: 12, user_type: "admin" }]]);
   });
 
   test("does nothing without a signed-in person or without the tag", () => {

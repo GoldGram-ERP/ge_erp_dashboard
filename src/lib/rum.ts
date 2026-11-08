@@ -6,16 +6,20 @@
 // The JavaScript tag token of Better Stack application "GoldGramERP Dashboard" (2827821, Frontend tab). It is not the DSN token.
 export const RUM_TOKEN = "49TF4JndrqGb8bjDcrLyfdA6";
 
-// Who a session belongs to, as Better Stack sees it: the internal user id and the role only. Never a name,
-// a username or an email: staff personal data does not leave the ERP. The id is looked up in the ERP.
-export function rumIdentity(me: { id: string; userType: string }): { id: string; user_type: string } {
-  return { id: me.id, user_type: me.userType };
+// Who a session belongs to, as Better Stack sees it: the internal id, the login username, the user code
+// (Users screen, once the API sends it) and the role (the owner, 2026-11-08). Never the full name, an email
+// or a phone: those stay in the ERP.
+type RumUser = { id: string; username: string; user_code?: number; user_type: string };
+export function rumIdentity(me: { id: string; username?: string; userCode?: number | null; userType: string }): RumUser {
+  const identity: RumUser = { id: me.id, username: me.username ?? "", user_type: me.userType };
+  if (typeof me.userCode === "number") identity.user_code = me.userCode;
+  return identity;
 }
 
 type Tag = (command: string, data: unknown) => void;
 
 // Ties the session to the signed-in person, once the tag has loaded (it queues calls until then).
-export function identifyForRum(me: { id: string; userType: string } | null | undefined, w: { betterstack?: Tag } = globalThis as { betterstack?: Tag }): void {
+export function identifyForRum(me: { id: string; username?: string; userCode?: number | null; userType: string } | null | undefined, w: { betterstack?: Tag } = globalThis as { betterstack?: Tag }): void {
   if (!me?.id || typeof w.betterstack !== "function") return;
   w.betterstack("user", rumIdentity(me));
 }

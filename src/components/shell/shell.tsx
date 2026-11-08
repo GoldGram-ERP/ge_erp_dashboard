@@ -28,8 +28,8 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const me = data ?? initialMe;
   const t = useTranslations();
   const pathname = usePathname();
-  // Real user monitoring: the session belongs to this user id and role, nothing more (src/lib/rum.ts).
-  useEffect(() => identifyForRum(me), [me.id, me.userType]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Real user monitoring: id, login username, user code and role; never the full name, email or phone (src/lib/rum.ts).
+  useEffect(() => identifyForRum(me), [me.id, me.username, me.userCode, me.userType]); // eslint-disable-line react-hooks/exhaustive-deps
   // WCAG 2.4.2: each route gets a title from its page heading ("Users - GoldGram").
   useEffect(() => {
     let n = 0;
