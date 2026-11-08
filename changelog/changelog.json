@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Record sheets are as tall as their content and scroll only when they reach the full page height.",
+    "ar": "شيت السجل بيطول على قد محتواه، وبيعمل سكرول بس لما يوصل لأقصى ارتفاع الصفحة."
+   }
+  ]
+ },
+ {
   "version": "1.0.49",
   "date": "2026-11-08",
   "changes": [

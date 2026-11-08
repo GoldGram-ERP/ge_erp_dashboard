@@ -143,7 +143,7 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   // A page-display form takes the whole workspace
   const pageForm = form && cfg.forms?.[form.id]?.display === "page" ? cfg.forms[form.id] : null;
   if (pageForm) {
-    return <div className="thing-root" style={{ position: "relative" }}><FormPage thingTitle={cfg.title} form={pageForm} row={form!.row} onClose={closeForm} onOpen={openRecord} onSaved={() => { set({ page: 1 }); reload(); }} /><ToastHost /></div>;
+    return <div className="thing-root"><FormPage thingTitle={cfg.title} form={pageForm} row={form!.row} onClose={closeForm} onOpen={openRecord} onSaved={() => { set({ page: 1 }); reload(); }} /><ToastHost /></div>;
   }
 
   const actions = [...(view.actions ?? []), ...exportActions(view, tr)].filter((a) => seen(a.keys ?? view.keys ?? cfg.keys));
@@ -151,7 +151,7 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   const sheetForm = form && !pageForm ? cfg.forms![form.id] : null;
 
   return (
-    <div className="thing-root" style={{ position: "relative", display: "flex", flexDirection: "column" }}>   {/* a column that takes its content's height: the page (.ws) scrolls, not the table */}
+    <div className="thing-root" style={{ display: "flex", flexDirection: "column" }}>   {/* NOT position:relative: a sheet is placed against .main (the whole page height), never against this short wrapper, or it stops growing at the list height and scrolls with room to spare. A column that takes its content's height: the page (.ws) scrolls, not the table */}
       <Header cfg={cfg} creates={creates} actions={actions} view={view} vs={vs} onCreate={(id) => openForm(id)} reload={reload} />
       {views.length > 1 && <Seg className="page" label={L("العرض", "View")} items={views.map((v) => ({ id: v.id, label: v.label }))} value={view.id} onChange={(id) => { pickView(cfg.id, id); bump((n) => n + 1); go({ view: id }, true); }} />}
       <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} sortToUrl={(k, d) => go({ sort: k, dir: d })} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm}
