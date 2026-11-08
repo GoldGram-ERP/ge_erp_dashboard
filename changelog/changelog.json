@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Text boxes and search boxes grow with their text, so Arabic is no longer cut at the bottom when the text is larger (phones, zoom).",
+    "ar": "خانات الكتابة والبحث بقت بتكبر مع الخط، فالكلمات العربي مبقتش بتتقصّ من تحت لما الخط يكبر (الموبايل والزوم)."
+   }
+  ]
+ },
+ {
   "version": "1.0.55",
   "date": "2026-11-08",
   "changes": [

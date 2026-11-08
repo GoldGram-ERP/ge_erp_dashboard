@@ -1129,3 +1129,9 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 /* never a bubble inside the bubble: a Disclosure inside a card or panel is a plain toggle row, not a second gold pill */
 .grp-panel .disc-head,.card .disc-head,.tk-card .disc-head{background:transparent;padding-inline:0;font-weight:600}
 .grp-panel .disc-head:hover,.card .disc-head:hover,.tk-card .disc-head:hover{background:transparent;text-decoration:underline}
+/* A text box is never shorter than its own text line (owner, live: Arabic cut at the bottom of a search box on a phone). Chrome lays an input's text out in an inner editor as tall as its line-height (1.9em) and clips to it, and sizes the input from the font, not from that line-height: a fixed 32px box clipped the 38px line of a 20px text. So the height is the larger of the design height and the line (1.9em); at the design size nothing changes. */
+.search,.usearch{height:auto;min-height:var(--h-search)}
+.search input,.usearch input{height:max(var(--h-search),1.9em)}
+.field input:not([type=checkbox]):not([type=radio]),.field select{height:max(var(--h-field),1.9em)}
+.sel-btn{height:max(var(--h-field),1.9em)}
+.sel-search input{height:max(2.125rem,1.9em)}
