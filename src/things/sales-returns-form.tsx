@@ -1,10 +1,11 @@
 "use client";
 // The new return, a workspace page. Details (branch, date, the sold piece) -> refund (cash and any number of bank rows) -> save.
 // One sold piece per return; the refund limit is the server's (409 refundAboveLinePrice). Ported from sales-returns-form.js.
+// With a `row` (issue #175) it is the EDIT of that return: the branch, date and piece are shown and stay; only how the refund is paid changes (PUT).
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
-import { today, typedPiastres } from "@/lib/format";
+import { piastresInput, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { backendFieldErrors } from "@/lib/fields";
 import { DatePicker } from "@/components/fields/DatePicker";
@@ -17,20 +18,21 @@ import { PieceScanner } from "./piece-scanner";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-export function ReturnForm({ close, reload, tr }: CustomFormProps) {
+export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
   const { t, L, errorText } = tr;
   const rt = (k: string, v?: Record<string, string>) => t("gold-sales", `returns.${k}`, v);
   const { data: me } = useMe();
   const isUser = me?.userType === "user";
+  const edit = row?.id ? row : null;   // a saved return: only the refund can change
   const [branches, setBranches] = useState<Row[]>([]);
   const [accounts, setAccounts] = useState<Row[]>([]);
-  const [branchId, setBranchId] = useState(me?.branchId ?? "");
-  const [date, setDate] = useState(today());
-  const [piece, setPiece] = useState("");
+  const [branchId, setBranchId] = useState<string>(edit?.branchId ?? me?.branchId ?? "");
+  const [date, setDate] = useState<string>(edit ? String(edit.date).slice(0, 10) : today());
+  const [piece, setPiece] = useState<string>(edit?.pieceCode ?? "");
   const [scanning, setScanning] = useState(false);
   const [choices, setChoices] = useState<Row[]>([]);
-  const [cash, setCash] = useState("");
-  const [banks, setBanks] = useState<Bank[]>([blankBank()]);
+  const [cash, setCash] = useState<string>(edit && edit.cashRefund > 0 ? piastresInput(edit.cashRefund) : "");
+  const [banks, setBanks] = useState<Bank[]>(edit?.bankPayments?.length ? edit.bankPayments.map((p: Row) => ({ bankAccountId: p.bankAccountId, amount: piastresInput(p.amount) })) : [blankBank()]);
   const [next, setNext] = useState<number | undefined>();
   const [chooseBranch, setChooseBranch] = useState(false);
   const [errs, setErrs] = useState<Record<string, string>>({});
@@ -44,19 +46,20 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
     Promise.all([allPages("/branches").catch(() => []), allPages("/bank-accounts").catch(() => [])]).then(([b, a]) => { setBranches(b); setAccounts(a); setBranchId((cur) => cur || (b.length === 1 ? b[0].id : "")); });
   }, []);
   useEffect(() => {
+    if (edit) return;   // a saved return keeps its number
     const read = (b: string) => api("/document-numbers/next", { query: { documentType: "sales_return", branchId: b || undefined, year: date.slice(0, 4) } });
     read(branchId).catch((e) => { if (branchId && e instanceof ApiFailure && e.status === 403) return read(""); throw e; })
       .then((r) => { setNext(r.next); setChooseBranch(false); })
       .catch((e) => { setNext(undefined); setChooseBranch(e instanceof ApiFailure && e.status === 400 && (e.error.fields as any[] ?? []).some((f) => f.field === "branchId")); });
   }, [branchId, date]);
   useEffect(() => {   // the latest SOLD pieces of the chosen branch
-    if (piece.trim().length < 2) return;
+    if (edit || piece.trim().length < 2) return;
     const h = setTimeout(() => pieceChoices(piece, { state: "sold", branchId }).then(setChoices).catch(() => {}), 250);
     return () => clearTimeout(h);
   }, [piece, branchId]);
 
   const pc = readPieceCode(tr, piece);
-  const refundShown = Boolean(branchId) && DAY.test(date) && piece.trim() !== "" && !pc.error;
+  const refundShown = Boolean(branchId) && DAY.test(date) && piece.trim() !== "" && !pc.error;   // an edit has all three already
   const payCodes = paymentErrors(cash, banks, "any");
   const may = refundShown && !Object.keys(payCodes).length && !saving;
 
@@ -73,9 +76,10 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
     setErrs(e);
     if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); return; }
     setSaving(true);
-    const body = { branchId, date, pieceCode: pc.code, ...(cash.trim() !== "" ? { cashRefund: typedPiastres(cash.trim()) } : {}), bankPayments: sentBanks(banks) };
+    const refund = { ...(cash.trim() !== "" ? { cashRefund: typedPiastres(cash.trim()) } : {}), bankPayments: sentBanks(banks) };
+    const body = edit ? refund : { branchId, date, pieceCode: pc.code, ...refund };   // an edit sends only the refund
     try {
-      const saved = await api("/returns", { method: "POST", body, saveKey: saveKey.current });
+      const saved = await api(edit ? `/returns/${edit.id}` : "/returns", { method: edit ? "PUT" : "POST", body, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
       toast(rt("savedNumber", { code: code6(saved.returnNumber) }));
       reload();
@@ -97,7 +101,7 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
   const field = (name: string, htmlFor: string, label: string, body: ReactNode, help?: string) => (
     <div className="field" data-k={name} data-err={errs[name] ? "" : undefined}><label htmlFor={htmlFor}>{label}</label>{body}{help && <div className="help">{help}</div>}{errs[name] && <ErrBox>{errs[name]}</ErrBox>}</div>
   );
-  const num = next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : "";
+  const num = edit ? code6(edit.returnNumber) : next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : "";
 
   return (
     <form id="ret" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); submit(); }}>
@@ -105,8 +109,15 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
         {above && <div className="note warn" role="alert"><b>{rt("refundAboveLinePrice")}</b></div>}
         {general && <div className="note warn" role="alert"><b>{general}</b></div>}
       </div>
-      <div className="card"><h3>{rt("new")}</h3>
+      <div className="card"><h3>{edit ? `${t("common", "edit")} · ${code6(edit.returnNumber)}` : rt("new")}</h3>
         <div id="system"><div className="kv"><span>{rt("returnNumber")}</span><span dir="ltr">{num}</span></div></div>
+        {edit ? (
+          <div id="detailsFixed">
+            <div className="kv"><span>{sg(tr, "branch")}</span><span>{branches.find((x) => x.id === branchId)?.branchName ?? ""}</span></div>
+            <div className="kv"><span>{rt("date")}</span><span dir="ltr">{date}</span></div>
+            <div className="kv"><span>{rt("pieceCode")}</span><span dir="ltr">{piece}</span></div>
+          </div>
+        ) : (
         <div className="formgrid" id="detailsGrid">
           {field("branchId", "branchId", `${sg(tr, "branch")} *`, <Choice tr={tr} id="branchId" options={branches.map((x) => [x.id, x.branchName])} value={branchId} onChange={(v) => { edited(); setBranchId(v); }} />)}
           {field("date", "f-date-btn", `${rt("date")} *`, <DatePicker id="f-date" name="date" value={date} onChange={(v) => { edited(); setDate(v || date); }} max={isUser ? today() : undefined} required />)}
@@ -118,6 +129,7 @@ export function ReturnForm({ close, reload, tr }: CustomFormProps) {
             {scanning && <PieceScanner label={rt("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { edited(); setPiece(c); setScanning(false); }} />}
             <datalist id="pcl">{choices.map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName ?? ""} · ${p.karat ?? ""}`}</option>)}</datalist></>, rt("pieceCodeHint"))}
         </div>
+        )}
       </div>
       {refundShown && (
         <div className="card" id="sec-refund"><h3>{rt("refund")}</h3>

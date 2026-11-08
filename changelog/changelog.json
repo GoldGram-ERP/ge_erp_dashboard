@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Sales invoices, reservations and returns can be edited: a sales agent on the day it was made, an Admin any time. Change the customer, the pieces, or how it was paid (cash to bank, one bank to another) and the safe and bank balances follow.",
+    "ar": "فواتير البيع والحجوزات والمرتجعات بقى ينفع تتعدّل: موظف المبيعات في نفس يوم عملها، والأدمن في أي وقت. غيّر العميل أو القطع أو طريقة الدفع (كاش لبنك أو بنك لبنك تاني) وأرصدة الخزنة والبنك بتتغيّر معاها.",
+    "route": "/sales/invoices"
+   }
+  ]
+ },
+ {
   "version": "1.0.36",
   "date": "2026-11-08",
   "changes": [

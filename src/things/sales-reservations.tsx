@@ -142,6 +142,11 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       },
       // Create sales invoice: only a live reservation no invoice took, for a person who has the sales-invoices screen.
       actions: [{
+        // Edit (issue #175): only when the server says this user may edit it now (not deleted, no invoice took it, the day lock does not hold them).
+        id: "edit", icon: "edit", label: t("common", "edit"),
+        when: (r) => !!r.editable && !r.deletedAt,
+        run: (r, h) => { h.close(); h.openForm("edit", r); },
+      }, {
         id: "createInvoice", icon: "plus", label: m("createInvoice"),
         when: (r) => !r.deletedAt && !r.salesInvoiceId && canOpen(useSession.getState().me, ["gold-sales/sales-invoices"]),
         run: (r, h) => { h.close(); window.location.assign(`/${tr.locale}/sales/invoices?new=create&reservation=${r.id}`); },
@@ -153,7 +158,11 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         confirm: (r) => ({ title: m("deleteTitle", { code: code6(r.reservationNumber) }), text: m("deleteBody") }),
       },
     },
-    forms: { create: { title: m("new"), display: "page", path: () => "/reservations", fields: [], custom: (p: CustomFormProps) => <ReservationForm {...p} /> } },
+    forms: {
+      create: { title: m("new"), display: "page", path: () => "/reservations", fields: [], custom: (p: CustomFormProps) => <ReservationForm {...p} /> },
+      // The same form with the saved reservation: the branch, date and number stay.
+      edit: { title: m("new"), display: "page", path: (r) => `/reservations/${r?.id}`, method: "PUT", fields: [], custom: (p: CustomFormProps) => <ReservationForm {...p} /> },
+    },
   };
 };
 

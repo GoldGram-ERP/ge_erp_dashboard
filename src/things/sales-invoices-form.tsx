@@ -3,10 +3,13 @@ import { Button, DataTable, Input, Seg, Td, Tr } from "@/components/ui";
 // The new sales invoice, a workspace page. System values (number, gold price, date, branch, seller) are the system's and locked;
 // steps unlock in order (type + branch -> pieces -> customer -> payment -> save); money is integer piastres.
 // Also the invoice made from a reservation: /sales/invoices?reservation=<id> (the page then opens whole). Ported from sales-invoices-form.js.
+// With a `row` (issue #175) it is the EDIT of that invoice: the number, date, branch, seller, type and price day stay; the customer, gift, pieces, payment and
+// discount are filled in and saved with PUT. A new piece is priced at the invoice's own day (GET /piece-look-up?salesInvoiceId=). On an invoice made from a
+// reservation the customer and prices are the reservation's: the pieces must be its items again and the payment is what is left.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
-import { latinNumber, milligramsText, piastresText, today, typedPiastres } from "@/lib/format";
+import { latinNumber, milligramsText, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
 import { backendFieldErrors } from "@/lib/fields";
 import { useMe } from "@/lib/session";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
@@ -22,34 +25,35 @@ import { PieceScanner } from "./piece-scanner";
 type Line = Row;
 const fills = (line: Row, piece: Row) => line.itemName === piece.itemName && line.karat === piece.karat;
 
-export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
+export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const { t, L, errorText } = tr;
   const m = (k: string, v?: Record<string, string | number>) => sg(tr, k, v);
   const { data: me } = useMe();
   const isUser = me?.userType === "user";
-  const reservationId = typeof location === "undefined" ? "" : new URLSearchParams(location.search).get("reservation") ?? "";
+  const edit = row?.id ? row : null;   // a saved invoice: the form starts with its values
+  const reservationId: string = edit ? (edit.reservation?.id ?? "") : typeof location === "undefined" ? "" : new URLSearchParams(location.search).get("reservation") ?? "";
 
-  const [type, setType] = useState("");
-  const [branchId, setBranchId] = useState(me?.branchId ?? "");
+  const [type, setType] = useState<string>(edit?.invoiceType ?? "");
+  const [branchId, setBranchId] = useState<string>(edit?.branchId ?? me?.branchId ?? "");
   const [branchName, setBranchName] = useState("");
   const [branches, setBranches] = useState<Row[]>([]);
   const [pickBranch, setPickBranch] = useState(false);
   const [accounts, setAccounts] = useState<Row[]>([]);
-  const [price, setPrice] = useState<Row | null | undefined>(undefined);
+  const [price, setPrice] = useState<Row | null | undefined>(edit ? { date: edit.priceDate, sellPrice: edit.goldPrice21k, silverPrice: null } : undefined);   // an edit shows the invoice's own price
   const [next, setNext] = useState<number | undefined>();
   const [chooseBranch, setChooseBranch] = useState(false);
-  const [lines, setLines] = useState<Line[]>([]);
+  const [lines, setLines] = useState<Line[]>(edit ? (edit.lines as Row[]).map((l) => ({ pieceCode: l.pieceCode, itemName: l.itemName, karat: l.karat, weight: l.weight, weight24Mg: l.weight24Mg, pricePerGram24: l.pricePerGram24, goldValue: l.goldValue, makingCharge: l.makingCharge, makingChargePerGram: l.makingChargePerGram, linePrice: l.linePrice })) : []);
   const [lineErr, setLineErr] = useState<Record<string, string>>({});
   const [pc, setPc] = useState("");
   const [scanning, setScanning] = useState(false);
   const [pcErr, setPcErr] = useState("");
   const [choices, setChoices] = useState<Row[]>([]);
   const [adding, setAdding] = useState(false);
-  const [cash, setCash] = useState("");
-  const [banks, setBanks] = useState<Bank[]>([blankBank()]);
+  const [cash, setCash] = useState<string>(edit && edit.cash > 0 ? piastresInput(edit.cash) : "");
+  const [banks, setBanks] = useState<Bank[]>(edit?.bankPayments?.length ? (edit.bankPayments as Row[]).map((p) => ({ bankAccountId: p.bankAccountId, amount: piastresInput(p.amount) })) : [blankBank()]);
   const [how, setHow] = useState("");   // the piece whose price breakdown is open
   const [kind, setKind] = useState<DiscountKind>("amount");
-  const [disc, setDisc] = useState("");
+  const [disc, setDisc] = useState<string>(edit && !reservationId && edit.cashDiscount > 0 ? piastresInput(edit.cashDiscount) : "");   // saved as an amount of piastres
   const [made, setMade] = useState<Row | null>(null);
   const [gone, setGone] = useState(false);
   const [takenBy, setTakenBy] = useState<number | undefined>();
@@ -60,8 +64,8 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [short, setShort] = useState(false);
-  const [gift, setGift] = useState(false);
-  const [recipient, setRecipient] = useState<Recipient>({ name: "", phone: "" });
+  const [gift, setGift] = useState(Boolean(edit?.isGift));
+  const [recipient, setRecipient] = useState<Recipient>({ name: edit?.giftRecipientName ?? "", phone: edit?.giftRecipientPhone ?? "" });
   const [recipientErr, setRecipientErr] = useState<RecipientErrors>({});
   const [saving, setSaving] = useState(false);
   const saveKey = useRef(newSaveKey());
@@ -82,9 +86,14 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
 
   // ── start ──
   useEffect(() => {
-    latestPrice(today()).then(setPrice).catch(() => setPrice(undefined));   // the latest saved set up to today, always
+    if (!edit) latestPrice(today()).then(setPrice).catch(() => setPrice(undefined));   // the latest saved set up to today, always (an edit keeps the invoice's own)
     allPages("/bank-accounts").then(setAccounts).catch(() => {});
+    if (edit) {   // a saved invoice: its branch name and, when it has none from a reservation, its customer
+      api(`/branches/${edit.branchId}`).then((b) => setBranchName(b.branchName)).catch(() => {});
+      if (!reservationId) cust.reset({ customerPhone: edit.customerPhone ?? "", customerName: edit.customerName ?? "", nationalId: edit.nationalId ?? "" });
+    }
     if (reservationId) { reloadReservation(); return; }
+    if (edit) return;
     (async () => {
       try {
         let b = me?.branchId ?? "";
@@ -98,6 +107,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
+    if (edit) return;   // a saved invoice keeps its number
     const read = (b: string) => api("/document-numbers/next", { query: { documentType: "sales_invoice", branchId: b || undefined, year: today().slice(0, 4) } });
     read(branchId).catch((e) => { if (branchId && e instanceof ApiFailure && e.status === 403) return read(""); throw e; })
       .then((r) => { setNext(r.next); setChooseBranch(false); })
@@ -126,7 +136,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const showPieces = Boolean(made) || (Boolean(type) && Boolean(branchId));
   const showCustomer = Boolean(made) || lines.length > 0;
   const showPayment = Boolean(made) || (lines.length > 0 && customerValid);
-  const open = !reservationId || Boolean(made && !gone && !made.salesInvoiceId && takenBy === undefined);
+  const open = !reservationId || Boolean(made && !gone && (!made.salesInvoiceId || made.salesInvoiceId === edit?.id) && takenBy === undefined);   // an edit may keep the reservation its own invoice took
   const may = open && lines.length > 0 && allFilled && tot.left === 0 && !saving && !d.invalid && !d.tooBig;
   const nothingToPay = Boolean(made) && made!.totals.remaining === 0;
 
@@ -139,9 +149,11 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
     if (lines.some((l) => l.pieceCode.toLowerCase() === typed.toLowerCase())) { setPcErr(m("pieceAlreadyAdded")); return; }
     setAdding(true); setPcErr("");
     try {
-      const piece = await api("/piece-look-up", { query: { pieceCode: typed } }).catch((e) => (e instanceof ApiFailure && e.status === 404 ? undefined : Promise.reject(e)));
+      const piece = await api("/piece-look-up", { query: { pieceCode: typed, ...(edit ? { salesInvoiceId: edit.id } : {}) } }).catch((e) => (e instanceof ApiFailure && e.status === 404 ? undefined : Promise.reject(e)));
       if (!piece || piece.kind !== "piece") { setPcErr(m("pieceNotFound")); return; }
-      if (piece.sold) { setPcErr(m("pieceAlreadySold")); return; }
+      // A piece sold on this very invoice (taken off and added back) is free for it.
+      const ownPiece = Boolean(edit && (edit.lines as Row[]).some((l) => String(l.pieceCode).toLowerCase() === String(piece.pieceCode).toLowerCase()));
+      if (piece.sold && !ownPiece) { setPcErr(m("pieceAlreadySold")); return; }
       if (made) {
         const ln = made.lines.find((w: Row) => fills(w, piece));
         if (!ln) { setPcErr(m("notOnReservation", { item: piece.itemName, karat: piece.karat })); return; }
@@ -202,17 +214,17 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
     setSaving(true);
     const c = cust.getValues();
     const body = {
-      ...(isUser ? {} : { branchId }),
-      invoiceType: type,
+      ...(isUser || edit ? {} : { branchId }),   // an edit never changes the branch, the type or the reservation
+      ...(edit ? {} : { invoiceType: type }),
       ...(cash !== "" ? { cash: typedPiastres(cash) } : {}),
       bankPayments: sentBanks(banks),
-      ...(d.sent ? { cashDiscount: d.sent } : {}),   // the kind and the number typed; the backend works the discount out itself
+      ...(d.sent && !made ? { cashDiscount: d.sent } : {}),   // the kind and the number typed; the backend works the discount out itself (a reservation invoice has the reservation's)
       lines: lines.map((l) => ({ pieceCode: l.pieceCode })),
       ...(gift ? { isGift: true, giftRecipientName: recipient.name.trim(), giftRecipientPhone: latinNumber(recipient.phone.trim()) } : {}),
-      ...(made ? { reservationId: made.id } : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), ...(String(c.nationalId ?? "").trim() ? { nationalId: latinNumber(String(c.nationalId).trim()) } : {}) }),
+      ...(made ? (edit ? {} : { reservationId: made.id }) : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), ...(String(c.nationalId ?? "").trim() ? { nationalId: latinNumber(String(c.nationalId).trim()) } : {}) }),
     };
     try {
-      const saved = await api("/sales-invoices", { method: "POST", body, saveKey: saveKey.current });
+      const saved = await api(edit ? `/sales-invoices/${edit.id}` : "/sales-invoices", { method: edit ? "PUT" : "POST", body, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
       toast(m("savedNumber", { code: code6(saved.invoiceNumber) }));
       reload();
@@ -224,7 +236,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
   const refusedCount = Object.keys(errs).length;
   const invoiced = made?.salesInvoiceId ? { number: made.salesInvoiceNumber ?? takenBy } : takenBy !== undefined ? { number: takenBy } : null;
   const kv = (k: string, v: string) => <div className="kv"><span>{k}</span><span dir="ltr">{v}</span></div>;
-  const num = next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : "";
+  const num = edit ? code6(edit.invoiceNumber) : next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : "";
   const partsOf = (l: Row) => ({ perGram: price ? pricePerGram({ sellPrice: price.sellPrice, silverPrice: price.silverPrice ?? null }, String(l.karat)) : null, weightMg: l.weight, workPerGram: l.makingChargePerGram ?? 0, count: 1 });
   const paidBefore = made && <div className="field"><label htmlFor="paidOnReservation">{m("paidOnReservation")}</label><Input id="paidOnReservation" disabled dir="ltr" value={piastresText(made.totals.paid)} style={{ textAlign: "end" }} readOnly /></div>;
   const status = saving ? t("common", "savingNote") : lines.length === 0 ? m("saveNeedsPiece") : made ? m("fillAll") : m("saveWaits");
@@ -240,15 +252,15 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
         {refused && banner("warn", <b>{m("reservationRefused")}</b>)}
         {mismatch && banner("warn", <><b>{errorText({ message: "reservationItemsMismatch" })}</b><ul>{mismatch.map((i, k) => <li key={k}>{m("mismatchLine", i as any)}</li>)}</ul></>)}
       </div>
-      <div className="card"><h3>{m("new")}</h3>
+      <div className="card"><h3>{edit ? `${t("common", "edit")} · ${code6(edit.invoiceNumber)}` : m("new")}</h3>
         <div id="system">
           {price === null && <div className="note warn">{m("noGoldPriceForDay")}</div>}
           {kv(m("invoiceNumber"), num)}{kv(m("priceKarat"), price ? "21" : "")}{kv(m("priceDate"), price ? String(price.date).slice(0, 10) : "")}
-          {kv(m("goldPrice21k"), price ? piastresText(price.sellPrice) : "")}{kv(m("invoiceDate"), today())}
-          {!pickBranch && kv(m("branch"), branchName)}{kv(m("seller"), me?.name ?? "")}
+          {kv(m("goldPrice21k"), price ? piastresText(price.sellPrice) : "")}{kv(m("invoiceDate"), edit ? String(edit.invoiceDate).slice(0, 10) : today())}
+          {!pickBranch && kv(m("branch"), branchName)}{kv(m("seller"), edit ? (edit.employeeName ?? "") : (me?.name ?? ""))}{edit && kv(m("invoiceType"), m(`invoiceTypes.${edit.invoiceType}`))}
         </div>
       </div>
-      <div className="card" id="sec-head">
+      {!edit && <div className="card" id="sec-head">
         <div className="field" data-k="invoiceType" data-err={errs.invoiceType ? "" : undefined}><label className="flabel">{m("invoiceType")} *</label>
           <Seg label={m("invoiceType")} value={type} onChange={(k) => { setType(k); edited(); }}
             items={["sale", "delivery"].map((k) => ({ id: k, label: m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />
@@ -256,7 +268,7 @@ export function SalesInvoiceForm({ close, reload, tr }: CustomFormProps) {
         {pickBranch && <div className="field" data-k="branchId" style={{ marginTop: 12, maxWidth: 320 }}><label htmlFor="branchId">{m("branch")} *</label>
           <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { setBranchId(v); setBranchName(branches.find((b) => b.id === v)?.branchName ?? ""); edited(); }} />
           {errs.branchId && <ErrBox>{errs.branchId}</ErrBox>}</div>}
-      </div>
+      </div>}
 
       {showPieces && (
         <div className="card" id="sec-pieces">

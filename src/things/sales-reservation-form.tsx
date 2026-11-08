@@ -4,11 +4,12 @@
 // A reservation records no gold and moves no stock. Each line is priced by the backend at the gold price in force on the reservation date
 // (GET /reservations/line-price, the same formula as a sale: issue #166), read only here; the Save prices it again and refuses a typed price.
 // Money is whole piastres. Cash discount: base = the lines' workmanship; sent only when typed.
+// With a `row` (issue #175) it is the EDIT of that reservation: the branch, date and number are shown and stay; the rest is filled in and saved with PUT.
 import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
-import { latinNumber, piastresText, today, typedPiastres } from "@/lib/format";
+import { latinNumber, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { toast } from "@/components/engine";
@@ -28,28 +29,29 @@ const qOf = (l: Line) => { const s = latinNumber(l.quantity); const n = /^\d{1,3
 type Priced = { ok: Row } | { why: string } | { loading: true };
 const keyOf = (l: Line, date: string) => (l.itemId && qOf(l) && DAY.test(date) ? `${l.itemId}|${qOf(l)}|${date}` : "");
 
-export function ReservationForm({ close, reload, tr }: CustomFormProps) {
+export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
   const { t, L } = tr;
   const rm = (k: string, v?: Record<string, string>) => t("gold-sales", `reservations.${k}`, v);
   const { data: me } = useMe();
   const isUser = me?.userType === "user";
   const may = me ? mayDiscount(me) : false;
+  const edit = row?.id ? row : null;   // a saved reservation: the form starts with its values
 
   const [branches, setBranches] = useState<Row[]>([]);
   const [users, setUsers] = useState<Row[]>([]);
   const [items, setItems] = useState<Row[]>([]);
   const [accounts, setAccounts] = useState<Row[]>([]);
-  const [branchId, setBranchId] = useState(me?.branchId ?? "");
-  const [employeeId, setEmployeeId] = useState(me?.id ?? "");
-  const [date, setDate] = useState(today());
-  const [cust, setCust] = useState<Record<string, string>>({ customerPhone: "", customerName: "", nationalId: "" });
-  const [lines, setLines] = useState<Line[]>([blankLine()]);
+  const [branchId, setBranchId] = useState<string>(edit?.branchId ?? me?.branchId ?? "");
+  const [employeeId, setEmployeeId] = useState<string>(edit?.employeeId ?? me?.id ?? "");
+  const [date, setDate] = useState<string>(edit ? String(edit.date).slice(0, 10) : today());
+  const [cust, setCust] = useState<Record<string, string>>({ customerPhone: edit?.customerPhone ?? "", customerName: edit?.customerName ?? "", nationalId: edit?.nationalId ?? "" });
+  const [lines, setLines] = useState<Line[]>(edit?.lines?.length ? edit.lines.map((l: Row) => ({ itemId: l.itemId, quantity: String(l.quantity) })) : [blankLine()]);
   const [priced, setPriced] = useState<Record<string, Priced>>({});
   const [how, setHow] = useState(-1);   // the line whose price breakdown is open
-  const [cash, setCash] = useState("");
-  const [banks, setBanks] = useState<Bank[]>([blankBank()]);
+  const [cash, setCash] = useState<string>(edit && edit.cash > 0 ? piastresInput(edit.cash) : "");
+  const [banks, setBanks] = useState<Bank[]>(edit?.bankPayments?.length ? edit.bankPayments.map((p: Row) => ({ bankAccountId: p.bankAccountId, amount: piastresInput(p.amount) })) : [blankBank()]);
   const [kind, setKind] = useState<DiscountKind>("amount");
-  const [disc, setDisc] = useState("");
+  const [disc, setDisc] = useState<string>(edit && edit.cashDiscount > 0 ? piastresInput(edit.cashDiscount) : "");   // saved as an amount of piastres
   const [price, setPrice] = useState<Row | null | undefined>(undefined);
   const [next, setNext] = useState<number | undefined>();
   const [chooseBranch, setChooseBranch] = useState(false);
@@ -59,7 +61,7 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
   const [short, setShort] = useState(false);
   const [payRefusal, setPayRefusal] = useState<{ total: number; paid: number } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [shown, setShown] = useState({ customer: false, items: false, payment: false });
+  const [shown, setShown] = useState({ customer: Boolean(edit), items: Boolean(edit), payment: Boolean(edit) });   // an edit shows every section at once
   const saveKey = useRef(newSaveKey());
   const touch = () => { saveKey.current = newSaveKey(); setShort(false); setPayRefusal(null); setRootErr(""); };
 
@@ -78,6 +80,7 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
   }, [me?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { latestPrice(date).then(setPrice).catch(() => setPrice(undefined)); }, [date]);
   useEffect(() => {
+    if (edit) return;   // a saved reservation keeps its number
     const read = (b: string) => api("/document-numbers/next", { query: { documentType: "reservation", branchId: b || undefined, year: date.slice(0, 4) } });
     read(branchId).catch((e) => { if (branchId && e instanceof ApiFailure && e.status === 403) return read(""); throw e; })
       .then((r) => { setNext(r.next); setChooseBranch(false); })
@@ -144,7 +147,7 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
     if (tot.left !== 0) { setShort(true); return; }
     setSaving(true);
     const body = {
-      branchId, date, employeeId,
+      ...(edit ? {} : { branchId, date }), employeeId,   // an edit never changes the branch or the date
       customerName: cust.customerName.trim(), customerPhone: latinNumber(cust.customerPhone.trim()),
       ...(cust.nationalId.trim() ? { nationalId: latinNumber(cust.nationalId.trim()) } : {}),
       lines: lines.map((l) => ({ itemId: l.itemId, quantity: qOf(l) })),
@@ -153,7 +156,7 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
       ...(d.sent ? { cashDiscount: d.sent } : {}),   // only when typed
     };
     try {
-      const saved = await api("/reservations", { method: "POST", body, saveKey: saveKey.current });
+      const saved = await api(edit ? `/reservations/${edit.id}` : "/reservations", { method: edit ? "PUT" : "POST", body, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
       toast(rm("savedNumber", { code: code6(saved.reservationNumber) }));
       reload();
@@ -184,17 +187,17 @@ export function ReservationForm({ close, reload, tr }: CustomFormProps) {
   return (
     <form id="rsv" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); submit(); }} onInput={() => { saveKey.current = newSaveKey(); }}>
       <div id="banners">{general && <div className="note warn" role="alert"><b>{general}</b></div>}</div>
-      <div className="card"><h3>{rm("new")}</h3>
+      <div className="card"><h3>{edit ? `${t("common", "edit")} · ${code6(edit.reservationNumber)}` : rm("new")}</h3>
         {price === null && <div className="note warn">{sg(tr, "noGoldPriceForDay")}</div>}
-        {([[rm("reservationNumber"), next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : ""], [sg(tr, "priceKarat"), price ? "21" : ""], [sg(tr, "priceDate"), price ? String(price.date).slice(0, 10) : ""], [sg(tr, "goldPrice21k"), price ? piastresText(price.sellPrice) : ""]] as const)
+        {([[rm("reservationNumber"), edit ? code6(edit.reservationNumber) : next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : ""], [sg(tr, "priceKarat"), price ? "21" : ""], [sg(tr, "priceDate"), price ? String(price.date).slice(0, 10) : ""], [sg(tr, "goldPrice21k"), price ? piastresText(price.sellPrice) : ""]] as const)
           .map(([k, v]) => <div className="kv" key={k}><span>{k}</span><span dir="ltr">{v}</span></div>)}
       </div>
       <div className="card" id="sec-details"><h3>{rm("details")}</h3>
         <div className="formgrid">
           <div className="field" data-k="branchId"><label htmlFor="branchId">{sg(tr, "branch")} *</label>
-            <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
+            <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} disabled={Boolean(edit)} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
           <div className="field" data-k="date"><label htmlFor="f-date">{rm("date")} *</label>
-            <DatePicker id="f-date" name="date" value={date} onChange={(v) => { touch(); setHow(-1); setDate(v || date); }} disabled={isUser} required />{err("date")}</div>
+            <DatePicker id="f-date" name="date" value={date} onChange={(v) => { touch(); setHow(-1); setDate(v || date); }} disabled={isUser || Boolean(edit)} required />{err("date")}</div>
           <div className="field" data-k="employeeId"><label htmlFor="employeeId">{rm("employee")} *</label>
             {isUser ? <Input disabled value={me?.name ?? ""} readOnly />
               : <Choice tr={tr} id="employeeId" options={users.map((u) => [u.id, u.name ?? u.username ?? u.id])} value={employeeId} onChange={(v) => { touch(); setEmployeeId(v); }} />}{err("employeeId")}</div>

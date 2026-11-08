@@ -879,6 +879,7 @@
   "incomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
   "aboveMakingCharge": "The cash discount cannot be more than the workmanship.",
   "draftLocked": "Not saved: this draft was made on {day} and is locked. Only Delete remains.",
+  "documentLocked": "Not saved: this was made on {day} and is locked. A normal user edits on the day it was made; ask an Admin.",
   "draftCompleted": "This draft is already completed. It cannot be edited, deleted or completed again.",
   "draftItemsMismatch": "The scanned pieces do not match the draft's items and counts. Check the table and scan again.",
   "salesDraftNotFound": "This draft was not found."

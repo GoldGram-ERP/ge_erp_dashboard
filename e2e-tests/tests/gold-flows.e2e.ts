@@ -36,7 +36,7 @@ plain('sales invoice API: cash, bank and mixed payment bodies, totals, delete', 
   expect((await sale([{ pieceCode: p3.pieceCode }], { cash: T3 })).status).toBeGreaterThanOrEqual(400); // piece already sold
 });
 
-test('sales invoice record sheet opens in the UI with print layouts and delete, no edit (en, ar)', { tags: ['e2e', 'sales'], requires: ['browser'] }, async ({ go, screen, browser, shot }) => {
+test('sales invoice record sheet opens in the UI with print layouts, edit and delete (en, ar)', { tags: ['e2e', 'sales'], requires: ['browser'] }, async ({ go, screen, browser, shot }) => {
   await need();
   if (!S.created.invoices.length) { // each target seeds on its own, so the API test above has not run here: sell one piece for this test
     const mk = (cash: number) => S.api('POST', '/sales-invoices', { branchId: (S as any).inv.branchId, invoiceType: 'sale', ...cust, lines: [{ pieceCode: S.pieces[0].pieceCode }], cash });
@@ -52,7 +52,7 @@ test('sales invoice record sheet opens in the UI with print layouts and delete, 
     await screen.getByText(code6(num), { exact: true }).first().tap();
     await expect(browser.locator('[role=dialog]')).toBeVisible();
     await shot(`sales-${lang}-sheet`);
-    await expect(screen.getByRole('button', lang === 'en' ? 'Edit' : 'تعديل')).toBeHidden();
+    await expect(screen.getByRole('button', lang === 'en' ? 'Edit' : 'تعديل')).toBeVisible();   // issue #175: a saved invoice can be edited (the super admin any time)
     await expect(screen.getByRole('button', lang === 'en' ? 'Delete' : 'حذف')).toBeVisible();
   }
 });
