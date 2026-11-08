@@ -36,7 +36,7 @@ test('banks API: create, edit, account create/edit, validation, delete both', { 
 test('gold prices API: validation and newest price is always served', { ...P, tags: ['api', 'gold-prices'] }, async () => {
   const api = await apiAs('superadmin');
   const day = cairoDay();
-  for (const bad of [{ sellPrice: 0, buyPrice: 1, silverPrice: 1 }, { sellPrice: 1, buyPrice: 0, silverPrice: 1 }, { sellPrice: 1, buyPrice: 1, silverPrice: 0 }, { sellPrice: 1, buyPrice: 1 }])
+  for (const bad of [{ sellPrice: 0, buyPrice: 1, silverSellPrice: 1, silverBuyPrice: 1 }, { sellPrice: 1, buyPrice: 0, silverSellPrice: 1, silverBuyPrice: 1 }, { sellPrice: 1, buyPrice: 1, silverSellPrice: 0, silverBuyPrice: 1 }, { sellPrice: 1, buyPrice: 1, silverSellPrice: 1, silverBuyPrice: 0 }, { sellPrice: 1, buyPrice: 1 }])
     expect((await api('POST', '/gold-prices', { date: day, ...bad })).status).toBe(400);
   const t = await api('GET', '/gold-prices/today');
   expect([200, 404]).toContain(t.status); // owner rule: newest set whatever its date; 404 only when none was ever saved

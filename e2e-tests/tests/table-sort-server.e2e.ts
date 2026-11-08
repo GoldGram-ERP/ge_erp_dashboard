@@ -35,15 +35,15 @@ const goldPrices = (() => {
   let api: Api, keep: Row | undefined;
   const s: Screen = {
     name: 'gold-prices', path: '/setup/gold-prices', list: '/gold-prices', numberKey: 'documentNumber', numberCol: 0,
-    sortable: [{ key: 'date', col: 1, of: (r) => r.date.slice(0, 10) }, { key: 'sellPrice', col: 2, of: (r) => r.sellPrice }, { key: 'buyPrice', col: 3, of: (r) => r.buyPrice }, { key: 'silverPrice', col: 4, of: (r) => r.silverPrice }],
+    sortable: [{ key: 'date', col: 1, of: (r) => r.date.slice(0, 10) }, { key: 'sellPrice', col: 2, of: (r) => r.sellPrice }, { key: 'buyPrice', col: 3, of: (r) => r.buyPrice }, { key: 'silverSellPrice', col: 4, of: (r) => r.silverSellPrice }, { key: 'silverBuyPrice', col: 5, of: (r) => r.silverBuyPrice }],
     async make() {
       api = await apiAs('superadmin');
       const now = await api('GET', '/gold-prices/today'); keep = now.status === 200 ? now.body : undefined;
       for (let i = 0; i < MANY; i++) {
-        const r = await api('POST', '/gold-prices', { date: day(i + 1), sellPrice: 400000 + ((i * 7) % MANY) * 1000, buyPrice: 380000 + ((i * 11) % MANY) * 700, silverPrice: 4000 + ((i * 5) % MANY) * 30 });
+        const r = await api('POST', '/gold-prices', { date: day(i + 1), sellPrice: 400000 + ((i * 7) % MANY) * 1000, buyPrice: 380000 + ((i * 11) % MANY) * 700, silverSellPrice: 4000 + ((i * 5) % MANY) * 30, silverBuyPrice: 3800 + ((i * 3) % MANY) * 30 });
         expect(r.status, JSON.stringify(r.body)).toBe(201);
       }
-      if (keep) expect((await api('POST', '/gold-prices', { date: cairoDay(), sellPrice: keep.sellPrice, buyPrice: keep.buyPrice, silverPrice: keep.silverPrice })).status).toBe(201);
+      if (keep) expect((await api('POST', '/gold-prices', { date: cairoDay(), sellPrice: keep.sellPrice, buyPrice: keep.buyPrice, silverSellPrice: keep.silverSellPrice, silverBuyPrice: keep.silverBuyPrice })).status).toBe(201);
     },
     async drop() { /* a saved price set cannot be deleted (the screen says so); the local database is dropped with the stack */ },
   };

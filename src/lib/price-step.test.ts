@@ -18,13 +18,13 @@ describe("stepAmount (exact piastres, no float)", () => {
 });
 
 describe("prefillFromLatest", () => {
-  const names = ["sellPrice", "buyPrice", "silverPrice"];
-  const latest = { sellPrice: 405000, buyPrice: 400050, silverPrice: 5 };
+  const names = ["sellPrice", "buyPrice", "silverSellPrice", "silverBuyPrice"];
+  const latest = { sellPrice: 405000, buyPrice: 400050, silverSellPrice: 5, silverBuyPrice: 4 };
   it("fills every empty field from the last set", () => {
-    expect(prefillFromLatest(latest, {}, names)).toEqual({ sellPrice: "4050.00", buyPrice: "4000.50", silverPrice: "0.05" });
+    expect(prefillFromLatest(latest, {}, names)).toEqual({ sellPrice: "4050.00", buyPrice: "4000.50", silverSellPrice: "0.05", silverBuyPrice: "0.04" });
   });
   it("does not overwrite what the person already typed", () => {
-    expect(prefillFromLatest(latest, { sellPrice: "4100" }, names)).toEqual({ buyPrice: "4000.50", silverPrice: "0.05" });
+    expect(prefillFromLatest(latest, { sellPrice: "4100" }, names)).toEqual({ buyPrice: "4000.50", silverSellPrice: "0.05", silverBuyPrice: "0.04" });
   });
   it("no last set means nothing to fill", () => {
     expect(prefillFromLatest(null, {}, names)).toEqual({});

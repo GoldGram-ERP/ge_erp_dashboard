@@ -39,7 +39,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const [branches, setBranches] = useState<Row[]>([]);
   const [pickBranch, setPickBranch] = useState(false);
   const [accounts, setAccounts] = useState<Row[]>([]);
-  const [price, setPrice] = useState<Row | null | undefined>(edit ? { date: edit.priceDate, sellPrice: edit.goldPrice21k, silverPrice: null } : undefined);   // an edit shows the invoice's own price
+  const [price, setPrice] = useState<Row | null | undefined>(edit ? { date: edit.priceDate, sellPrice: edit.goldPrice21k, silverSellPrice: null } : undefined);   // an edit shows the invoice's own price
   const [next, setNext] = useState<number | undefined>();
   const [chooseBranch, setChooseBranch] = useState(false);
   const [lines, setLines] = useState<Line[]>(edit ? (edit.lines as Row[]).map((l) => ({ pieceCode: l.pieceCode, itemName: l.itemName, karat: l.karat, weight: l.weight, weight24Mg: l.weight24Mg, pricePerGram24: l.pricePerGram24, goldValue: l.goldValue, makingCharge: l.makingCharge, makingChargePerGram: l.makingChargePerGram, linePrice: l.linePrice })) : []);
@@ -237,7 +237,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const invoiced = made?.salesInvoiceId ? { number: made.salesInvoiceNumber ?? takenBy } : takenBy !== undefined ? { number: takenBy } : null;
   const kv = (k: string, v: string) => <div className="kv"><span>{k}</span><span dir="ltr">{v}</span></div>;
   const num = edit ? code6(edit.invoiceNumber) : next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : "";
-  const partsOf = (l: Row) => ({ perGram: price ? pricePerGram({ sellPrice: price.sellPrice, silverPrice: price.silverPrice ?? null }, String(l.karat)) : null, weightMg: l.weight, workPerGram: l.makingChargePerGram ?? 0, count: 1 });
+  const partsOf = (l: Row) => ({ perGram: price ? pricePerGram({ sellPrice: price.sellPrice, silverSellPrice: price.silverSellPrice ?? null }, String(l.karat)) : null, weightMg: l.weight, workPerGram: l.makingChargePerGram ?? 0, count: 1 });
   const paidBefore = made && <div className="field"><label htmlFor="paidOnReservation">{m("paidOnReservation")}</label><Input id="paidOnReservation" disabled dir="ltr" value={piastresText(made.totals.paid)} style={{ textAlign: "end" }} readOnly /></div>;
   const status = saving ? t("common", "savingNote") : lines.length === 0 ? m("saveNeedsPiece") : made ? m("fillAll") : m("saveWaits");
 

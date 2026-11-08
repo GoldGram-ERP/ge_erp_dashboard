@@ -3,8 +3,8 @@
 // OWNER RULE: the gold price is ALWAYS the latest saved set, even if the day ended with no new one. No "no price today" refusal anywhere:
 // the "latest price" view reads GET /gold-prices/today (the newest set whatever its date) and shows its date; a 404 only means nothing
 // was ever saved (an empty list, never a warning).
-// Add: POST /gold-prices {date, sellPrice, buyPrice, silverPrice} in whole piastres, all three required and above zero.
-// Prices are 21K sell/buy per gram + silver; the 24K sell price is derived: floor((p21 x 48 + 21) / 42) (display only).
+// Add: POST /gold-prices {date, sellPrice, buyPrice, silverSellPrice, silverBuyPrice} in whole piastres, all four required and above zero.
+// Prices are 21K sell/buy per gram + silver sell/buy (silver sells at the first and is bought at the second, issue #184); the 24K sell price is derived: floor((p21 x 48 + 21) / 42) (display only).
 // A saved set is never edited or deleted. The list takes only fromDate, toDate and page (fixed size).
 import { api, ApiFailure } from "@/lib/api";
 import type { Column, MakeConfig, ThingConfig } from "@/lib/engine-types";
@@ -13,7 +13,7 @@ import { prefillFromLatest } from "@/lib/price-step";
 import { ThingPage, Ltr } from "@/components/engine";
 
 import { code6 as code6 } from "@/lib/code6";
-const PRICE_FIELDS = ["sellPrice", "buyPrice", "silverPrice"];
+const PRICE_FIELDS = ["sellPrice", "buyPrice", "silverSellPrice", "silverBuyPrice"];
 const KARAT = "21";   // pricedKarat: the typed prices are the 21K ones
 const price = (r: unknown) => (r === null || r === undefined ? "—" : piastresText(r));
 
@@ -26,7 +26,8 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     { key: "date", label: m("date"), type: "date" },
     { key: "sellPrice", label: m("sellPrice"), type: "money" },
     { key: "buyPrice", label: m("buyPrice"), type: "money", render: (r) => <Ltr>{price(r.buyPrice)}</Ltr> },
-    { key: "silverPrice", label: m("silverPrice"), type: "money", render: (r) => <Ltr>{price(r.silverPrice)}</Ltr> },
+    { key: "silverSellPrice", label: m("silverSellPrice"), type: "money", render: (r) => <Ltr>{price(r.silverSellPrice)}</Ltr> },
+    { key: "silverBuyPrice", label: m("silverBuyPrice"), type: "money", render: (r) => <Ltr>{price(r.silverBuyPrice)}</Ltr> },
     { key: "createdByName", label: m("createdByName"), render: (r) => <bdi dir="auto">{r.createdByName ?? ""}</bdi> },
     { key: "createdAt", label: m("createdAt"), type: "datetime" },
   ];
@@ -47,7 +48,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         endpoint: "/gold-prices",
         filters: [{ name: "fromDate", label: m("fromDate"), type: "date" }, { name: "toDate", label: m("toDate"), type: "date" }],
         paging: { sizeParam: null },   // `page` only
-        serverSort: { on: true, columns: { date: "date", sellPrice: "sellPrice", buyPrice: "buyPrice", silverPrice: "silverPrice" } },   // backend GOLD_PRICE_SORT
+        serverSort: { on: true, columns: { date: "date", sellPrice: "sellPrice", buyPrice: "buyPrice", silverSellPrice: "silverSellPrice", silverBuyPrice: "silverBuyPrice" } },   // backend GOLD_PRICE_SORT
         onRow: false,                  // a saved set is not opened, edited or deleted
         columns: columns(),
         answerExtra: () => m("fixedNote"),
@@ -62,7 +63,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         paging: false,
         onRow: false,
         answerExtra: (a) => (a?.items?.[0] ? `${L("آخر سعر بتاريخ", "Latest price dated")} ${String(a.items[0].date).slice(0, 10)}` : m("emptyTitle")),
-        columns: [...columns().slice(0, 5), { key: "sellPrice24", label: m("sellPrice24"), type: "money", get: (r) => r.sellPrice24 ?? (r.sellPrice == null ? null : Math.floor((r.sellPrice * 48 + 21) / 42)) }],
+        columns: [...columns().slice(0, 6), { key: "sellPrice24", label: m("sellPrice24"), type: "money", get: (r) => r.sellPrice24 ?? (r.sellPrice == null ? null : Math.floor((r.sellPrice * 48 + 21) / 42)) }],
       },
     ],
     forms: {
@@ -71,7 +72,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         path: () => "/gold-prices",
         method: "POST",
         load: () => ({ date: today(), karat: KARAT }),
-        toPayload: (v) => ({ date: v.date, sellPrice: v.sellPrice, buyPrice: v.buyPrice, silverPrice: v.silverPrice }),
+        toPayload: (v) => ({ date: v.date, sellPrice: v.sellPrice, buyPrice: v.buyPrice, silverSellPrice: v.silverSellPrice, silverBuyPrice: v.silverBuyPrice }),
         afterSave: (a, h) => { if (a?.documentNumber) h.toast(m("savedNumber", { code: code6(a.documentNumber) })); },
         // The 24K price follows the typed sell price as it is typed (display only).
         // A new set starts with the last saved set's prices (GET /gold-prices/today, the newest set); the person changes only what moved.
@@ -95,7 +96,8 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
           { name: "karat", label: m("karat"), type: "text", disabled: true, help: m("karatHint", { karat: KARAT }), section: m("details") },
           { ...priceField("sellPrice"), section: m("prices") },
           { ...priceField("buyPrice"), section: m("prices") },
-          { ...priceField("silverPrice"), section: m("prices") },
+          { ...priceField("silverSellPrice"), section: m("prices") },
+          { ...priceField("silverBuyPrice"), section: m("prices") },
           { name: "sellPrice24", label: m("sellPrice24"), type: "text", disabled: true, section: m("prices") },
         ],
       },

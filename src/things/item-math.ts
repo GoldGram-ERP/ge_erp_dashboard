@@ -7,7 +7,7 @@ const B = BigInt;   // the build targets ES2017: no 1n literals
 
 export type ChargeMode = "per_gram" | "percent" | "per_piece";
 export const CHARGE_MODES: ChargeMode[] = ["per_gram", "percent", "per_piece"];
-export type PriceSet = { sellPrice: number; silverPrice: number | null };
+export type PriceSet = { sellPrice: number; silverSellPrice: number | null };   // the sell side: silver sells at its sell price (issue #184)
 
 // A setting's value as typed: up to two decimals, Arabic digits accepted. "4.5" -> 450 (hundredths).
 const VALUE = /^\d{1,10}(\.\d{1,2})?$/;
@@ -20,7 +20,7 @@ export const valueText = (h: bigint) => `${h / B(100)}.${String(h % B(100)).padS
 
 // One gram of a karat today: 21 is the saved price, 18 and 24 are x karat / 21 half up, 999 is the silver price.
 export function pricePerGram(price: PriceSet, karat: string): bigint | null {
-  if (karat === "999") return price.silverPrice == null ? null : BigInt(price.silverPrice);
+  if (karat === "999") return price.silverSellPrice == null ? null : BigInt(price.silverSellPrice);
   if (!["18", "21", "24"].includes(karat)) return null;
   return (B(2) * BigInt(price.sellPrice) * BigInt(karat) + B(21)) / B(42);
 }

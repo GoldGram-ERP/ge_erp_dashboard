@@ -38,7 +38,7 @@ test('branches, karats, settings, gold prices: validation and roles', { ...P, ta
   expect((await api('GET', '/karats')).body).toEqual([{ karat: '18' }, { karat: '21' }, { karat: '24' }, { karat: '999' }]);
   expect((await api('GET', '/settings')).body).toHaveProperty('shopNameEn');
   expect((await api('GET', '/settings/brand')).status).toBe(200);
-  for (const x of [{ sellPrice: 0, buyPrice: 1, silverPrice: 1 }, { sellPrice: 1, buyPrice: 0, silverPrice: 1 }, { sellPrice: 1, buyPrice: 1, silverPrice: 0 }, { sellPrice: 1, buyPrice: 1 }]) bad(await api('POST', '/gold-prices', { date: day(), ...x }));
+  for (const x of [{ sellPrice: 0, buyPrice: 1, silverSellPrice: 1, silverBuyPrice: 1 }, { sellPrice: 1, buyPrice: 0, silverSellPrice: 1, silverBuyPrice: 1 }, { sellPrice: 1, buyPrice: 1, silverSellPrice: 0, silverBuyPrice: 1 }, { sellPrice: 1, buyPrice: 1, silverSellPrice: 1, silverBuyPrice: 0 }, { sellPrice: 1, buyPrice: 1 }]) bad(await api('POST', '/gold-prices', { date: day(), ...x }));
   const user = await apiAs('e2euser');
   for (const p of ['/branches', '/settings', '/gold-prices', '/users']) expect((await user('GET', p)).status).toBe(403);
   expect((await user('POST', '/branches', { branchName: 'nope' })).status).toBe(403);

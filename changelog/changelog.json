@@ -19,6 +19,12 @@
     "en": "Items: a new Nickname field (create and edit). When an item has one, the piece label and the sales invoice print show it instead of the item name; everywhere else the item name stays.",
     "ar": "الأصناف: حقل جديد اسم الشهرة (في الإضافة والتعديل). لو الصنف ليه اسم شهرة، ملصق القطعة وفاتورة البيع بيطبعوه بدل البيان؛ وفي أي مكان تاني البيان زي ما هو.",
     "route": "/buy/items"
+   },
+   {
+    "kind": "new",
+    "en": "Gold prices: silver now has a sell price and a buy price, like gold. Selling silver uses the sell price; buying silver (a Buy draft, a customer's returned piece) uses the buy price. Existing prices keep their silver price for both.",
+    "ar": "أسعار الذهب: الفضة بقى ليها سعر بيع وسعر شراء زي الذهب. بيع الفضة بيستخدم سعر البيع، وشراء الفضة (مسودة شراء، قطعة مرتجعة من عميل) بيستخدم سعر الشراء. الأسعار القديمة فضتها بقت هي نفسها للاتنين.",
+    "route": "/setup/gold-prices"
    }
   ]
  },
