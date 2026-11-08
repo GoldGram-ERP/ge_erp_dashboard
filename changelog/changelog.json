@@ -1,5 +1,22 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Printing piece labels (reprint label, purchase coding, piece record) no longer gives blank pages: it opens a small window with just the labels and a Print button.",
+    "ar": "طباعة الملصقات (إعادة طباعة ملصق، كود الشراء، بيانات القطعة) مبقتش بتطلّع صفحات فاضية: بتفتح نافذة صغيرة فيها الملصقات بس وزرار طباعة.",
+    "route": "/sales/pieces"
+   },
+   {
+    "kind": "better",
+    "en": "Cash movements: the gold movements tab and the Add gold movement button are gone, the page is cash only.",
+    "ar": "حركات النقدية: شالنا تبويب حركات الذهب وزرار إدخال حركة ذهب، الصفحة بقت للفلوس بس.",
+    "route": "/money/cash"
+   }
+  ]
+ },
+ {
   "version": "1.0.35",
   "date": "2026-11-08",
   "changes": [

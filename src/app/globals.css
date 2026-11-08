@@ -231,7 +231,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-start}
 }
 @media (prefers-reduced-transparency:reduce){.topbar{background:var(--bg);backdrop-filter:none}}
 @media (prefers-contrast:more){:root{--line:#b8ac8a;--mute:#52492f}}
-@media print{aside,.topbar,.banner,.tools,.filters,.pager,.actions,.sheet,.toast{display:none!important}body{display:block;overflow:visible}.ws{overflow:visible}.table{box-shadow:none}}
+@media print{aside,.topbar,.banner,.tools,.filters,.pager,.actions,.sheet,.toast{display:none!important}html,body{height:auto}body{display:block;overflow:visible}.main,.ws{overflow:visible}.table{box-shadow:none}}
 
 /* ───── Sidebar: collapsible to an icon rail (like the GoldGram dashboard), drawer on small screens ───── */
 .scrim{position:fixed;inset:0;background:rgba(43,37,25,.35);z-index:14;animation:fade .2s}
