@@ -113,3 +113,8 @@
   .tk-row.is-leaving{transition:opacity .18s}
   #sd .btn:active:not(:disabled),#sd .seg button:active,#sd .tbtn:active{transform:none}
 }
+/* Progressive steps on the desk: a step that has just unlocked eases in; a locked step is one quiet line. */
+.tk-step-hint{margin:0;color:var(--mute);font-size:.8rem}
+@keyframes tk-reveal-in{from{opacity:0;transform:translateY(.5rem)}to{opacity:1;transform:none}}
+.tk-reveal{animation:tk-reveal-in .22s ease-out}
+@media (prefers-reduced-motion:reduce){.tk-reveal{animation:none}}

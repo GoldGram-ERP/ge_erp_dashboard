@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales desk: step by step. Choose the branch first, then add pieces, then the customer and saving unlock. The price, total and message blocks stay in view.",
+    "ar": "مكتب المبيعات بقى خطوة بخطوة: اختار الفرع الأول، بعدين ضيف القطع، وبعدها بيانات العميل والحفظ. وكروت السعر والإجمالي والرسالة فاضلة ظاهرة طول الوقت.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.42",
   "date": "2026-11-08",
   "changes": [

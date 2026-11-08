@@ -314,6 +314,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const totalText = quote ? piastresText(quote.q.totalPiastres) : "—";
   const statusText = price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading");
   const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone);
+  // Progressive steps (owner, 2026-11-08): the branch first, then the pieces, then the customer and saving. A saved draft, and any error, shows everything.
+  const payErr = Object.keys(errs).some((k) => k === "cash" || k === "sum" || k === "cashDiscount" || k === "splitAmount" || k.startsWith("bank"));
+  const stepBranch = !(isNew && !isUser) || Boolean(branchId);
+  const showMore = !isNew || lines.length > 0 || custErr || payErr;
   const sel2 = secondChoices(operation, payment);
 
   return (
@@ -353,7 +357,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
         <div className="tk-grid">
           <fieldset disabled={readonly || saving} className="tk-a">
-            <section id="sec-items" className="tk-ticket">
+            {!stepBranch ? <p className="tk-step-hint" id="sd-step-branch">{L("اختار الفرع الأول عشان تضيف قطع.", "Choose the branch first to add pieces.")}</p> : <section id="sec-items" className="tk-ticket tk-reveal">
               <div className="field tk-add"><label htmlFor="itadd">{L("إضافة قطعة", "Add a piece")}</label>
                 <Choice tr={tr} id="itadd" options={itemOptions} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
               {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
@@ -385,14 +389,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                     );
                   })}
                 </ul>}
-            </section>
-            <Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("بيانات العميل (اختياري)", "Customer (optional)")}>
+            </section>}
+            {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust tk-reveal" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("بيانات العميل (اختياري)", "Customer (optional)")}>
               <div className="tk-cgrid">
                 <TextBox kind="text" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
                 <TextBox kind="code" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
                 <TextBox kind="phone" name="customerPhone" label={d("customerPhone")} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
               </div>
-            </Disclosure>
+            </Disclosure>}
           </fieldset>
 
           <div className="tk-b"><div className="tk-sticky" ref={sumRef}>
@@ -454,14 +458,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
           <div className="tk-c">
             <fieldset disabled={readonly || saving} className="tk-save">
-              <Disclosure id="sec-payment" defaultOpen={canComplete} hasError={Object.keys(errs).some((k) => k === "cash" || k === "sum" || k === "cashDiscount" || k === "splitAmount" || k.startsWith("bank"))} summary={L("حفظ كمسودة", "Save as draft")}>
+              {showMore && <Disclosure id="sec-payment" className="tk-reveal" defaultOpen={canComplete} hasError={payErr} summary={L("حفظ كمسودة", "Save as draft")}>
                 <div className="tk-draft"><p className="tk-quiet">{d("plannedHelp")}</p>
                   <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
                   {!buy && <div className="field" data-k="cashDiscount"><label htmlFor="cashDiscount">{d("discount")}</label>
                     <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
                       error={dsc.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>}
                 </div>
-              </Disclosure>
+              </Disclosure>}
             </fieldset>
 
             {bar && <div className="tk-card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />
