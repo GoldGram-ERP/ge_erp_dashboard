@@ -6,7 +6,7 @@ import type { Row } from "@/lib/engine-types";
 import { esc } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
-import { Sheet, pageSize, type Layout } from "./label-sheet";
+import { Sheet, pageSize, type Layout } from "./LabelSheet";
 
 const pc = (tr: Pick<Tr, "t">, k: string, v?: Record<string, string | number>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
 

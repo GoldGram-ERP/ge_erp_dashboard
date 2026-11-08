@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { A4_PER_PAGE, Sheet, pageSize } from "./label-sheet";
+import { A4_PER_PAGE, Sheet, pageSize } from "./LabelSheet";
 
 // The label sheet is what the print window holds: one label per piece, nothing else (no app markup).
 const tr = { t: (_ns: string, k: string, v?: Record<string, string | number>) => `${k}${v ? JSON.stringify(v) : ""}` } as never;

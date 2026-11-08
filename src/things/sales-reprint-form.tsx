@@ -11,8 +11,8 @@ import { latinNumber } from "@/lib/format";
 import { toast } from "@/components/engine";
 import { Button, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, pieceChoices, readPieceCode } from "./sales-form-parts";
-import { LAYOUT_KEY, Sheet } from "./label-sheet";
-import { printLabels } from "./label-print";
+import { LAYOUT_KEY, Sheet } from "@/components/ui/LabelSheet";
+import { printLabels } from "@/components/ui/label-print";
 
 export function ReprintForm({ tr }: CustomFormProps) {
   const { t, L } = tr;
