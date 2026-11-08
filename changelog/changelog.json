@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Form rows stay lined up when one field shows an error (Arabic and English).",
+    "ar": "صفوف الحقول بتفضل متظبطة لما حقل يظهر فيه خطأ (عربي وإنجليزي)."
+   }
+  ]
+ },
+ {
   "version": "1.0.37",
   "date": "2026-11-08",
   "changes": [
