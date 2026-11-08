@@ -73,7 +73,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
     if (!DAY.test(date)) e.date = sg(tr, "dateInvalid");
     else if (isUser && date > today()) e.date = fe(tr, "invalid");        // a User cannot date a return after today (the backend refuses it too)
     if (piece.trim() === "") e.pieceCode = fe(tr, "required"); else if (pc.error) e.pieceCode = pc.error;
-    Object.assign(e, payErrorTexts(tr, payCodes, rt("refundRequired")));
+    if (refundShown) Object.assign(e, payErrorTexts(tr, payCodes, rt("refundRequired")));   // the refund block shows only once branch, date and piece are right: an error nobody can see is never counted
     setErrs(e);
     if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     setSaving(true);

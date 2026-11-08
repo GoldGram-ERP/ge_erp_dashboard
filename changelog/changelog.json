@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Returns: the could-not-save message counts only the fields you can see.",
+    "ar": "المرتجعات: رسالة تعذّر الحفظ بقت بتعدّ الحقول الظاهرة قدامك بس.",
+    "route": "/sales/returns"
+   }
+  ]
+ },
+ {
   "version": "1.0.45",
   "date": "2026-11-08",
   "changes": [
