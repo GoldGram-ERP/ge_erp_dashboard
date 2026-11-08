@@ -1,6 +1,6 @@
 "use client";
 import { Button, Seg } from "@/components/ui";
-// Piece labels as the dashboard prints them: "tag" = one 50 x 12 mm label per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm; the layout is remembered on this device.
+// Piece labels as the dashboard prints them: "tag" = one 30 x 10 mm label per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm; the layout is remembered on this device.
 // The QR symbol is a real, scannable QR code of the piece code (src/lib/qr.ts); the Code 128 bars stay a labelled box (shortcut: draw them with JsBarcode when a barcode label is needed).
 import { useEffect, useState } from "react";
 import type { Row } from "@/lib/engine-types";
@@ -31,7 +31,7 @@ function One({ l, layout, tr }: { l: Row; layout: Layout; tr: Tr }) {
     ? <LabelQr value={l.pieceCode} />
     : <span data-bars style={{ display: "block", width: tag ? "40mm" : "34mm", height: tag ? "4mm" : "7mm", borderBlock: "1px solid #1c1912", textAlign: "center", fontSize: "5pt", lineHeight: tag ? "4mm" : "7mm" }}>Code 128</span>;
   return (
-    <div data-label data-label-kind={l.labelKind} style={{ width: tag ? "50mm" : "38.1mm", height: tag ? "12mm" : "21.2mm", display: "flex", ...(qr ? { alignItems: "center", gap: "1mm" } : { flexDirection: "column", alignItems: "center", justifyContent: "center" }), overflow: "hidden", background: "#fff", color: "#1c1912", fontSize: "7pt", breakInside: "avoid", breakAfter: tag ? "page" : undefined, border: "1px dashed #cfc8b4" }}>
+    <div data-label data-label-kind={l.labelKind} style={{ width: tag ? "30mm" : "38.1mm", height: tag ? "10mm" : "21.2mm", display: "flex", ...(qr ? { alignItems: "center", gap: "1mm" } : { flexDirection: "column", alignItems: "center", justifyContent: "center" }), overflow: "hidden", background: "#fff", color: "#1c1912", fontSize: "7pt", breakInside: "avoid", breakAfter: tag ? "page" : undefined, border: "1px dashed #cfc8b4" }}>
       {qr ? <>{mark}<span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, paddingInlineEnd: "1mm", lineHeight: 1.3 }}>{text}</span></>
         : <>{mark}<span style={{ display: "flex", flexWrap: "wrap", gap: "0 2mm", justifyContent: "center", lineHeight: 1.3 }}>{text}</span></>}
     </div>
@@ -52,7 +52,7 @@ export function LabelsCard({ title, labels, tr }: { title: string; labels: Row[]
   const pick = (l: Layout) => { setLayout(l); localStorage.setItem(KEY, l); };
   return (
     <div className="card">
-      <style>{`@media print{body *{visibility:hidden}[data-print-labels],[data-print-labels] *{visibility:visible}[data-print-labels]{position:absolute;inset:0 auto auto 0;max-height:none!important;overflow:visible!important;background:#fff!important}}@page{size:${layout === "tag" ? "50mm 12mm;margin:0" : "A4;margin:10.7mm 4.7mm"}}`}</style>
+      <style>{`@media print{body *{visibility:hidden}[data-print-labels],[data-print-labels] *{visibility:visible}[data-print-labels]{position:absolute;inset:0 auto auto 0;max-height:none!important;overflow:visible!important;background:#fff!important}}@page{size:${layout === "tag" ? "30mm 10mm;margin:0" : "A4;margin:10.7mm 4.7mm"}}`}</style>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <h3 style={{ margin: 0 }}>{title} <span className="sub">{pc(tr, "labelCount", { count: labels.length })}</span></h3>
         <div className="actions">

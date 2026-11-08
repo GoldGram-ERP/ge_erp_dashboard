@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Piece labels now print at 30 x 10 mm for the Zebra label printer.",
+    "ar": "الملصقات بقت بتتطبع مقاس ٣٠ × ١٠ مم لطابعة زيبرا."
+   }
+  ]
+ },
+ {
   "version": "1.0.34",
   "date": "2026-11-07",
   "changes": [

@@ -78,11 +78,11 @@ export function narrow(rows: Row[], { categoryId, karat }: { categoryId?: unknow
 export type CustomerLabel = { pieceCode: string; categoryName: string | null; karat: string; weight: number };
 
 /** The label as HTML: code, category, karat and weight. Only these fields are read, so no price, name or phone can reach the paper.
- *  "tag" = one 50 x 12 mm label, "a4" = one 38.1 x 21.2 mm label at the top of an A4 sheet. */
+ *  "tag" = one 30 x 10 mm label, "a4" = one 38.1 x 21.2 mm label at the top of an A4 sheet. */
 export function customerLabelHtml(l: CustomerLabel, tr: Pick<Tr, "t">, layout: "tag" | "a4" = "tag"): string {
   const pc = (k: string, v?: Record<string, string>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
   const tag = layout === "tag";
-  return `<div data-label data-label-kind="qr" style="width:${tag ? "50mm" : "38.1mm"};height:${tag ? "12mm" : "21.2mm"};display:flex;align-items:center;gap:1mm;overflow:hidden;background:#fff;color:#1c1912;font-size:7pt">`
+  return `<div data-label data-label-kind="qr" style="width:${tag ? "30mm" : "38.1mm"};height:${tag ? "10mm" : "21.2mm"};display:flex;align-items:center;gap:1mm;overflow:hidden;background:#fff;color:#1c1912;font-size:7pt">`
     + qrSvgText(l.pieceCode)
     + `<span style="display:flex;flex-direction:column;min-width:0;flex:1;padding-inline-end:1mm;line-height:1.3">`
     + `<span dir="ltr" data-label-code style="font-family:monospace;font-weight:700">${esc(l.pieceCode)}</span>`

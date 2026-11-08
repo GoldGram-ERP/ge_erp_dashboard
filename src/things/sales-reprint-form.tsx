@@ -1,7 +1,7 @@
 "use client";
 // Reprint label (sales/pieces form): one piece code, or a range of numeric codes, a template and a layout.
 // POST /reprint-label (Idempotency-Key) records one "reprint" activity row and answers the labels; nothing else changes.
-// Ported from docs/nav-preview/app/things/sales-reprint-form.js. Labels as the dashboard prints them: "tag" = 50 x 12 mm per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm.
+// Ported from docs/nav-preview/app/things/sales-reprint-form.js. Labels as the dashboard prints them: "tag" = 30 x 10 mm per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm.
 // The QR symbol is a real, scannable QR code of the piece code (src/lib/qr.ts); the Code 128 bars stay a labelled box (shortcut: draw them with JsBarcode when a barcode label is needed).
 import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
@@ -30,7 +30,7 @@ function Label({ l, layout, gram, karatText }: { l: Row; layout: "tag" | "a4"; g
     ? <LabelQr value={l.pieceCode} />
     : <span data-bars style={{ display: "block", width: tag ? "40mm" : "34mm", height: tag ? "4mm" : "7mm", borderBlock: "1px solid #1c1912", textAlign: "center", fontSize: "5pt", lineHeight: tag ? "4mm" : "7mm" }}>Code 128</span>;
   return (
-    <div data-label data-label-kind={l.labelKind} style={{ width: tag ? "50mm" : "38.1mm", height: tag ? "12mm" : "21.2mm", display: "flex", ...(qr ? { alignItems: "center", gap: "1mm" } : { flexDirection: "column", alignItems: "center", justifyContent: "center" }), overflow: "hidden", background: "#fff", color: "#1c1912", fontSize: "7pt", breakInside: "avoid", breakAfter: tag ? "page" : undefined, border: "1px dashed #cfc8b4" }}>
+    <div data-label data-label-kind={l.labelKind} style={{ width: tag ? "30mm" : "38.1mm", height: tag ? "10mm" : "21.2mm", display: "flex", ...(qr ? { alignItems: "center", gap: "1mm" } : { flexDirection: "column", alignItems: "center", justifyContent: "center" }), overflow: "hidden", background: "#fff", color: "#1c1912", fontSize: "7pt", breakInside: "avoid", breakAfter: tag ? "page" : undefined, border: "1px dashed #cfc8b4" }}>
       {qr ? <>{mark}<span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, paddingInlineEnd: "1mm", lineHeight: 1.3 }}>{text}</span></>
         : <>{mark}<span style={{ display: "flex", flexWrap: "wrap", gap: "0 2mm", justifyContent: "center", lineHeight: 1.3 }}>{text}</span></>}
     </div>
@@ -126,7 +126,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
       </form>
       {labels && (
         <div id="result" style={{ marginTop: 14 }}>
-          <style>{`@media print{body *{visibility:hidden}[data-print-labels],[data-print-labels] *{visibility:visible}[data-print-labels]{position:absolute;inset:0 auto auto 0;max-height:none!important;overflow:visible!important;background:#fff!important}}@page{size:${layout === "tag" ? "50mm 12mm;margin:0" : "A4;margin:10.7mm 4.7mm"}}`}</style>
+          <style>{`@media print{body *{visibility:hidden}[data-print-labels],[data-print-labels] *{visibility:visible}[data-print-labels]{position:absolute;inset:0 auto auto 0;max-height:none!important;overflow:visible!important;background:#fff!important}}@page{size:${layout === "tag" ? "30mm 10mm;margin:0" : "A4;margin:10.7mm 4.7mm"}}`}</style>
           <div className="card">
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h3 style={{ margin: 0 }}>{rl("print")} <span className="sub">{pc("labelCount", { count: String(labels.length) })}</span></h3>

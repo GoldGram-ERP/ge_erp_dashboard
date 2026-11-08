@@ -82,7 +82,7 @@ describe("label", () => {
     expect(html).toContain("Rings &lt;b&gt;");
     expect(html).toContain("Karat 21 · 5.250 g");
     for (const leak of ["Mona", "01012345678", "9,900", "9900"]) expect(html).not.toContain(leak);
-    expect(html).toContain("width:50mm");
+    expect(html).toContain("width:30mm");
     expect(customerLabelHtml(record, tr, "a4")).toContain("width:38.1mm");
   });
 });
