@@ -80,7 +80,7 @@ h1{font-size:24px;line-height:1.3;font-weight:700;text-wrap:balance}
 .search input::placeholder{color:var(--mute)}
 .lbl{color:var(--mute);font-size:12.5px}
 /* Tabs / segmented: one highlight slides under the pressed button (Animate UI Tabs, calm ease-out) */
-.seg{position:relative;display:inline-flex;padding:3px;border-radius:11px;background:#ece5d2;gap:2px;flex-wrap:nowrap;max-width:100%;overflow-x:auto}
+.seg{position:relative;display:inline-flex;padding:3px;border-radius:11px;background:var(--line-strong);gap:2px;flex-wrap:nowrap;max-width:100%;overflow-x:auto}
 .seg .thumb{position:absolute;top:3px;bottom:3px;left:0;border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(60,45,10,.18);transition:transform .24s var(--calm),width .24s var(--calm);pointer-events:none}
 .seg button{position:relative;z-index:1;height:30px;padding:0 14px;border-radius:8px;color:var(--ink-2);transition:color .18s var(--calm);white-space:nowrap}
 .seg button:active{transform:scale(.97)}
