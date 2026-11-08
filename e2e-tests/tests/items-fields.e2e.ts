@@ -135,7 +135,7 @@ for (const lang of LANGS) {
     await save();
     await expect.poll(() => sent('POST').length).toBe(1);
     expect(sent('POST')[0].body).toEqual({
-      itemName, isCoded: true, itemType: 'gold', categoryId: cat.id, karat: '21', weight: 4375,
+      itemName, nickname: null, isCoded: true, itemType: 'gold', categoryId: cat.id, karat: '21', weight: 4375,
       workmanshipMode: 'per_gram', workmanshipValue: '187.50', cashbackMode: 'per_gram', cashbackValue: '10.00', isActive: true,
     });
     let item: any; await expect.poll(async () => { item = (await api('GET', `/items?search=${encodeURIComponent(itemName)}`)).body.items?.[0]; return !!item; }).toBe(true);
