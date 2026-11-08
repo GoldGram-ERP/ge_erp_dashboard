@@ -391,13 +391,13 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   })}
                 </ul>}
             </section></Section>}
-            {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Section title={L("بيانات العميل", "Customer")}><Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust tk-reveal" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("إظهار الحقول", "Show the fields")}>
+            {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Section id="sd-customer" collapsible title={L("بيانات العميل", "Customer")} defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} hasError={custErr}>
               <div className="tk-cgrid">
                 <TextBox kind="text" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
                 <TextBox kind="code" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
                 <TextBox kind="phone" name="customerPhone" label={d("customerPhone")} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={15} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
               </div>
-            </Disclosure></Section>}
+            </Section>}
           </fieldset>
 
           <div className="tk-b"><div className="tk-sticky" ref={sumRef}>
@@ -459,14 +459,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
           <div className="tk-c">
             <fieldset disabled={readonly || saving} className="tk-save">
-              {showMore && <Section title={L("الدفع والحفظ", "Payment and saving")}><Disclosure id="sec-payment" className="tk-reveal" defaultOpen={canComplete} hasError={payErr} summary={L("حفظ كمسودة", "Save as draft")}>
+              {showMore && <Section id="sec-payment" collapsible title={L("الدفع والحفظ", "Payment and saving")} defaultOpen={canComplete} hasError={payErr}>
                 <div className="tk-draft"><p className="tk-quiet">{d("plannedHelp")}</p>
                   <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
                   {!buy && <div className="field" data-k="cashDiscount"><label htmlFor="cashDiscount">{d("discount")}</label>
                     <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
                       error={dsc.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>}
                 </div>
-              </Disclosure></Section>}
+              </Section>}
             </fieldset>
 
             {bar && <div className="tk-card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />

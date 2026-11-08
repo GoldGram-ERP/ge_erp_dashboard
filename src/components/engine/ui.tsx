@@ -92,8 +92,18 @@ export function Sheet({ title, footer, children, onRequestClose }: { title: stri
 }
 
 // ───── Record blocks: a section is a title bubble + a soft panel; a Kv row is label and value ─────
-export function Section({ title, children, wide }: { title: string; children: ReactNode; wide?: boolean }) {
-  return <div className={`grp-block${wide ? " wide" : " kv-block"}`}><h3 className="grp-title">{title}</h3><div className="grp-panel">{children}</div></div>;
+export function Section({ title, children, wide, id, collapsible, defaultOpen = false, hasError = false }: { title: string; children: ReactNode; wide?: boolean; id?: string; collapsible?: boolean; defaultOpen?: boolean; hasError?: boolean }) {
+  // The ONE bubble (title pill over a visible panel). `collapsible`: the pill is the toggle and opens by itself when a field inside has an error; never a second bubble inside.
+  const [open, setOpen] = useState(!collapsible || defaultOpen || hasError);
+  useEffect(() => { if (hasError) setOpen(true); }, [hasError]);
+  return (
+    <div id={id} className={`grp-block${wide || collapsible ? " wide" : " kv-block"}`}>
+      {collapsible
+        ? <button type="button" className="grp-title grp-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>{title}<svg className="disc-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
+        : <h3 className="grp-title">{title}</h3>}
+      {open && <div className="grp-panel">{children}</div>}
+    </div>
+  );
 }
 export function Kv({ k, children }: { k: string; children?: ReactNode }) {
   return <div className="kv"><span>{k}</span><span>{children === "" || children === null || children === undefined ? "—" : children}</span></div>;
