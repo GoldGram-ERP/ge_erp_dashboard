@@ -73,9 +73,16 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     keys: ["gold-sales/returns", "gold-sales/returns-list", "gold-sales/find-return", ...RETURNED_PIECES_KEYS],
     views: [history, find, piecesView],
     create: [{ form: "create", label: m("add"), keys: ["gold-sales/returns"] }],
-    forms: { create: { title: m("new"), display: "page", fields: [], path: () => "/returns", custom: ReturnForm }, createReturnedPiece: returnedPieces.forms!.create },
+    forms: {
+      create: { title: m("new"), display: "page", fields: [], path: () => "/returns", custom: ReturnForm },
+      // Edit (issue #175): how the refund is paid; the piece, branch and date stay. The same form with the saved return.
+      edit: { title: m("new"), display: "page", fields: [], path: (r) => `/returns/${r?.id}`, method: "PUT", custom: (p) => <ReturnForm {...p} /> },
+      createReturnedPiece: returnedPieces.forms!.create,
+    },
     record: {
       title: (r) => `${m("recordNo")} ${r.returnNumber === undefined ? "" : code6(r.returnNumber)}`,
+      // The Edit button shows only when the server says this user may edit it now (not deleted, the day lock does not hold them).
+      actions: [{ id: "edit", label: t("common", "edit"), icon: "edit", when: (r) => !!r.editable && !r.deletedAt, run: (r, h) => { h.close(); h.openForm("edit", r); } }],
       endpoint: (r) => `/returns/${r.id}`,
       enrich: async (r) => ({
         branchName: await api(`/branches/${r.branchId}`).then((b) => b.branchName).catch(() => ""),

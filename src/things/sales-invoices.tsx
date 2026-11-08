@@ -2,7 +2,7 @@
 // فواتير المبيعات: sales/invoices (sales-invoices, sales-invoices-list, sales-report, sales-by-period, unpaid-invoices, find-invoice).
 // Ported from docs/nav-preview/app/things/sales-invoices.js. History first (find-invoice is its search box), three reports as views,
 // "new" opens the invoice form as a page, a row opens the invoice (lines, payments, totals, print, delete).
-// Decisions kept from the HTML: cash discount sent as cashDiscount {kind,value}; line limit 100; a saved invoice is never edited;
+// Decisions kept from the HTML: cash discount sent as cashDiscount {kind,value}; line limit 100; a saved invoice is edited only through the Edit button (issue #175: a user on the day it was made, an Admin any time);
 // the list pages at 20 and refuses unknown params (the history strips pageSize/order before asking; sort and dir pass through, see serverSort).
 import { api, ApiFailure } from "@/lib/api";
 import { SortedTable, Status, Td, Tr } from "@/components/ui";
@@ -153,7 +153,11 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         footer: footerOf(unpaidCols, rep("total"), (tot) => ({ weight: tot.weightMg, invoiceTotal: tot.invoiceTotal, totalPaid: tot.totalPaid, paidCash: tot.paidCash, paidBank: tot.paidBank, remaining: tot.remaining })),
       },
     ],
-    forms: { create: { title: m("new"), display: "page", fields: [], path: () => "/sales-invoices", custom: SalesInvoiceForm } },
+    forms: {
+      create: { title: m("new"), display: "page", fields: [], path: () => "/sales-invoices", custom: SalesInvoiceForm },
+      // The same form with the saved invoice: the number, date, branch, seller, type and price day stay.
+      edit: { title: m("new"), display: "page", fields: [], path: (r) => `/sales-invoices/${r?.id}`, method: "PUT", custom: SalesInvoiceForm },
+    },
     record: {
       title: (r) => `${m("recordNo")} ${code6(r.invoiceNumber)}`,
       endpoint: (r) => `/sales-invoices/${r.id}`,        // a Super admin reads a deleted one too
@@ -207,8 +211,8 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         </>;
       },
       // Print: one button per layout in a new window; the gift layout has its own box above (recipient and prices), so it is not one of them.
-      actions: LAYOUTS.filter((layout) => layout !== "gift").map((layout) => ({ id: `print-${layout}`, label: t("gold-sales", `prints.layouts.${layout}`), icon: "print", when: (r: Row) => !r.deletedAt, run: (r: Row) => { openPrint(r.id, layout, tr); } })),
-      // No edit: a saved sales invoice is never changed. Delete marks it, puts its pieces back for sale and gives back cash and bank.
+      actions: [{ id: "edit", label: t("common", "edit"), icon: "edit", when: (r: Row) => !!r.editable && !r.deletedAt, run: (r: Row, h: { close: () => void; openForm: (id: string, row?: Row | null) => void }) => { h.close(); h.openForm("edit", r); } }, ...LAYOUTS.filter((layout) => layout !== "gift").map((layout) => ({ id: `print-${layout}`, label: t("gold-sales", `prints.layouts.${layout}`), icon: "print", when: (r: Row) => !r.deletedAt, run: (r: Row) => { openPrint(r.id, layout, tr); } }))],
+      // Edit (issue #175) is the first action, shown when the server says this user may edit it now. Delete marks it, puts its pieces back for sale and gives back cash and bank.
       remove: { when: (r) => !r.deletedAt, path: (r) => `/sales-invoices/${r.id}`, confirm: (r) => ({ title: m("deleteTitle", { code: code6(r.invoiceNumber) }), text: m("deleteBody") }) },
     },
   };

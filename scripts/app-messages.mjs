@@ -295,6 +295,7 @@ Object.assign(APP, {
   "errors.draftCompleted": ["اكتملت هذه المسودة وصارت فاتورة، فلا تُعدَّل ولا تُحذف ولا تُتمّ مرة أخرى.", "This draft is already completed. It cannot be edited, deleted or completed again."],
   "errors.draftItemsMismatch": ["القطع الممسوحة لا تطابق أصناف المسودة وعددها. راجع الجدول وامسح من جديد.", "The scanned pieces do not match the draft's items and counts. Check the table and scan again."],
   "errors.salesDraftNotFound": ["لم يتم العثور على هذه المسودة.", "This draft was not found."],
+  "errors.documentLocked": ["لم تُحفظ: أُنشئ هذا المستند يوم {day} وقُفل. المستخدم العادي يعدّل في نفس اليوم فقط؛ اطلب من المدير.", "Not saved: this was made on {day} and is locked. A normal user edits on the day it was made; ask an Admin."],
   // Statements: the balance after each treasury line, the net of the period, and the bank statement's net and closing balance.
   "treasury-reports.columns.balance": ["الرصيد", "Balance"], "treasury-reports.statement.net": ["صافي الفترة", "Net of the period"],
   "bank-movements.bankStatement.net": ["صافي الحساب", "Net"], "bank-movements.bankStatement.balanceAfter": ["الرصيد الختامي", "Closing balance"],
