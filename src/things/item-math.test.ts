@@ -4,7 +4,7 @@ import { exampleOf, onePiece, pricePerGram, typedHundredths, valueText } from ".
 const B = BigInt;
 
 // 21K at 4,123.45 EGP/g, one piece of 4.375 g: gold 1,804,009.375 piastres -> 18,040.09.
-const price = { sellPrice: 412345, silverPrice: 4550 };
+const price = { sellPrice: 412345, silverSellPrice: 4550 };
 const form = (mode: string, value: string) => ({ karat: "21", weight: "4.375", mode, value });
 
 describe("item example: one piece today, exact piastres", () => {
@@ -28,11 +28,11 @@ describe("item example: one piece today, exact piastres", () => {
     expect(pricePerGram(price, "18")).toBe(B(353439));    // 412345 x 18 / 21 = 353438.57 -> 353439
     expect(pricePerGram(price, "24")).toBe(B(471251));    // 471251.43 -> 471251
     expect(pricePerGram(price, "999")).toBe(B(4550));
-    expect(pricePerGram({ sellPrice: 1, silverPrice: null }, "999")).toBeNull();
+    expect(pricePerGram({ sellPrice: 1, silverSellPrice: null }, "999")).toBeNull();
   });
   it("says why there is no number: no price yet, or the form is not filled", () => {
     expect(exampleOf(null, form("per_gram", "1"))).toEqual({ ok: false, why: "noPrice" });
-    expect(exampleOf({ sellPrice: 1, silverPrice: null }, { ...form("per_gram", "1"), karat: "999" })).toEqual({ ok: false, why: "noPrice" });
+    expect(exampleOf({ sellPrice: 1, silverSellPrice: null }, { ...form("per_gram", "1"), karat: "999" })).toEqual({ ok: false, why: "noPrice" });
     for (const bad of [{ weight: "" }, { weight: "1.2345" }, { value: "1.234" }, { value: "-1" }, { mode: "" }, { karat: "" }])
       expect(exampleOf(price, { ...form("per_gram", "1"), ...bad })).toEqual({ ok: false, why: "fill" });
   });

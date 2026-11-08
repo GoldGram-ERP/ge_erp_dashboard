@@ -310,7 +310,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const dropLine = (i: number) => { touch(); setErrs({}); setLeaving(i); setTimeout(() => { setLines((ls) => ls.filter((_, j) => j !== i)); setLeaving(null); }, 180); };
   const side = buy ? "buy" : "sell";
   const manualOpen = typing || manual[side] !== "";
-  const shownPrice = (s: "sell" | "buy") => (price ? piastresText(metal === "silver" ? price.silverPrice : s === "sell" ? price.sellPrice : price.buyPrice) : "—");
+  const shownPrice = (s: "sell" | "buy") => (price ? piastresText(metal === "silver" ? (s === "sell" ? price.silverSellPrice : price.silverBuyPrice) : s === "sell" ? price.sellPrice : price.buyPrice) : "—");
   const totalText = quote ? piastresText(quote.q.totalPiastres) : "—";
   const statusText = price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading");
   const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone);

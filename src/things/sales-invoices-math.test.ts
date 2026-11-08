@@ -76,7 +76,7 @@ describe("the payment block", () => {
 
 describe("the line price", () => {
   it("worked example: 21K at 4,123.45 a gram, 4.375 g, workmanship 187.50 a gram, count 3", () => {
-    const perGram = pricePerGram({ sellPrice: 412345, silverPrice: null }, "21")!;
+    const perGram = pricePerGram({ sellPrice: 412345, silverSellPrice: null }, "21")!;
     expect(linePriceOf(perGram, BigInt(4375), BigInt(18750), 3)).toEqual({
       pieceGold: BigInt(1804009), pieceMaking: BigInt(82031), piece: BigInt(1886040), gold: BigInt(5412027), making: BigInt(246093), line: BigInt(5658120),
     });
@@ -85,7 +85,7 @@ describe("the line price", () => {
     expect(linePriceOf(BigInt(1), BigInt(500), BigInt(0), 3)).toMatchObject({ pieceGold: BigInt(1), gold: BigInt(3), line: BigInt(3) }); // 0.5 -> 1 each
   });
   it("18K is the 21K price x 18 / 21 half up", () => {
-    const perGram = pricePerGram({ sellPrice: 412345, silverPrice: null }, "18")!;
+    const perGram = pricePerGram({ sellPrice: 412345, silverSellPrice: null }, "18")!;
     expect(perGram).toBe(BigInt(353439)); // 353438.57 -> 353439
     expect(linePriceOf(perGram, BigInt(1000), BigInt(0), 1).line).toBe(BigInt(353439));
   });

@@ -52,7 +52,7 @@ await makeUser("deskadmin", "Desk Admin", { userType: "admin", branchId, screens
 const admin = await signIn("deskfull@example.com", PASSWORD);
 // gold price for today (the latest saved set is the one in force)
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date());
-if (!sql(`SELECT 1 FROM gold_price_set WHERE date='${today}' LIMIT 1`)) must(await call("POST", "/gold-prices", admin, { date: today, sellPrice: SELL, buyPrice: SELL, silverPrice: 5000 }), "gold price");
+if (!sql(`SELECT 1 FROM gold_price_set WHERE date='${today}' LIMIT 1`)) must(await call("POST", "/gold-prices", admin, { date: today, sellPrice: SELL, buyPrice: SELL, silverSellPrice: 5000, silverBuyPrice: 5000 }), "gold price");
 
 let category = (await list("/categories?search=Desk%20category", admin)).find((c) => c.categoryName === "Desk category")?.id;
 category ??= must(await call("POST", "/categories", admin, { categoryName: "Desk category" }), "category").id;

@@ -94,7 +94,7 @@ async function setup() {
   // a gold price with a buy price for today, when the database has none
   const probe = await S.api('GET', `/customer-pieces/buy-price?itemId=${made.item.id}&quantity=1`);
   if (probe.status === 409 && probe.body?.message === 'noGoldPriceToday') {
-    made.price = (await S.api('POST', '/gold-prices', { date: cairoDay(), sellPrice: 430000, buyPrice: 405000, silverPrice: 5000 })).body.id;
+    made.price = (await S.api('POST', '/gold-prices', { date: cairoDay(), sellPrice: 430000, buyPrice: 405000, silverSellPrice: 5000, silverBuyPrice: 5000 })).body.id;
   }
 }
 const pickItem = async (browser: any, screen: any) => {

@@ -11,7 +11,7 @@ const PAIRS: [string, string, string][] = [['.tb-cell', '.help', 'b'], ['.sc-til
 for (const lang of LANGS) {
   test(`numbers start where their label starts, and no ltr block flips its start edge (${lang})`, { tags: ['e2e', 'audit'], requires: ['browser'] }, async ({ go, browser, shot, screen }) => {
     const S = await seed();
-    if ((await (await apiAs('superadmin'))('GET', '/gold-prices/today')).status === 404) await (await apiAs('superadmin'))('POST', '/gold-prices', { date: cairoDay(), sellPrice: 430000, buyPrice: 405000, silverPrice: 5000 });   // the totals bar needs a price
+    if ((await (await apiAs('superadmin'))('GET', '/gold-prices/today')).status === 404) await (await apiAs('superadmin'))('POST', '/gold-prices', { date: cairoDay(), sellPrice: 430000, buyPrice: 405000, silverSellPrice: 5000, silverBuyPrice: 5000 });   // the totals bar needs a price
     const bad: string[] = []; let pairs = 0, blocks = 0;
     for (const route of ROUTES) {
       await go('superadmin', route, lang);

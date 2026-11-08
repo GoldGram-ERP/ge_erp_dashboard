@@ -209,7 +209,7 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
         <div className="field" data-k="lines"><div id="lineRows" style={{ marginTop: 10 }}>
           {lines.map((l, i) => {
             const it = itemOf(l.itemId), p = lineOf(l), ok = okOf(l);
-            const parts = ok && it ? { perGram: pricePerGram({ sellPrice: ok.goldPrice21k, silverPrice: null }, String(it.karat)), weightMg: Number(it.weight ?? 0), workPerGram: typedHundredths(it.workmanshipValue) ?? BigInt(0), count: qOf(l) ?? 1 } : null;
+            const parts = ok && it ? { perGram: pricePerGram({ sellPrice: ok.goldPrice21k, silverSellPrice: null }, String(it.karat)), weightMg: Number(it.weight ?? 0), workPerGram: typedHundredths(it.workmanshipValue) ?? BigInt(0), count: qOf(l) ?? 1 } : null;
             return (
               <div className="formgrid" data-line={i} key={i} style={{ marginBottom: 10 }}>
                 <div className="field" data-k={`line${i}Item`} data-err={errs[`line${i}Item`] ? "" : undefined}><label htmlFor={`it${i}`}>{rm("itemNumber", { number: String(i + 1) })} *</label>
