@@ -456,6 +456,8 @@
    "fromDate": "من تاريخ",
    "toDate": "إلى تاريخ",
    "balanceBefore": "ما قبله",
+   "balanceAfter": "الرصيد الختامي",
+   "net": "صافي الحساب",
    "accountRequired": "اختر الحساب.",
    "types": {
     "deposit": "إيداع",
@@ -2851,7 +2853,8 @@
   "statement": {
    "title": "كشف حساب خزنة",
    "opening": "الرصيد الافتتاحي",
-   "closing": "الرصيد الختامي"
+   "closing": "الرصيد الختامي",
+   "net": "صافي الفترة"
   },
   "branch": "الفرع",
   "treasury": "الخزنة",
@@ -2886,7 +2889,8 @@
    "date": "التاريخ",
    "movementKind": "نوع الحركة",
    "in": "وارد",
-   "out": "منصرف"
+   "out": "منصرف",
+   "balance": "الرصيد"
   },
   "lineKinds": {
    "deposit": "إيداع",

@@ -13,6 +13,18 @@
     "en": "Cash movements: the gold movements tab and the Add gold movement button are gone, the page is cash only.",
     "ar": "حركات النقدية: شالنا تبويب حركات الذهب وزرار إدخال حركة ذهب، الصفحة بقت للفلوس بس.",
     "route": "/money/cash"
+   },
+   {
+    "kind": "new",
+    "en": "Treasury statement: a balance after every line, and the net of the period (in minus out) with the closing balance, so you see the total money in the treasury.",
+    "ar": "كشف حساب الخزنة: فيه رصيد بعد كل حركة، وصافي الفترة (وارد ناقص منصرف) مع الرصيد الختامي، عشان تعرف معاك كام فلوس في الخزنة.",
+    "route": "/money/treasuries"
+   },
+   {
+    "kind": "new",
+    "en": "Bank statement: the totals row shows the net of the account (debit minus credit), and the top line shows the net and the closing balance.",
+    "ar": "كشف حساب البنك: صف الإجمالي بيعرض صافي الحساب (مدين ناقص دائن)، والسطر اللي فوق بيعرض الصافي والرصيد الختامي.",
+    "route": "/money/bank-movements"
    }
   ]
  },

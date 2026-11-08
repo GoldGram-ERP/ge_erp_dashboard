@@ -73,6 +73,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     sc("documentNumber", undefined, { render: (r) => <Ltr>{code6(r.documentNumber)}</Ltr> }),
     sc("in", "money", { get: (r) => r.amountIn }),
     sc("out", "money", { get: (r) => r.amountOut }),
+    sc("balance", "money", { get: (r) => r.balanceAfter, render: (r) => moneyNode(r.balanceAfter, piastresText(r.balanceAfter)) }),   // the EGP balance after this line
     sc("gold", undefined, { className: "num", render: (r) => lines(r.gold.map((g: any) => `${g.karat}K ${g.inMg > 0 ? `+${milligramsText(g.inMg)}` : ""}${g.inMg > 0 && g.outMg > 0 ? " " : ""}${g.outMg > 0 ? `-${milligramsText(g.outMg)}` : ""}`)) }),
     sc("pieceCount", "int"),
   ];
@@ -90,8 +91,9 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       { name: "toDate", label: trr("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) },
     ],
     paging: false, onRow: false, columns: stCols,
-    answerExtra: (a) => `${trr("statement.opening")} ${side(a.opening)} · ${trr("statement.closing")} ${side(a.closing)}`,
-    footer: (rows) => foot(stCols, rep("total"), { in: piastresText(rows.reduce((s, r) => s + r.amountIn, 0)), out: piastresText(rows.reduce((s, r) => s + r.amountOut, 0)), pieceCount: intText(rows.reduce((s, r) => s + r.pieceCount, 0)) }),
+    answerExtra: (a) => `${trr("statement.opening")} ${side(a.opening)} · ${trr("statement.net")} ${piastresText(a.totals?.net ?? 0)} · ${trr("statement.closing")} ${side(a.closing)}`,
+    // In and out are the server's totals of the whole period; the balance cell is the closing balance (opening + net).
+    footer: (rows, a) => foot(stCols, rep("total"), { in: piastresText(a?.totals?.amountIn ?? 0), out: piastresText(a?.totals?.amountOut ?? 0), balance: moneyNode(a?.closing?.amountPiastres ?? 0, piastresText(a?.closing?.amountPiastres ?? 0)), pieceCount: intText(rows.reduce((s, r) => s + r.pieceCount, 0)) }),
   };
 
   return {

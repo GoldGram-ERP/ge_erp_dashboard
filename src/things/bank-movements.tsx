@@ -10,7 +10,7 @@ import type { Me } from "@/stores/ui";
 import type { Tr } from "@/lib/t";
 import { ThingPage, Kv, Ltr, Section } from "@/components/engine";
 import { useAccess } from "./sales-access";
-import { branchSpec, code6, dict, foot } from "./money-shared";
+import { branchSpec, code6, dict, foot, moneyNode } from "./money-shared";
 
 const accountSpec: LookupSpec = { path: "/bank-accounts", value: "id", label: (r) => `${r.accountName} · ${r.bankName}` };
 const accountOptions: LookupSpec = { path: "/bank-accounts", value: "id", label: (r) => `${r.accountName} · ${code6(r.code)}`, query: { order: "newest" } };
@@ -65,8 +65,9 @@ export function buildConfig(tr: Tr, me?: Me | null): ThingConfig {
     sort: { default: { key: "date", dir: "asc" } },
     paging: { sizes: [10, 25, 50, 100], size: 25 },
     columns: cols, onRow: false,
-    answerExtra: (a) => (a ? `${s("balanceBefore")} ${piastresText(a.balanceBefore ?? 0)}` : ""),
-    footer: (_rows, a) => foot(cols, rep("total"), a?.totals ? { debit: piastresText(a.totals.debit), credit: piastresText(a.totals.credit) } : {}),
+    answerExtra: (a) => (a ? `${s("balanceBefore")} ${piastresText(a.balanceBefore ?? 0)} · ${s("net")} ${piastresText(a.totals?.net ?? 0)} · ${s("balanceAfter")} ${piastresText(a.balanceAfter ?? 0)}` : ""),
+    // The balance cell of the totals row is the net (debit - credit) of the rows shown, red below zero.
+    footer: (_rows, a) => foot(cols, rep("total"), a?.totals ? { debit: piastresText(a.totals.debit), credit: piastresText(a.totals.credit), balance: moneyNode(a.totals.net, piastresText(a.totals.net)) } : {}),
   };
 
   // Payload {branchId, bankAccountId, movementType, date, amount (integer piastres), note}. documentNumber is given by the system.
