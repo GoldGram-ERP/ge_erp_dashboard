@@ -3,8 +3,8 @@
 // Frontend tab), never here: changing it needs no release.
 //
 // The token is public by design (every page sends it), so it lives in the code, not in the host's variables.
-// The JavaScript tag token of Better Stack application "GG_ERP_DASHBAORD" (Frontend tab).
-export const RUM_TOKEN = "9GyQ4tEaVdFi9hXnfXc7E5XJ";
+// The JavaScript tag token of Better Stack application "GoldGramERP Dashboard" (2827821, Frontend tab). It is not the DSN token.
+export const RUM_TOKEN = "49TF4JndrqGb8bjDcrLyfdA6";
 
 // Who a session belongs to, as Better Stack sees it: the internal user id and the role only. Never a name,
 // a username or an email: staff personal data does not leave the ERP. The id is looked up in the ERP.
