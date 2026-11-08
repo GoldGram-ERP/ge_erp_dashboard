@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "A shared section divider and section title; the sales desk now has a title and a divider for each section.",
+    "ar": "فاصل وعنوان قسم موحّدين، ومكتب المبيعات بقى فيه عنوان وفاصل لكل قسم.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.46",
   "date": "2026-11-08",
   "changes": [

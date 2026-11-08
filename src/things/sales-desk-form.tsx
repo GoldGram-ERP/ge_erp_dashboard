@@ -13,6 +13,7 @@ import { useMe } from "@/lib/session";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
 import { revealFirstError } from "@/lib/submit-guard";
+import { Divider, SectionTitle } from "@/components/ui";
 import { Link as NavLink } from "@/i18n/navigation";
 import { bankPaid, cashPaid, paymentErrors, paymentKeyOf, readDiscount, sentBanks, type Bank } from "./sales-invoices-math";
 import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscount, readPieceCode, sg, type DiscountKind } from "./sales-form-parts";
@@ -358,6 +359,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
         <div className="tk-grid">
           <fieldset disabled={readonly || saving} className="tk-a">
             {!stepBranch ? <p className="tk-step-hint" id="sd-step-branch">{L("اختار الفرع الأول عشان تضيف قطع.", "Choose the branch first to add pieces.")}</p> : <section id="sec-items" className="tk-ticket tk-reveal">
+              <SectionTitle>{L("القطع", "Pieces")}</SectionTitle>
               <div className="field tk-add"><label htmlFor="itadd">{L("إضافة قطعة", "Add a piece")}</label>
                 <Choice tr={tr} id="itadd" options={itemOptions} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
               {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
@@ -390,6 +392,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   })}
                 </ul>}
             </section>}
+            {stepBranch && <Divider />}
             {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Disclosure key={custErr ? "e" : "c"} id="sd-customer" className="tk-cust tk-reveal" defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} summary={L("بيانات العميل (اختياري)", "Customer (optional)")}>
               <div className="tk-cgrid">
                 <TextBox kind="text" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
@@ -458,6 +461,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
           <div className="tk-c">
             <fieldset disabled={readonly || saving} className="tk-save">
+              {showMore && <Divider />}
               {showMore && <Disclosure id="sec-payment" className="tk-reveal" defaultOpen={canComplete} hasError={payErr} summary={L("حفظ كمسودة", "Save as draft")}>
                 <div className="tk-draft"><p className="tk-quiet">{d("plannedHelp")}</p>
                   <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
