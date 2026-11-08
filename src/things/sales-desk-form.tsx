@@ -17,7 +17,7 @@ import { bankPaid, cashPaid, paymentErrors, paymentKeyOf, readDiscount, sentBank
 import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscount, readPieceCode, sg, type DiscountKind } from "./sales-form-parts";
 import { PaymentBlock, TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { DISCOUNTS, PAYMENT_NAMES, VISA_PERCENT, deskChoices, karatFits, manualPrice, messageInput, paymentChoices, quoteBody, restoreChoices, secondChoices, splitProblem, type Metal, type Operation, type Payment, type Quote, type Wrapping } from "./sales-desk-quote";
 
@@ -300,7 +300,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
-  const canComplete = !isUser && draft?.status === "open" && !buy;   // a Buy draft is a quote only
+  const canComplete = canCompleteDraft(me?.userType, draft?.status, buy);   // Admin / Super admin only; hidden until the user type is known; a Buy draft is a quote only
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 

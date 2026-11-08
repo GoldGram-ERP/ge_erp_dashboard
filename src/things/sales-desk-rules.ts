@@ -49,3 +49,8 @@ export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" |
   if (d.status === "deleted") return { state: "deleted", text: t("deleted") };
   return d.locked ? { state: "locked", text: t("reason", { day: d.createdDay }) } : { state: "editable", text: t("editable") };
 }
+
+/** Who completes a draft into an invoice (issue #25): the Admin and the Super admin, on an open sell draft. A plain User never does (the backend
+ *  refuses with 403 notAllowed too), and neither does anyone while the user type is still unknown (the page is loading). A Buy draft is a quote only. */
+export const canCompleteDraft = (userType: string | undefined, status: string | undefined, buy: boolean): boolean =>
+  (userType === "admin" || userType === "super_admin") && status === "open" && !buy;

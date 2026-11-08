@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, lockNote, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, lockNote, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -61,5 +61,22 @@ describe("lock note", () => {
   it("a completed or deleted draft says so, whatever `locked` is", () => {
     expect(lockNote({ status: "completed", locked: false, createdDay: "2026-11-05" }, tr).state).toBe("completed");
     expect(lockNote({ status: "deleted", locked: true, createdDay: "2026-11-04" }, tr).state).toBe("deleted");
+  });
+});
+
+describe("who completes a draft (issue #25)", () => {
+  it("an Admin and the Super admin complete an open sell draft", () => {
+    expect(canCompleteDraft("admin", "open", false)).toBe(true);
+    expect(canCompleteDraft("super_admin", "open", false)).toBe(true);
+  });
+  it("a plain User never does", () => {
+    expect(canCompleteDraft("user", "open", false)).toBe(false);
+  });
+  it("nobody does while the user type is unknown (the page is still loading)", () => {
+    expect(canCompleteDraft(undefined, "open", false)).toBe(false);
+  });
+  it("not a completed, deleted or missing draft, and not a Buy draft (a quote only)", () => {
+    for (const status of ["completed", "deleted", undefined]) expect(canCompleteDraft("admin", status, false)).toBe(false);
+    expect(canCompleteDraft("admin", "open", true)).toBe(false);
   });
 });
