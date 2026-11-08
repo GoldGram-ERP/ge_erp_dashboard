@@ -30,6 +30,18 @@
     "kind": "better",
     "en": "Reports and lists: the whole page scrolls instead of a small box under the filters, and a report's filters fold into one bar after you press Report, with an Edit filters button to open them again.",
     "ar": "التقارير والقوايم: الصفحة كلها بتعمل سكرول بدل البوكس الصغير اللي تحت الفلاتر، وفلاتر التقرير بتتقفل في شريط واحد بعد ما تدوس تقرير، وفيه زرار تعديل الفلاتر يفتحها تاني."
+   },
+   {
+    "kind": "fixed",
+    "en": "Sales desk: the selected 'None' pill of the second payment method no longer sticks out of its control, and every selector pill now follows its button when labels or size change.",
+    "ar": "مكتب المبيعات: مستطيل الاختيار الأبيض بتاع 'بدون' في طريقة الدفع التانية مبقاش بيطلع بره الاختيار، وكل مستطيلات الاختيار بقت بتمشي ورا زرارها لما الكلام أو المقاس يتغير.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "Sales desk: the Complete invoice card is only for the Admin and the Super admin; a sales agent no longer sees it even for a moment while the page loads.",
+    "ar": "مكتب المبيعات: كارت إتمام الفاتورة للأدمن والسوبر أدمن بس، وموظف المبيعات مبقاش يشوفه حتى لحظة أثناء تحميل الصفحة.",
+    "route": "/sales/desk"
    }
   ]
  },

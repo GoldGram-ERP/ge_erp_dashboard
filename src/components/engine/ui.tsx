@@ -104,10 +104,24 @@ export const Ltr = ({ children }: { children: ReactNode }) => <span dir="ltr">{c
 export function Seg<T extends string>({ label, items, value, onChange, className = "", attrs }: { label: string; items: { id: T; label: ReactNode; attrs?: Record<string, string> }[]; value: T; onChange: (v: T) => void; className?: string; attrs?: Record<string, string> }) {
   const box = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<{ x: number; w: number } | null>(null);
+  // The pill is placed from the pressed button's position, so it is measured again whenever the buttons change (a label changing without the
+  // count changing moved them: the pill stuck out of the control) and whenever the control or a button is resized (a late font, a language, a window).
+  const shape = items.map((i) => `${i.id}:${typeof i.label === "string" ? i.label : ""}`).join("|");
   useLayoutEffect(() => {
-    const on = box.current?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    setThumb(on ? { x: on.offsetLeft, w: on.offsetWidth } : null);
-  }, [value, items.length]);
+    const el = box.current;
+    if (!el) return;
+    const measure = () => {
+      const on = el.querySelector<HTMLElement>('[aria-pressed="true"]');
+      const next = on ? { x: on.offsetLeft, w: on.offsetWidth } : null;
+      setThumb((now) => (now?.x === next?.x && now?.w === next?.w ? now : next));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(measure);
+    watch.observe(el);
+    el.querySelectorAll("button").forEach((b) => watch.observe(b));
+    return () => watch.disconnect();
+  }, [value, shape]);
   return (
     <div ref={box} className={`seg ${className}`} role="group" aria-label={label} {...attrs}>
       {thumb && <span className="thumb" style={{ width: thumb.w, transform: `translateX(${thumb.x}px)` }} />}

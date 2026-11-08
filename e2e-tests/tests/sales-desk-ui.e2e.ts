@@ -205,3 +205,41 @@ for (const lang of LANGS) {
     expect(await layoutAudit(browser, '#sd', { bars: true }), 'layoutAudit').toEqual([]);
   });
 }
+
+// Issue #25: the Complete card is for the Admin and the Super admin; a plain User never sees it (the backend refuses a User with 403 notAllowed too).
+for (const lang of LANGS) {
+  test(`sales desk: a plain User never sees the Complete invoice card, an Admin does (${lang})`, { tags: ['e2e', 'desk'], requires: ['browser'] }, async ({ app, browser }) => {
+    const dr = await draftBy('agent1', `Desk Gate ${stamp()}`);
+    await as('agent1', browser);
+    await app.open(`/${lang}/sales/desk?new=draft&open=${dr.id}`);
+    await browser.locator('#sd').first().waitFor({ timeout: 25_000 });
+    await browser.locator('#sd-lock, #f-customerName').first().waitFor({ timeout: 25_000 });
+    expect(await browser.locator('#sd-complete').count()).toBe(0);
+    expect(await browser.locator('#sec-complete').count()).toBe(0);
+    await as('deskadmin', browser);
+    await app.open(`/${lang}/sales/desk?new=draft&open=${dr.id}`);
+    await browser.locator('#sd-complete').first().waitFor({ timeout: 25_000 });
+    expect(await browser.locator('#sec-complete').count()).toBe(1);
+  });
+}
+
+// Issue #26: the white pill of a segmented control stays on the pressed button (it stuck out of the second payment method control after the labels changed).
+for (const lang of LANGS) {
+  test(`sales desk: the pill of the second payment method stays inside the control after the first method changes (${lang})`, { tags: ['e2e', 'desk', 'layout'], requires: ['browser'] }, async ({ app, browser, shot }) => {
+    await as('agent1', browser);
+    await app.open(`/${lang}/sales/desk?new=draft`);
+    await browser.locator('[data-pay2="none"]').first().waitFor({ timeout: 25_000 });
+    const pill = () => browser.evaluate(() => {
+      const on = document.querySelector('[data-pay2][aria-pressed="true"]') as HTMLElement | null, seg = on?.closest('.seg') as HTMLElement | null, th = seg?.querySelector('.thumb') as HTMLElement | null;
+      if (!on || !seg || !th) return { ok: false, why: 'missing' };
+      const a = th.getBoundingClientRect(), b = on.getBoundingClientRect(), s = seg.getBoundingClientRect();
+      return { ok: a.left >= s.left - 1 && a.right <= s.right + 1 && Math.abs(a.left - b.left) <= 2 && Math.abs(a.width - b.width) <= 2, why: JSON.stringify({ a: [a.left, a.right], b: [b.left, b.right], s: [s.left, s.right] }) };
+    });
+    expect(await pill()).toMatchObject({ ok: true });
+    for (const first of ['cash', 'instapay', 'bank', 'visa']) {
+      const btn = browser.locator(`[data-pay="${first}"]`);
+      if (await btn.count()) { await btn.first().tap(); await new Promise((r) => setTimeout(r, 400)); expect(await pill(), `first method ${first}`).toMatchObject({ ok: true }); }
+    }
+    await shot(`desk-pill-${lang}`);
+  });
+}
