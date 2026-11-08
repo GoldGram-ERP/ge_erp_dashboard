@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales desk layout tidied: every area is one bubble of the same width on one edge, even gaps, a stacked header, and the buttons aligned under the bubbles. The Complete invoice section has its own titled area, the action buttons have icons, and hovering shows a distinct colour.",
+    "ar": "ترتيب مكتب المبيعات: كل منطقة فقاعة بنفس العرض وعلى نفس الحافة، ومسافات متساوية، وهيدر مترتب، والأزرار تحت الفقاعات. وقسم إتمام الفاتورة بقى له منطقة بعنوان، والأزرار عليها أيقونات، وعند المرور بالماوس بيظهر لون مختلف.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.57",
   "date": "2026-11-08",
   "changes": [

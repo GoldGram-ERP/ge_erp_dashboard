@@ -118,3 +118,19 @@
 @keyframes tk-reveal-in{from{opacity:0;transform:translateY(.5rem)}to{opacity:1;transform:none}}
 .tk-reveal{animation:tk-reveal-in .22s ease-out}
 @media (prefers-reduced-motion:reduce){.tk-reveal{animation:none}}
+
+/* Tidy (owner, 2026-11-08: "good component, bad layout"): one rhythm, one column width, one start edge.
+   Every area bubble is as wide as the column (a bubble that shrinks to its content leaves a ragged edge), the gap between areas is one value,
+   the header stacks in reading order (title, hint, selects, tabs + clear), and the action buttons sit on the same edge as the bubbles. */
+#sd{--tk-gap:1rem}
+#sd .tk-a,#sd .tk-c{width:100%;max-width:42.5rem}
+#sd .tk-c{align-items:stretch}
+#sd .tk-save{width:100%;max-width:none}
+#sd .tk-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.75rem 1rem}
+#sd .tk-title,#sd .tk-intro,#sd .tk-chips{flex-basis:100%}
+#sd .tk-title{order:1}
+#sd .tk-intro,#sd .tk-head>p{order:2;margin:0}
+#sd .tk-chips{order:3}
+#sd .tk-segs{order:4}
+#sd .tk-clear{order:5;margin-inline-start:0}
+#sd .tk-actions{margin-top:.5rem}

@@ -1135,3 +1135,10 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .field input:not([type=checkbox]):not([type=radio]),.field select{height:max(var(--h-field),1.9em)}
 .sel-btn{height:max(var(--h-field),1.9em)}
 .sel-search input{height:max(2.125rem,1.9em)}
+/* the mouse highlight is a warm tint of its own, never the bubble colour: rows and unselected tabs inside a bubble show clearly when hovered */
+.table tr.row:hover td,.grp-panel .table tr.row:hover td{background:color-mix(in srgb,var(--gold) 14%,var(--surface))}
+.tk-card .seg button:not([aria-pressed=true]):hover,.card .seg button:not([aria-pressed=true]):hover{background:color-mix(in srgb,var(--gold) 14%,var(--line-strong))}
+
+/* Sales desk areas: every bubble is as wide as its column and the gap between areas is the desk's one gap (see the Tidy block in things/sales-desk.css) */
+#sd .grp-block,#sd .grp-block.kv-block{width:100%;max-width:none;margin-top:0}
+#sd .grp-block .grp-panel,#sd .grp-block.kv-block .grp-panel{width:100%;max-width:none;min-width:0}

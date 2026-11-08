@@ -473,7 +473,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
               {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
 
-            {canComplete && <div className="tk-card" id="sec-complete"><b>{d("complete")}</b><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
+            {canComplete && <div className="grp-block wide" id="sec-complete"><h3 className="grp-title">{L("إتمام الفاتورة · للأدمن والسوبر أدمن", "Complete invoice · Admin and Super admin")}</h3><div className="tk-card"><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
               <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>
                 <div className="tk-codeRow">
                   <div className="field"><Input kind="code" id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc}
@@ -498,18 +498,18 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                 if (dirty) { setCompleteMsg(d("pricesStale")); revealFirstError(); return; }   // never a silent click: say what is missing and go there
                 if (!allScanned) { setCompleteMsg(L("اعمل مسح لكل القطع المطلوبة الأول.", "Scan every required piece first.")); revealFirstError(); return; }
                 void complete();
-              }}>{completing ? d("completing") : d("complete")}</Button>
+              }}><Icon name="check" size={15} />{completing ? d("completing") : d("complete")}</Button>
               {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
-            </div>}
+            </div></div>}
 
             {draft?.status === "completed" && <div className="tk-card" id="sd-done" role="status"><b>{d("completed", { number: draft.salesInvoiceNumber })}</b>
               {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
 
             {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
-              {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save">{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
+              {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
               {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
-              <Button id="sd-back" onClick={close}>{d("backToList")}</Button>
+              <Button id="sd-back" onClick={close}><Icon name="back" size={15} />{d("backToList")}</Button>
             </div>
           </div>
         </div>
