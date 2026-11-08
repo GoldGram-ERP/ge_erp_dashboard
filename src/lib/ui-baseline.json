@@ -2,7 +2,7 @@
  "src/app/globals.css": {
   "U1": 0,
   "T1": 0,
-  "C1": 1149
+  "C1": 1144
  },
  "src/app/[locale]/sign-in/page.tsx": {
   "U1": 2,
@@ -100,9 +100,9 @@
   "C1": 0
  },
  "src/things/purchases-labels.tsx": {
-  "U1": 12,
+  "U1": 3,
   "T1": 0,
-  "C1": 7
+  "C1": 0
  },
  "src/things/sales-desk-form.tsx": {
   "U1": 2,
@@ -112,7 +112,7 @@
  "src/things/sales-desk.css": {
   "U1": 12,
   "T1": 0,
-  "C1": 109
+  "C1": 107
  },
  "src/things/sales-form-parts.tsx": {
   "U1": 5,
@@ -135,9 +135,9 @@
   "C1": 0
  },
  "src/things/sales-reprint-form.tsx": {
-  "U1": 14,
+  "U1": 5,
   "T1": 0,
-  "C1": 7
+  "C1": 0
  },
  "src/things/sales-reservation-form.tsx": {
   "U1": 5,

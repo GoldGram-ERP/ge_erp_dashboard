@@ -15,6 +15,7 @@ import { useT } from "@/lib/t";
 import { parseDeepLink, pruneParams, withParams } from "./query";
 import { Select } from "../fields/Select";
 import { FilterFields, useFieldsForm } from "../fields/useFieldsForm";
+import { FilterSummary } from "./FilterSummary";
 import { FormPage, FormSheet } from "./FormView";
 import { RecordSheet } from "./RecordSheet";
 import { Table, sortKeysOf } from "./Table";
@@ -150,7 +151,7 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   const sheetForm = form && !pageForm ? cfg.forms![form.id] : null;
 
   return (
-    <div className="thing-root fill" style={{ position: "relative", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
+    <div className="thing-root" style={{ position: "relative", display: "flex", flexDirection: "column" }}>   {/* a column that takes its content's height: the page (.ws) scrolls, not the table */}
       <Header cfg={cfg} creates={creates} actions={actions} view={view} vs={vs} onCreate={(id) => openForm(id)} reload={reload} />
       {views.length > 1 && <Seg className="page" label={L("العرض", "View")} items={views.map((v) => ({ id: v.id, label: v.label }))} value={view.id} onChange={(id) => { pickView(cfg.id, id); bump((n) => n + 1); go({ view: id }, true); }} />}
       <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} sortToUrl={(k, d) => go({ sort: k, dir: d })} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm}
@@ -238,11 +239,16 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
   // filters: a plain filter applies when it changes, a report's on Run; invalid filters (until before from) show their message and do not apply
   const filters = view.filters ?? [];
   const ff = useFieldsForm(filters, vs.filters);
+  // A report's filter panel folds into one bar when it runs, so the result gets the page; "Edit filters" opens it again with the values kept.
+  // A report that was already run (the view is remembered while the app is open) starts folded.
+  const [open, setOpen] = useState(!(view.runLabel && vs.ran));
+  const folded = !!view.runLabel && vs.ran && !open;
   const apply = async (run: boolean) => {
     const r = readFields(ff.getValues(), filters, tr);
     ff.clearErrors();
     if (Object.keys(r.errors).length) { ff.setErrors(r.errors); return false; }
     set({ filters: { ...vs.filters, ...r.values }, page: 1, ...(run ? { ran: true } : {}) });
+    if (run && view.runLabel) setOpen(false);
     return true;
   };
   useEffect(() => {
@@ -264,7 +270,13 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
 
   return (
     <>
-      {(filters.length > 0 || view.runLabel) && (
+      {folded && (
+        <div className="filters-bar" id="filters-bar">
+          <span className="fb-sum" id="filters-summary"><FilterSummary filters={filters} values={vs.filters} none={L("بدون فلاتر", "No filters")} /></span>
+          <Button id="edit-filters" onClick={() => setOpen(true)}><Icon name="edit" />{L("تعديل الفلاتر", "Edit filters")}</Button>
+        </div>
+      )}
+      {!folded && (filters.length > 0 || view.runLabel) && (
         <div className="filters" id="filters" onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).matches("input")) { e.preventDefault(); apply(true); } }}>
           <FilterFields form={ff} fields={filters} />
           {view.runLabel && <Button variant="primary" id="run" onClick={() => apply(true)}>{view.runLabel}</Button>}

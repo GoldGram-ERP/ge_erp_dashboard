@@ -25,6 +25,11 @@
     "en": "Bank statement: the totals row shows the net of the account (debit minus credit), and the top line shows the net and the closing balance.",
     "ar": "كشف حساب البنك: صف الإجمالي بيعرض صافي الحساب (مدين ناقص دائن)، والسطر اللي فوق بيعرض الصافي والرصيد الختامي.",
     "route": "/money/bank-movements"
+   },
+   {
+    "kind": "better",
+    "en": "Reports and lists: the whole page scrolls instead of a small box under the filters, and a report's filters fold into one bar after you press Report, with an Edit filters button to open them again.",
+    "ar": "التقارير والقوايم: الصفحة كلها بتعمل سكرول بدل البوكس الصغير اللي تحت الفلاتر، وفلاتر التقرير بتتقفل في شريط واحد بعد ما تدوس تقرير، وفيه زرار تعديل الفلاتر يفتحها تاني."
    }
   ]
  },
