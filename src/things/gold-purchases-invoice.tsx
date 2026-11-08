@@ -11,6 +11,8 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { dateText, milligramsText, today } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { toast, Icon } from "@/components/engine";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { Select } from "@/components/fields/Select";
 import { loadLookup } from "@/components/fields/useLookup";
@@ -38,7 +40,6 @@ export async function itemsById(ids: string[], fresh = false): Promise<Map<strin
   return new Map(rows.filter((r): r is Row => !!r).map((r) => [r.id, r]));
 }
 const milligramsOrEmpty = (mg: number | undefined) => (mg === undefined ? "" : milligramsText(mg));
-const ERR = { color: "var(--warn)", fontSize: 12.5, marginTop: 4 } as const;
 
 export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
   const { t } = tr;
@@ -114,7 +115,8 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
     lines.forEach((l, i) => { const it = known.current.get(l.label), p = !l.itemId && it && itemProblem(it); if (p) e[`lines.${i}.itemId`] = fieldText(`lines.${i}.itemId`, p, l.label); });   // why, not just "required"
     if (picksBranch && !branchId) e.branchId = m("branchRequired");
     setBanner(""); setErrs(e);
-    if (Object.keys(e).length || !r.payload) return;
+    if (Object.keys(e).length) { revealFirstError(); return; }
+    if (!r.payload) { setBanner(tr.L("راجع بيانات الفاتورة", "Check the invoice details")); revealFirstError(); return; }
     setSaving(true);
     try {
       const body = editing ? { ...r.payload, version: row!.version } : { ...r.payload, ...(picksBranch ? { branchId } : {}) };
@@ -123,21 +125,22 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
       reload();
     } catch (err) {
       setSaving(false);
-      if (!(err instanceof ApiFailure)) { setBanner(tr.errorText({ message: "serverUnreachable" })); return; }
+      if (!(err instanceof ApiFailure)) { setBanner(tr.errorText({ message: "serverUnreachable" })); revealFirstError(); return; }
       const fields = (Array.isArray(err.error.fields) ? err.error.fields : []) as { field: string; message: string }[];
       const refused = Object.fromEntries(fields.filter((f) => FIELD.test(f.field) || f.field === "branch" || f.field === "branchId")
         .map((f) => [FIELD.test(f.field) ? f.field : "branchId", f.field === "branch" || f.field === "branchId" ? m("branchRequired") : fieldText(f.field, f.message, lines[Number(f.field.split(".")[1])]?.label)]));
-      if (Object.keys(refused).length) setErrs(refused); else setBanner(tr.errorText(err.error));   // editWindowClosed, invoiceCoded, notYourInvoice, changedByAnother ...
+      if (Object.keys(refused).length) setErrs(refused); else setBanner(tr.errorText(err.error));
+      revealFirstError();   // editWindowClosed, invoiceCoded, notYourInvoice, changedByAnother ...
     }
   }
 
-  const err = (k: string) => errs[k] && <div className="err" role="alert" style={ERR}>{errs[k]}</div>;
+  const err = (k: string) => errs[k] && <FieldError>{errs[k]}</FieldError>;
   const numberText = editing ? code6(row!.invoiceNumber) : next.data ? code6(next.data.next) : "";
   return (
     <>
       <datalist id="inv-items">{choices.map(([id, l]) => <option key={id} value={l} />)}</datalist>
       <form id="inv" className="card" noValidate onSubmit={(ev) => { ev.preventDefault(); save(); }}>
-        {banner && <div id="inv-alert"><div className="note warn" role="alert">{banner}</div></div>}
+        {banner && <div id="inv-alert"><div className="note warn" role="alert" data-field-error>{banner}</div></div>}
         <h3>{m("details")}</h3>
         <div className="formgrid">
           <div className="field"><label htmlFor="inv-no">{m("invoiceNumber")}</label>
@@ -146,12 +149,12 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
           {editing ? (
             <div className="field"><label htmlFor="inv-branch">{m("branch")}</label><Input id="inv-branch" disabled value={branchName.data ?? ""} readOnly /></div>
           ) : picksBranch ? (
-            <div className="field" data-k="branchId"><label htmlFor="inv-branch-btn">{m("branch")} *</label>
+            <div className="field" data-k="branchId" data-err={errs.branchId ? "" : undefined}><label htmlFor="inv-branch-btn">{m("branch")} *</label>
               <Select id="inv-branch" name="inv-branch" value={branchId} options={branches} placeholder={c("choose")} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
           ) : (
             <div className="field"><label>{m("branch")}</label><div className="help">{m("yourBranch")}</div></div>
           )}
-          <div className="field" data-k="date"><label htmlFor="inv-date-btn">{m("date")} *</label>
+          <div className="field" data-k="date" data-err={errs.date ? "" : undefined}><label htmlFor="inv-date-btn">{m("date")} *</label>
             <DatePicker id="inv-date" name="inv-date" value={date} required onChange={(v) => { touch(); setDate(v); }} />{err("date")}</div>
         </div>
       </form>
@@ -160,11 +163,11 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
         <DataTable fixedOrder tableClassName="lines" bodyId="inv-lines" head={[{ label: "#", num: true }, <>{m("item")} *</>, <>{m("quantity")} *</>, m("weight"), ""]}>{lines.map((l, i) => (
             <Tr key={i} data-i={i}>
               <Td num>{i + 1}</Td>
-              <Td><div className="field" data-k={`lines.${i}.itemId`}>
+              <Td><div className="field" data-k={`lines.${i}.itemId`} data-err={errs[`lines.${i}.itemId`] ? "" : undefined}>
                 <Input data-f="item" list="inv-items" autoComplete="off" aria-label={m("item")} placeholder={m("itemSearchPlaceholder")} value={l.label}
                   onFocus={() => { if (!choices.length) searchItems(""); }}
                   onChange={(ev) => { const label = ev.target.value, it = known.current.get(label); touch(); setLines((ls) => ls.map((x, j) => (j === i ? pick({ ...x, label }, it) : x))); problemText(i, label, it); searchItems(label); }} />{err(`lines.${i}.itemId`)}</div></Td>
-              <Td><div className="field" data-k={`lines.${i}.quantity`}><Input data-f="quantity" dir="ltr" inputMode="numeric" aria-label={m("quantity")} value={l.quantity} onChange={(ev) => setLine(i, { quantity: ev.target.value })} />{err(`lines.${i}.quantity`)}</div></Td>
+              <Td><div className="field" data-k={`lines.${i}.quantity`} data-err={errs[`lines.${i}.quantity`] ? "" : undefined}><Input data-f="quantity" dir="ltr" inputMode="numeric" aria-label={m("quantity")} value={l.quantity} onChange={(ev) => setLine(i, { quantity: ev.target.value })} />{err(`lines.${i}.quantity`)}</div></Td>
               <Td><div className="field"><Input data-f="weight" dir="ltr" readOnly aria-label={m("weight")} aria-describedby="inv-weight-help" placeholder="—" value={milligramsOrEmpty(lineWeightOf(l.itemWeight, l.quantity))} /></div></Td>
               <Td><Button size="sm" data-remove={i} disabled={lines.length === 1} aria-label={m("removeLine", { number: i + 1 })} onClick={() => { touch(); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{m("remove")}</Button></Td>
             </Tr>))}</DataTable>

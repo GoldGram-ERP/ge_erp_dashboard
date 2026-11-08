@@ -12,6 +12,7 @@ import { DatePicker } from "@/components/fields/DatePicker";
 import { Icon, toast } from "@/components/engine";
 import { Button, Input } from "@/components/ui";
 import { paymentErrors, paymentKeyOf, sentBanks, type Bank } from "./sales-invoices-math";
+import { revealFirstError } from "@/lib/submit-guard";
 import { Choice, ErrBox, allPages, code6, fe, pieceChoices, readPieceCode, sg } from "./sales-form-parts";
 import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { PieceScanner } from "./piece-scanner";
@@ -74,7 +75,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
     if (piece.trim() === "") e.pieceCode = fe(tr, "required"); else if (pc.error) e.pieceCode = pc.error;
     Object.assign(e, payErrorTexts(tr, payCodes, rt("refundRequired")));
     setErrs(e);
-    if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); return; }
+    if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     setSaving(true);
     const refund = { ...(cash.trim() !== "" ? { cashRefund: typedPiastres(cash.trim()) } : {}), bankPayments: sentBanks(banks) };
     const body = edit ? refund : { branchId, date, pieceCode: pc.code, ...refund };   // an edit sends only the refund
@@ -95,7 +96,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
         else if (["branchId", "date", "pieceCode"].includes(f.field)) own[f.field] = texts[f.field];
       }
       if (key !== "refundAboveLinePrice" && !Object.keys(own).length) setGeneral(errorText(x.error));   // no field named: say it once
-      setErrs(own);
+      setErrs(own); revealFirstError();
     }
   };
   const field = (name: string, htmlFor: string, label: string, body: ReactNode, help?: string) => (
@@ -106,8 +107,8 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
   return (
     <form id="ret" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); submit(); }}>
       <div id="banners">
-        {above && <div className="note warn" role="alert"><b>{rt("refundAboveLinePrice")}</b></div>}
-        {general && <div className="note warn" role="alert"><b>{general}</b></div>}
+        {above && <div className="note warn" role="alert" data-field-error><b>{rt("refundAboveLinePrice")}</b></div>}
+        {general && <div className="note warn" role="alert" data-field-error><b>{general}</b></div>}
       </div>
       <div className="card"><h3>{edit ? `${t("common", "edit")} · ${code6(edit.returnNumber)}` : rt("new")}</h3>
         <div id="system"><div className="kv"><span>{rt("returnNumber")}</span><span dir="ltr">{num}</span></div></div>

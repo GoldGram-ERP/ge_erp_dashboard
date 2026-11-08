@@ -11,6 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import { timeText } from "@/lib/format";
 import type { CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import { ThingPage, toast } from "@/components/engine";
 import { Skeleton } from "@/components/engine/ui";
 import { useAccess } from "./sales-access";
@@ -54,8 +56,8 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
     const typed = text.trim().replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
     const n = /^\d+$/.test(typed) ? Number(typed) : NaN;
-    if (typed === "") { setErr(c("fieldErrors.required")); return; }
-    if (!(n >= MIN && n <= MAX)) { setErr(m("inactivityRange", { min: MIN, max: MAX })); return; }
+    if (typed === "") { setErr(c("fieldErrors.required")); revealFirstError(); return; }
+    if (!(n >= MIN && n <= MAX)) { setErr(m("inactivityRange", { min: MIN, max: MAX })); revealFirstError(); return; }
     setSaving(true);
     try {
       const next = await api("/security-policy", { method: "PUT", body: { inactivityMinutes: n }, saveKey: key.current });
@@ -65,7 +67,7 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
       if (!(e instanceof ApiFailure)) { toast(t("errors", "saveFailed"), { error: true }); return; }
       if (!e.unreachable && e.error.message !== "saveInProgress") key.current = newSaveKey();
       const f = e.error?.fields as unknown, bad = Array.isArray(f) ? f.some((x: any) => (x.field ?? x.name) === "inactivityMinutes") : !!(f as Row | undefined)?.inactivityMinutes;
-      if (bad) setErr(m("inactivityRange", { min: MIN, max: MAX })); else toast(tr.errorText(e.error), { error: true });
+      if (bad) { setErr(m("inactivityRange", { min: MIN, max: MAX })); revealFirstError(); } else toast(tr.errorText(e.error), { error: true });
     }
   }
   return (
@@ -80,12 +82,12 @@ function PolicyPage({ row, tr, close }: CustomFormProps) {
         <p className="mute">{m("fixedHint")}</p>
         <h3 className="grp-title">{m("session")}</h3>
         <form id="sp" noValidate onSubmit={(e) => { e.preventDefault(); void save(); }}>
-          <div className="field" data-k="inactivityMinutes">
+          <div className="field" data-k="inactivityMinutes" data-err={err ? "" : undefined}>
             <label htmlFor="f-inactivityMinutes">{m("inactivityMinutes")} <span className="req" aria-hidden="true">*</span></label>
             <Input id="f-inactivityMinutes" kind="number" inputMode="numeric" dir="ltr" maxLength={5} autoComplete="off" value={text} aria-invalid={!!err} style={{ textAlign: "end" }}
               onChange={(e) => { setText(e.target.value); setErr(""); setDirty(true); key.current = newSaveKey(); setNote(c("unsavedChanges")); }} />
             <div className="help">{m("inactivityHint")}</div>
-            {err && <div className="err" role="alert">{err}</div>}
+            {err && <FieldError>{err}</FieldError>}
           </div>
         </form>
       </div>
@@ -129,8 +131,9 @@ function ResetPage({ tr }: CustomFormProps) {
     try { await api("/data-reset", { method: "POST", body: { username: user, password: pass } }); location.reload(); }   // every session is gone: the app lands on sign-in
     catch (e) {
       setBusy(false);
-      if (e instanceof ApiFailure && e.error.message === "wrongEmailOrPassword") { setPassErr(m("wrongPassword")); return; }
+      if (e instanceof ApiFailure && e.error.message === "wrongEmailOrPassword") { setPassErr(m("wrongPassword")); revealFirstError(); return; }
       setErr(e instanceof ApiFailure ? tr.errorText(e.error) : t("errors", "saveFailed"));
+      revealFirstError();
     }
   }
   return (
@@ -141,14 +144,15 @@ function ResetPage({ tr }: CustomFormProps) {
           <label htmlFor="f-username">{m("typeUsername", { username: state.username })}</label>
           <Input id="f-username" dir="ltr" maxLength={100} autoComplete="off" autoCapitalize="none" spellCheck={false} value={user} onChange={(e) => setUser(e.target.value)} />
         </div>
-        <div className="field" data-k="password">
+        <div className="field" data-k="password" data-err={passErr ? "" : undefined}>
           <label htmlFor="f-password">{m("password")}</label>
           <Input id="f-password" type="password" maxLength={200} autoComplete="new-password" value={pass} aria-invalid={!!passErr} onChange={(e) => { setPass(e.target.value); setPassErr(""); }} />
-          {passErr && <div className="err" role="alert">{passErr}</div>}
+          {passErr && <FieldError>{passErr}</FieldError>}
         </div>
-        {err && <div className="err" id="dr-err" role="alert">{err}</div>}
+        {err && <FieldError id="dr-err">{err}</FieldError>}
       </form>
       <div className="formbar"><Button variant="plain" danger id="dr-go" disabled={!ready} onClick={() => void go()}>{busy ? m("resetting") : m("reset")}</Button></div>
+      {!ready && !busy && <div className="help" id="dr-why">{tr.L("اكتب اسم المستخدم الصحيح وكلمة المرور (وكن متصل بالإنترنت) عشان الزرار يشتغل.", "Type the exact username and the password (and be online) to enable the button.")}</div>}
     </>
   );
 }

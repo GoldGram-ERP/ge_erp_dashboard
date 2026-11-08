@@ -10,6 +10,8 @@ import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { Row } from "@/lib/engine-types";
 import { Disclosure, Button, Input, TextButton } from "@/components/ui";
 import { Icon, Kv, Ltr, Section, ToastHost, toast, useConfirm } from "@/components/engine";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import { useT } from "@/lib/t";
 import { Breakdown, MissingPreview, PieceLists, ScanFeedback, Summary, useLive, type BoardPiece, type LastScan, type Live } from "./stocktake-count-board";
 import { CopyButton } from "@/components/shell/copy-button";
@@ -77,9 +79,12 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
   useEffect(() => { if (board && data && board.status !== data.status) load(false); }, [board?.status]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   async function scanCode(raw: string) {
+    if (!raw.trim()) { setProblem("empty"); revealFirstError(); return; }
+    if (!navigator.onLine) { setProblem("offline"); revealFirstError(); return; }
     const r = readPieceCode(raw);
     setProblem(r.problem ?? "");
-    if (!r.code || busy.current || !navigator.onLine) return;
+    if (r.problem) revealFirstError();
+    if (!r.code || busy.current) return;
     busy.current = true; setScanning(true);
     try {
       const answer = await api(`/stock-counts/${id}/scan`, { method: "POST", body: { pieceCode: r.code } });
@@ -157,7 +162,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
       <div className="head"><div><h1>{heading}</h1></div></div>
       <div className="card" id="sc">
         {!data && !loadErr && <p className="help" role="status">{t("common", "loading")}</p>}
-        {loadErr && <><div className="err" role="alert">{loadErr}</div><Button id="sc-retry" onClick={() => load(true)}>{t("common", "retry")}</Button></>}
+        {loadErr && <><FieldError>{loadErr}</FieldError><Button id="sc-retry" onClick={() => load(true)}>{t("common", "retry")}</Button></>}
         {data && <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <p style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600 }}>
@@ -176,15 +181,15 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
               </div>
               {camera && <div id="sc-cam"><CameraBox onCode={scanCode} onUnavailable={(why) => { setCamera(false); setCamNote(why === "denied" ? m("cameraDenied") : m("cameraUnsupported")); }} /></div>}
               {camNote && <p id="sc-note" role="status" className="help">{camNote}</p>}
-              <form id="sc-form" noValidate className="field scanrow" data-k="pieceCode"
-                onSubmit={(e) => { e.preventDefault(); if (code.trim() !== "") scanCode(code); }}>
+              <form id="sc-form" noValidate className="field scanrow" data-k="pieceCode" data-err={problem ? "" : undefined}
+                onSubmit={(e) => { e.preventDefault(); scanCode(code); }}>
                 <div>
                   <label htmlFor="sc-code">{m("pieceCode")}</label>
                   <Input id="sc-code" kind="code" ref={input} dir="ltr" autoComplete="off" maxLength={20} style={{ fontFamily: "monospace" }} value={code} aria-invalid={!!problem}
                     onChange={(e) => { setCode(e.target.value); setProblem(""); }} />
-                  {problem && <div id="sc-err" className="err" role="alert">{t("gold-sales", "pieceLookUp.notOurCode")}{problem === "arabicLayout" && <span style={{ display: "block" }}>{t("gold-sales", "pieceLookUp.switchKeyboard")}</span>}</div>}
+                  {problem && <FieldError id="sc-err">{problem === "empty" ? m("required") : problem === "offline" ? t("common", "offline") : t("gold-sales", "pieceLookUp.notOurCode")}{problem === "arabicLayout" && <span style={{ display: "block" }}>{t("gold-sales", "pieceLookUp.switchKeyboard")}</span>}</FieldError>}
                 </div>
-                <Button variant="primary" type="submit" id="sc-go" disabled={scanning || !online || code.trim() === ""}>{m("scan")}</Button>
+                <Button variant="primary" type="submit" id="sc-go" disabled={scanning}>{m("scan")}</Button>
               </form>
             </div>
           )}
@@ -200,7 +205,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
             <Breakdown live={board} />
             <PieceLists id={id} live={board} />
           </>}
-          {!board && live.isError && <div className="err" role="alert">{t("common", "couldNotLoad")}</div>}
+          {!board && live.isError && <FieldError>{t("common", "couldNotLoad")}</FieldError>}
           {open && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderTop: "1px solid var(--line,#ddd)", marginTop: 16, paddingTop: 12 }}>
               <Button variant="primary" id="sc-savebtn" disabled={saving} onClick={save}>{m("save")}</Button>

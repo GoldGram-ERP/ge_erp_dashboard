@@ -12,6 +12,7 @@ import { latinNumber, milligramsText, piastresInput, piastresText, timeText, tod
 import { useMe } from "@/lib/session";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
+import { revealFirstError } from "@/lib/submit-guard";
 import { Link as NavLink } from "@/i18n/navigation";
 import { bankPaid, cashPaid, paymentErrors, paymentKeyOf, readDiscount, sentBanks, type Bank } from "./sales-invoices-math";
 import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscount, readPieceCode, sg, type DiscountKind } from "./sales-form-parts";
@@ -185,9 +186,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     if (dsc.invalid && !buy) e.cashDiscount = sg(tr, "cashDiscountInvalid");
     if (payment2 && quote && splitProblem(split, quote.q.totalPiastres)) e.splitAmount = d(`desk.splitErr.${splitProblem(split, quote.q.totalPiastres)}`);
     setErrs(e);
-    if (Object.keys(e).length || !c.payload || !l.payload) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); return; }
+    if (Object.keys(e).length || !c.payload || !l.payload) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     // the draft keeps the desk's choices and the methods' amounts of the quote: no quote (a typed price that is not valid, a refused price) means nothing to save
-    if (!quote || manualPrice(manual.sell).invalid || manualPrice(manual.buy).invalid) { setGeneral(quoteMsg || d("desk.manualInvalid")); return; }
+    if (!quote || manualPrice(manual.sell).invalid || manualPrice(manual.buy).invalid) { setGeneral(quoteMsg || d("desk.manualInvalid")); revealFirstError(); return; }
     setSaving(true);
     const body = {
       ...(isNew && !isUser && branchId ? { branchId } : {}), invoiceType: type, ...c.payload, ...deskChoices(form, quote.q.totalPiastres, { payment2: payment2 || undefined, split }, l.payload),
@@ -257,7 +258,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   async function complete() {
     if (!draft || completing) return;
     const p = paymentErrors(cash, banks);
-    if (Object.keys(p).length) { setErrs(payErrorTexts(tr, p)); return; }
+    if (Object.keys(p).length) { setErrs(payErrorTexts(tr, p)); revealFirstError(); return; }
     setCompleting(true); setCompleteMsg(""); setMismatch([]); setCodeErr({}); setPayRefusal(null);
     try {
       const done = await api(`/sales-drafts/${draft.id}/complete`, { method: "POST", saveKey: completeKey.current,
@@ -318,7 +319,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   return (
     <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }}>
       {dialog}
-      <div id="banners">{general && <div className="note warn" role="alert"><b>{general}</b></div>}</div>
+      <div id="banners">{general && <div className="note warn" role="alert" data-field-error><b>{general}</b></div>}</div>
       <div className="tk">
         <header className="tk-head" id="sd-head" aria-live="polite">
           <div className="tk-title">
@@ -453,7 +454,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
           <div className="tk-c">
             <fieldset disabled={readonly || saving} className="tk-save">
-              <Disclosure id="sec-payment" defaultOpen={canComplete} summary={L("حفظ كمسودة", "Save as draft")}>
+              <Disclosure id="sec-payment" defaultOpen={canComplete} hasError={Object.keys(errs).some((k) => k === "cash" || k === "sum" || k === "cashDiscount" || k === "splitAmount" || k.startsWith("bank"))} summary={L("حفظ كمسودة", "Save as draft")}>
                 <div className="tk-draft"><p className="tk-quiet">{d("plannedHelp")}</p>
                   <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
                   {!buy && <div className="field" data-k="cashDiscount"><label htmlFor="cashDiscount">{d("discount")}</label>
@@ -486,8 +487,13 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   <Button size="sm" danger aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></Button></li>)}</ul></>}
               {mismatch.length > 0 && <ul id="sd-mismatch" className="note warn" role="alert">{mismatch.map((m, i) => <li key={i}>{d("mismatchRow", { item: String(m.itemName), karat: String(m.karat), expected: Number(m.expected), scanned: Number(m.scanned) })}</li>)}</ul>}
               {payRefusal && <div className="note warn" role="alert" id="sd-payrefused"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
-              {completeMsg && <div className="note warn" role="alert" id="sd-completemsg"><b>{completeMsg}</b></div>}
-              <Button variant="primary" id="sd-complete" aria-disabled={!allScanned || completing || dirty} onClick={() => { if (allScanned && !dirty) void complete(); }}>{completing ? d("completing") : d("complete")}</Button>
+              {completeMsg && <div className="note warn" role="alert" data-field-error id="sd-completemsg"><b>{completeMsg}</b></div>}
+              <Button variant="primary" id="sd-complete" aria-busy={completing} onClick={() => {
+                if (completing) return;
+                if (dirty) { setCompleteMsg(d("pricesStale")); revealFirstError(); return; }   // never a silent click: say what is missing and go there
+                if (!allScanned) { setCompleteMsg(L("اعمل مسح لكل القطع المطلوبة الأول.", "Scan every required piece first.")); revealFirstError(); return; }
+                void complete();
+              }}>{completing ? d("completing") : d("complete")}</Button>
               {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
             </div>}
 

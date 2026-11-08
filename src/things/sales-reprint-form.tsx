@@ -13,6 +13,7 @@ import { Button, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, pieceChoices, readPieceCode } from "./sales-form-parts";
 import { LAYOUT_KEY, Sheet } from "@/components/ui/LabelSheet";
 import { printLabels } from "@/components/ui/label-print";
+import { revealFirstError } from "@/lib/submit-guard";
 
 export function ReprintForm({ tr }: CustomFormProps) {
   const { t, L } = tr;
@@ -58,7 +59,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
       if (f !== undefined && e2 !== undefined && !e.toCode) body = { fromCode: f, ...(to !== "" ? { toCode: e2 } : {}) };
     } else { e.pieceCode = fe(tr, "required"); e.fromCode = fe(tr, "required"); }
     setErrs(e);
-    if (Object.keys(e).length || !body) return;
+    if (Object.keys(e).length || !body) { revealFirstError(); return; }
     setSaving(true); setBanner("");
     try {
       const r = await api("/reprint-label", { method: "POST", body: { ...body, labelTemplateId: templateId, layout }, saveKey: saveKey.current });
@@ -70,6 +71,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
       const named = Object.fromEntries(Object.entries(texts).filter(([k]) => ["pieceCode", "fromCode", "toCode", "labelTemplateId", "layout"].includes(k)));
       if (Object.keys(named).length) setErrs(named as Record<string, string>);
       else setBanner(err instanceof ApiFailure ? (err.status === 404 ? `${rl("notFoundTitle")}. ${rl("notFoundBody")}` : tr.errorText(err.error)) : L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again."));
+      revealFirstError();
     } finally { setSaving(false); }
   }
   const pickLayout = (v: string) => { touch(); const l = v === "a4" ? "a4" : "tag"; setLayout(l); localStorage.setItem(LAYOUT_KEY, l); };
@@ -79,17 +81,17 @@ export function ReprintForm({ tr }: CustomFormProps) {
   return (
     <>
       <form id="rp" className="card" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); submit(); }}>
-        <div id="banners">{banner && <div className="note warn" role="alert"><b>{banner}</b></div>}</div>
+        <div id="banners">{banner && <div className="note warn" role="alert" data-field-error><b>{banner}</b></div>}</div>
         <div className="formgrid" id="grid">
-          <div className="field" data-k="pieceCode"><label htmlFor="pc">{rl("pieceCode")}</label>
+          <div className="field" data-k="pieceCode" data-err={errs.pieceCode ? "" : undefined}><label htmlFor="pc">{rl("pieceCode")}</label>
             <Input id="pc" dir="ltr" list="pcl" maxLength={40} autoComplete="off" style={{ fontFamily: "monospace" }} value={code} onChange={(ev) => { touch(); setCode(ev.target.value); }} />
             <datalist id="pcl">{choices.map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName ?? ""} · ${p.karat ?? ""}`}</option>)}</datalist>{err("pieceCode")}</div>
           <div className="field wide"><div className="help">{rl("orRange")}</div></div>
           <TextBox name="fromCode" label={rl("fromCode")} value={fromCode} maxLength={12} ltr error={errs.fromCode} onChange={(v) => { touch(); setFromCode(v); }} />
           <TextBox name="toCode" label={rl("toCode")} value={toCode} maxLength={12} ltr error={errs.toCode} onChange={(v) => { touch(); setToCode(v); }} />
-          <div className="field" data-k="labelTemplateId"><label htmlFor="labelTemplateId">{rl("labelTemplate")} *</label>
+          <div className="field" data-k="labelTemplateId" data-err={errs.labelTemplateId ? "" : undefined}><label htmlFor="labelTemplateId">{rl("labelTemplate")} *</label>
             <Choice tr={tr} id="labelTemplateId" searchable={false} options={templates.map((x) => [x.id, x.name])} value={templateId} onChange={(v) => { touch(); setTemplateId(v); }} />{err("labelTemplateId")}</div>
-          <div className="field" data-k="layout"><label htmlFor="layout">{rl("layout")} *</label>
+          <div className="field" data-k="layout" data-err={errs.layout ? "" : undefined}><label htmlFor="layout">{rl("layout")} *</label>
             <Choice tr={tr} id="layout" searchable={false} options={[["tag", pc("layoutTag")], ["a4", pc("layoutA4")]]} value={layout} onChange={pickLayout} />{err("layout")}</div>
         </div>
         <div className="formbar"><Button type="submit" variant="primary" id="go" disabled={saving}>{rl("print")}</Button></div>

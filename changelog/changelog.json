@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Every form now shows each missing field's own warning, scrolls to the first one and focuses it. The Complete button on the sales desk always answers.",
+    "ar": "كل الفورمات بقت بتطلّع تحذير تحت كل حقل ناقص، وبتنزل لأول واحد وتركّز عليه. وزرار إتمام الفاتورة في مكتب المبيعات بقى دايماً بيرد."
+   }
+  ]
+ },
+ {
   "version": "1.0.40",
   "date": "2026-11-08",
   "changes": [

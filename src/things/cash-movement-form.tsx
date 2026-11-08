@@ -3,6 +3,7 @@
 // The dashboard has ONE form with an Asset toggle; the owner asked for two header buttons, so each page is one asset.
 // A page of its own because the form stays on screen after a save (toast with the number, fields cleared, branch and treasury kept)
 // and shows "not enough gold" with the available grams under the Weight field.
+import { FieldError } from "@/components/fields/FieldError";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
@@ -124,7 +125,7 @@ function MovementForm({ kind, tr, close }: CustomFormProps & { kind: "egp" | "go
         <form id="mv" className="card" noValidate onSubmit={(e) => { e.preventDefault(); submit(); }}>
           <FormFields form={f} fields={fields} values={start} />
         </form>
-        {alert && <div id="mv-alert" role="alert" className="err">{alert}</div>}
+        {alert && <FieldError id="mv-alert">{alert}</FieldError>}
         <div className="formbar">
           <Button variant="primary" id="mv-save" disabled={saving} onClick={submit}>{saving ? c("saving") : L("حفظ", "Save")}</Button>
           <Button id="mv-history" onClick={close}><Icon name="file" />{m("listTitle")}</Button>

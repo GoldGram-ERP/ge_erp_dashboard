@@ -10,6 +10,7 @@ import { latinNumber, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import type { Me } from "@/stores/ui";
 import { Select } from "@/components/fields/Select";
+import { FieldError } from "@/components/fields/FieldError";
 
 export const sg = (tr: Tr, k: string, v?: Record<string, string | number | undefined>) => tr.t("gold-sales", `salesInvoices.${k}`, v);
 export const fe = (tr: Tr, k: string) => tr.t("common", `fieldErrors.${k}`);
@@ -17,7 +18,7 @@ import { code6 as code6 } from "@/lib/code6";
 export { code6 };
 export const PIECE_CODE = /^[A-Za-z0-9 .]{1,20}$/;   // the backend's pattern for a piece code
 
-export const ErrBox = ({ children, id }: { children: ReactNode; id?: string }) => <div className="err" id={id} role="alert" style={{ color: "var(--warn)", fontSize: 12.5, marginTop: 4 }}>{children}</div>;
+export const ErrBox = FieldError;   // the old local helper: now the one shared per-field warning
 /** Style for inputs that hold numbers/codes: left-to-right, text at the end. */
 export const ltrStyle = { direction: "ltr", textAlign: "end" } as const;
 
@@ -90,7 +91,7 @@ export function DiscountBox({ tr, may, kind, disc, lockedValue, onKind, onDisc, 
 /** A labelled text box with the HTML's ids (#f-<name>), help and error. */
 export function TextBox({ name, label, value, onChange, error, help, maxLength, ltr, disabled, onBlur, placeholder, kind }: { kind?: InputKind; name: string; label: string; value: string; onChange: (v: string) => void; error?: string; help?: string; maxLength?: number; ltr?: boolean; disabled?: boolean; onBlur?: () => void; placeholder?: string }) {
   return (
-    <div className="field" data-k={name}>
+    <div className="field" data-k={name} data-err={error ? "" : undefined}>
       <label htmlFor={`f-${name}`}>{label}</label>
       <Input kind={kind} id={`f-${name}`} name={name} value={value} placeholder={placeholder} maxLength={maxLength} disabled={disabled} autoComplete="off" aria-invalid={!!error} aria-describedby={[help ? `f-${name}-help` : "", error ? `f-${name}-err` : ""].filter(Boolean).join(" ") || undefined} dir={ltr ? "ltr" : undefined} style={ltr ? { textAlign: "end" } : undefined}
         onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />

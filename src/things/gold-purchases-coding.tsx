@@ -13,6 +13,7 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { dateText, milligramsText, piastresText, typedPiastres } from "@/lib/format";
 import { comparePieceCodes, unitsBefore } from "@/lib/piece-code";
 import { Icon, toast, useConfirm } from "@/components/engine";
+import { revealFirstError } from "@/lib/submit-guard";
 import { LabelsCard, labelOf } from "./purchases-labels";
 import { itemsById } from "./gold-purchases-invoice";
 import { itemProblem } from "./purchases-rules";
@@ -69,7 +70,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
       qc.invalidateQueries({ queryKey: ["next-number", "piece_code"] });   // the numbers are used: the preview moves on
       toast(`${tr.L("تم الحفظ", "Saved")}: ${m("labelCount", { count: pieces.length })}`);
     } catch (e) {
-      setBanner(tr.errorText(e instanceof ApiFailure ? e.error : { message: "serverUnreachable" }));   // itemInactive, lineCoded, pieceCodeTaken ...
+      setBanner(tr.errorText(e instanceof ApiFailure ? e.error : { message: "serverUnreachable" })); revealFirstError();   // itemInactive, lineCoded, pieceCodeTaken ...
       if (e instanceof ApiFailure && e.error.message === "itemInactive") itemsById(openLines.map((l) => l.itemId), true).then(setItems).catch(() => {});   // re-read the items: the refused line then says why
     } finally { setBusy(false); }
   }
@@ -97,7 +98,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
       {openLines.length ? (
         <>
           <div className="card" id="cd-form">
-            {banner && <div id="cd-alert"><div className="note warn" role="alert">{banner}</div></div>}
+            {banner && <div id="cd-alert"><div className="note warn" role="alert" data-field-error>{banner}</div></div>}
             <h3>{m("toCode")}</h3>
             <p className="help" style={{ margin: 0 }}>{m("fromItem")}</p>
           </div>
@@ -111,7 +112,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
               <div className="card" data-line={i} key={open.lineId}>
                 <h3>{m("lineNumber", { number: open.lineNumber })} · {open.itemName} <span className="sub" dir="ltr">{code6(open.itemCode)}</span></h3>
                 <p className="sub">{m("lineQuantity", { count: open.quantity })} · {m("lineWeight")} <span dir="ltr">{milligramsText(open.weight)} {gram}</span></p>
-                {problem && <div className="note warn" role="alert" data-item-problem={i}>{t("gold-accounts", `purchaseInvoices.${problem === "inactive" ? "itemInactive" : "itemIncomplete"}`, { item: label })}</div>}
+                {problem && <div className="note warn" role="alert" data-field-error data-item-problem={i}>{t("gold-accounts", `purchaseInvoices.${problem === "inactive" ? "itemInactive" : "itemIncomplete"}`, { item: label })}</div>}
                 {/* Every unit is the same piece; past ROWS_SHOWN a line (up to 100,000 units) says so in one sentence instead of drawing thousands of boxes. */}
                 {Array.from({ length: Math.min(open.quantity, ROWS_SHOWN) }, (_, j) => (
                   <div role="group" className="formgrid" key={j} style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, marginTop: 10 }} aria-label={m("pieceNumber", { number: j + 1 })}>

@@ -10,6 +10,8 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
 import { today } from "@/lib/format";
 import { useMe } from "@/lib/session";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import { toast } from "@/components/engine";
 import { Button, Input } from "@/components/ui";
 import { Select } from "@/components/fields/Select";
@@ -35,7 +37,7 @@ export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { l
 
   async function save() {
     if (!navigator.onLine) { toast(t("common", "offline"), { error: true }); return; }
-    if (!branchId) { setErr(m("required")); document.getElementById("f-branchId-btn")?.focus(); return; }
+    if (!branchId) { setErr(m("required")); revealFirstError(); return; }
     setSaving(true);
     try {
       const body = Object.fromEntries(Object.entries({ branchId, categoryId, itemId, karat }).filter(([, x]) => x));
@@ -45,7 +47,7 @@ export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { l
     } catch (e) {
       if (e instanceof ApiFailure) {
         const fe = backendFieldErrors(e.error, tr);
-        if (fe.branchId) setErr(fe.branchId); else toast(tr.errorText(e.error), { error: true });
+        if (fe.branchId) { setErr(fe.branchId); revealFirstError(); } else toast(tr.errorText(e.error), { error: true });
       } else toast(L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again."), { error: true });
     } finally { setSaving(false); }
   }
@@ -55,7 +57,7 @@ export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { l
       <label htmlFor={`f-${id}-btn`}>{label}{required && <> <span className="req" aria-hidden="true">*</span></>}</label>
       {control}
       {help && <div className="help">{help}</div>}
-      {error && <div className="err" role="alert">{error}</div>}
+      {error && <FieldError>{error}</FieldError>}
     </div>
   );
   return (

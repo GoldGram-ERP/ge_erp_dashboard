@@ -16,6 +16,7 @@ import { toast } from "@/components/engine";
 import { Button, Input } from "@/components/ui";
 import { LINES_MAX, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentBanks, totalsOf, type Bank } from "./sales-invoices-math";
 import { Choice, CustomerBoxes, DiscountBox, ErrBox, allPages, code6, customerRules, fe, latestPrice, ltrStyle, mayDiscount, sg, type DiscountKind } from "./sales-form-parts";
+import { revealFirstError } from "@/lib/submit-guard";
 import { Breakdown, PaymentBlock, PriceButton, TotalsBar, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { pricePerGram, typedHundredths } from "./item-math";
 
@@ -142,9 +143,10 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
     const root = sum(lines.map((l) => qOf(l) ?? 0)) > PIECES_MAX ? rm("tooManyPieces") : "";
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
     setErrs(e); setRootErr(root);
-    if (Object.keys(e).length || root) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length + (root ? 1 : 0) })); return; }
-    if (!itemsDone || d.invalid || d.tooBig) return;
-    if (tot.left !== 0) { setShort(true); return; }
+    if (Object.keys(e).length || root) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length + (root ? 1 : 0) })); revealFirstError(); return; }
+    if (d.invalid || d.tooBig) { revealFirstError(); return; }
+    if (!itemsDone) { setGeneral(rm("saveWaits")); revealFirstError(); return; }   // never a silent click
+    if (tot.left !== 0) { setShort(true); revealFirstError(); return; }
     setSaving(true);
     const body = {
       ...(edit ? {} : { branchId, date }), employeeId,   // an edit never changes the branch or the date
@@ -178,7 +180,7 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
       else gen = texts[f.field] ?? tr.errorText(err.error);
     }
     if (!Object.keys(e).length && !pay && !root && !gen) gen = tr.errorText(err.error);   // no field named: say it once
-    setErrs(e); setPayRefusal(pay); setRootErr(root); setGeneral(gen);
+    setErrs(e); setPayRefusal(pay); setRootErr(root); setGeneral(gen); revealFirstError();
     if (pay || Object.keys(e).some((k) => k.startsWith("line"))) setPriced({});   // the item or the gold price may have changed: ask the prices again
   }
 
@@ -186,7 +188,7 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
 
   return (
     <form id="rsv" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); submit(); }} onInput={() => { saveKey.current = newSaveKey(); }}>
-      <div id="banners">{general && <div className="note warn" role="alert"><b>{general}</b></div>}</div>
+      <div id="banners">{general && <div className="note warn" role="alert" data-field-error><b>{general}</b></div>}</div>
       <div className="card"><h3>{edit ? `${t("common", "edit")} · ${code6(edit.reservationNumber)}` : rm("new")}</h3>
         {price === null && <div className="note warn">{sg(tr, "noGoldPriceForDay")}</div>}
         {([[rm("reservationNumber"), edit ? code6(edit.reservationNumber) : next !== undefined ? code6(next) : chooseBranch ? t("common", "chooseBranchForNumber") : ""], [sg(tr, "priceKarat"), price ? "21" : ""], [sg(tr, "priceDate"), price ? String(price.date).slice(0, 10) : ""], [sg(tr, "goldPrice21k"), price ? piastresText(price.sellPrice) : ""]] as const)
@@ -240,7 +242,7 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
             help={sg(tr, "cashDiscountHint", { max: piastresText(base) })} error={d.tooBig ? <ErrBox>{sg(tr, "cashDiscountAbove", { max: piastresText(base) })}</ErrBox> : d.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : null} /></div>
         <TotalsBar tr={tr} bar={tot} />
         <div id="payMsg">{short && tot.left !== 0 ? <ErrBox>{tot.left > 0 ? sg(tr, "paidShort", { left: piastresText(tot.left) }) : sg(tr, "paidOver", { over: piastresText(-tot.left) })}</ErrBox>
-          : payRefusal ? <div className="note warn" role="alert"><b>{rm("paidInvalid", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div> : null}</div>
+          : payRefusal ? <div className="note warn" role="alert" data-field-error><b>{rm("paidInvalid", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div> : null}</div>
       </div>}
       {shown.payment && <div className="formbar" id="sec-save">
         <Button type="submit" variant="primary" aria-disabled={!valid || saving} style={{ opacity: valid && !saving ? undefined : 0.6 }}>{saving ? t("common", "saving") : t("common", "save")}</Button>

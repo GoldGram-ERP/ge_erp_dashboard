@@ -21,6 +21,9 @@ const eslintConfig = defineConfig([
   { ignores: ["src/components/shell/copy-button.tsx"], rules: { "no-restricted-properties": ["error",
     { object: "navigator", property: "clipboard", message: "Use CopyButton (or copyText) from @/components/ui: one animated Copy button everywhere." },
     { object: "document", property: "execCommand", message: "Use CopyButton (or copyText) from @/components/ui." }] } },
+  // One per-field warning (owner, 2026-11-08): errors render through <FieldError>, never a hand-written <div className="err">.
+  { ignores: ["src/components/fields/FieldError.tsx"], rules: { "no-restricted-syntax": ["error",
+    { selector: "JSXAttribute[name.name='className'][value.value='err']", message: "Use <FieldError> from @/components/fields/FieldError." }] } },
   // React-compiler style hints, kept as warnings: the pages read refs and set state in effects on purpose (list/lookup sync).
   { rules: { "react-hooks/set-state-in-effect": "warn", "react-hooks/refs": "warn" } },
 ]);

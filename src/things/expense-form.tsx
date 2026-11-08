@@ -8,6 +8,7 @@ import { backendFieldErrors } from "@/lib/fields";
 import { latinNumber, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { DatePicker } from "@/components/fields/DatePicker";
+import { revealFirstError } from "@/lib/submit-guard";
 import { Icon, toast } from "@/components/engine";
 import { Button } from "@/components/ui";
 import { paymentErrors, paymentKeyOf, sentBanks, type Bank } from "./sales-invoices-math";
@@ -66,7 +67,7 @@ export function ExpenseForm({ kind, close, reload, tr }: CustomFormProps & { kin
     if (note.trim().length > NOTE_MAX) e.note = fe(tr, "tooLong");
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks, "any"), m("amountsRequired")));
     setErrs(e);
-    if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); return; }
+    if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     setSaving(true);
     const body = { date, branchId, expenseTypeId: typeId, note: note.trim(), ...(cash.trim() !== "" ? { cash: typedPiastres(cash.trim()) } : {}), bankPayments: sentBanks(banks) };
     try {
@@ -88,7 +89,7 @@ export function ExpenseForm({ kind, close, reload, tr }: CustomFormProps & { kin
         else if (["date", "note"].includes(f.field)) own[f.field] = texts[f.field];
       }
       if (!Object.keys(own).length) setGeneral(errorText(x.error));   // no field named: say it once, what was typed stays
-      setErrs(own);
+      setErrs(own); revealFirstError();
     }
   };
   const field = (name: string, htmlFor: string, label: string, body: React.ReactNode) => (
@@ -97,7 +98,7 @@ export function ExpenseForm({ kind, close, reload, tr }: CustomFormProps & { kin
 
   return (
     <form id="exp" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); submit(); }}>
-      <div id="banners">{general && <div className="note warn" role="alert"><b>{general}</b></div>}</div>
+      <div id="banners">{general && <div className="note warn" role="alert" data-field-error><b>{general}</b></div>}</div>
       <div className="card" id="sec-details"><h3>{m("details")}</h3>
         <div className="kv"><span>{m("documentNumber")}</span><span dir="ltr">{branchId && next !== undefined ? code6(next) : m("autoHint")}</span></div>
         <div className="formgrid" style={{ marginTop: 12 }}>

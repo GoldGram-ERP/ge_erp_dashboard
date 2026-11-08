@@ -7,6 +7,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useSession } from "@/stores/session";
 import { useForgetMe } from "@/lib/session";
+import { revealFirstError } from "@/lib/submit-guard";
 import type { Me } from "@/stores/ui";
 
 export default function SignInPage() {
@@ -29,7 +30,7 @@ export default function SignInPage() {
     ev.preventDefault();
     const f = new FormData(ev.currentTarget);
     const email = String(f.get("email") ?? "").trim(), password = String(f.get("password") ?? "");
-    if (!email || !password) { setError(t("required")); return; }
+    if (!email || !password) { setError(t("required")); revealFirstError(); return; }
     setBusy(true); setError("");
     try {
       await api("/access/sign-in", { method: "POST", body: { email, password } });
@@ -46,6 +47,7 @@ export default function SignInPage() {
         const key = x.error.message;
         setError(x.unreachable ? t("unreachable") : key === "accountLocked" ? t("lockedTitle") : x.status === 401 ? t("errorTitle") + (typeof x.error.values?.attemptsLeft === "number" ? " " + t("attemptsLeft", { count: x.error.values.attemptsLeft }) : "") : e.has(key) ? e(key, x.error.values as never) : t("failed"));
       } else setError(app("signIn.cookie"));
+      revealFirstError();
     }
   }
   const other = locale === "ar" ? "en" : "ar";
@@ -54,7 +56,7 @@ export default function SignInPage() {
       <form onSubmit={submit} noValidate>
         <h1>{t("title")}</h1>
         <p>GoldGram</p>
-        {error ? <div className="note warn" role="alert">{error}</div> : null}
+        {error ? <div className="note warn" role="alert" data-field-error>{error}</div> : null}
         <div className="field"><label htmlFor="f-email">{t("email")}</label><Input id="f-email" name="email" autoComplete="username" dir="ltr" style={{ textAlign: "start" }} autoFocus /></div>
         <div className="field"><label htmlFor="f-password">{t("password")}</label>
           <Input id="f-password" name="password" type={show ? "text" : "password"} autoComplete="current-password" dir="ltr" style={{ textAlign: "start" }} />

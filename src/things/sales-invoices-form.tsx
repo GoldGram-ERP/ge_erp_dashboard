@@ -14,6 +14,7 @@ import { backendFieldErrors } from "@/lib/fields";
 import { useMe } from "@/lib/session";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
 import { Icon, toast } from "@/components/engine";
+import { revealFirstError } from "@/lib/submit-guard";
 import { LINES_MAX, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentBanks, totalsOf, type Bank } from "./sales-invoices-math";
 import { Choice, DiscountBox, ErrBox, PIECE_CODE, allPages, checkedCustomer, code6, customerFields, customerNameOf, fe, latestPrice, mayDiscount, sg, type DiscountKind } from "./sales-form-parts";
 import { Breakdown, PaymentBlock, PriceButton, TotalsBar, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
@@ -190,7 +191,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     }
     const count = Object.keys(out).length + Object.keys(lerr).length + (pay ? 1 : 0) + (ref ? 1 : 0);
     if (!count && !own && !gen) gen = errorText(e.error);   // no field named: say it once, what was typed stays
-    setPayRefusal(pay); setRefused(ref); setLineErr(lerr); setErrs(out); setGeneral(gen); setSubmitted(true);
+    setPayRefusal(pay); setRefused(ref); setLineErr(lerr); setErrs(out); setGeneral(gen); setSubmitted(true); revealFirstError();
   };
   const submit = async () => {
     if (saving) return;
@@ -207,10 +208,10 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     let gen = "";
     if (made && today() < String(made.date).slice(0, 10)) gen = m("invoiceBeforeReservation", { date: String(made.date).slice(0, 10) });   // the day cannot precede the reservation
     setSubmitted(true); setErrs(e); setGeneral(gen);
-    if (Object.keys(e).length || gen) return;
-    if (d.invalid || d.tooBig) return;
-    if (tot.left !== 0) { setShort(true); return; }
-    if (!allFilled || (reservationId && !made)) return;
+    if (Object.keys(e).length || gen) { revealFirstError(); return; }
+    if (d.invalid || d.tooBig) { revealFirstError(); return; }
+    if (tot.left !== 0) { setShort(true); revealFirstError(); return; }
+    if (!allFilled || (reservationId && !made)) { setGeneral(m("fillAll")); revealFirstError(); return; }   // never a silent click
     setSaving(true);
     const c = cust.getValues();
     const body = {
@@ -232,7 +233,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   };
 
   // ── draw ──
-  const banner = (cls: string, body: ReactNode) => <div className={`note ${cls}`} role="alert">{body}</div>;
+  const banner = (cls: string, body: ReactNode) => <div className={`note ${cls}`} role="alert" data-field-error>{body}</div>;
   const refusedCount = Object.keys(errs).length;
   const invoiced = made?.salesInvoiceId ? { number: made.salesInvoiceNumber ?? takenBy } : takenBy !== undefined ? { number: takenBy } : null;
   const kv = (k: string, v: string) => <div className="kv"><span>{k}</span><span dir="ltr">{v}</span></div>;

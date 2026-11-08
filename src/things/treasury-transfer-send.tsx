@@ -10,6 +10,8 @@ import { milligramsText, piastresText, typedMilligrams, typedPiastres } from "@/
 import { useMe } from "@/lib/session";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { Icon, toast } from "@/components/engine";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import { Select } from "@/components/fields/Select";
 import { Button, Input } from "@/components/ui";
 import { code6 } from "./money-shared";
@@ -116,10 +118,11 @@ export function SendTransferForm({ tr }: CustomFormProps) {
 
   async function send() {
     if (sending) return;   // a double tap
+    const fail = (text: string) => { setErr(text); revealFirstError(); };
     const d = draft, amt = d.amount.trim() === "" ? 0 : typedPiastres(d.amount);
-    if (!from || !d.toTreasuryId) return setErr(!kind ? kc("required") : m("pickBoth"));
-    if (amt === undefined) return setErr(m("amountInvalid"));
-    if (k === "egp" ? !amt : d.pieces.length === 0 && d.gold.length === 0) return setErr(m("emptyTransfer"));
+    if (!from || !d.toTreasuryId) return fail(!kind ? kc("required") : m("pickBoth"));
+    if (amt === undefined) return fail(m("amountInvalid"));
+    if (k === "egp" ? !amt : d.pieces.length === 0 && d.gold.length === 0) return fail(m("emptyTransfer"));
     const body = { fromTreasuryId: from, toTreasuryId: d.toTreasuryId, pieceCodes: k === "egp" ? [] : d.pieces.map((p) => p.pieceCode), gold: k === "egp" ? [] : d.gold, amountPiastres: k === "egp" ? amt : 0 };
     setSending(true);
     try {
@@ -129,11 +132,11 @@ export function SendTransferForm({ tr }: CustomFormProps) {
       qc.invalidateQueries({ queryKey: ["thing", "transfers"] });
       router.push(`${pathname}?chip=sent`);   // the screen switches to the Sent box
     } catch (e) {
-      if (!(e instanceof ApiFailure)) return setErr(L("تعذّر الحفظ. حاول مرة أخرى.", "Could not save. Try again."));
+      if (!(e instanceof ApiFailure)) return fail(L("تعذّر الحفظ. حاول مرة أخرى.", "Could not save. Try again."));
       const bad: Row[] = (e.error.values?.pieces as Row[]) ?? [];
       if (bad.length) change({ pieces: draft.pieces.map((p) => { const r = bad.find((x) => x.pieceCode === p.pieceCode); return { ...p, refused: r ? m(`reasons.${r.reason ?? "unknown"}`) : undefined }; }) });
       if (!e.unreachable && e.error.message !== "saveInProgress") key.current = newSaveKey();   // a refusal is final for this content
-      setErr(tr.errorText(e.error));
+      fail(tr.errorText(e.error));
     } finally { setSending(false); }
   }
 
@@ -165,7 +168,7 @@ export function SendTransferForm({ tr }: CustomFormProps) {
                   {draft.pieces.map((p, i) => (
                     <li key={p.pieceCode}>
                       <span dir="ltr"><strong>{p.pieceCode}</strong></span> {p.itemName} · {p.karat}K · {milligramsText(p.weightMg)} {m("grams")}
-                      {p.refused && <span className="err"> {p.refused}</span>}{" "}
+                      {p.refused && <FieldError>{p.refused}</FieldError>}{" "}
                       <Button size="sm" aria-label={m("removePiece", { code: p.pieceCode })} onClick={() => change({ pieces: draft.pieces.filter((_, j) => j !== i) })}><Icon name="trash" /></Button>
                     </li>
                   ))}
@@ -178,7 +181,7 @@ export function SendTransferForm({ tr }: CustomFormProps) {
               {fld("goldWeight", m("weightGrams"), <Input id="f-goldWeight" type="text" inputMode="decimal" dir="ltr" autoComplete="off" value={goldWeight} onChange={(e) => setGoldWeight(e.target.value)} />, "0.000")}
             </div>
             <Button id="sx-addgold" onClick={addGold}><Icon name="plus" />{m("addGold")}</Button>
-            {goldErr && <div className="err" id="sx-gold-err" role="alert">{goldErr}</div>}
+            {goldErr && <FieldError id="sx-gold-err">{goldErr}</FieldError>}
             <div id="sx-golds">
               {draft.gold.map((g, i) => (
                 <div className="kv" key={g.karat}><span>{g.karat}K · {milligramsText(g.weightMg)} {m("grams")}</span>
@@ -190,7 +193,7 @@ export function SendTransferForm({ tr }: CustomFormProps) {
         <div className="note" id="sx-total" data-testid="send-totals">
           {k === "egp" ? `EGP ${piastresText(amt ?? 0)}` : <>{m("totalPieces", { count: String(draft.pieces.length) })}{per.map((x) => <span key={x.kt} dir="ltr"> {x.kt}K: {milligramsText(x.mg)} {m("grams")}</span>)}</>}
         </div>
-        {err && <div className="err" id="sx-err" role="alert">{err}</div>}
+        {err && <FieldError id="sx-err">{err}</FieldError>}
         <div className="formbar"><Button variant="primary" id="sx-send" disabled={sending} onClick={send}>{sending ? m("sending") : m("send")}</Button></div>
       </form>
     </>

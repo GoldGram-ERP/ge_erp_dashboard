@@ -17,6 +17,7 @@ import { itemProblem } from "./purchases-rules";
 import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { paymentKeyOf } from "./sales-invoices-math";
 import { TEXT_MAX, customerLabelHtml, previewLines, readPiece, readQuantity, remainingToPay, type BuyPrice, type CustomerLabel, type PieceForm } from "./customer-pieces-rules";
+import { revealFirstError } from "@/lib/submit-guard";
 
 const LAYOUT_KEY = "ge-erp.labelLayout";        // the layout the other label prints remember on this device
 const cp = (tr: Pick<Tr, "t">, k: string, v?: Record<string, string>) => tr.t("gold-accounts", `customerPieces.${k}`, v);
@@ -133,7 +134,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
     const paid = total === null ? 0 : total - remainingToPay(total, v.cash, v.banks);
     const words = (k: string, key: string) => (k === "sum" ? cp(tr, key === "noPrice" ? "payNoPrice" : "payMismatch", { total: piastresText(total), paid: piastresText(paid) }) : key === "phoneInvalid" ? cp(tr, "phoneInvalid") : key === "quantityInvalid" ? cp(tr, "quantityInvalid") : fe(tr, key));
     setErrs({ ...Object.fromEntries(Object.entries(r.errors).filter(([k]) => !(k in payCodes)).map(([k, key]) => [k, words(k, key)])), ...payErrorTexts(tr, payCodes, cp(tr, "amountsRequired")) });
-    if (!r.payload) return;
+    if (!r.payload) { revealFirstError(); return; }
     setSaving(true);
     api("/customer-pieces", { method: "POST", body: r.payload, saveKey: saveKey.current }).then((x) => {
       saveKey.current = newSaveKey();
@@ -146,6 +147,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       // a refusal ends the attempt (the next Save is a new one); a lost or failed answer, or a 409 saveInProgress, keeps its key, so a retry cannot save twice
       if (err instanceof ApiFailure && !keepsKey(err)) { saveKey.current = newSaveKey(); refusal(err); }
       else setBanner(tr.errorText(err instanceof ApiFailure && !err.unreachable ? err.error : { message: "serverUnreachable" }));
+      revealFirstError();
     }).finally(() => setSaving(false));
   }
 
@@ -183,13 +185,13 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   const pv = preview.state === "ok" ? previewLines(preview.price) : null;
   return (
     <form id="cp" className="bpr" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); save(); }}>
-      {banner && <div className="note warn" role="alert" id="cp-alert">{banner}</div>}
+      {banner && <div className="note warn" role="alert" id="cp-alert" data-field-error>{banner}</div>}
       <div className="card">
         <p className="help" style={{ marginTop: 0, marginBottom: 10 }}>{cp(tr, "intro")}</p>
         <div className="formgrid">
-          {needsBranch && <div className="field" data-k="branchId"><label htmlFor="branchId">{cp(tr, "branch")} *</label>
+          {needsBranch && <div className="field" data-k="branchId" data-err={errs.branchId ? "" : undefined}><label htmlFor="branchId">{cp(tr, "branch")} *</label>
             <Choice tr={tr} id="branchId" invalid={!!errs.branchId} options={branches} value={v.branchId ?? ""} onChange={(x) => set({ branchId: x })} />{err("branchId")}</div>}
-          <div className="field" data-k="itemId"><label htmlFor="itemId">{cp(tr, "item")} *</label>
+          <div className="field" data-k="itemId" data-err={errs.itemId ? "" : undefined}><label htmlFor="itemId">{cp(tr, "item")} *</label>
             <Choice tr={tr} id="itemId" invalid={!!errs.itemId} options={itemOptions} value={v.itemId} onChange={(x) => set({ itemId: x })} />
             {items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
             {err("itemId")}</div>

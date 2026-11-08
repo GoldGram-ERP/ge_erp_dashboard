@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/Input";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import { Link } from "@/i18n/navigation";
 import { toast } from "@/lib/toast";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 
 // POST /access/change-password {currentPassword,newPassword} -> 204; same rules and messages as the mockup's account page.
 const NAMES = ["currentPassword", "newPassword", "confirmPassword"] as const;
@@ -47,7 +49,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
     if (!v.confirmPassword) er.confirmPassword = a("errors.required");
     else if (v.confirmPassword !== n) er.confirmPassword = a("errors.mismatch");
     setErrs(er); setFail("");
-    if (Object.keys(er).length) return;
+    if (Object.keys(er).length) { revealFirstError(); return; }
     setBusy(true);
     try {
       await api(forced ? "/access/forced-password-change" : "/access/change-password", { method: "POST", body: forced ? { newPassword: n } : { currentPassword: v.currentPassword, newPassword: n }, saveKey: key });
@@ -63,6 +65,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
         if (list.includes("newPassword")) fe.newPassword = a("errors.sameAsCurrent");
         if (Object.keys(fe).length) setErrs(fe); else setFail(a("failed"));
       }
+      revealFirstError();
     } finally { setBusy(false); }
   }
   return (
@@ -72,16 +75,16 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
       <p className="mute">{a("sub")}</p>
       <form id="pwf" onSubmit={save} noValidate>
         {names.map((name) => (
-          <div className="field" key={name}>
+          <div className="field" key={name} data-err={errs[name] ? "" : undefined}>
             <label htmlFor={`f-${name}`}>{label[name]}</label>
             <Input id={`f-${name}`} name={name} type={shown[name] ? "text" : "password"} value={v[name]} onChange={(e) => set(name, e.target.value)} autoComplete={name === "currentPassword" ? "current-password" : "new-password"} dir="ltr" style={{ textAlign: "start" }} aria-invalid={!!errs[name]} aria-describedby={errs[name] ? `e-${name}` : undefined} />
             <Button size="sm" onClick={() => setShown((s) => ({ ...s, [name]: !s[name] }))}>{shown[name] ? sign("hidePassword") : sign("showPassword")}</Button>
-            {errs[name] ? <div className="err" id={`e-${name}`} role="alert">{errs[name]}</div> : null}
+            {errs[name] ? <FieldError id={`e-${name}`}>{errs[name]}</FieldError> : null}
           </div>
         ))}
         <div className="note" id="pw-rules"><b>{rules("title")}</b>
           <div id="pw-rules-list">{checks.map(([txt, ok]) => <div key={txt}>{ok ? "✓" : "○"} {txt} <span className="sr-only">{ok ? rules("met") : rules("unmet")}</span></div>)}</div></div>
-        {fail ? <div className="err" id="pw-err" role="alert">{fail}</div> : null}
+        {fail ? <FieldError id="pw-err">{fail}</FieldError> : null}
         <div className="formbar" style={{ position: "static" }}><Button variant="primary" id="pw-save" type="submit" disabled={busy}>{busy ? a("saving") : a("save")}</Button></div>
       </form>
     </div>

@@ -8,6 +8,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, FieldConfig, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import { backendFieldErrors } from "@/lib/fields";
 import { ThingPage, toast } from "@/components/engine";
 import { Skeleton } from "@/components/engine/ui";
@@ -75,7 +77,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
   async function pick(file?: File) {
     if (!file) return;
     const r = await logoFromFile(file);
-    if ("refused" in r) { setLogoErr(m(r.refused)); return; }
+    if ("refused" in r) { setLogoErr(m(r.refused)); revealFirstError(); return; }
     setLogoErr(""); setLogo(r.logo); setLogoName(file.name); setLogoDirty(true); key.current = newSaveKey();
   }
   async function submit() {
@@ -103,7 +105,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
       {empty && <div className="note">{m("emptyNote")}</div>}
       <div className="st-grid">
         <form id="st" className="st-main" noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }}>
-          <div className="grp-block"><h3 className="grp-title">{m("logo")}</h3><div className="grp-panel"><div className="field" data-k="logo">
+          <div className="grp-block"><h3 className="grp-title">{m("logo")}</h3><div className="grp-panel"><div className="field" data-k="logo" data-err={logoErr ? "" : undefined}>
             <div id="logo-box">
               <div>{logo ? <img src={logo} alt={m("logoAlt")} style={{ maxHeight: 72, maxWidth: 160 }} /> : <span className="mute">{m("noLogo")}</span>}</div>
               <div className="actions">
@@ -114,7 +116,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
               <div className="mute">{logoName ? m("logoChosen", { name: logoName }) : logo ? m("logoKept") : ""}</div>
             </div>
             <div className="help">{m("logoHint")}</div>
-            {logoErr && <div className="err" id="logo-err" role="alert">{logoErr}</div>}
+            {logoErr && <FieldError id="logo-err">{logoErr}</FieldError>}
           </div></div></div>
           <FormFields form={form} fields={fields} values={values} />
         </form>
@@ -130,7 +132,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
           </div>
         </div>
       </div>
-      {alert && <div className="err" id="st-alert" role="alert">{alert}</div>}
+      {alert && <FieldError id="st-alert">{alert}</FieldError>}
       <div className="formbar">
         <Button variant="primary" id="st-save" disabled={saving} onClick={() => void submit()}>{saving ? c("saving") : c("saveChanges")}</Button>
         <Button id="st-cancel" onClick={() => void leave()}>{c("cancel")}</Button>

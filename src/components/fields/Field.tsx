@@ -11,6 +11,7 @@ import { stepAmount } from "@/lib/price-step";
 import { useLookup } from "./useLookup";
 import { Select } from "./Select";
 import { DatePicker } from "./DatePicker";
+import { FieldError } from "./FieldError";
 
 export const fieldId = (f: { name: string }) => `f-${f.name}`;
 import { code6 as pad6 } from "@/lib/code6";
@@ -68,7 +69,7 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
   const onChange = (v: unknown) => { clearErrors(f.name); rhfChange(v); };   // typing in a field clears its own error
   const cls = `field${f.type === "checkbox" ? " check" : ""}${f.wide ? " wide" : ""}`;
   const help = f.help ? <div className="help" id={`${id}-help`}>{f.help}</div> : null;
-  const error = err ? <div className="err" id={`${id}-err`} role="alert">{err}</div> : null;
+  const error = err ? <FieldError id={`${id}-err`}>{err}</FieldError> : null;
   const label = <Label f={f} htmlFor={f.type === "select" || f.type === "date" ? `${id}-btn` : id} id={lid} />;
   const wrap = (body: React.ReactNode) => <div className={cls} data-k={f.name} data-err={err ? "" : undefined}>{body}{error}</div>;
   const value = rhfValue ?? "";

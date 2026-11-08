@@ -11,6 +11,8 @@ import type { Option } from "@/lib/engine-types";
 import { milligramsText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import { useAccess } from "./sales-access";
 import { typedHundredths } from "./item-math";
 import { applyBulk, changesOf, CONFIRM_ABOVE, filterRows, invalidCount, MAX_CHANGES, refusals, rowState, setEdit, shown, toRows, cellState, type Edits, type Field, type FeeItem, type Filters, type Refusal } from "./item-fees-rules";
@@ -46,11 +48,12 @@ export default function Page() {
   const [bulkValue, setBulkValue] = useState("");
   const [problems, setProblems] = useState<Refusal[]>([]);
   const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
   const key = useRef(newSaveKey());
   const skipGuard = useRef(false);
 
   // every edit is another attempt: a new save key, and the old refusal list is stale
-  const setEdits = (next: Edits) => { key.current = newSaveKey(); setProblems([]); setEditsState(next); };
+  const setEdits = (next: Edits) => { key.current = newSaveKey(); setProblems([]); setSaveErr(""); setEditsState(next); };
   const shownRows = useMemo(() => filterRows(rows, filters), [rows, filters]);
   // the fee columns sort by the SAVED value, so a row never jumps away while its fee is being typed
   const sorted = useTableSort(shownRows, { item: { kind: "text", get: (r) => r.itemName }, category: { kind: "text", get: (r) => r.categoryName }, karat: { kind: "number", get: (r) => r.karat },
@@ -87,7 +90,9 @@ export default function Page() {
 
   async function save() {
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
-    if (invalid || !changes.length) return;
+    if (invalid) { setSaveErr(L("فيه خانات غلط. صحّحها وبعدين احفظ.", "Some values are wrong. Fix them, then save.")); revealFirstError(); return; }
+    if (!changes.length) { setSaveErr(L("مفيش تعديلات تتحفظ.", "There are no changes to save.")); revealFirstError(); return; }
+    setSaveErr("");
     if (changes.length > MAX_CHANGES) { toast(L(`احفظ ${MAX_CHANGES} صنف على الأكثر في المرة الواحدة.`, `Save ${MAX_CHANGES} items at most at a time.`), { error: true }); return; }
     if (changes.length > CONFIRM_ABOVE && !(await confirm({ title: L("حفظ التعديلات؟", "Save the changes?"), text: L(`سيتم تعديل ${changes.length} صنفاً. هل تريد المتابعة؟`, `${changes.length} items will change. Save them all?`), ok: c("saveChanges"), cancel: c("cancel") }))) return;
     setSaving(true); setProblems([]);
@@ -102,7 +107,7 @@ export default function Page() {
       if (!(e instanceof ApiFailure)) { toast(L("تعذّر الحفظ. حاول مرة أخرى.", "Could not save. Try again."), { error: true }); return; }
       if (!keepsKey(e)) key.current = newSaveKey();
       const list = refusals(e.error, changes, rows);
-      if (list.length) { setProblems(list); toast(L("لم يُحفظ شيء: راجع الأصناف المرفوضة.", "Nothing was saved: check the refused items."), { error: true }); }
+      if (list.length) { setProblems(list); revealFirstError(); toast(L("لم يُحفظ شيء: راجع الأصناف المرفوضة.", "Nothing was saved: check the refused items."), { error: true }); }
       else toast(e.error.message === "itemNotFound" ? L("لم يُحفظ شيء: صنف محذوف أو غير موجود. أعد تحميل الصفحة.", "Nothing was saved: an item was deleted or is missing. Reload the page.") : tr.errorText(e.error), { error: true });
     } finally { setSaving(false); }
   }
@@ -127,11 +132,11 @@ export default function Page() {
               <Seg label={L("القيمة المراد ضبطها", "Value to set")} value={bulkField} onChange={setBulkField} items={[{ id: "workmanship", label: m("workmanship"), attrs: { "data-f": "workmanship" } }, { id: "cashback", label: m("cashback"), attrs: { "data-f": "cashback" } }]} /></div>
             <div className="field"><label htmlFor="fee-bulk-value">{L("القيمة لكل جرام (ج.م)", "Value per gram (EGP)")}</label>
               <Input id="fee-bulk-value" kind="money" dir="ltr" inputMode="decimal" autoComplete="off" placeholder="0.00" aria-invalid={bulkValue !== "" && typedHundredths(bulkValue) === undefined} value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} />
-              {bulkValue !== "" && typedHundredths(bulkValue) === undefined && <div className="err" role="alert">{m("commissionInvalid")}</div>}</div>
+              {bulkValue !== "" && typedHundredths(bulkValue) === undefined && <FieldError>{m("commissionInvalid")}</FieldError>}</div>
             <Button id="fee-bulk-apply" disabled={!bulkOk} onClick={() => setEdits(applyBulk(edits, shownRows, bulkField, bulkValue))}>{L(`تطبيق على الصفوف المصفّاة (${shownRows.length})`, `Apply to filtered rows (${shownRows.length})`)}</Button>
           </div>
           {problems.length > 0 && (
-            <div className="note warn" id="fee-errors" role="alert"><strong>{L("لم يُحفظ شيء. صحّح الأصناف التالية ثم احفظ مرة أخرى:", "Nothing was saved. Fix these items and save again:")}</strong>
+            <div className="note warn" id="fee-errors" role="alert" data-field-error><strong>{L("لم يُحفظ شيء. صحّح الأصناف التالية ثم احفظ مرة أخرى:", "Nothing was saved. Fix these items and save again:")}</strong>
               <ul>{problems.map((p, i) => <li key={i}><bdi dir="auto">{p.itemName}</bdi>{p.field ? ` (${word(p.field)})` : ""}: {why(p.message)}</li>)}</ul></div>
           )}
           {rows.length === 0
@@ -146,11 +151,11 @@ export default function Page() {
                       const st = cellState(r, edits, f), bad = st === "invalid" || cellProblem(r.id, f);
                       return (
                         <Td num data-state={st} data-f={f}>
-                          <div className="field" data-k={`${r.id}.${f}`}>
+                          <div className="field" data-k={`${r.id}.${f}`} data-err={bad ? "" : undefined}>
                             <Input id={`fee-${f === "workmanship" ? "w" : "c"}-${r.id}`} kind="money" dir="ltr" inputMode="decimal" autoComplete="off" aria-label={`${word(f)}: ${r.itemName}`} aria-invalid={bad}
                               value={shown(r, edits, f)} onChange={(e) => setEdits(setEdit(edits, r, f, e.target.value))} />
                             {st === "changed" && <div className="help"><Status tone="warn">{L("كانت", "was")} <Ltr>{r[f]}</Ltr></Status></div>}
-                            {st === "invalid" && <div className="err" role="alert">{L("٠ أو أكثر، بخانتين عشريتين", "0 or more, 2 decimals")}</div>}
+                            {st === "invalid" && <FieldError>{L("٠ أو أكثر، بخانتين عشريتين", "0 or more, 2 decimals")}</FieldError>}
                           </div>
                         </Td>
                       );
@@ -168,8 +173,9 @@ export default function Page() {
                   })}
                 </DataTable>
               )}
+          {saveErr && <FieldError id="fee-save-err">{saveErr}</FieldError>}
           <div className="formbar">
-            <Button variant="primary" id="fee-save" disabled={saving || changes.length === 0 || invalid > 0} onClick={() => void save()}>{saving ? c("saving") : c("saveChanges")}</Button>
+            <Button variant="primary" id="fee-save" disabled={saving} onClick={() => void save()}>{saving ? c("saving") : c("saveChanges")}</Button>
             <Button id="fee-discard" disabled={saving || !dirty} onClick={() => setEdits({})}>{L("تراجع عن التعديلات", "Discard changes")}</Button>
             <span className="mute" id="fee-count" role="status">{changes.length > 0 || invalid > 0 ? `${countText(changes.length)}${invalid ? ` · ${L(`${invalid} خطأ`, `${invalid} to fix`)}` : ""}` : ""}</span>
           </div>

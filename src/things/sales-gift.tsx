@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { Row } from "@/lib/engine-types";
 import { latinNumber } from "@/lib/format";
 import type { Tr } from "@/lib/t";
+import { revealFirstError } from "@/lib/submit-guard";
 import { Section } from "@/components/engine";
 import { TextBox, fe, sg } from "./sales-form-parts";
 import { openPrint } from "./sales-invoices-print";
@@ -48,7 +49,7 @@ export function GiftPrintBox({ row, tr }: { row: Row; tr: Tr }) {
   const print = () => {
     const bad = checkRecipient(tr, rec);
     setErrors(bad);
-    if (bad.name || bad.phone) return;
+    if (bad.name || bad.phone) { revealFirstError(); return; }
     // Straight from the click: the print window opens before the answer, so no pop-up blocker objects.
     openPrint(row.id, "gift", tr, { recipientName: rec.name.trim(), recipientPhone: latinNumber(rec.phone.trim()), showPrices: prices });
   };

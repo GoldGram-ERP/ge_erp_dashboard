@@ -145,6 +145,7 @@ tr.flash td{animation:flash 1.6s ease-out}
 /* read only (a weight from the item): full-contrast text on the sidebar beige, so it reads as shown, not typed */
 .field input[readonly]:not([type=hidden]):not(:disabled){background:var(--side);color:var(--ink);cursor:default}
 .field[data-err] input,.field[data-err] select,.field[data-err] textarea{box-shadow:inset 0 0 0 2px var(--warn)}
+.err{color:var(--warn);font-size:12.5px;margin-top:4px}
 .field .err{color:var(--warn);font-size:12.5px;margin-top:4px}
 .field .help{color:var(--mute);font-size:12.5px;margin-top:4px}
 /* A row of fields that sit side by side (filters, scan row, desk header) is bottom-aligned, so an error or help line under ONE field used to push its neighbours down and break the label line (Arabic and English alike). Here the message hangs under its own field without taking row height; the row makes room only while a message shows. */

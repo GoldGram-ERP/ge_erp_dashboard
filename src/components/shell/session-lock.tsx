@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { api, ApiFailure } from "@/lib/api";
+import { FieldError } from "@/components/fields/FieldError";
+import { revealFirstError } from "@/lib/submit-guard";
 import type { Me } from "@/stores/ui";
 
 // Port of the mockup's session-lock.js. Limit: GET /access/session-lock {inactivityMinutes} (re-read every 5 min). Activity is stamped in localStorage
@@ -49,10 +51,11 @@ export function SessionLock({ me, onSignOut }: { me: Me; onSignOut: () => void }
     if (locked && !d.open) { d.showModal(); pw.current?.focus(); } else if (!locked && d.open) d.close();
   }, [locked]);
 
+  const fail = (text: string) => { setErr(text); revealFirstError(dlg.current ?? undefined); };   // the dialog is the root: the page behind it is not reached
   async function unlock(ev: React.FormEvent) {
     ev.preventDefault();
     const value = pw.current?.value ?? "";
-    if (!value.trim()) { setErr(t("required")); return; }
+    if (!value.trim()) { fail(t("required")); return; }
     setBusy(true); setErr("");
     try {
       await api("/access/session-lock/unlock", { method: "POST", body: { password: value } });
@@ -60,11 +63,11 @@ export function SessionLock({ me, onSignOut }: { me: Me; onSignOut: () => void }
       if (pw.current) pw.current.value = "";
     } catch (ex) {
       setBusy(false);
-      if (!(ex instanceof ApiFailure)) { setErr(t("failed")); return; }
-      if (ex.unreachable) { setErr(t("unreachable")); return; }
+      if (!(ex instanceof ApiFailure)) { fail(t("failed")); return; }
+      if (ex.unreachable) { fail(t("unreachable")); return; }
       if (ex.error?.message === "accountLocked") { onSignOut(); return; }
       const left = ex.error?.values?.count;
-      setErr(`${t("wrong")}${left !== undefined ? ` ${t("attemptsLeft", { count: Number(left) })}` : ""}`);
+      fail(`${t("wrong")}${left !== undefined ? ` ${t("attemptsLeft", { count: Number(left) })}` : ""}`);
       if (pw.current) { pw.current.value = ""; pw.current.focus(); }
     }
   }
@@ -74,8 +77,8 @@ export function SessionLock({ me, onSignOut }: { me: Me; onSignOut: () => void }
         <h2 id="lock-title">{t("title")}</h2>
         <p>{t("signedInAs")} <b>{me.name}</b></p>
         <p>{t("body")}</p>
-        <div className="field"><label htmlFor="lock-pw">{t("password")}</label><Input id="lock-pw" ref={pw} type="password" autoComplete="current-password" dir="ltr" style={{ textAlign: "start" }} /></div>
-        <div className="err" id="lock-err" role="alert" hidden={!err}>{err}</div>
+        <div className="field" data-err={err ? "" : undefined}><label htmlFor="lock-pw">{t("password")}</label><Input id="lock-pw" ref={pw} type="password" aria-invalid={!!err} autoComplete="current-password" dir="ltr" style={{ textAlign: "start" }} /></div>
+        {err && <FieldError id="lock-err">{err}</FieldError>}
         <div className="row"><Button variant="primary" id="lock-go" type="submit" disabled={busy}>{busy ? t("unlocking") : t("continue")}</Button><Button id="lock-out" onClick={onSignOut}>{t("signOut")}</Button></div>
       </form>
     </dialog>

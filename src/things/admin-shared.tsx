@@ -4,6 +4,7 @@
 // so it is sent only when the person changed it. Forced password change and the lock after 5 wrong passwords are backend behaviour only
 // (the form has no control for them; a locked account shows the locked badge and the Unlock action).
 // shortcut: the page's "back" button leaves without the unsaved-changes question (Cancel asks); upgrade when the engine exposes a leave guard.
+import { FieldError } from "@/components/fields/FieldError";
 import { Button, Checkbox, CheckInput, Input, Status } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -246,8 +247,8 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     <>
       {dialog}
       <div className="card"><FormFields form={f} fields={fields} values={values} /></div>
-      <Section title={u("screens.heading")} wide>{perm}{permErr && <div className="err" role="alert">{permErr}</div>}</Section>
-      {alert && <div className="err" role="alert">{alert}</div>}
+      <Section title={u("screens.heading")} wide>{perm}{permErr && <FieldError>{permErr}</FieldError>}</Section>
+      {alert && <FieldError>{alert}</FieldError>}
       <div className="formbar">
         <Button variant="primary" id="save" disabled={saving} onClick={save}>{saving ? c("saving") : adding ? c("save") : c("saveChanges")}</Button>
         <Button id="cancel" onClick={leave}>{c("cancel")}</Button>

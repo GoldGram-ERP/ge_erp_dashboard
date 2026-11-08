@@ -1,9 +1,10 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 /** The one disclosure (show / hide): a real button row with a trailing chevron, never a native <details> (its browser triangle and focus ring are raw chrome). Look lives in globals.css (.disc-*). */
-export function Disclosure({ id, className = "", summary, children, defaultOpen = false }: { id?: string; className?: string; summary: ReactNode; children: ReactNode; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
+export function Disclosure({ id, className = "", summary, children, defaultOpen = false, hasError = false }: { id?: string; className?: string; summary: ReactNode; children: ReactNode; defaultOpen?: boolean; hasError?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen || hasError);
+  useEffect(() => { if (hasError) setOpen(true); }, [hasError]);   // a refusal inside a closed section opens it, so its warning is on screen
   return (
     <div id={id} className={`disc${className ? ` ${className}` : ""}`}>
       <button type="button" className="disc-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
