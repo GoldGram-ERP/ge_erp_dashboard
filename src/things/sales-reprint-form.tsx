@@ -7,42 +7,12 @@ import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
-import { latinNumber, milligramsText, piastresText } from "@/lib/format";
+import { latinNumber } from "@/lib/format";
 import { toast } from "@/components/engine";
 import { Button, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, pieceChoices, readPieceCode } from "./sales-form-parts";
-import { LabelQr } from "@/components/label-qr";
-
-const LAYOUT_KEY = "ge-erp.labelLayout";        // the layout chosen is remembered on this device
-const A4_PER_PAGE = 65;
-
-function Label({ l, layout, gram, karatText }: { l: Row; layout: "tag" | "a4"; gram: string; karatText: string }) {
-  const tag = layout === "tag", qr = l.labelKind === "qr";
-  const text = (
-    <>
-      <span dir="ltr" data-label-code style={{ fontFamily: "monospace", fontWeight: 700 }}>{l.pieceCode}</span>
-      {(l.itemName ?? l.categoryName) && <span data-label-item style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingBlock: "0.15mm" }}>{l.itemName ?? l.categoryName}</span>}   {/* a returned customer piece prints its category (#4) */}
-      <span dir="ltr" style={{ whiteSpace: "nowrap" }}>{karatText} · {milligramsText(l.weight)} {gram}</span>
-      {l.tagPrice ? <span dir="ltr" style={{ fontWeight: 600 }}>{piastresText(l.tagPrice)}</span> : null}
-    </>
-  );
-  const mark = qr
-    ? <LabelQr value={l.pieceCode} />
-    : <span data-bars style={{ display: "block", width: tag ? "40mm" : "34mm", height: tag ? "4mm" : "7mm", borderBlock: "1px solid #1c1912", textAlign: "center", fontSize: "5pt", lineHeight: tag ? "4mm" : "7mm" }}>Code 128</span>;
-  return (
-    <div data-label data-label-kind={l.labelKind} style={{ width: tag ? "30mm" : "38.1mm", height: tag ? "10mm" : "21.2mm", display: "flex", ...(qr ? { alignItems: "center", gap: "1mm" } : { flexDirection: "column", alignItems: "center", justifyContent: "center" }), overflow: "hidden", background: "#fff", color: "#1c1912", fontSize: "7pt", breakInside: "avoid", breakAfter: tag ? "page" : undefined, border: "1px dashed #cfc8b4" }}>
-      {qr ? <>{mark}<span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, paddingInlineEnd: "1mm", lineHeight: 1.3 }}>{text}</span></>
-        : <>{mark}<span style={{ display: "flex", flexWrap: "wrap", gap: "0 2mm", justifyContent: "center", lineHeight: 1.3 }}>{text}</span></>}
-    </div>
-  );
-}
-
-function Sheet({ labels, layout, gram, karatText }: { labels: Row[]; layout: "tag" | "a4"; gram: string; karatText: (k: string) => string }) {
-  if (layout === "tag") return <>{labels.map((l, i) => <Label key={i} l={l} layout="tag" gram={gram} karatText={karatText(l.karat)} />)}</>;
-  const pages: Row[][] = [];
-  for (let i = 0; i < labels.length; i += A4_PER_PAGE) pages.push(labels.slice(i, i + A4_PER_PAGE));
-  return <>{pages.map((p, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(5,38.1mm)", gridAutoRows: "21.2mm", gap: "0 2.5mm", breakAfter: "page" }}>{p.map((l, j) => <Label key={j} l={l} layout="a4" gram={gram} karatText={karatText(l.karat)} />)}</div>)}</>;
-}
+import { LAYOUT_KEY, Sheet } from "./label-sheet";
+import { printLabels } from "./label-print";
 
 export function ReprintForm({ tr }: CustomFormProps) {
   const { t, L } = tr;
@@ -103,7 +73,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
     } finally { setSaving(false); }
   }
   const pickLayout = (v: string) => { touch(); const l = v === "a4" ? "a4" : "tag"; setLayout(l); localStorage.setItem(LAYOUT_KEY, l); };
-  const print = () => window.print();
+  const print = () => { if (labels) printLabels(tr, labels, layout); };
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
 
   return (
@@ -126,14 +96,13 @@ export function ReprintForm({ tr }: CustomFormProps) {
       </form>
       {labels && (
         <div id="result" style={{ marginTop: 14 }}>
-          <style>{`@media print{body *{visibility:hidden}[data-print-labels],[data-print-labels] *{visibility:visible}[data-print-labels]{position:absolute;inset:0 auto auto 0;max-height:none!important;overflow:visible!important;background:#fff!important}}@page{size:${layout === "tag" ? "30mm 10mm;margin:0" : "A4;margin:10.7mm 4.7mm"}}`}</style>
           <div className="card">
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h3 style={{ margin: 0 }}>{rl("print")} <span className="sub">{pc("labelCount", { count: String(labels.length) })}</span></h3>
               <Button variant="primary" data-print onClick={print}>{t("common", "print")}</Button>
             </div>
             <div data-labels data-print-labels style={{ display: "flex", flexWrap: "wrap", gap: 10, maxHeight: "60vh", overflow: "auto", background: "var(--bg)", padding: 12, borderRadius: 10 }}>
-              <Sheet labels={labels} layout={layout} gram={pc("gram")} karatText={(k) => pc("karatValue", { karat: k })} />
+              <Sheet labels={labels} layout={layout} tr={tr} />
             </div>
           </div>
         </div>
