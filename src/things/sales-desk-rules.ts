@@ -74,6 +74,12 @@ export const mayHandOverDraft = (me: { userType?: string; mayHandOver?: boolean 
   Boolean(me && draft && !buy && draft.invoiceType === "handover" && draft.status === "open" && !draft.handedOverAt
     && (me.userType === "admin" || me.userType === "super_admin" || me.mayHandOver === true));
 
+/** A colleague's draft (owner, 2026-11-09): a plain User whose Position may hand over sees every Hand-over draft of their branch, but Edit, Complete and
+ *  Delete of someone else's draft stay the creator's (the backend answers 404). True when the signed-in User did not make the saved draft (`employeeId`
+ *  is the creator); then the desk shows it read only. Admin and Super admin, a new draft, and an unknown person: false (as before). */
+export const othersDraft = (me: { id?: string; userType?: string } | undefined, draft: { employeeId?: string } | null | undefined): boolean =>
+  Boolean(me && draft && me.userType === "user" && draft.employeeId && draft.employeeId !== me.id);
+
 /** One channel per payment line (owner, 2026-11-09): a line is Instapay, Visa or Bank transfer, never two at once, and the backend takes each method once per
  *  sale. The methods row `i` may offer: every one not already used by another line ("cash" never counts), plus the row's own value. */
 export function methodsLeftFor(i: number, rows: readonly { method: string }[], all: readonly string[]): string[] {

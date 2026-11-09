@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, mayHandOverDraft, methodsLeftFor, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, mayHandOverDraft, methodsLeftFor, othersDraft, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -105,6 +105,24 @@ describe("who hands over a draft (owner, 2026-11-09)", () => {
   it("not a Buy draft, and not a completed or deleted one", () => {
     expect(mayHandOverDraft({ userType: "admin" }, draft, true)).toBe(false);
     for (const status of ["completed", "deleted"]) expect(mayHandOverDraft({ userType: "admin" }, { ...draft, status }, false)).toBe(false);
+  });
+});
+
+describe("a colleague's draft is read only for a plain User (owner, 2026-11-09)", () => {
+  const mine = { employeeId: "u1" }, theirs = { employeeId: "u2" };
+  it("my own draft stays editable", () => {
+    expect(othersDraft({ id: "u1", userType: "user" }, mine)).toBe(false);
+  });
+  it("another user's draft is read only for a plain User", () => {
+    expect(othersDraft({ id: "u1", userType: "user" }, theirs)).toBe(true);
+  });
+  it("the Admin and the Super admin edit it as today", () => {
+    expect(othersDraft({ id: "a1", userType: "admin" }, theirs)).toBe(false);
+    expect(othersDraft({ id: "s1", userType: "super_admin" }, theirs)).toBe(false);
+  });
+  it("an unsaved new draft, or an unknown person, stays editable", () => {
+    expect(othersDraft({ id: "u1", userType: "user" }, null)).toBe(false);
+    expect(othersDraft(undefined, theirs)).toBe(false);
   });
 });
 

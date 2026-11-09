@@ -23,7 +23,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, mayHandOverDraft, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, mayHandOverDraft, othersDraft, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
 
@@ -169,7 +169,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   }, [quoteKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const note = draft ? lockNote(draft as never, tr) : null;
-  const readonly = Boolean(draft && note && note.state !== "editable");
+  const others = othersDraft(me, draft);   // a colleague's Hand-over draft: open and hand it over only (the backend refuses Edit, Complete and Delete)
+  const readonly = Boolean(draft && note && note.state !== "editable") || others;
   const isNew = !draft;
   const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
@@ -380,7 +381,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
           {!draft && <p className="tk-quiet tk-intro">{L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
-          {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
+          {others && <div className="note" id="sd-others">{L("المسودة دي بتاعة زميل: تقدر تسلّمها بس، مش تعدّلها.", "This draft is a colleague's: you may hand it over, not change it.")}</div>}
+          {note && !others && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </header>
 
         <div className="tk-grid">
@@ -536,7 +538,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
               {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
-              {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
+              {draft && draft.status === "open" && !others && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
               <Button id="sd-back" onClick={close}><Icon name="back" size={15} />{d("backToList")}</Button>
             </div>
           </div>
