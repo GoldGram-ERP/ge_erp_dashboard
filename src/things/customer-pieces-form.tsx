@@ -222,7 +222,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       </div>
       <div className="card" id="sec-payment">
         <h3>{cp(tr, "payTitle")}</h3>
-        <PaymentBlock tr={tr} cash={v.cash} sumLabel={cp(tr, "paid")} onCash={(x) => set({ cash: x })} banks={v.banks} onBanks={(b) => set({ banks: b })} accounts={accountOptions(accounts)} errors={errs} />
+        <PaymentBlock tr={tr} total={total ?? undefined} cash={v.cash} sumLabel={cp(tr, "paid")} onCash={(x) => set({ cash: x })} banks={v.banks} onBanks={(b) => set({ banks: b })} accounts={accountOptions(accounts)} errors={errs} />
         {left !== null && <div className="pay-sum"><span className="help">{cp(tr, "leftToPay")}</span><b dir="ltr" id="payLeft" data-left>{piastresText(left)}</b></div>}
       </div>
       <div className="card">

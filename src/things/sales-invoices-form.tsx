@@ -133,6 +133,18 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
 
   // ── the numbers ──
   const base = makingBase(lines);
+  // The server prices all the pieces at once and rounds the total to a whole pound (POST /sales-invoices/price), the way a Save checks the payments:
+  // adding up the price each piece was shown alone gave 118,284 where the invoice is 118,286 (owner, 2026-11-09). Reservation invoices use the reservation's totals.
+  const pricedKey = lines.map((l) => l.pieceCode).join("|");
+  useEffect(() => {
+    if (made || !pricedKey) return;
+    let stale = false;
+    api("/sales-invoices/price", { method: "POST", body: { pieceCodes: pricedKey.split("|"), ...(edit ? { salesInvoiceId: edit.id } : {}) } })
+      .then((r) => { if (!stale) setLines((ls) => ls.map((l) => { const p = (r.lines as Row[]).find((x) => x.pieceCode === l.pieceCode); return p && (p.linePrice !== l.linePrice || p.goldValue !== l.goldValue || p.makingCharge !== l.makingCharge) ? { ...l, linePrice: p.linePrice, goldValue: p.goldValue, makingCharge: p.makingCharge } : l; })); })
+      .catch(() => {});
+    return () => { stale = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pricedKey, Boolean(made), edit?.id]);
   const d = made ? { value: made.totals.discount ?? 0, invalid: false, tooBig: false, sent: undefined } : mayDiscount(me!) ? readDiscount(kind, disc, base) : { value: 0, invalid: false, tooBig: false, sent: undefined };
   const tot = totalsOf({ lines, discount: d.value, made, cash, banks });
   const scannedOf = (ln: Row) => lines.filter((p) => fills(ln, p)).length;
@@ -315,7 +327,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
         <div className="card" id="sec-payment">
           <h3>{m("payments")} <small>{made ? (nothingToPay ? m("nothingToPay") : m("restToPay")) : m("cashOnly")}</small></h3>
           {nothingToPay ? <div className="formgrid">{paidBefore}</div>
-            : <PaymentBlock tr={tr} cash={cash} onCash={(v) => { setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { edited(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} before={paidBefore} />}
+            : <PaymentBlock tr={tr} total={tot.total - (made?.totals.paid ?? 0)} cash={cash} onCash={(v) => { setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { edited(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} before={paidBefore} />}
           <div className="field" data-k="cashDiscount" style={{ maxWidth: 420, marginTop: 14 }}><label htmlFor="cashDiscount">{m("cashDiscount")}</label>
             <DiscountBox tr={tr} may={mayDiscount(me!)} kind={kind} disc={disc} lockedValue={made ? (made.totals.discount ?? 0) : undefined} onKind={setKind} onDisc={setDisc}
               help={m("cashDiscountHint", { max: piastresText(base) })} error={d.tooBig ? <ErrBox>{m("cashDiscountAbove", { max: piastresText(base) })}</ErrBox> : d.invalid ? <ErrBox>{m("cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>

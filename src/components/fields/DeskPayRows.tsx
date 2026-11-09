@@ -3,9 +3,10 @@
 // Visa), the account (a bank transfer only: one channel per line) and the amount, a button to add a row, and the live paid and remaining. The ways are the labels of the rows: they are not a second
 // plan beside the money. Visa is the only way to pay when chosen, so choosing it hides the rest and the add button.
 import type { Tr } from "@/lib/t";
-import { piastresText } from "@/lib/format";
-import { Button, Input } from "@/components/ui";
+import { piastresInput, piastresText } from "@/lib/format";
+import { Button, CopyButton, Input } from "@/components/ui";
 import { lineTakesAccount, methodsLeftFor } from "@/things/sales-desk-rules";
+import { bankRest, cashRest } from "@/things/sales-invoices-math";
 import { FieldError } from "./FieldError";
 import { Select } from "./Select";
 
@@ -42,6 +43,7 @@ export function DeskPayRows({ tr, cash, onCash, banks, onBanks, accounts, method
           <label htmlFor="f-cash">{L("النقدي", "Cash")}</label>
           <Input kind="money" id="f-cash" name="cash" dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={cash} disabled={disabled || visa}
             aria-invalid={!!errors.cash} onChange={(e) => onCash(e.target.value)} />
+          {total !== undefined && !visa && <Button size="sm" data-fillcash disabled={disabled} onClick={() => onCash(cashRest(total, banks))}>{L("الكل", "All")}</Button>}
           {err("cash")}
         </div>
       </div>
@@ -65,6 +67,7 @@ export function DeskPayRows({ tr, cash, onCash, banks, onBanks, accounts, method
               <label htmlFor={`bm${i}`}>{i === 0 ? L("المبلغ", "Amount") : L(`المبلغ ${i + 1}`, `Amount ${i + 1}`)}</label>
               <Input kind="money" id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} disabled={disabled}
                 aria-invalid={!!errors[`bank${i}Amount`]} onChange={(e) => set(i, { amount: e.target.value })} />
+              {total !== undefined && <Button size="sm" data-fillbank={i} disabled={disabled} onClick={() => set(i, { amount: bankRest(total, cash, banks, i) })}>{L("كمّل الباقي", "Fill the rest")}</Button>}
               {err(`bank${i}Amount`)}
             </div>
             <div className="bank-rm">
@@ -80,7 +83,7 @@ export function DeskPayRows({ tr, cash, onCash, banks, onBanks, accounts, method
       {total !== undefined && left !== undefined && (
         <div className="pay-sum" id="pay-live">
           <span className="help">{L("المدفوع", "Paid")}</span><b dir="ltr" id="paySum" data-summary>{piastresText(paid)}</b>
-          <span className="help">{left < 0 ? L("زيادة", "Over") : L("المتبقي", "Remaining")}</span><b dir="ltr" id="payLeft" data-summary>{piastresText(Math.abs(left))}</b>
+          <span className="help">{left < 0 ? L("زيادة", "Over") : L("المتبقي", "Remaining")}</span><b dir="ltr" id="payLeft" data-summary>{piastresText(Math.abs(left))}</b>{left > 0 && <CopyButton text={piastresInput(left)} label={L("انسخ المتبقي للدفع", "Copy the remaining")} />}
         </div>
       )}
     </div>

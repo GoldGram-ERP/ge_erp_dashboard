@@ -4,12 +4,12 @@
 import type { ReactNode } from "react";
 import { api } from "@/lib/api";
 import type { Row } from "@/lib/engine-types";
-import { milligramsText, piastresText } from "@/lib/format";
+import { milligramsText, piastresInput, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { Icon, Kv, Ltr } from "@/components/engine";
-import { Button, Input } from "@/components/ui";
+import { Button, CopyButton, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, sg } from "./sales-form-parts";
-import { bankPaid, cashPaid, linePriceOf, type Bank } from "./sales-invoices-math";
+import { bankPaid, bankRest, cashPaid, cashRest, linePriceOf, type Bank } from "./sales-invoices-math";
 
 export const accountOptions = (rows: Row[]): [string, string][] => rows.map((a) => [a.id, `${a.accountName} · ${a.bankName}`]);
 export const blankBank = (): Bank => ({ bankAccountId: "", amount: "" });
@@ -25,15 +25,18 @@ export const withoutPayErrors = (errs: Record<string, string>) => Object.fromEnt
 type BlockProps = {
   tr: Tr; cash: string; onCash: (v: string) => void; banks: Bank[]; onBanks: (b: Bank[]) => void; accounts: [string, string][];
   errors: Record<string, string>; cashName?: string; cashLabel?: string; sumLabel?: string; before?: ReactNode;
+  /** What the payment must add up to, in piastres: with it the cash box gets an "All" button and each bank amount a "Fill the rest" button. */
+  total?: number;
 };
 /** Cash box, the bank rows (account + amount, remove per row, "Add another bank account") and, when sumLabel is given, the live sum. */
-export function PaymentBlock({ tr, cash, onCash, banks, onBanks, accounts, errors, cashName = "cash", cashLabel, sumLabel, before }: BlockProps) {
+export function PaymentBlock({ tr, cash, onCash, banks, onBanks, accounts, errors, cashName = "cash", cashLabel, sumLabel, before, total }: BlockProps) {
   const set = (i: number, patch: Partial<Bank>) => onBanks(banks.map((b, j) => (j === i ? { ...b, ...patch } : b)));
   const err = (k: string) => errors[k] && <ErrBox>{errors[k]}</ErrBox>;
   return (
     <div id="payBlock">
       <div className="formgrid">{before}
         <TextBox kind="money" name={cashName} label={cashLabel ?? sg(tr, "cash")} value={cash} maxLength={17} ltr error={errors.cash} onChange={onCash} />
+        {total !== undefined && <div className="actions"><Button size="sm" data-fillcash onClick={() => onCash(cashRest(total, banks))}>{tr.L("الكل", "All")}</Button></div>}
       </div>
       <div id="banks" style={{ marginTop: 12 }}>
         {banks.map((b, i) => (
@@ -45,6 +48,7 @@ export function PaymentBlock({ tr, cash, onCash, banks, onBanks, accounts, error
             <div className="field" data-k={`bank${i}Amount`} data-err={errors[`bank${i}Amount`] ? "" : undefined}>
               <label htmlFor={`bm${i}`}>{i === 0 ? sg(tr, "bankAmount") : sg(tr, "bankAmountN", { number: i + 1 })}</label>
               <Input kind="money" id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} style={{ textAlign: "end" }} aria-invalid={!!errors[`bank${i}Amount`]} onChange={(e) => set(i, { amount: e.target.value })} />{err(`bank${i}Amount`)}
+              {total !== undefined && <Button size="sm" data-fillbank={i} onClick={() => set(i, { amount: bankRest(total, cash, banks, i) })}>{tr.L("كمّل الباقي", "Fill the rest")}</Button>}
             </div>
             <div className="bank-rm"><Button size="sm" danger data-rmbank={i} aria-label={sg(tr, "removeBankRow", { number: i + 1 })} onClick={() => onBanks(banks.filter((_, j) => j !== i))}><Icon name="trash" size={15} />{sg(tr, "remove")}</Button></div>
           </div>
@@ -73,7 +77,7 @@ export function TotalsBar({ tr, bar }: { tr: Tr; bar: Bar }) {
       {cell("gross", sg(tr, "grossTotal"), bar.gross)}
       {cell("discount", sg(tr, "cashDiscount"), bar.discount, bar.discount > 0 ? <div className="help" data-cell="makingLeft">{sg(tr, "makingLeft", { amount: piastresText(bar.makingLeft) })}</div> : null)}
       {cell("paid", sg(tr, "paid"), bar.paid)}
-      {cell("left", bar.left < 0 ? sg(tr, "overPaid") : sg(tr, "leftToPay"), Math.abs(bar.left), null, bar.left !== 0)}
+      {cell("left", bar.left < 0 ? sg(tr, "overPaid") : sg(tr, "leftToPay"), Math.abs(bar.left), bar.left > 0 ? <CopyButton text={piastresInput(bar.left)} label={tr.L("انسخ المتبقي للدفع", "Copy the remaining")} /> : null, bar.left !== 0)}
     </div>
   );
 }

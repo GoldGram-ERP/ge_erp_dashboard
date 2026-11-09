@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bankPaid, bankRowErrors, formRowOfRefusal, linePriceOf, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentBanks, totalsOf } from "./sales-invoices-math";
+import { bankPaid, bankRest, bankRowErrors, cashRest, formRowOfRefusal, linePriceOf, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentBanks, totalsOf } from "./sales-invoices-math";
 import { pricePerGram } from "./item-math";
 
 describe("sales invoice sums are exact piastres", () => {
@@ -88,5 +88,22 @@ describe("the line price", () => {
     const perGram = pricePerGram({ sellPrice: 412345, silverSellPrice: null }, "18")!;
     expect(perGram).toBe(BigInt(353439)); // 353438.57 -> 353439
     expect(linePriceOf(perGram, BigInt(1000), BigInt(0), 1).line).toBe(BigInt(353439));
+  });
+});
+
+describe("the All and Fill the rest buttons take what the other boxes leave (owner, 2026-11-09)", () => {
+  const banks = [{ bankAccountId: "a", amount: "30000.00" }, { bankAccountId: "b", amount: "" }];
+  it("cash takes the total less the bank rows", () => {
+    expect(cashRest(11828600, [])).toBe("118286.00");
+    expect(cashRest(11828600, banks)).toBe("88286.00");
+  });
+  it("a bank row takes the total less the cash and the other rows, never its own amount", () => {
+    expect(bankRest(11828600, "50000", banks, 1)).toBe("38286.00");
+    expect(bankRest(11828600, "", banks, 0)).toBe("118286.00");
+  });
+  it("is empty when nothing is left, or the others already cover the total", () => {
+    expect(cashRest(1000, [{ bankAccountId: "a", amount: "10.00" }])).toBe("");
+    expect(cashRest(1000, [{ bankAccountId: "a", amount: "20.00" }])).toBe("");
+    expect(bankRest(0, "", [{ bankAccountId: "a", amount: "" }], 0)).toBe("");
   });
 });

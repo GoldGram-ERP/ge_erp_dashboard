@@ -1,6 +1,6 @@
 // The sums of the money forms, pure and exact: money is whole piastres, never a float.
 // The backend recomputes everything on Save (these numbers only guide the typing).
-import { latinNumber, typedPiastres } from "@/lib/format";
+import { latinNumber, piastresInput, typedPiastres } from "@/lib/format";
 import { onePiece } from "./item-math";
 
 export type Bank = { bankAccountId: string; amount: string };
@@ -106,3 +106,11 @@ export function linePriceOf(perGram: bigint, weightMg: bigint, workPerGram: bigi
   const one = onePiece(perGram, weightMg, "per_gram", workPerGram), n = BigInt(count);
   return { pieceGold: one.gold, pieceMaking: one.charge, piece: one.total, gold: one.gold * n, making: one.charge * n, line: one.total * n };
 }
+
+// The "All" and "Fill the rest" buttons (owner, 2026-11-09): what is still to pay once the other boxes are counted, as the text a box takes
+// ("" when nothing is left). `total` is what the payment must add up to, in piastres.
+export const restText = (total: number, others: number) => (total - others > 0 ? piastresInput(total - others) : "");
+/** The cash box takes everything the bank rows do not. */
+export const cashRest = (total: number, banks: Bank[]) => restText(total, bankPaid(banks));
+/** Bank row `i` takes everything the cash box and the other rows do not. */
+export const bankRest = (total: number, cash: string, banks: Bank[], i: number) => restText(total, cashPaid(cash) + bankPaid(banks.filter((_, j) => j !== i)));
