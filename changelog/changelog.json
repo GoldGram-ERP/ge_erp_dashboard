@@ -6,6 +6,11 @@
     "kind": "new",
     "en": "Test printer: a Save button applies its settings (size, rotation, spacing, QR, text and logo) to every QR label the ERP prints; Back to factory returns to the old labels.",
     "ar": "اختبار الطابعة: زرار حفظ بيطبّق الإعدادات (المقاس والتدوير والمسافات والـ QR والنص واللوجو) على كل ليبل فيه QR بيطبعه النظام؛ وزرار رجّع زي المصنع بيرجّع الليبلات زي الأول."
+   },
+   {
+    "kind": "better",
+    "en": "Sales desk payment lines: one channel per line (Instapay, Visa or bank transfer); only a bank transfer line picks a bank account, and the account for Instapay or Visa is asked when the invoice is completed.",
+    "ar": "سطور الدفع في مكتب المبيعات: طريقة دفع واحدة في كل سطر (إنستاباي أو فيزا أو تحويل بنكي)، والحساب البنكي بيتختار في التحويل البنكي بس، وحساب إنستاباي أو الفيزا بيتسأل عنه وقت إتمام الفاتورة."
    }
   ]
  },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, methodOptionsFor, mixedNonCash, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -43,13 +43,13 @@ describe("item + count lines", () => {
 describe("planned payment against the total", () => {
   // 2 rings of 5 g at the day's price: 54,255.00 EGP = 5,425,500 piastres.
   it("10,000.00 cash + 44,255.00 in a bank leaves nothing; 10,000.00 alone leaves 44,255.00", () => {
-    expect(plannedAgainst(5_425_500, "10000", [{ bankAccountId: "b1", amount: "44255.00" }])).toMatchObject({ errors: {}, planned: 5_425_500, left: 0, over: false });
+    expect(plannedAgainst(5_425_500, "10000", [{ bankAccountId: "b1", amount: "44255.00", method: "bank_transfer" }])).toMatchObject({ errors: {}, planned: 5_425_500, left: 0, over: false });
     expect(plannedAgainst(5_425_500, "10000", [])).toMatchObject({ planned: 1_000_000, left: 4_425_500, over: false });
   });
   it("more than the total is flagged; the payment block's own refusals come through (bad cash, a bank amount without an account)", () => {
     expect(plannedAgainst(100, "1.01", [])).toMatchObject({ left: -1, over: true });
     expect(plannedAgainst(100, "0", []).errors).toEqual({ cash: "invalid" });
-    expect(plannedAgainst(100, "", [{ bankAccountId: "", amount: "5" }]).errors).toEqual({ bank0Account: "required" });
+    expect(plannedAgainst(100, "", [{ bankAccountId: "", amount: "5", method: "bank_transfer" }]).errors).toEqual({ bank0Account: "required" });
   });
 });
 
@@ -104,38 +104,42 @@ describe("the sales channel picker", () => {
   });
 });
 
-describe("one non-cash kind per sale", () => {
-  const ALL = ["instapay", "bank_transfer", "visa"], r = (...m: string[]) => m.map((method) => ({ method }));
-  it("an empty list or a single row offers everything", () => {
-    expect(methodOptionsFor(0, [], ALL)).toEqual(ALL);
-    expect(methodOptionsFor(0, r("instapay"), ALL)).toEqual(ALL);
+describe("one channel per payment line (owner, 2026-11-09)", () => {
+  const ALL = ["instapay", "bank_transfer", "visa"];
+  const r = (...methods: string[]) => methods.map((method) => ({ method }));
+  it("a method already on another line is not offered again (the backend takes each once); the line's own value stays", () => {
+    expect(methodsLeftFor(0, [], ALL)).toEqual(ALL);
+    expect(methodsLeftFor(0, r("instapay"), ALL)).toEqual(ALL);
+    expect(methodsLeftFor(1, r("instapay", "bank_transfer"), ALL)).toEqual(["bank_transfer", "visa"]);
+    expect(methodsLeftFor(1, r("instapay", "bank_transfer"), ALL)).not.toContain("instapay");
   });
-  it("one Instapay row: the second row offers only Instapay (not bank transfer or Visa)", () => {
-    expect(methodOptionsFor(1, r("instapay", "instapay"), ALL)).toEqual(["instapay"]);
-    expect(methodOptionsFor(1, r("instapay", "bank_transfer"), ALL)).toEqual(["instapay", "bank_transfer"]);   // a mixed legacy pair: each keeps its own
+  it("different channels on different lines are allowed: Instapay on one, Bank transfer on the next", () => {
+    expect(methodsLeftFor(1, r("instapay", "instapay"), ALL)).toEqual(ALL);
+    expect(methodsLeftFor(0, r("bank_transfer", "instapay"), ALL)).toEqual(["bank_transfer", "visa"]);
   });
-  it("bank transfer and Visa work the same way", () => {
-    expect(methodOptionsFor(1, r("bank_transfer", "bank_transfer"), ALL)).toEqual(["bank_transfer"]);
-    expect(methodOptionsFor(1, r("visa", "visa"), ALL)).toEqual(["visa"]);
+  it("cash never counts as a line's channel", () => {
+    expect(methodsLeftFor(1, r("cash", "instapay"), ["cash", ...ALL])).toEqual(["cash", ...ALL]);
   });
-  it("cash rows never block and are always offered", () => {
-    expect(methodOptionsFor(1, r("cash", "instapay"), ["cash", ...ALL])).toEqual(["cash", ...ALL]);
-    expect(methodOptionsFor(1, r("instapay", "cash"), ["cash", ...ALL])).toEqual(["cash", "instapay"]);
+  it("deleting a line frees its method", () => {
+    const rows = r("instapay", "bank_transfer");
+    expect(methodsLeftFor(1, rows, ALL)).not.toContain("instapay");
+    expect(methodsLeftFor(0, rows.slice(1), ALL)).toContain("bank_transfer");
   });
-  it("deleting the row frees the kinds", () => {
-    const rows = r("instapay", "instapay");
-    expect(methodOptionsFor(0, rows.slice(0, 1), ALL)).toEqual(ALL);
+  it("only a Bank transfer line takes a bank account", () => {
+    expect(lineTakesAccount("bank_transfer")).toBe(true);
+    expect(lineTakesAccount("instapay")).toBe(false);
+    expect(lineTakesAccount("visa")).toBe(false);
   });
-  it("a row keeps its own value in its list", () => {
-    expect(methodOptionsFor(0, r("visa", "instapay"), ALL)).toEqual(["instapay", "visa"]);
+  it("the payment math does not ask an Instapay or Visa line for an account, but still asks a Bank transfer line", () => {
+    expect(plannedAgainst(1_000_00, "", [{ bankAccountId: "", amount: "100", method: "instapay" }]).errors).toEqual({});
+    expect(plannedAgainst(1_000_00, "", [{ bankAccountId: "", amount: "100", method: "visa" }]).errors).toEqual({});
+    expect(plannedAgainst(1_000_00, "", [{ bankAccountId: "", amount: "100", method: "bank_transfer" }]).errors).toEqual({ bank0Account: "required" });
   });
-  it("a buy offers only what it has", () => {
-    expect(methodOptionsFor(1, r("bank_transfer", "bank_transfer"), ["bank_transfer"])).toEqual(["bank_transfer"]);
+  it("an Instapay line counts toward what is planned, so the remainder is right", () => {
+    expect(plannedAgainst(100_00, "", [{ bankAccountId: "", amount: "40", method: "instapay" }])).toMatchObject({ planned: 4_000, left: 6_000, over: false });
   });
-  it("a draft saved with two kinds is detected (and shown as it is)", () => {
-    expect(mixedNonCash(r("instapay", "bank_transfer"))).toBe(true);
-    expect(mixedNonCash(r("instapay", "instapay", "cash"))).toBe(false);
-    expect(mixedNonCash([])).toBe(false);
-    expect(methodOptionsFor(0, r("instapay", "bank_transfer"), ALL)).toEqual(["instapay", "bank_transfer"]);
+  it("forMath gives an accountless Instapay line its own stand-in account and leaves every other line alone", () => {
+    const rows = [{ bankAccountId: "", amount: "1", method: "instapay" }, { bankAccountId: "x", amount: "2", method: "bank_transfer" }, { bankAccountId: "", amount: "3", method: "bank_transfer" }];
+    expect(forMath(rows).map((b) => b.bankAccountId)).toEqual(["none-0", "x", ""]);
   });
 });

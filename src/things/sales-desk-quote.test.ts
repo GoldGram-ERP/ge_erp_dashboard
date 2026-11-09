@@ -55,6 +55,20 @@ describe("the one payment list", () => {
     expect(payRows("", [bank("instapay", "30"), bank("visa", "", "acc2"), bank("bank_transfer", "9", "")])).toEqual([{ method: "instapay", amountPiastres: 3000 }]);
     expect(payRows("", [])).toEqual([]);
   });
+  it("an Instapay or Visa line is its method and amount with no account; a Bank transfer line without its account is still not a payment", () => {
+    expect(payRows("", [{ bankAccountId: "", amount: "40", method: "instapay" }])).toEqual([{ method: "instapay", amountPiastres: 4000 }]);
+    expect(payRows("", [{ bankAccountId: "", amount: "40", method: "visa" }])).toEqual([{ method: "visa", amountPiastres: 4000 }]);
+    expect(payRows("", [{ bankAccountId: "", amount: "40", method: "bank_transfer" }])).toEqual([]);
+    expect(payRows("10", [{ bankAccountId: "", amount: "40", method: "instapay" }, { bankAccountId: "b", amount: "5", method: "bank_transfer" }]).map((r) => r.method)).toEqual(["cash", "instapay", "bank_transfer"]);
+  });
+  it("a saved draft with an accountless Instapay line and a Bank transfer line opens as the same two lines (and an older aligned draft is unchanged)", () => {
+    const back = restoreChoices({ bankPayments: [{ bankAccountId: "b2", amount: 2000 }], paymentMethods: [{ method: "instapay", amountPiastres: 1000 }, { method: "bank_transfer", amountPiastres: 2000 }] } as DraftChoices);
+    expect(back.banks).toEqual([{ bankAccountId: "", amount: "10.00", method: "instapay" }, { bankAccountId: "b2", amount: "20.00", method: "bank_transfer" }]);
+    const visa = restoreChoices({ bankPayments: [], payByVisa: true, paymentMethods: [{ method: "visa", amountPiastres: 5000 }] } as DraftChoices);
+    expect(visa.banks).toEqual([{ bankAccountId: "", amount: "50.00", method: "visa" }]);
+    const older = restoreChoices({ bankPayments: [{ bankAccountId: "b1", amount: 3000 }], paymentMethods: [{ method: "instapay", amountPiastres: 3000 }] } as DraftChoices);
+    expect(older.banks).toEqual([{ bankAccountId: "b1", amount: "30.00", method: "instapay" }]);
+  });
 });
 
 // The desk's choices travel with a draft: what is sent from the desk state and what the desk is rebuilt from.

@@ -1,11 +1,11 @@
 "use client";
 // The Sales desk's one payment block (issue #35): the cash box, then a row for each bank payment with the way it is paid (instapay, bank transfer,
-// Visa), the account and the amount, a button to add a row, and the live paid and remaining. The ways are the labels of the rows: they are not a second
+// Visa), the account (a bank transfer only: one channel per line) and the amount, a button to add a row, and the live paid and remaining. The ways are the labels of the rows: they are not a second
 // plan beside the money. Visa is the only way to pay when chosen, so choosing it hides the rest and the add button.
 import type { Tr } from "@/lib/t";
 import { piastresText } from "@/lib/format";
 import { Button, Input } from "@/components/ui";
-import { methodOptionsFor } from "@/things/sales-desk-rules";
+import { lineTakesAccount, methodsLeftFor } from "@/things/sales-desk-rules";
 import { FieldError } from "./FieldError";
 import { Select } from "./Select";
 
@@ -51,14 +51,16 @@ export function DeskPayRows({ tr, cash, onCash, banks, onBanks, accounts, method
             <div className="field" data-k={`bank${i}Method`}>
               <label htmlFor={`bmt${i}-btn`}>{L("طريقة الدفع", "Paid by")}</label>
               <Select id={`bmt${i}`} name={`bmt${i}`} value={b.method} searchable={false} disabled={disabled}
-                options={methodOptionsFor(i, banks, methods).filter((m) => m !== "visa" || visaFits || b.method === "visa").map((m) => [m, methodLabel(m)])}
-                onChange={(v) => { if (v) set(i, { method: v }); }} />
+                options={methodsLeftFor(i, banks, methods).filter((m) => m !== "visa" || visaFits || b.method === "visa").map((m) => [m, methodLabel(m)])}
+                onChange={(v) => { if (v) set(i, lineTakesAccount(v) ? { method: v } : { method: v, bankAccountId: "" }); }} />
             </div>
-            <div className="field" data-k={`bank${i}Account`} data-err={errors[`bank${i}Account`] ? "" : undefined}>
-              <label htmlFor={`ba${i}-btn`}>{i === 0 ? L("الحساب البنكي", "Bank account") : L(`الحساب البنكي ${i + 1}`, `Bank account ${i + 1}`)}</label>
-              <Select id={`ba${i}`} name={`ba${i}`} value={b.bankAccountId} options={accounts} disabled={disabled} invalid={!!errors[`bank${i}Account`]} onChange={(v) => set(i, { bankAccountId: v })} />
-              {err(`bank${i}Account`)}
-            </div>
+            {lineTakesAccount(b.method) && (
+              <div className="field" data-k={`bank${i}Account`} data-err={errors[`bank${i}Account`] ? "" : undefined}>
+                <label htmlFor={`ba${i}-btn`}>{i === 0 ? L("الحساب البنكي", "Bank account") : L(`الحساب البنكي ${i + 1}`, `Bank account ${i + 1}`)}</label>
+                <Select id={`ba${i}`} name={`ba${i}`} value={b.bankAccountId} options={accounts} disabled={disabled} invalid={!!errors[`bank${i}Account`]} onChange={(v) => set(i, { bankAccountId: v })} />
+                {err(`bank${i}Account`)}
+              </div>
+            )}
             <div className="field" data-k={`bank${i}Amount`} data-err={errors[`bank${i}Amount`] ? "" : undefined}>
               <label htmlFor={`bm${i}`}>{i === 0 ? L("المبلغ", "Amount") : L(`المبلغ ${i + 1}`, `Amount ${i + 1}`)}</label>
               <Input kind="money" id={`bm${i}`} data-bamt={i} dir="ltr" inputMode="decimal" autoComplete="off" maxLength={17} placeholder="0.00" value={b.amount} disabled={disabled}

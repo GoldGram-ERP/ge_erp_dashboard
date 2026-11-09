@@ -27,10 +27,12 @@ export const visaChosen = (op: Operation, banks: readonly DeskBank[]) => op === 
 /** The payment as the quote prices it: Visa or not. */
 export const quotePayment = (op: Operation, banks: readonly DeskBank[]): Payment => (visaChosen(op, banks) ? "visa" : "cash");
 export type PayRow = { method: Payment; amountPiastres: number };
+/** The lines with an amount typed: a Bank transfer needs its account too, an Instapay or Visa line is its method and amount (the account is asked at Complete). */
+const paidLines = <T extends DeskBank>(banks: readonly T[]): T[] => banks.filter((b) => String(b.amount ?? "").trim() !== "" && (b.method !== "bank_transfer" || Boolean(b.bankAccountId)));
 /** The payment as one list of rows: the cash row first (when there is cash), then each filled bank row, in order. */
 export function payRows(cash: string, banks: readonly DeskBank[]): PayRow[] {
   const c = cashPaid(cash);
-  return [...(c > 0 ? [{ method: "cash" as const, amountPiastres: c }] : []), ...filledBanks(banks).map((b) => ({ method: b.method as Payment, amountPiastres: typedPiastres(String(b.amount).trim()) ?? 0 }))];
+  return [...(c > 0 ? [{ method: "cash" as const, amountPiastres: c }] : []), ...paidLines(banks).map((b) => ({ method: b.method as Payment, amountPiastres: typedPiastres(String(b.amount).trim()) ?? 0 }))];
 }
 /** The karats an item may have for a metal (the backend refuses others). */
 export const karatFits = (metal: Metal, karat: string) => (metal === "silver" ? karat === "999" : karat === "21" || karat === "24");
@@ -102,7 +104,22 @@ export function restoreChoices(x: DraftChoices) {
   // The methods are the rows only when each one is the row's own way and amount (the cash row first); anything else is an older plan.
   const aligned = methods.length === cashRow + money.length && (cashRow === 0 || (methods[0].method === "cash" && methods[0].amountPiastres === Number(x.cash))) &&
     tags.every((t, i) => t.method !== "cash" && t.amountPiastres === money[i].amount);
-  const banks: DeskBank[] = money.map((b, i) => ({ bankAccountId: b.bankAccountId, amount: piastresInput(b.amount), method: aligned ? (tags[i].method as BankMethod) : x.payByVisa ? "visa" : "bank_transfer" }));
+  let banks: DeskBank[] = money.map((b, i) => ({ bankAccountId: b.bankAccountId, amount: piastresInput(b.amount), method: aligned ? (tags[i].method as BankMethod) : x.payByVisa ? "visa" : "bank_transfer" }));
+  // A draft saved since "one channel per line" keeps an Instapay or Visa line as a method and an amount with no account: its methods name more rows than
+  // its money rows. Rebuild the lines in the order of the methods: a bank transfer takes the next money row, an Instapay or Visa line is the method alone.
+  if (!aligned && methods.length > 0 && (cashRow === 0 || (methods[0].method === "cash" && methods[0].amountPiastres === Number(x.cash)))) {
+    let next = 0, ok = true;
+    const rebuilt: DeskBank[] = [];
+    for (const t of tags) {
+      if (t.method === "cash") { ok = false; break; }
+      if (t.method === "bank_transfer") {
+        const m = money[next++];
+        if (!m || m.amount !== t.amountPiastres) { ok = false; break; }
+        rebuilt.push({ bankAccountId: m.bankAccountId, amount: piastresInput(m.amount), method: "bank_transfer" });
+      } else rebuilt.push({ bankAccountId: "", amount: piastresInput(t.amountPiastres), method: t.method as BankMethod });
+    }
+    if (ok && next === money.length) banks = rebuilt;
+  }
   if (x.payByVisa && !banks.some((b) => b.method === "visa") && banks.length === 0) banks.push({ bankAccountId: "", amount: "", method: "visa" });
   return {
     operation: x.operation ?? "sell", metal: x.metal ?? "gold", wrapping: x.lines?.[0]?.wrapping ?? "wrapped",

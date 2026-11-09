@@ -48,9 +48,9 @@ export const defaultChannel = (allowed: ChannelOption[] | undefined): string => 
 export const channelError = (id: string, options: [string, string][]): "required" | "invalid" | null => (id === "" ? "required" : options.some(([o]) => o === id) ? null : "invalid");
 
 /** The planned payment against the draft's total (piastres): the payment block's own errors, what is planned, what is left (negative: more than the total). */
-export function plannedAgainst(total: number, cash: string, banks: Bank[]) {
+export function plannedAgainst(total: number, cash: string, banks: (Bank & { method: string })[]) {
   const planned = cashPaid(cash) + bankPaid(banks);
-  return { errors: paymentErrors(cash, banks, "none"), planned, left: total - planned, over: planned > total };
+  return { errors: paymentErrors(cash, forMath(banks), "none"), planned, left: total - planned, over: planned > total };
 }
 
 export type LockDraft = { status: string; locked: boolean; createdDay: string };
@@ -67,12 +67,18 @@ export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" |
 export const canCompleteDraft = (userType: string | undefined, status: string | undefined, buy: boolean): boolean =>
   (userType === "admin" || userType === "super_admin") && status === "open" && !buy;
 
-/** A sale takes at most one non-cash kind (Instapay, Visa or bank transfer; owner, 2026-11-09). The methods row `i` may offer: once another row holds a non-cash
- *  kind, only that kind (plus "cash", which never blocks) is offered; the row's own value always stays in its list. Backend untouched: this is a UI rule. */
-export function methodOptionsFor(i: number, rows: readonly { method: string }[], all: readonly string[]): string[] {
+/** One channel per payment line (owner, 2026-11-09): a line is Instapay, Visa or Bank transfer, never two at once, and the backend takes each method once per
+ *  sale. The methods row `i` may offer: every one not already used by another line ("cash" never counts), plus the row's own value. */
+export function methodsLeftFor(i: number, rows: readonly { method: string }[], all: readonly string[]): string[] {
   const taken = new Set(rows.filter((r, j) => j !== i && r.method !== "cash").map((r) => r.method));
   const own = rows[i]?.method;
-  return all.filter((m) => m === "cash" || m === own || taken.size === 0 || taken.has(m));
+  return all.filter((m) => m === "cash" || m === own || !taken.has(m));
 }
-/** True when the rows already hold two different non-cash kinds (a draft saved before the rule): it opens as it is and is refused on save. */
-export const mixedNonCash = (rows: readonly { method: string }[]): boolean => new Set(rows.map((r) => r.method).filter((m) => m !== "cash")).size > 1;
+/** Only a Bank transfer line picks a bank account (owner, 2026-11-09). An Instapay or Visa line is its method and its amount; the account that received
+ *  the money is asked at Complete, where the money is posted. */
+export const lineTakesAccount = (method: string): boolean => method === "bank_transfer";
+/** The rows as the shared payment math reads them: a line without an account that does not take one gets a stand-in account of its own, so the math
+ *  (half a row, an account once) does not ask for what the line never shows. Never sent anywhere. */
+export function forMath<T extends { method: string; bankAccountId: string }>(banks: readonly T[]): T[] {
+  return banks.map((b, i) => (!b.bankAccountId && !lineTakesAccount(b.method) ? { ...b, bankAccountId: `none-${i}` } : b));
+}

@@ -11,7 +11,7 @@ import { stockMapOf } from "@/lib/items";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Option, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
-import { latinNumber, milligramsText, piastresText, timeText, today } from "@/lib/format";
+import { latinNumber, milligramsText, piastresText, timeText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
@@ -23,7 +23,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, mixedNonCash, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
 
@@ -71,6 +71,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [lines, setLines] = useState<DeskLine[]>([]);
   const [cash, setCash] = useState("");
   const [banks, setBanks] = useState<DeskBank[]>([]);
+  // At Complete only: the account that received an Instapay or Visa line (row index -> account). A draft line never carries one (a bank transfer alone picks its account).
+  const [payTo, setPayTo] = useState<Record<number, string>>({});
   const [kind, setKind] = useState<DiscountKind>("amount");
   const [disc, setDisc] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -186,10 +188,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     }
     const ce = channelError(channelId, channels);
     if (ce) e.salesChannelId = fieldErr(ce);
-    Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
+    Object.assign(e, payErrorTexts(tr, paymentErrors(cash, forMath(banks))));
     if (dsc.invalid && !buy) e.cashDiscount = sg(tr, "cashDiscountInvalid");
     setErrs(e);
-    if (!buy && mixedNonCash(banks)) { setGeneral(d("refused.oneNonCash")); revealFirstError(); return; }   // an older draft with two kinds: told, never changed silently
     if (Object.keys(e).length || !c.payload || !l.payload) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     // the draft keeps the desk's choices and the methods' amounts of the quote: no quote (a typed price that is not valid, a refused price) means nothing to save
     if (!quote || manualPrice(manual.sell).invalid || manualPrice(manual.buy).invalid) { setGeneral(quoteMsg || d("desk.manualInvalid")); revealFirstError(); return; }
@@ -261,14 +262,15 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   };
   async function complete() {
     if (!draft || completing) return;
-    const p = paymentErrors(cash, banks);
+    const money = banks.map((b, i) => (!b.bankAccountId && !lineTakesAccount(b.method) && String(b.amount ?? "").trim() !== "" ? { ...b, bankAccountId: payTo[i] ?? "" } : b));
+    const p = paymentErrors(cash, money);
     if (Object.keys(p).length) { setErrs(payErrorTexts(tr, p)); revealFirstError(); return; }
     setCompleting(true); setCompleteMsg(""); setMismatch([]); setCodeErr({}); setPayRefusal(null);
     try {
       const done = await api(`/sales-drafts/${draft.id}/complete`, { method: "POST", saveKey: completeKey.current,
-        body: { lines: scanned.map((s) => ({ pieceCode: s.code })), ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(banks) } });
+        body: { lines: scanned.map((s) => ({ pieceCode: s.code })), ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(money) } });
       completeKey.current = newSaveKey();
-      fill(done); setScanned([]);
+      fill(done); setScanned([]); setPayTo({});
       toast(d("completed", { number: done.salesInvoiceNumber }));
     } catch (err) {
       if (!(err instanceof ApiFailure)) { setCompleteMsg(L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")); }
@@ -481,6 +483,12 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   <span><Ltr>{s.code}</Ltr> · {s.itemName}{codeErr[s.code] && <ErrBox>{codeErr[s.code]}</ErrBox>}</span>
                   <Button size="sm" danger aria-label={d("codeRemove", { code: s.code })} onClick={() => { setScanned((x) => x.filter((y) => y.code !== s.code)); setMismatch([]); setCodeErr({}); completeKey.current = newSaveKey(); }}><Icon name="trash" size={15} /></Button></li>)}</ul></>}
               {mismatch.length > 0 && <ul id="sd-mismatch" className="note warn" role="alert">{mismatch.map((m, i) => <li key={i}>{d("mismatchRow", { item: String(m.itemName), karat: String(m.karat), expected: Number(m.expected), scanned: Number(m.scanned) })}</li>)}</ul>}
+              {banks.map((b, i) => (!lineTakesAccount(b.method) && !b.bankAccountId && String(b.amount ?? "").trim() !== "")
+                ? <div className="field" key={`pt${i}`} data-k={`bank${i}Account`} data-err={errs[`bank${i}Account`] ? "" : undefined}>
+                    <label htmlFor={`pt${i}-btn`}>{L(`الحساب اللي استلم ${d(`desk.pay.${b.method}`)} (${piastresText(typedPiastres(String(b.amount).trim()) ?? 0)})`, `Account that received ${d(`desk.pay.${b.method}`)} (${piastresText(typedPiastres(String(b.amount).trim()) ?? 0)})`)}</label>
+                    <Choice tr={tr} id={`pt${i}`} options={accountOptions(accounts)} value={payTo[i] ?? ""} onChange={(v: string) => { setPayTo({ ...payTo, [i]: v }); setErrs(withoutPayErrors); }} />
+                    {errs[`bank${i}Account`] && <ErrBox>{errs[`bank${i}Account`]}</ErrBox>}
+                  </div> : null)}
               {payRefusal && <div className="note warn" role="alert" id="sd-payrefused"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
               {completeMsg && <div className="note warn" role="alert" data-field-error id="sd-completemsg"><b>{completeMsg}</b></div>}
               <Button variant="primary" id="sd-complete" aria-busy={completing} onClick={() => {
