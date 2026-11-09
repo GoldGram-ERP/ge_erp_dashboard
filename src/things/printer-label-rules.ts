@@ -23,7 +23,8 @@ export const DEFAULTS: Settings = {
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
 
-const RANGES = { widthMm: [10, 300], heightMm: [10, 300], fontPt: [4, 72], paddingMm: [0, 20], gapMm: [0, 20], qrTopMm: [0, 30], qrSizeMm: [0, 300], copies: [1, 100] } as const;
+// Wide on purpose (owner, 2026-11-09): the test page must take any size, 1 mm up; a smaller box used to snap back to 10.
+const RANGES = { widthMm: [1, 1000], heightMm: [1, 1000], fontPt: [1, 200], paddingMm: [0, 100], gapMm: [0, 100], qrTopMm: [0, 500], qrSizeMm: [0, 1000], copies: [1, 100] } as const;
 type NumKey = keyof typeof RANGES;
 
 const num = (v: unknown, key: NumKey): number => {
@@ -31,7 +32,7 @@ const num = (v: unknown, key: NumKey): number => {
   const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
   if (!Number.isFinite(n)) return DEFAULTS[key];
   const c = Math.min(max, Math.max(min, n));
-  return key === "copies" ? Math.round(c) : Math.round(c * 100) / 100;
+  return key === "copies" ? Math.round(c) : Math.round(c * 1000) / 1000;
 };
 const pick = <T extends string | number>(v: unknown, ok: readonly T[], d: T): T => (ok.includes(v as T) ? (v as T) : d);
 

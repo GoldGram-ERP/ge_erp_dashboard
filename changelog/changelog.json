@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Test printer: every number takes any value (38.25 mm, 12.375 mm) and the size no longer snaps back to 10 mm; width and height start at 1 mm.",
+    "ar": "اختبار الطابعة: أي رقم يتقبل أي قيمة (38.25 مم) ومقاس الليبل مبقاش يرجع 10 مم، والعرض والارتفاع بيبدأوا من 1 مم."
+   }
+  ]
+ },
+ {
   "version": "1.0.64",
   "date": "2026-11-09",
   "changes": [

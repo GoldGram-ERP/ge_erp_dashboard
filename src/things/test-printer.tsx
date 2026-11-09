@@ -58,10 +58,10 @@ export default function Page() {
   const print = () => printPrinterLabels(s, toPrint, { title: m("windowTitle"), print: t("common", "print"), popup: m("popup"), rtl: tr.isAr });
 
   // A number box keeps what is typed until it loses focus; the preview follows every valid number (clamped), the box then shows the clamped value.
-  const numField = (key: NumKey, label: string, step = 1) => (
+  const numField = (key: NumKey, label: string) => (
     <div className="field">
       <label htmlFor={`tp-${key}`}>{label}</label>
-      <Input id={`tp-${key}`} kind="number" type="number" dir="ltr" inputMode="decimal" step={step} value={draft[key] ?? String(s[key])}
+      <Input id={`tp-${key}`} kind="number" type="number" dir="ltr" inputMode="decimal" step={key === "copies" ? 1 : "any"} value={draft[key] ?? String(s[key])}
         onChange={(e) => { const v = e.target.value; setDraft({ ...draft, [key]: v }); if (v.trim() !== "" && Number.isFinite(Number(v))) set({ [key]: Number(v) }); }}
         onBlur={() => setDraft((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)))} />
     </div>
@@ -96,7 +96,7 @@ export default function Page() {
               <div className="tp-actions" role="group" aria-labelledby="tp-presets-l">
                 {PRESETS.map(([w, h]) => <Button key={`${w}x${h}`} variant={s.widthMm === w && s.heightMm === h ? "primary" : "quiet"} aria-pressed={s.widthMm === w && s.heightMm === h} onClick={() => set({ widthMm: w, heightMm: h })}>{`${w} × ${h}`}</Button>)}
               </div></div>
-            <div className="tp-fields">{numField("widthMm", m("width"), 0.5)}{numField("heightMm", m("height"), 0.5)}</div>
+            <div className="tp-fields">{numField("widthMm", m("width"))}{numField("heightMm", m("height"))}</div>
             <div className="field"><span className="lbl" id="tp-orient-l">{m("orientation")}</span>
               <Seg label={m("orientation")} value={s.orientation} onChange={(v) => set({ orientation: v })} items={[{ id: "portrait", label: m("portrait") }, { id: "landscape", label: m("landscape") }]} /></div>
             <div className="help" role="status">{m("printsAs", { w: page.w, h: page.h, orientation: orientationText })}</div>
@@ -116,8 +116,8 @@ export default function Page() {
             <div className="field"><span className="lbl">{m("level")}</span>
               <Seg label={m("level")} value={s.level} onChange={(v) => set({ level: v })} items={["L", "M", "Q", "H"].map((l) => ({ id: l as Settings["level"], label: l }))} /></div>
             <div className="tp-fields">
-              {numField("fontPt", m("font"))}{numField("paddingMm", m("padding"), 0.5)}{numField("gapMm", m("gap"), 0.5)}
-              {numField("qrTopMm", m("qrTop"), 0.5)}{numField("qrSizeMm", m("qrSize"), 0.5)}{numField("copies", m("copies"))}
+              {numField("fontPt", m("font"))}{numField("paddingMm", m("padding"))}{numField("gapMm", m("gap"))}
+              {numField("qrTopMm", m("qrTop"))}{numField("qrSizeMm", m("qrSize"))}{numField("copies", m("copies"))}
             </div>
             <div className="tp-actions"><Button variant="plain" onClick={() => { setS(DEFAULTS); setDraft({}); }}>{m("reset")}</Button></div>
           </div>

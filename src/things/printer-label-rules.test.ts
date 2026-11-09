@@ -58,8 +58,9 @@ describe("settings", () => {
     expect(parseSettings('{"widthMm":50,"orientation":"landscape"}')).toEqual({ ...DEFAULTS, widthMm: 50, orientation: "landscape" });
   });
   it("numbers are clamped to their range, copies is a whole number, junk falls back", () => {
-    const s = clampSettings({ widthMm: 5, heightMm: 999, fontPt: 1, paddingMm: -3, gapMm: 99, qrTopMm: 500, qrSizeMm: -1, copies: 150.6 });
-    expect([s.widthMm, s.heightMm, s.fontPt, s.paddingMm, s.gapMm, s.qrTopMm, s.qrSizeMm, s.copies]).toEqual([10, 300, 4, 0, 20, 30, 0, 100]);
+    const s = clampSettings({ widthMm: 0.4, heightMm: 5000, fontPt: 0.5, paddingMm: -3, gapMm: 999, qrTopMm: 9999, qrSizeMm: -1, copies: 150.6 });
+    expect([s.widthMm, s.heightMm, s.fontPt, s.paddingMm, s.gapMm, s.qrTopMm, s.qrSizeMm, s.copies]).toEqual([1, 1000, 1, 0, 100, 500, 0, 100]);
+    expect(clampSettings({ widthMm: 38.25, heightMm: 12.375 })).toMatchObject({ widthMm: 38.25, heightMm: 12.375 });
     expect(clampSettings({ copies: 2.4 }).copies).toBe(2);
     expect(clampSettings({ widthMm: "abc", heightMm: NaN, fontPt: null }).widthMm).toBe(DEFAULTS.widthMm);
     expect(clampSettings({ widthMm: "55" }).widthMm).toBe(55);
