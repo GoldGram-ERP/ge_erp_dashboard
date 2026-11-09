@@ -2,7 +2,7 @@
 // "Report a bug": every signed-in person, of any type, sends the developers a type, a text and any files, or an image pasted from the
 // clipboard. The reporter gets a thank-you and nothing else: no list of their reports, no status, no follow-up (owner, 2026-11-09).
 // The server records who they are, their branch and session; here we add the screen, the version and the last errors the screen got.
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button, FileInput, Sheet } from "@/components/ui";
 import { ChromeButton } from "@/components/ui/Button";
@@ -63,14 +63,18 @@ function ReportSheet({ onClose }: { onClose: () => void }) {
     }
     setFiles(next);
   };
-  // A picture pasted from the clipboard is taken only once the type of problem is chosen (owner, 2026-11-09).
-  const paste = (e: React.ClipboardEvent) => {
-    const pasted = [...e.clipboardData.items].filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter((x): x is File => !!x);
-    if (pasted.length === 0) return;
-    e.preventDefault();
-    if (!f.getValues("type")) { toast(L("اختار نوع المشكلة الأول، وبعدين الصق الصورة.", "Choose the type of problem first, then paste the image."), { error: true }); return; }
-    add(pasted.map((file, i) => (file.name && file.name !== "image.png" ? file : new File([file], `screenshot-${Date.now()}-${i + 1}.${(file.type.split("/")[1] || "png").replace("jpeg", "jpg")}`, { type: file.type }))));
-  };
+  // Ctrl+V works the moment the sheet is open, wherever the focus is and before anything is chosen (owner, 2026-11-09: paste the image first).
+  // Only files are taken; pasting text into a field stays normal.
+  useEffect(() => {
+    const paste = (e: ClipboardEvent) => {
+      const pasted = [...(e.clipboardData?.items ?? [])].filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter((x): x is File => !!x);
+      if (pasted.length === 0) return;
+      e.preventDefault();
+      add(pasted.map((file, i) => (file.name && file.name !== "image.png" ? file : new File([file], `screenshot-${Date.now()}-${i + 1}.${(file.type.split("/")[1] || "png").replace("jpeg", "jpg")}`, { type: file.type }))));
+    };
+    document.addEventListener("paste", paste);
+    return () => document.removeEventListener("paste", paste);
+  });
 
   const send = async () => {
     if (sending) return;
@@ -105,11 +109,11 @@ function ReportSheet({ onClose }: { onClose: () => void }) {
         <Button variant="primary" disabled={sending} onClick={send}>{sending ? L("جارٍ الإرسال…", "Sending…") : L("إرسال", "Send")}</Button>
         <Button onClick={onClose}>{L("إلغاء", "Cancel")}</Button>
       </>}>
-      <div onPaste={paste}>
+      <div>
         <form noValidate onSubmit={(e) => { e.preventDefault(); send(); }}>
           <FormFields form={f} fields={fields} values={values} />
         </form>
-        <p className="mute">{L("تقدر تضيف صور أو ملفات، أو تلصق صورة (Ctrl+V) بعد ما تختار نوع المشكلة. الحد 5 ملفات، كل ملف لحد 25 ميجا.", "You can add images or files, or paste an image (Ctrl+V) once you have chosen the type. Up to 5 files, 25 MB each.")}</p>
+        <p className="mute">{L("الصق صورة (Ctrl+V) في أي وقت، أو ضيف صور وملفات. الحد 5 ملفات، كل ملف لحد 25 ميجا.", "Paste an image (Ctrl+V) at any time, or add images and files. Up to 5 files, 25 MB each.")}</p>
         <FileInput ref={picker} multiple onChange={(e) => { add([...(e.target.files ?? [])]); e.target.value = ""; }} />
         <p className="actions"><Button size="sm" onClick={() => picker.current?.click()}>{L("إضافة ملفات", "Add files")}</Button></p>
         {files.map((file, i) => (
