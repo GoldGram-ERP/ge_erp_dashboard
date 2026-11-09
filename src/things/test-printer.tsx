@@ -96,15 +96,16 @@ export default function Page() {
   const print = () => printPrinterLabels(s, toPrint, { title: m("windowTitle"), print: t("common", "print"), popup: m("popup"), rtl: tr.isAr });
 
   // A number box keeps what is typed until it loses focus; the preview follows every valid number (clamped), the box then shows the clamped value.
-  const numBox = (id: string, label: string, value: number, apply: (n: number) => void, whole = false) => (
+  const numBox = (id: string, label: string, value: number, apply: (n: number) => void, whole = false, help = "") => (
     <div className="field">
       <label htmlFor={`tp-${id}`}>{label}</label>
       <Input id={`tp-${id}`} kind="number" type="number" dir="ltr" inputMode="decimal" step={whole ? 1 : "any"} value={draft[id] ?? String(value)}
         onChange={(e) => { const v = e.target.value; setDraft({ ...draft, [id]: v }); if (v.trim() !== "" && Number.isFinite(Number(v))) apply(Number(v)); }}
         onBlur={() => setDraft((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)))} />
+      {help && <div className="help">{help}</div>}
     </div>
   );
-  const numField = (key: NumKey, label: string) => numBox(key, label, s[key], (n) => set({ [key]: n }), key === "copies");
+  const numField = (key: NumKey, label: string, help = "") => numBox(key, label, s[key], (n) => set({ [key]: n }), key === "copies", help);
   const setLines = (lines: ExtraLine[]) => { setDraft({}); set({ lines }); };
   const patchLine = (i: number, patch: Partial<ExtraLine>) => set({ lines: updateLine(s.lines, i, patch) });
 
@@ -121,9 +122,26 @@ export default function Page() {
             {saveNote && <span className="help" role="status">{saveNote}</span>}
           </div>
           <div className="card tp-block">
+            <h3>{m("size")}</h3>
+            <div className="field"><span className="lbl" id="tp-presets-l">{m("presets")}</span>
+              <div className="tp-actions" role="group" aria-labelledby="tp-presets-l">
+                {PRESETS.map(([w, h]) => <Button key={`${w}x${h}`} variant={s.widthMm === w && s.heightMm === h ? "primary" : "quiet"} aria-pressed={s.widthMm === w && s.heightMm === h} onClick={() => set({ widthMm: w, heightMm: h })}>{`${w} × ${h}`}</Button>)}
+              </div></div>
+            <div className="tp-fields">{numField("widthMm", m("width"), m("widthHelp"))}{numField("heightMm", m("height"), m("heightHelp"))}</div>
+            <div className="field"><span className="lbl" id="tp-orient-l">{m("orientation")}</span>
+              <Seg label={m("orientation")} value={s.orientation} onChange={(v) => set({ orientation: v })} items={[{ id: "portrait", label: m("portrait") }, { id: "landscape", label: m("landscape") }]} />
+              <div className="help">{m("orientationHelp")}</div></div>
+            <div className="help" role="status">{m("printsAs", { w: page.w, h: page.h, orientation: orientationText })}</div>
+          </div>
+
+          <div className="card tp-block">
             <h3>{m("content")}</h3>
             <div className="field"><label htmlFor="tp-text">{m("text")}</label>
               <Textarea id="tp-text" rows={2} maxLength={200} dir="auto" disabled={batch.length > 0} placeholder={m("textPh")} value={text} onChange={(e) => setText(e.target.value)} /></div>
+            <div className="tp-fields">{numField("fontPt", m("font"), m("fontHelp"))}</div>
+            <div className="field"><span className="lbl">{m("align")}</span>
+              <Seg label={m("align")} value={s.align} onChange={(v) => set({ align: v })} items={[{ id: "left", label: m("left") }, { id: "center", label: m("center") }, { id: "right", label: m("right") }]} />
+              <div className="help">{m("alignHelp")}</div></div>
             <div className="tp-lines">
               {s.lines.map((l, i) => (
                 <div className="tp-line" key={i} role="group" aria-label={m("lineN", { n: i + 1 })}>
@@ -151,8 +169,6 @@ export default function Page() {
             <div className="field"><span className="lbl">{m("placement")}</span>
               <Seg label={m("placement")} value={s.linesPlacement} onChange={(v) => set({ linesPlacement: v })} items={[{ id: "afterText", label: m("afterText") }, { id: "afterQr", label: m("afterQr") }]} />
               <div className="help">{m("linesHelp")}</div></div>
-            <div className="field"><label htmlFor="tp-code">{m("code")}</label>
-              <Input id="tp-code" maxLength={500} dir="auto" autoComplete="off" disabled={batch.length > 0} placeholder={m("codePh")} value={code} onChange={(e) => setCode(e.target.value)} /></div>
             <div className="tp-actions">
               <Button onClick={() => fileRef.current?.click()}>{m("import")}</Button>
               <FileInput ref={fileRef} accept=".xlsx" aria-label={m("import")} onChange={importFile} />
@@ -164,6 +180,18 @@ export default function Page() {
           </div>
 
           <div className="card tp-block">
+            <h3>{m("qrSection")}</h3>
+            <div className="field"><label htmlFor="tp-code">{m("code")}</label>
+              <Input id="tp-code" maxLength={500} dir="auto" autoComplete="off" disabled={batch.length > 0} placeholder={m("codePh")} value={code} onChange={(e) => setCode(e.target.value)} />
+              <div className="help">{m("codeHelp")}</div></div>
+            <div className="tp-fields">{numField("qrSizeMm", m("qrSize"), m("qrSizeHelp"))}{numField("qrTopMm", m("qrTop"), m("qrTopHelp"))}</div>
+            <div className="field"><span className="lbl">{m("level")}</span>
+              <Seg label={m("level")} value={effectiveLevel(s)} onChange={(v) => { if (!logoInside(s)) set({ level: v }); }} items={["L", "M", "Q", "H"].map((l) => ({ id: l as Settings["level"], label: l }))} />
+              <div className="help">{m("levelHelp")}</div></div>
+          </div>
+
+          <div className="card tp-block">
+            <h3>{m("logo")}</h3>
             <h3>{m("logo")}</h3>
             <div className="tp-actions">
               <Button onClick={() => logoRef.current?.click()}>{s.logo ? m("logoChange") : m("logoUpload")}</Button>
@@ -184,34 +212,22 @@ export default function Page() {
           </div>
 
           <div className="card tp-block">
-            <h3>{m("size")}</h3>
-            <div className="field"><span className="lbl" id="tp-presets-l">{m("presets")}</span>
-              <div className="tp-actions" role="group" aria-labelledby="tp-presets-l">
-                {PRESETS.map(([w, h]) => <Button key={`${w}x${h}`} variant={s.widthMm === w && s.heightMm === h ? "primary" : "quiet"} aria-pressed={s.widthMm === w && s.heightMm === h} onClick={() => set({ widthMm: w, heightMm: h })}>{`${w} × ${h}`}</Button>)}
-              </div></div>
-            <div className="tp-fields">{numField("widthMm", m("width"))}{numField("heightMm", m("height"))}</div>
-            <div className="field"><span className="lbl" id="tp-orient-l">{m("orientation")}</span>
-              <Seg label={m("orientation")} value={s.orientation} onChange={(v) => set({ orientation: v })} items={[{ id: "portrait", label: m("portrait") }, { id: "landscape", label: m("landscape") }]} /></div>
-            <div className="help" role="status">{m("printsAs", { w: page.w, h: page.h, orientation: orientationText })}</div>
+            <h3>{m("layout")}</h3>
+            <div className="field"><span className="lbl">{m("direction")}</span>
+              <Seg label={m("direction")} value={s.direction} onChange={(v) => set({ direction: v })} items={[{ id: "stacked", label: m("stacked") }, { id: "side", label: m("side") }]} />
+              <div className="help">{m("directionHelp")}</div></div>
+            <div className="field"><span className="lbl">{m("order")}</span>
+              <Seg label={m("order")} value={s.swap ? "qr" : "text"} onChange={(v) => set({ swap: v === "qr" })} items={[{ id: "text", label: m("textFirst") }, { id: "qr", label: m("qrFirst") }]} />
+              <div className="help">{m("orderHelp")}</div></div>
+            <div className="tp-fields">{numField("paddingMm", m("padding"), m("paddingHelp"))}{numField("gapMm", m("gap"), m("gapHelp"))}</div>
           </div>
 
           <div className="card tp-block">
-            <h3>{m("layout")}</h3>
-            <div className="field"><span className="lbl">{m("direction")}</span>
-              <Seg label={m("direction")} value={s.direction} onChange={(v) => set({ direction: v })} items={[{ id: "stacked", label: m("stacked") }, { id: "side", label: m("side") }]} /></div>
-            <div className="field"><span className="lbl">{m("order")}</span>
-              <Seg label={m("order")} value={s.swap ? "qr" : "text"} onChange={(v) => set({ swap: v === "qr" })} items={[{ id: "text", label: m("textFirst") }, { id: "qr", label: m("qrFirst") }]} /></div>
+            <h3>{m("printing")}</h3>
             <div className="field"><span className="lbl">{m("rotate")}</span>
               <Seg label={m("rotate")} value={String(s.rotate)} onChange={(v) => set({ rotate: Number(v) as Settings["rotate"] })} items={["0", "90", "180", "270"].map((d) => ({ id: d, label: `${d}°` }))} />
               <div className="help">{m("rotateHelp")}</div></div>
-            <div className="field"><span className="lbl">{m("align")}</span>
-              <Seg label={m("align")} value={s.align} onChange={(v) => set({ align: v })} items={[{ id: "left", label: m("left") }, { id: "center", label: m("center") }, { id: "right", label: m("right") }]} /></div>
-            <div className="field"><span className="lbl">{m("level")}</span>
-              <Seg label={m("level")} value={effectiveLevel(s)} onChange={(v) => { if (!logoInside(s)) set({ level: v }); }} items={["L", "M", "Q", "H"].map((l) => ({ id: l as Settings["level"], label: l }))} /></div>
-            <div className="tp-fields">
-              {numField("fontPt", m("font"))}{numField("paddingMm", m("padding"))}{numField("gapMm", m("gap"))}
-              {numField("qrTopMm", m("qrTop"))}{numField("qrSizeMm", m("qrSize"))}{numField("copies", m("copies"))}
-            </div>
+            <div className="tp-fields">{numField("copies", m("copies"), m("copiesHelp"))}</div>
           </div>
         </div>
 
