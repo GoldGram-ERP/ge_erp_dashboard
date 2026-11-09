@@ -840,6 +840,7 @@
   "pieceSold": "لم تُحذف: هذه القطعة بيعت في فاتورة مبيعات.",
   "reservationNotFound": "هذا الحجز غير موجود.",
   "reservationInvoiced": "لم يُحذف: فاتورة بيع أخذت هذا الحجز. احذف تلك الفاتورة أولاً.",
+  "refundNotReturnTotal": "لم يتم الحفظ: المبلغ المسترد لا يساوي إجمالي المرتجع (سعر الشراء + الكاش باك) × الوزن.",
   "reservationAlreadyInvoiced": "لم يتم الحفظ: صدرت من هذا الحجز الفاتورة رقم {invoiceNumber} من قبل.",
   "pieceNotForReservation": "لا يمكن حجز هذه القطعة لهذا الحجز.",
   "reservationPiecesIncomplete": "أضف كل قطع الحجز أولاً ثم أنشئ الفاتورة: المحجوز {held} من {total}.",

@@ -840,6 +840,7 @@
   "pieceSold": "Not deleted: this piece has been sold on a sales invoice.",
   "reservationNotFound": "This reservation does not exist.",
   "reservationInvoiced": "Not deleted: a sales invoice took this reservation. Delete that invoice first.",
+  "refundNotReturnTotal": "Not saved: the refund is not the return total ((buy price + cashback) x weight).",
   "reservationAlreadyInvoiced": "Not saved: invoice {invoiceNumber} was already made from this reservation.",
   "pieceNotForReservation": "This piece cannot be held for this reservation.",
   "reservationPiecesIncomplete": "Add all the reservation's pieces first, then make the invoice: {held} of {total} held.",

@@ -68,9 +68,13 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
   const found = look.data?.kind === "piece" ? look.data : null;
   const returnTotal: number | null = found && typeof found.returnTotal === "number" ? found.returnTotal : null;
   const paidNow = cashPaid(cash) + bankPaid(banks);
+  // The refund is exactly the total (the owner, 2026-11-09): (today's buy price + cashback) x weight on a new return; an edit changes only how it is paid, so its total is what it refunded.
+  const requiredTotal: number | null = edit ? Number(edit.refundTotal) : returnTotal;
+  const notEqual = requiredTotal !== null && paidNow !== requiredTotal;
+  const mustEqual = (total: number, refund: number) => L(`المبلغ المسترد ${piastresText(refund)} لا يساوي إجمالي المرتجع ${piastresText(total)}: يجب أن يتساويا تماماً.`, `The refund ${piastresText(refund)} is not the return total ${piastresText(total)}: they must be exactly equal.`);
   const refundShown = Boolean(branchId) && DAY.test(date) && piece.trim() !== "" && !pc.error;   // an edit has all three already
   const payCodes = paymentErrors(cash, banks, "any");
-  const may = refundShown && !Object.keys(payCodes).length && !saving;
+  const may = refundShown && !Object.keys(payCodes).length && !notEqual && !saving;
 
   const submit = async () => {
     if (saving) return;
@@ -81,7 +85,8 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
     if (!DAY.test(date)) e.date = sg(tr, "dateInvalid");
     else if (isUser && date > today()) e.date = fe(tr, "invalid");        // a User cannot date a return after today (the backend refuses it too)
     if (piece.trim() === "") e.pieceCode = fe(tr, "required"); else if (pc.error) e.pieceCode = pc.error;
-    if (refundShown) Object.assign(e, payErrorTexts(tr, payCodes, rt("refundRequired")));   // the refund block shows only once branch, date and piece are right: an error nobody can see is never counted
+    if (refundShown) Object.assign(e, payErrorTexts(tr, payCodes, rt("refundRequired")));
+    if (refundShown && notEqual && !Object.keys(payCodes).length) e.sum = mustEqual(requiredTotal!, paidNow);   // not higher and not lower: the server refuses it too   // the refund block shows only once branch, date and piece are right: an error nobody can see is never counted
     setErrs(e);
     if (Object.keys(e).length) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     setSaving(true);
@@ -98,6 +103,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
       const key = x.error.message, texts = backendFieldErrors(x.error, tr), own: Record<string, string> = {};
       if (key === "refundAboveLinePrice") setAbove(true);
       else if (key === "pieceNotReturnable") own.pieceCode = rt("pieceNotReturnable");
+      else if (key === "refundNotReturnTotal") own.sum = mustEqual(Number(x.error.values?.total ?? 0), Number(x.error.values?.refund ?? 0));
       else for (const f of (x.error.fields as any[]) ?? []) {
         const payKey = paymentKeyOf(f.field, banks, "cashRefund");
         if (payKey) own[payKey] = payKey === "sum" && f.message === "required" ? rt("refundRequired") : texts[f.field];
@@ -151,7 +157,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
             <div className="kv"><span>{L("الوزن (جم)", "Weight (g)")}</span><span dir="ltr">{milligramsText(found.weight)}</span></div>
             <div className="kv"><span>{L("سعر الشراء للجرام", "Buy price per gram")}</span><span dir="ltr">{found.buyPricePerGram === null ? "—" : piastresText(found.buyPricePerGram)}</span></div>
             <div className="kv"><span>{L("الكاش باك للجرام", "Cashback per gram")}</span><span dir="ltr">{found.cashbackPerGram === null ? "—" : piastresText(found.cashbackPerGram)}</span></div>
-            <div className="kv"><b>{rt("refundTotal")}</b><b dir="ltr" id="piece-total">{returnTotal === null ? "—" : piastresText(returnTotal)}</b></div>
+            <div className="kv"><b>{rt("refundTotal")}</b><b dir="ltr" id="piece-total">{requiredTotal === null ? "—" : piastresText(requiredTotal)}</b></div>
             {found.cashbackPerGram === null && <p className="help">{L("لا يوجد كاش باك محفوظ لهذا الصنف، فالإجمالي بدونه.", "This item has no cashback saved, so the total is without it.")}</p>}
             {found.buyPricePerGram === null && <p className="help">{L("لا يوجد سعر شراء لهذا العيار في أسعار اليوم.", "There is no buy price for this karat in today's prices.")}</p>}
             {!found.sold && <div className="note warn" role="alert">{L("هذه القطعة لم تُبع، فلا يمكن إرجاعها.", "This piece was not sold, so it cannot be returned.")}</div>}
@@ -160,10 +166,10 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
       )}
       {refundShown && (
         <div className="card" id="sec-refund"><h3>{rt("refund")}</h3>
-          {found && <div className="pay-sum" id="ret-total"><span className="help">{rt("refundTotal")}</span><b dir="ltr" data-summary>{returnTotal === null ? "—" : piastresText(returnTotal)}</b></div>}
+          {found && <div className="pay-sum" id="ret-total"><span className="help">{rt("refundTotal")}</span><b dir="ltr" data-summary>{requiredTotal === null ? "—" : piastresText(requiredTotal)}</b></div>}
           <PaymentBlock tr={tr} cashName="cashRefund" cashLabel={rt("cashRefund")} sumLabel={L("المدفوع", "Paid")} cash={cash} onCash={(v) => { edited(); setCash(v); setErrs(withoutPayErrors); }}
             banks={banks} onBanks={(b) => { edited(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
-          {returnTotal !== null && <div className="pay-sum" id="ret-left"><span className="help">{returnTotal - paidNow < 0 ? L("زيادة", "Over") : L("المتبقي", "Remaining")}</span><b dir="ltr" data-summary>{piastresText(Math.abs(returnTotal - paidNow))}</b></div>}
+          {requiredTotal !== null && <div className="pay-sum" id="ret-left"><span className="help">{requiredTotal - paidNow < 0 ? L("زيادة", "Over") : L("المتبقي", "Remaining")}</span><b dir="ltr" data-summary>{piastresText(Math.abs(requiredTotal - paidNow))}</b></div>}
         </div>
       )}
       {refundShown && (
