@@ -2271,6 +2271,7 @@
    "listOutside": "لم تعد في المخزون ({count})",
    "searchPieces": "كود القطعة أو اسم النوع أو كوده",
    "weight": "الوزن (جم)",
+   "status": "الحالة",
    "scannedAt": "وقت الجرد",
    "scannedBy": "بواسطة",
    "noPieces": "لا توجد قطع.",

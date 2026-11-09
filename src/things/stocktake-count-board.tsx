@@ -4,8 +4,8 @@
 // and GET /stock-counts/:id/pieces (counted, remaining, no longer in stock; paged, searched on the server).
 // Live: every few seconds while the page is visible and online (react-query pauses the interval when the tab is hidden and
 // when offline), and at once after each scan (the scan invalidates ["stock-count", id]). A closed count is frozen: no polling.
-import { Button, Checkbox, DataTable, Input, Seg, SortedTable, TextButton, Td, Tr } from "@/components/ui";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Button, Checkbox, DataTable, Input, Seg, SortedTable, Td, Tr } from "@/components/ui";
+import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { milligramsText, timeText } from "@/lib/format";
@@ -80,79 +80,67 @@ export function Summary({ live, updatedAt, paused }: { live: Live; updatedAt: nu
   );
 }
 
-// ───── Breakdown: one row per item (and karat); sortable, searchable, the unfinished first. Looks like the pieces table below it ─────
-type SortKey = "name" | "code" | "category" | "karat" | "actualPieces" | "actualGrams" | "countedPieces" | "countedGrams" | "remainingPieces" | "remainingGrams";
-const TEXT_KEYS: SortKey[] = ["name", "code", "category", "karat"];
-const NUMBER_OF: Record<string, (l: Line) => number> = {
-  actualPieces: (l) => l.expected.pieces, actualGrams: (l) => l.expected.weightMg,
-  countedPieces: (l) => l.counted.pieces, countedGrams: (l) => l.counted.weightMg,
-  remainingPieces: (l) => l.remaining.pieces, remainingGrams: (l) => l.remaining.weightMg,
-};
-type ItemRow = Line & { key: string; text: string; name: string; code: number; karat: string; category: string };
-
-export function Breakdown({ live }: { live: Live }) {
+// ───── Details: every piece the count expects, one row each, the unfinished first; paged and searched on the server (list=all) ─────
+export function Breakdown({ id, live }: { id: string; live: Live }) {
   const { m, locale } = useM();
   const closed = live.status === "closed";
+  const [typed, setTyped] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [notDoneFirst, setNotDoneFirst] = useState(true);
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "remainingPieces", dir: -1 });
+  useEffect(() => { const t = setTimeout(() => { setSearch(typed.trim()); setPage(1); }, 250); return () => clearTimeout(t); }, [typed]);
+  const q = useQuery({
+    queryKey: ["stock-count", id, "pieces", "all", search, page, notDoneFirst],
+    queryFn: () => api(`/stock-counts/${id}/pieces`, { query: { list: "all", page, remainingFirst: String(notDoneFirst), ...(search ? { search } : {}) } }) as Promise<PiecesPage>,
+    refetchInterval: closed ? false : LIVE_EVERY_MS,
+    placeholderData: keepPreviousData,
+  });
+  const data = q.data;
+  const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   const leftLabel = closed ? m("missing") : m("remaining");
-
-  const lines: ItemRow[] = useMemo(
-    () => live.byItem.map((l) => ({ ...l, key: `${l.itemId}:${l.karat}`, name: l.itemName, text: `${l.itemCode} ${l.itemName} ${l.categoryName}`, code: l.itemCode, category: l.categoryName })),
-    [live]);
-  const shown = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = q ? lines.filter((l) => l.text.toLowerCase().includes(q)) : [...lines];
-    const text = (l: ItemRow) => (sort.key === "name" ? l.text : sort.key === "code" ? String(l.code).padStart(9, "0") : sort.key === "category" ? l.category : l.karat);
-    const by = (a: ItemRow, b: ItemRow) => (TEXT_KEYS.includes(sort.key) ? text(a).localeCompare(text(b), locale, { numeric: true, sensitivity: "base" }) : NUMBER_OF[sort.key](a) - NUMBER_OF[sort.key](b));
-    return list.sort((a, b) =>
-      (notDoneFirst ? Number(b.remaining.pieces > 0) - Number(a.remaining.pieces > 0) : 0)
-      || sort.dir * by(a, b)
-      || a.code - b.code);
-  }, [lines, search, sort, notDoneFirst, locale]);
-
-  const head = (key: SortKey, label: string) => {
-    const on = sort.key === key, text = TEXT_KEYS.includes(key);
-    return {
-      num: !text, label,
-      sort: { kind: (text ? "text" : "number") as "text" | "number", dir: on ? (sort.dir === 1 ? "asc" : "desc") as "asc" | "desc" : null, onSort: () => setSort(on ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: text ? 1 : -1 }) },
-    };
-  };
-  const pair = (t: Tally) => <><Td num dir="ltr">{t.pieces.toLocaleString("en-US")}</Td><Td num dir="ltr">{milligramsText(t.weightMg)}</Td></>;
-  const leftCells = (l: Line) => l.remaining.pieces > 0 ? pair(l.remaining) : <Td num colSpan={2} className="sc-done"><Icon name="check" size={14} />{m("done")}</Td>;
-  const col = (what: string, unit: string) => `${what} (${unit})`;
-  const pieces = m("piecesCol"), grams = m("gramsCol");
-
+  const { totals } = live;
   return (
     <section aria-labelledby="sc-bd-title" id="sc-breakdown">
       <h3 id="sc-bd-title" className="grp-title">{m("breakdown")}</h3>
       <div className="sc-tools">
         <label className="search sc-search"><Icon name="search" size={16} />
-          <Input id="sc-bd-search" type="search" value={search} placeholder={m("searchBreakdown")} aria-label={m("searchBreakdown")} onChange={(e) => setSearch(e.target.value)} />
+          <Input id="sc-bd-search" type="search" value={typed} placeholder={m("searchPieces")} aria-label={m("searchPieces")} onChange={(e) => setTyped(e.target.value)} />
         </label>
-        <Checkbox id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={setNotDoneFirst}>{m("notDoneFirst")}</Checkbox>
+        <Checkbox id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={(v) => { setNotDoneFirst(v); setPage(1); }}>{m("notDoneFirst")}</Checkbox>
       </div>
-      <DataTable className="sc-table" tableId="sc-bd-table"
-        head={[head("name", m("item")), head("code", m("itemCode")), head("category", m("category")), head("karat", m("karat")),
-          head("actualPieces", col(m("actual"), pieces)), head("actualGrams", col(m("actual"), grams)),
-          head("countedPieces", col(m("counted"), pieces)), head("countedGrams", col(m("counted"), grams)),
-          head("remainingPieces", col(leftLabel, pieces)), head("remainingGrams", col(leftLabel, grams))]}
-        foot={shown.length > 0 ? (
+      {/* fixedOrder: a server-paged list whose order is the list itself (the remaining first, or by code) and the backend takes no sort */}
+      <DataTable fixedOrder className="sc-table" tableId="sc-bd-table" aria-busy={q.isFetching}
+        head={[m("pieceCode"), m("item"), m("category"), m("karat"), { label: m("weight"), num: true }, m("status"), m("scannedAt"), m("scannedBy")]}
+        foot={data && data.items.length > 0 ? (
           <Tr className="foot">
-            <Td colSpan={4}>{m("actual")}: {live.totals.expected.pieces.toLocaleString("en-US")}</Td>
-            {pair(live.totals.expected)}{pair(live.totals.counted)}{pair(live.totals.remaining)}
+            <Td colSpan={4}>{m("actual")}: {totals.expected.pieces.toLocaleString("en-US")}</Td>
+            <Td num dir="ltr">{milligramsText(totals.expected.weightMg)}</Td>
+            <Td colSpan={3}>{m("counted")}: {totals.counted.pieces.toLocaleString("en-US")} · {leftLabel}: {totals.remaining.pieces.toLocaleString("en-US")}</Td>
           </Tr>
         ) : undefined}>
-        {shown.length === 0 && <Tr><Td colSpan={10} className="help">{m("noPieces")}</Td></Tr>}
-        {shown.map((l) => (
-          <Tr key={l.key}>
-            <Td>{l.name}</Td>
-            <Td dir="ltr">{l.code}</Td><Td>{l.category}</Td><Td dir="ltr">{l.karat}</Td>
-            {pair(l.expected)}{pair(l.counted)}{leftCells(l)}
+        {data && data.items.length === 0 && <Tr><Td colSpan={8} className="help">{m("noPieces")}</Td></Tr>}
+        {data?.items.map((p) => (
+          <Tr key={p.pieceCode}>
+            <Td><span className="sc-code"><span dir="ltr">{p.pieceCode}</span><CopyButton text={p.pieceCode} size={16} /></span></Td>
+            <Td><span dir="ltr" className="sc-mute">{p.itemCode}</span> {p.itemName}</Td>
+            <Td>{p.categoryName}</Td>
+            <Td dir="ltr">{p.karat}</Td>
+            <Td num dir="ltr">{milligramsText(p.weightMg)}</Td>
+            <Td>{p.scannedAt ? m("counted") : leftLabel}</Td>
+            <Td dir="ltr">{p.scannedAt ? timeText(p.scannedAt, locale, true) : "—"}</Td>
+            <Td>{p.scannedByName ?? "—"}</Td>
           </Tr>
         ))}
       </DataTable>
+      {pages > 1 && (
+        <div className="pager">
+          <span>{m("pageOf", { page, pages })}</span>
+          <span>
+            <Button id="sc-bd-prev" disabled={page <= 1} onClick={() => setPage(page - 1)}>{m("prevPage")}</Button>
+            <Button id="sc-bd-next" disabled={page >= pages} onClick={() => setPage(page + 1)}>{m("nextPage")}</Button>
+          </span>
+        </div>
+      )}
     </section>
   );
 }
