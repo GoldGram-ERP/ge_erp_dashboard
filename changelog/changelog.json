@@ -13,6 +13,18 @@
     "en": "Merchants: a new screen under Items and Purchases, for Admins only: each merchant's account in money and gold, payments, receipts and adjustments.",
     "ar": "التجار: شاشة جديدة تحت الأصناف والمشتريات للمدير بس: حساب كل تاجر بالفلوس والذهب، ودفع واستلام وتسويات.",
     "route": "/buy/merchants"
+   },
+   {
+    "kind": "new",
+    "en": "Positions and sales channels under HR: an Admin adds Positions, gives each its sales channels, and sets a user's Position on the Users form.",
+    "ar": "الموارد البشرية: المسميات الوظيفية وقنوات البيع. الأدمن بيضيف المسمى، ويحدد له قنوات البيع المسموحة، ويختار مسمى كل موظف من شاشة المستخدمين.",
+    "route": "/hr/positions"
+   },
+   {
+    "kind": "better",
+    "en": "The sales desk now asks for the sales channel, offers only the channels your Position allows, and the WhatsApp text prints the channel you chose.",
+    "ar": "شاشة البيع بقت بتسأل عن قناة البيع، وبتعرض بس القنوات اللي مسمّاك الوظيفي مسموح له بيها، ونص الواتساب بيطبع القناة اللي اخترتها.",
+    "route": "/sales/desk"
    }
   ]
  },

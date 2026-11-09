@@ -23,7 +23,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
 
@@ -66,6 +66,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   // Not heard (loading, or the read failed): nothing is coloured or blocked here; the backend still refuses a piece that is not in stock when the invoice is completed.
   const stockAnswer = useQuery({ queryKey: ["sales-desk-item-stock", branchId], enabled: Boolean(branchId), staleTime: 15_000, queryFn: () => api("/sales-desk/item-stock", { query: { branchId } }) });
   const stock = stockMapOf(stockAnswer.data);
+  const [channelId, setChannelId] = useState("");
   const [cust, setCust] = useState({ customerName: "", customerPhone: "", nationalId: "" });
   const [lines, setLines] = useState<DeskLine[]>([]);
   const [cash, setCash] = useState("");
@@ -100,7 +101,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const completeKey = useRef(newSaveKey());
 
   const fill = (x: Row) => {
-    setDraft(x); setType(x.invoiceType ?? "sale"); setBranchId(x.branchId ?? "");
+    setDraft(x); setType(x.invoiceType ?? "sale"); setBranchId(x.branchId ?? ""); setChannelId(x.salesChannelId ?? "");
     setCust({ customerName: x.customerName ?? "", customerPhone: x.customerPhone ?? "", nationalId: x.nationalId ?? "" });
     setLines(x.lines?.length ? x.lines.map((l: Row) => ({ itemId: l.itemId, count: String(l.quantity) })) : []);
     const r = restoreChoices(x);   // the desk's choices come back exactly as saved
@@ -121,7 +122,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       if (row?.id) {
         try { fill(await api(`/sales-drafts/${row.id}`)); } catch { setGone(true); }
         setLoaded(true);
-      } else if (me?.branchId) setBranchId(me.branchId);
+      } else { if (me?.branchId) setBranchId(me.branchId); setChannelId(defaultChannel(me?.salesChannels)); }
     })();
     if (me?.branchId) api(`/branches/${me.branchId}`).then((b: Row) => setOwnBranch(b.branchName)).catch(() => {});
     if (me && !isUser) allPages("/users").then(setSellers).catch(() => {});
@@ -174,6 +175,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
   const onDraft: Option[] = (draft?.lines ?? []).map((l: Row) => [l.itemId, `${l.itemName} · ${l.karat}`]);
+  const channels = channelOptions(me?.salesChannels, draft?.salesChannelId ? { id: draft.salesChannelId, name: draft.salesChannelName ?? "" } : null);
+  const channelName = channels.find(([id]) => id === channelId)?.[1] ?? "";
   const total = draft?.totals?.total ?? 0;
   const against = plannedAgainst(total, cash, banks);
 
@@ -188,6 +191,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       else if (k.endsWith("Item")) e[k] = fieldErr(code);
       else e[k] = fieldErr(code);
     }
+    const ce = channelError(channelId, channels);
+    if (ce) e.salesChannelId = fieldErr(ce);
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
     if (dsc.invalid && !buy) e.cashDiscount = sg(tr, "cashDiscountInvalid");
     setErrs(e);
@@ -196,7 +201,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     if (!quote || manualPrice(manual.sell).invalid || manualPrice(manual.buy).invalid) { setGeneral(quoteMsg || d("desk.manualInvalid")); revealFirstError(); return; }
     setSaving(true);
     const body = {
-      ...(isNew && !isUser && branchId ? { branchId } : {}), invoiceType: type, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
+      ...(isNew && !isUser && branchId ? { branchId } : {}), invoiceType: type, salesChannelId: channelId, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
       ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(banks), ...(dsc.sent && !buy ? { cashDiscount: dsc.sent } : {}),
     };
     try {
@@ -224,7 +229,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       else if (f.field === "manualSellPrice" || f.field === "manualBuyPrice") gen = d("desk.manualInvalid");
       else if (payKey) e[payKey] = texts[f.field];
       else if ((r = /^lines\.(\d+)\.(itemId|quantity)$/.exec(f.field))) e[`line${r[1]}${r[2] === "itemId" ? "Item" : "Count"}`] = texts[f.field];
-      else if (["customerName", "customerPhone", "nationalId", "cashDiscount", "branchId"].includes(f.field)) e[f.field] = texts[f.field];
+      else if (["customerName", "customerPhone", "nationalId", "cashDiscount", "branchId", "salesChannelId"].includes(f.field)) e[f.field] = texts[f.field];
       else gen = texts[f.field] ?? tr.errorText(err.error);
     }
     if (!Object.keys(e).length && !gen && err.error.message !== "invalidFields") gen = tr.errorText(err.error);
@@ -298,7 +303,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
   const branchLabel = draft?.branchName ?? (isUser ? ownBranch : branches.find((b) => b.id === branchId)?.branchName) ?? "";
   const sellerName = draft?.employeeName ?? (isUser ? me?.name : (([u]) => u && ([u.firstName, u.familyName].filter(Boolean).join(" ") || u.username))(sellers.filter((x) => x.id === sellerId)) ?? me?.name) ?? "";
-  const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
+  const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
   const typedManual = manualPrice(operation === "sell" ? manual.sell : manual.buy);
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
@@ -341,6 +346,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               <span className="tk-chip" data-k="branchId"><i>{d("branch")}</i>{branchLabel}</span>
               <span className="tk-chip" data-seller><i>{d("desk.seller")}</i>{sellerName}</span>
             </>}
+            <div className="field" data-k="salesChannelId"><label htmlFor="salesChannelId">{d("channel")}</label>
+              <Choice tr={tr} id="salesChannelId" searchable={false} options={channels} value={channelId} disabled={readonly || saving} invalid={!!errs.salesChannelId} onChange={(v) => { touch(); setChannelId(v); }} />{err("salesChannelId")}</div>
             <span className="tk-chip"><i>{L("التاريخ", "Date")}</i><Ltr>{draft?.createdDay ?? today()}</Ltr></span>
           </div>
           <fieldset disabled={readonly || saving} className="tk-segs">

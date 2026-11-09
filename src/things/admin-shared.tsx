@@ -67,6 +67,7 @@ export function UserRecord({ r, tr }: { r: Row; tr: Tr }) {
       <Section title={u("details")}>
         <Kv k={u("userCode")}><Ltr>{code6(r.userCode)}</Ltr></Kv>
         <Kv k={u("branchId")}>{r.branchName ?? ""}</Kv>
+        {r.userType !== "super_admin" && r.positionId !== undefined && <Kv k={u("positionId")}>{r.positionName ?? "—"}</Kv>}
         <Kv k={u("username")}><bdi dir="ltr">{r.username}</bdi></Kv>
         <Kv k={u("email")}>{r.needsEmail ? "" : <bdi dir="ltr">{r.email}</bdi>}</Kv>
         <Kv k={u("userType")}>{typeName(tr, r.userType)}</Kv>
@@ -110,9 +111,12 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   const [confirm, dialog] = useConfirm();
 
   const branchSpec: LookupSpec = useMemo(() => ({ path: "/branches", value: "id", label: (r: Row) => `${code6(r.branchCode)} · ${r.branchName}` }), []);
+  const positionSpec: LookupSpec = useMemo(() => ({ path: "/positions", value: "id", label: "positionName", query: { order: "newest" } }), []);
   const all: (FieldConfig & { only?: string })[] = [
     { name: "userCode", label: u("userCode"), type: "code", documentType: "user", hint: u("autoHint"), section: u("details") },
     { name: "branchId", label: u("branchId"), type: "select", optionsFrom: branchSpec, searchable: true, placeholder: u("branchSearchPlaceholder"), required: true, section: u("details"), only: "!super_admin" },
+    // Optional (empty allowed). The backend refuses a Position for a Super admin, and Admin accounts are not given one here.
+    ...(path === "/users" ? [{ name: "positionId", label: u("positionId"), type: "select" as const, optionsFrom: positionSpec, searchable: false, placeholder: u("positionNone"), help: u("positionHint"), section: u("details"), only: "!super_admin" }] : []),
     { name: "username", label: u("username"), type: "text", required: true, maxLength: 31, autocomplete: "off", section: u("details"),
       validate: (v) => (!/^[A-Za-z0-9_.]+$/.test(v) ? u("usernameInvalid") : v.length < 3 ? u("usernameTooShort") : v.length > 30 ? c("fieldErrors.tooLong") : null) },
     { name: "email", label: u("email"), type: "text", maxLength: 255, section: u("details"), help: !adding && !row.needsEmail ? u("emailKeepHint") : "",
@@ -126,7 +130,7 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     { name: "canGiveCashDiscount", label: u("canGiveCashDiscount"), type: "checkbox", help: u("canGiveCashDiscountHint"), wide: true, section: u("details"), only: "user" },
   ];
   const fields = useMemo(() => all.filter((f) => !f.only || (f.only === "user" ? ty === "user" : ty !== "super_admin")), [ty]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const values = useMemo(() => ({ userCode: row?.userCode, branchId: row?.branchId ?? "", username: row?.username ?? "", email: row && !row.needsEmail ? row.email : "", userType: row?.userType ?? onlyType, password: "", confirmPassword: "",
+  const values = useMemo(() => ({ userCode: row?.userCode, branchId: row?.branchId ?? "", positionId: row?.positionId ?? "", username: row?.username ?? "", email: row && !row.needsEmail ? row.email : "", userType: row?.userType ?? onlyType, password: "", confirmPassword: "",
     canUseTreasuries: row?.canUseTreasuries ?? false, canGiveCashDiscount: row?.canGiveCashDiscount ?? false }), [row, onlyType]);
   const f = useFieldsForm(fields, values);
   const saveKey = useRef(newSaveKey());
@@ -186,7 +190,7 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     if (!v) { setAlert(c("couldNotSave", { count: Object.keys(f.formState.errors).length || 1 })); return; }
     if (ty === "user" && permQ.data && screens.size === 0 && !(await confirm({ title: u("screens.noneTitle"), text: u("screens.noneBody"), ok: c("save"), cancel: c("cancel") }))) return;
     const discount = !!v.canGiveCashDiscount;
-    const body = { ...(ty === "super_admin" ? {} : { branchId: v.branchId }), username: v.username, ...(v.email === "" ? {} : { email: v.email }), userType: ty,
+    const body = { ...(ty === "super_admin" ? {} : { branchId: v.branchId }), ...(ty === "super_admin" || path !== "/users" ? {} : { positionId: v.positionId || null }), username: v.username, ...(v.email === "" ? {} : { email: v.email }), userType: ty,
       ...(ty === "user" ? { screens: [...screens], canUseTreasuries: !!v.canUseTreasuries, ...(discount !== initialDiscount ? { canGiveCashDiscount: discount } : {}) } : {}),
       ...(v.password === "" ? {} : { password: v.password }) };
     setSaving(true); setNote(c("savingNote"));

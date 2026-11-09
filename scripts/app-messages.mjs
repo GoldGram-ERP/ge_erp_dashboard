@@ -315,3 +315,30 @@ Object.assign(APP, {
   "treasury-reports.columns.balance": ["الرصيد", "Balance"], "treasury-reports.statement.net": ["صافي الفترة", "Net of the period"],
   "bank-movements.bankStatement.net": ["صافي الحساب", "Net"], "bank-movements.bankStatement.balanceAfter": ["الرصيد الختامي", "Closing balance"],
 });
+
+// Positions and sales channels (HR): nav, the two record screens, the Users form picker, the desk's channel picker, the account line and the refusals.
+Object.assign(APP, {
+  "nav.group.hr": ["الموارد البشرية", "HR"], "nav.item.positions": ["المسميات الوظيفية", "Positions"], "nav.item.sales-channels": ["قنوات البيع", "Sales channels"],
+  "app.account.position": ["المسمى الوظيفي", "Position"],
+  "administration.users.positionId": ["المسمى الوظيفي", "Position"], "administration.users.positionNone": ["بدون مسمى وظيفي", "No Position"],
+  "administration.users.positionHint": ["اختياري. اختر المسمى المحدد مرة أخرى لإلغائه.", "Optional. Pick the chosen one again to clear it."],
+  "gold-sales.salesDesk.channel": ["قناة البيع", "Sales channel"],
+  "hr.positions.title": ["المسميات الوظيفية", "Positions"], "hr.positions.listTitle": ["سجل المسميات الوظيفية", "Positions"], "hr.positions.add": ["مسمى وظيفي جديد", "New Position"],
+  "hr.positions.new": ["مسمى وظيفي جديد", "New Position"], "hr.positions.editTitle": ["تعديل المسمى الوظيفي {code}", "Edit Position {code}"], "hr.positions.recordNo": ["مسمى وظيفي رقم", "Position no."],
+  "hr.positions.searchPlaceholder": ["ابحث بالاسم", "Search by name"], "hr.positions.deletedOnly": ["المحذوفة فقط", "Deleted only"], "hr.positions.deletedBadge": ["محذوف", "Deleted"], "hr.positions.deleted": ["تاريخ الحذف", "Deleted"],
+  "hr.positions.positionCode": ["الرقم", "No."], "hr.positions.positionName": ["اسم المسمى الوظيفي", "Position name"], "hr.positions.details": ["بيانات المسمى الوظيفي", "Position details"],
+  "hr.positions.channels": ["قنوات البيع المسموحة", "Allowed sales channels"], "hr.positions.channelsHint": ["حدد القنوات التي يستطيع صاحب هذا المسمى اختيارها في شاشة البيع.", "Tick the channels a person with this Position may pick on the sales desk."],
+  "hr.positions.noChannels": ["لا توجد قنوات بيع بعد. أضف قناة من قنوات البيع أولاً.", "There are no sales channels yet. Add one under Sales channels first."], "hr.positions.noChannelsGiven": ["لا توجد قنوات", "No channels"],
+  "hr.positions.saved": ["تم حفظ المسمى الوظيفي", "Position saved"], "hr.positions.deleteTitle": ["حذف المسمى الوظيفي {code}؟", "Delete Position {code}?"],
+  "hr.positions.deleteBody": ["لا يمكن حذف مسمى وظيفي ما دام مستخدم يحمله. انقل المستخدمين إلى مسمى آخر أولاً.", "A Position cannot be deleted while a user holds it. Move those users to another Position first."],
+  "hr.salesChannels.title": ["قنوات البيع", "Sales channels"], "hr.salesChannels.listTitle": ["سجل قنوات البيع", "Sales channels"], "hr.salesChannels.add": ["قناة بيع جديدة", "New sales channel"],
+  "hr.salesChannels.new": ["قناة بيع جديدة", "New sales channel"], "hr.salesChannels.editTitle": ["تعديل قناة البيع {code}", "Edit sales channel {code}"], "hr.salesChannels.recordNo": ["قناة بيع رقم", "Sales channel no."],
+  "hr.salesChannels.searchPlaceholder": ["ابحث بالاسم", "Search by name"], "hr.salesChannels.deletedOnly": ["المحذوفة فقط", "Deleted only"], "hr.salesChannels.deletedBadge": ["محذوفة", "Deleted"], "hr.salesChannels.deleted": ["تاريخ الحذف", "Deleted"],
+  "hr.salesChannels.channelCode": ["الرقم", "No."], "hr.salesChannels.channelName": ["اسم القناة", "Channel name"], "hr.salesChannels.details": ["بيانات القناة", "Channel details"],
+  "hr.salesChannels.deleteTitle": ["حذف قناة البيع {code}؟", "Delete sales channel {code}?"], "hr.salesChannels.deleteBody": ["تختفي القناة من قوائم الاختيار، وتبقى على المسودات والفواتير المسجلة بها.", "The channel leaves the pick lists; drafts and invoices that used it keep it."],
+  "errors.positionRequired": ["لا يمكنك الحفظ لأنه لم يُحدد لك مسمى وظيفي. اطلب من المدير تحديده.", "You cannot save: no Position is set for you. Ask an Admin to set one."],
+  "errors.salesChannelNotAllowed": ["قناة البيع هذه غير مسموحة لمسماك الوظيفي.", "This sales channel is not allowed for your Position."],
+  "errors.positionNameTaken": ["يوجد مسمى وظيفي آخر بنفس الاسم.", "Another Position already has this name."],
+  "errors.salesChannelNameTaken": ["توجد قناة بيع أخرى بنفس الاسم.", "Another sales channel already has this name."],
+  "errors.positionInUse": ["لم يُحذف: يحمل هذا المسمى الوظيفي {count, plural, zero {لا أحد} one {مستخدم واحد} two {مستخدمان} few {# مستخدمين} other {# مستخدماً}}. انقلهم إلى مسمى آخر أولاً.", "Not deleted: {count, plural, =0 {no users hold} one {# user holds} other {# users hold}} this Position. Move them to another Position first."],
+});

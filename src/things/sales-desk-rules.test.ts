@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, lockNote, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -78,5 +78,28 @@ describe("who completes a draft (issue #25)", () => {
   it("not a completed, deleted or missing draft, and not a Buy draft (a quote only)", () => {
     for (const status of ["completed", "deleted", undefined]) expect(canCompleteDraft("admin", status, false)).toBe(false);
     expect(canCompleteDraft("admin", "open", true)).toBe(false);
+  });
+});
+
+describe("the sales channel picker", () => {
+  const web = { id: "w", name: "الموقع" }, hot = { id: "h", name: "الخط الساخن" };
+  it("offers exactly the channels /access/me allows", () => {
+    expect(channelOptions([web, hot])).toEqual([["w", "الموقع"], ["h", "الخط الساخن"]]);
+    expect(channelOptions(undefined)).toEqual([]);
+  });
+  it("keeps the draft's own stored channel visible even when it is no longer allowed", () => {
+    expect(channelOptions([web], { id: "r", name: "قطاعي" })).toEqual([["w", "الموقع"], ["r", "قطاعي"]]);
+    expect(channelOptions([web], web)).toEqual([["w", "الموقع"]]);
+  });
+  it("a new draft preselects the one allowed channel, and nothing when there are several or none", () => {
+    expect(defaultChannel([web])).toBe("w");
+    expect(defaultChannel([web, hot])).toBe("");
+    expect(defaultChannel([])).toBe("");
+  });
+  it("a channel is required and must be one of the offered ones", () => {
+    const opts = channelOptions([web, hot]);
+    expect(channelError("", opts)).toBe("required");
+    expect(channelError("x", opts)).toBe("invalid");
+    expect(channelError("h", opts)).toBeNull();
   });
 });

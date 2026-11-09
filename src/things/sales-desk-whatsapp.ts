@@ -15,7 +15,8 @@ export type DeskLine = {
 };
 export type DeskMessageInput = {
   /** Cairo date, yyyy-mm-dd. */
-  date: string; branch: string; channel?: string; seller: string; customer: string; nationalId: string; phone: string;
+  date: string; branch: string; /** The stored sales channel name, printed as is. */
+  channel: string; seller: string; customer: string; nationalId: string; phone: string;
   operation: "sell" | "buy"; metal: "gold" | "silver";
   /** The names of the payment methods, as the reference writes them (Arabic). */
   payment1: string; payment2?: string;
@@ -66,5 +67,5 @@ export function buildDeskMessage(d: DeskMessageInput): string {
     : d.payment2
     ? `${d.payment1}: ${cents(split)} جنيه\n${d.payment2}: ${cents(Number(t.final) - split)} جنيه`
     : `طريقة الدفع: ${d.payment1}`;
-  return `التاريخ: ${d.date}\nالفرع: ${d.branch}\nقناة البيع: ${d.channel || "قطاعي"}${silver ? " قطعة فضه" : ""}\nاسم البائع: ${d.seller}\nاسم العميل: ${d.customer}\nرقم البطاقة: ${d.nationalId}\nرقم العميل: ${d.phone}\nتفاصيل القطع: ${sell ? "بيع" : "شراء"}\n${price}${manual ? `\nسعر جرام 21 المعتمد: ${money(d.finalPrice21)}` : ""}\n${d.finalPrice24 != null ? `سعر عيار 24 المعتمد: ${money(d.finalPrice24)}\n` : ""}${sell ? "مصنعية" : "كاش باك"}: ${lines.map((l) => l.feePerGram).join(" + ")}\n${d.discount ? `خصم ${d.discount}% على المصنعية\n` : Number(d.discountAmount ?? 0) > 0 ? `خصم ${cents(Number(d.discountAmount))} جنيه على المصنعية\n` : ""}الأوزان:\n${lines.map((l) => `${l.quantity} ${l.productName}${silver ? ` ${l.wrapping === "unwrapped" ? "غير مغلف" : "مغلف"}` : ""}`).join("\n")}\n${totals}\n${payment}`;
+  return `التاريخ: ${d.date}\nالفرع: ${d.branch}\nقناة البيع: ${d.channel}${silver ? " قطعة فضه" : ""}\nاسم البائع: ${d.seller}\nاسم العميل: ${d.customer}\nرقم البطاقة: ${d.nationalId}\nرقم العميل: ${d.phone}\nتفاصيل القطع: ${sell ? "بيع" : "شراء"}\n${price}${manual ? `\nسعر جرام 21 المعتمد: ${money(d.finalPrice21)}` : ""}\n${d.finalPrice24 != null ? `سعر عيار 24 المعتمد: ${money(d.finalPrice24)}\n` : ""}${sell ? "مصنعية" : "كاش باك"}: ${lines.map((l) => l.feePerGram).join(" + ")}\n${d.discount ? `خصم ${d.discount}% على المصنعية\n` : Number(d.discountAmount ?? 0) > 0 ? `خصم ${cents(Number(d.discountAmount))} جنيه على المصنعية\n` : ""}الأوزان:\n${lines.map((l) => `${l.quantity} ${l.productName}${silver ? ` ${l.wrapping === "unwrapped" ? "غير مغلف" : "مغلف"}` : ""}`).join("\n")}\n${totals}\n${payment}`;
 }

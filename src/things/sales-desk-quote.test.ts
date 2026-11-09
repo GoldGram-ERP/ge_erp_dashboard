@@ -6,7 +6,7 @@ const form: QuoteForm = { operation: "sell", metal: "gold", payment: "cash", man
 // What the backend answered for one 10 g bar x 2 at 6,255 a gram + 75 workmanship (numbers only, no client arithmetic is tested here).
 const quote: Quote = { totalPiastres: 14_447_200, beforeDiscountPiastres: 14_447_200, feeTotalPiastres: 150_000, units: 2, weightMg: 20_000, pricePerGram21: 625_500, goldPriceUsed: 625_500, manualPriceUsed: true,
   lines: [{ itemId: "a", itemName: "سبيكة 10 جرام", karat: "21", weightMg: 10_000, quantity: 2, feePerGram: 7_500, pricePiastres: 7_223_600 }] };
-const parts = { date: "2026-11-05", branch: "الفرع", seller: "البائع", customer: "عميل", nationalId: "", phone: "01012345678", rows: [] };
+const parts = { date: "2026-11-05", branch: "الفرع", channel: "قطاعي", seller: "البائع", customer: "عميل", nationalId: "", phone: "01012345678", rows: [] };
 const bank = (method: DeskBank["method"], amount: string, bankAccountId = "acc"): DeskBank => ({ bankAccountId, amount, method });
 
 describe("the quote body", () => {
@@ -105,6 +105,12 @@ describe("the WhatsApp text of a quote", () => {
       "التاريخ: 2026-11-05", "الفرع: الفرع", "قناة البيع: قطاعي", "اسم البائع: البائع", "اسم العميل: عميل", "رقم البطاقة: ", "رقم العميل: 01012345678", "تفاصيل القطع: بيع",
       "سعر الجرام: 6,255", "سعر جرام 21 المعتمد: 6,255", "مصنعية: 75", "الأوزان:", "2 سبيكة 10 جرام", "إجمالي السعر: 144,472", "طريقة الدفع: كاش",
     ].join("\n"));
+  });
+  it("prints the stored channel name as it is, with no fallback to Retail", () => {
+    const text = buildDeskMessage(messageInput(form, quote, null, { ...parts, channel: "الموقع" }));
+    expect(text).toContain("قناة البيع: الموقع\n");
+    expect(text).not.toContain("قطاعي");
+    expect(buildDeskMessage(messageInput(form, quote, null, { ...parts, channel: "" }))).not.toContain("قطاعي");
   });
   it("names the way of the first row, and Visa prints both prices and the cash total", () => {
     expect(buildDeskMessage(messageInput(form, quote, null, { ...parts, rows: payRows("", [bank("instapay", "100")]) }))).toContain("طريقة الدفع: انستا باي");

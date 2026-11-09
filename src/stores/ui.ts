@@ -6,6 +6,7 @@ import { persist } from "zustand/middleware";
 export type Me = {
   id: string; name: string; username: string; userType: "user" | "admin" | "super_admin"; branchId?: string | null;
   screens: string[]; jobs?: string[]; mustChangePassword?: boolean; canGiveCashDiscount?: boolean; userCode?: number | null;
+  positionId?: string | null; positionName?: string | null; salesChannels?: { id: string; name: string }[];
 };
 type Recent = { id: string; at: number };
 type UiState = {

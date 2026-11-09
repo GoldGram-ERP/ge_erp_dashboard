@@ -22,7 +22,7 @@ export function AccountView() {
       <div className="head"><div><h1>{a("title")}</h1><div className="sub">{me.name}</div></div></div>
       <div id="acct" className="sections">
         <div className="grp-block kv-block"><h3 className="grp-title">{a("group")}</h3><div className="grp-panel">
-          <Kv k={a("name")} v={me.name} /><Kv k={a("username")} v={me.username} /><Kv k={a("type")} v={t(`app.userType.${me.userType}`)} />{me.userType === "super_admin" ? null : <Kv k={a("branch")} v={branch.data ?? "—"} />}</div></div>
+          <Kv k={a("name")} v={me.name} /><Kv k={a("username")} v={me.username} /><Kv k={a("type")} v={t(`app.userType.${me.userType}`)} />{me.userType === "super_admin" ? null : <><Kv k={a("branch")} v={branch.data ?? "—"} /><Kv k={a("position")} v={me.positionName ?? "—"} /></>}</div></div>
         {me.userType === "super_admin" ? null : (<div className="grp-block kv-block"><h3 className="grp-title">{a("access")}</h3><div className="grp-panel">
           <Kv k={a("pages")} v={String(me.screens.length)} /><Kv k={a("cashDiscount")} v={me.canGiveCashDiscount ? a("allowed") : a("notAllowed")} /></div></div>)}
         <div className="grp-block kv-block"><h3 className="grp-title">{t("shell.userMenu.textSize")}</h3><div className="grp-panel">

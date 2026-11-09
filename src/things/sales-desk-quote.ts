@@ -65,12 +65,12 @@ export function quoteBody(f: QuoteForm, payment: Payment = f.payment): QuoteBody
     ...(typed.value ? { [sell ? "manualSellPrice" : "manualBuyPrice"]: typed.value } : {}), lines };
 }
 
-export type MessageParts = { date: string; branch: string; seller: string; customer: string; nationalId: string; phone: string; rows: PayRow[] };
+export type MessageParts = { date: string; branch: string; channel: string; seller: string; customer: string; nationalId: string; phone: string; rows: PayRow[] };
 /** The WhatsApp builder's input from the form and the quote (`cash`: the same quote paid in cash, the "before Visa" total). */
 export function messageInput(f: QuoteForm, q: Quote, cash: Quote | null, p: MessageParts): DeskMessageInput {
   const sell = f.operation === "sell", visa = sell && f.payment === "visa";
   return {
-    date: p.date, branch: p.branch, seller: p.seller, customer: p.customer, nationalId: p.nationalId, phone: p.phone, operation: f.operation, metal: f.metal,
+    date: p.date, branch: p.branch, channel: p.channel, seller: p.seller, customer: p.customer, nationalId: p.nationalId, phone: p.phone, operation: f.operation, metal: f.metal,
     payment1: PAYMENT_NAMES[p.rows[0]?.method ?? f.payment], ...(p.rows.length > 1 ? { payments: p.rows.map((r) => ({ name: PAYMENT_NAMES[r.method], amount: r.amountPiastres })) } : {}),
     discount: sell && f.discount?.kind === "percent" ? f.discount.value : 0, ...(sell && f.discount?.kind === "amount" ? { discountAmount: f.discount.value } : {}), visa, visaPercent: VISA_PERCENT, basePrice21: q.goldPriceUsed / 100, finalPrice21: q.pricePerGram21 / 100, manual: q.manualPriceUsed,
     lines: q.lines.map((l) => ({ productName: l.itemName, quantity: l.quantity, feePerGram: l.feePerGram / 100, wrapping: f.metal === "silver" ? f.wrapping : undefined })),

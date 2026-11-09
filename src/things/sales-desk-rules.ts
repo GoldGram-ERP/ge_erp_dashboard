@@ -35,6 +35,18 @@ export function readLines(lines: DeskLine[]): { errors: Record<string, string>; 
   return { errors, payload: lines.map((l) => ({ itemId: l.itemId, quantity: Number(latinNumber(l.count)) })) };
 }
 
+export type ChannelOption = { id: string; name: string };
+/** The channels the picker offers: the ones /access/me allows, plus the draft's own stored channel (shown even when it is no longer allowed or was deleted). */
+export function channelOptions(allowed: ChannelOption[] | undefined, stored?: ChannelOption | null): [string, string][] {
+  const out: [string, string][] = (allowed ?? []).map((c) => [c.id, c.name]);
+  if (stored && !out.some(([id]) => id === stored.id)) out.push([stored.id, stored.name]);
+  return out;
+}
+/** A new draft starts on the only channel the person may use; with several or none it starts empty (the person must choose). */
+export const defaultChannel = (allowed: ChannelOption[] | undefined): string => (allowed?.length === 1 ? allowed[0].id : "");
+/** The picker's error code (fieldErrors): a channel is required and must be one of the offered ones. */
+export const channelError = (id: string, options: [string, string][]): "required" | "invalid" | null => (id === "" ? "required" : options.some(([o]) => o === id) ? null : "invalid");
+
 /** The planned payment against the draft's total (piastres): the payment block's own errors, what is planned, what is left (negative: more than the total). */
 export function plannedAgainst(total: number, cash: string, banks: Bank[]) {
   const planned = cashPaid(cash) + bankPaid(banks);

@@ -199,7 +199,10 @@
    "canGiveCashDiscount": "Can give a cash discount",
    "canGiveCashDiscountHint": "Types a cash discount on a sales invoice and a reservation, out of the making charge only, never the gold price. An Admin and a Super admin always may.",
    "yes": "Yes",
-   "no": "No"
+   "no": "No",
+   "positionId": "Position",
+   "positionNone": "No Position",
+   "positionHint": "Optional. Pick the chosen one again to clear it."
   },
   "settings": {
    "title": "Settings",
@@ -898,7 +901,12 @@
   "makingRuleTaken": "A making-charge rule for that target already exists.",
   "makingRuleNotFound": "This rule does not exist.",
   "settlementNotFound": "This payment or receipt does not exist.",
-  "adjustmentNotFound": "This adjustment does not exist."
+  "adjustmentNotFound": "This adjustment does not exist.",
+  "positionRequired": "You cannot save: no Position is set for you. Ask an Admin to set one.",
+  "salesChannelNotAllowed": "This sales channel is not allowed for your Position.",
+  "positionNameTaken": "Another Position already has this name.",
+  "salesChannelNameTaken": "Another sales channel already has this name.",
+  "positionInUse": "Not deleted: {count, plural, =0 {no users hold} one {# user holds} other {# users hold}} this Position. Move them to another Position first."
  },
  "expenses": {
   "expenseTypes": {
@@ -2060,55 +2068,55 @@
     "egp": "EGP",
     "dark": "Dark",
     "light": "Light",
-   "operationData": "Operation and customer",
-   "operation": "Operation",
-   "sell": "Sell",
-   "buy": "Buy",
-   "metal": "Metal",
-   "gold": "Gold",
-   "silver": "Silver",
-   "seller": "Seller",
-   "payment": "Payment method",
-   "payment2": "Second payment method (optional, not with Visa)",
-   "none": "None",
-   "pay": {
-    "cash": "Cash",
-    "instapay": "Instapay",
-    "bank_transfer": "Bank transfer",
-    "visa": "Visa"
-   },
-   "split": "Amount paid by {method} (EGP)",
-   "splitErr": {
-    "required": "Enter the amount of the first method.",
-    "invalid": "This amount is not valid.",
-    "tooBig": "The amount is more than the total."
-   },
-   "discountPercent": "Discount on the workmanship",
-   "wrapping": "Silver wrapping",
-   "wrapped": "Wrapped",
-   "unwrapped": "Unwrapped",
-   "calc": "Calculation",
-   "manualInvalid": "The typed price is not valid.",
-   "fees": "{kind} per gram (read only)",
-   "workmanship": "Workmanship",
-   "cashback": "Cashback",
-   "weight": "Total weight (g)",
-   "units": "Total pieces",
-   "before": "Total before the discount",
-   "total": "Total (EGP)",
-   "prices": "Live prices",
-   "sellPrice": "Sell, karat 21",
-   "buyPrice": "Buy, karat 21",
-   "silverPrice": "Silver per gram",
-   "manualSell": "Typed sell price (optional)",
-   "manualBuy": "Typed buy price (optional)",
-   "manualUsed": "The typed price is used in the calculation",
-   "listUsed": "The price is from Gold prices",
-   "readAt": "Last read: {time}",
-   "noRead": "No price read yet",
-   "refresh": "Read a new price now",
-   "waEmpty": "Pick the pieces to see the message.",
-   "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft."
+    "operationData": "Operation and customer",
+    "operation": "Operation",
+    "sell": "Sell",
+    "buy": "Buy",
+    "metal": "Metal",
+    "gold": "Gold",
+    "silver": "Silver",
+    "seller": "Seller",
+    "payment": "Payment method",
+    "payment2": "Second payment method (optional, not with Visa)",
+    "none": "None",
+    "pay": {
+     "cash": "Cash",
+     "instapay": "Instapay",
+     "bank_transfer": "Bank transfer",
+     "visa": "Visa"
+    },
+    "split": "Amount paid by {method} (EGP)",
+    "splitErr": {
+     "required": "Enter the amount of the first method.",
+     "invalid": "This amount is not valid.",
+     "tooBig": "The amount is more than the total."
+    },
+    "discountPercent": "Discount on the workmanship",
+    "wrapping": "Silver wrapping",
+    "wrapped": "Wrapped",
+    "unwrapped": "Unwrapped",
+    "calc": "Calculation",
+    "manualInvalid": "The typed price is not valid.",
+    "fees": "{kind} per gram (read only)",
+    "workmanship": "Workmanship",
+    "cashback": "Cashback",
+    "weight": "Total weight (g)",
+    "units": "Total pieces",
+    "before": "Total before the discount",
+    "total": "Total (EGP)",
+    "prices": "Live prices",
+    "sellPrice": "Sell, karat 21",
+    "buyPrice": "Buy, karat 21",
+    "silverPrice": "Silver per gram",
+    "manualSell": "Typed sell price (optional)",
+    "manualBuy": "Typed buy price (optional)",
+    "manualUsed": "The typed price is used in the calculation",
+    "listUsed": "The price is from Gold prices",
+    "readAt": "Last read: {time}",
+    "noRead": "No price read yet",
+    "refresh": "Read a new price now",
+    "waEmpty": "Pick the pieces to see the message.",
+    "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft."
    },
    "title": "Sales desk",
    "intro": "Save the customer's order as a numbered draft and edit it until midnight. An Admin opens it, scans the real pieces and creates the invoice.",
@@ -2225,7 +2233,8 @@
    "waNote": "This is exactly the text that is copied.",
    "typeLabel": "Invoice type",
    "goldNone": "There is no saved gold price.",
-   "lockedNote": "Locked"
+   "lockedNote": "Locked",
+   "channel": "Sales channel"
   }
  },
  "gold-stocktake": {
@@ -2326,7 +2335,11 @@
    "noMatchBody": "Change the number or the dates.",
    "noDeletedTitle": "No deleted counts",
    "required": "Required",
-   "filledBySystem": "Filled by the system"
+   "filledBySystem": "Filled by the system",
+   "expected": "Expected",
+   "byKarat": "By karat",
+   "byItem": "By item",
+   "byCategory": "By category"
   },
   "titles": {
    "missing-pieces": "Missing pieces",
@@ -3034,7 +3047,8 @@
    "money": "Treasuries and banks",
    "expenses": "Expenses",
    "setup": "Admin",
-   "control": "Full control"
+   "control": "Full control",
+   "hr": "HR"
   },
   "item": {
    "invoices": "Sales invoices",
@@ -3063,15 +3077,17 @@
    "security": "Security and data",
    "returned-pieces": "Returned pieces (not from us)",
    "sales-desk": "Sales desk",
-   "merchants": "Merchants"
+   "merchants": "Merchants",
+   "positions": "Positions",
+   "sales-channels": "Sales channels"
   }
  },
  "app": {
   "notifications": {
-    "title": "Notifications",
-    "progress": "Under progress",
-    "empty": "Notifications will appear here: what needs your attention, in one place. We are building it now.",
-    "close": "Close"
+   "title": "Notifications",
+   "progress": "Under progress",
+   "empty": "Notifications will appear here: what needs your attention, in one place. We are building it now.",
+   "close": "Close"
   },
   "copy": {
    "copy": "Copy",
@@ -3079,17 +3095,17 @@
    "failed": "Could not copy"
   },
   "whatsNew": {
-    "title": "What's new",
-    "sub": "Every version in plain words, where to see it in the system, and one tap to open the screen. For the Admin and the Super admin only.",
-    "latest": "Latest",
-    "where": "Where to see it",
-    "open": "Open the screen",
-    "link": "What's new in this version",
-    "kind": {
-      "new": "New",
-      "better": "Better",
-      "fixed": "Fixed"
-    }
+   "title": "What's new",
+   "sub": "Every version in plain words, where to see it in the system, and one tap to open the screen. For the Admin and the Super admin only.",
+   "latest": "Latest",
+   "where": "Where to see it",
+   "open": "Open the screen",
+   "link": "What's new in this version",
+   "kind": {
+    "new": "New",
+    "better": "Better",
+    "fixed": "Fixed"
+   }
   },
   "searchSheet": "Open full search",
   "search": "Search",
@@ -3147,10 +3163,52 @@
    "pages": "Pages open to you",
    "cashDiscount": "Cash discount on an invoice",
    "allowed": "Allowed",
-   "notAllowed": "Not allowed"
+   "notAllowed": "Not allowed",
+   "position": "Position"
   },
   "signIn": {
    "cookie": "Sign-in was accepted but the browser did not keep the session. Try again."
+  }
+ },
+ "hr": {
+  "positions": {
+   "title": "Positions",
+   "listTitle": "Positions",
+   "add": "New Position",
+   "new": "New Position",
+   "editTitle": "Edit Position {code}",
+   "recordNo": "Position no.",
+   "searchPlaceholder": "Search by name",
+   "deletedOnly": "Deleted only",
+   "deletedBadge": "Deleted",
+   "deleted": "Deleted",
+   "positionCode": "No.",
+   "positionName": "Position name",
+   "details": "Position details",
+   "channels": "Allowed sales channels",
+   "channelsHint": "Tick the channels a person with this Position may pick on the sales desk.",
+   "noChannels": "There are no sales channels yet. Add one under Sales channels first.",
+   "noChannelsGiven": "No channels",
+   "saved": "Position saved",
+   "deleteTitle": "Delete Position {code}?",
+   "deleteBody": "A Position cannot be deleted while a user holds it. Move those users to another Position first."
+  },
+  "salesChannels": {
+   "title": "Sales channels",
+   "listTitle": "Sales channels",
+   "add": "New sales channel",
+   "new": "New sales channel",
+   "editTitle": "Edit sales channel {code}",
+   "recordNo": "Sales channel no.",
+   "searchPlaceholder": "Search by name",
+   "deletedOnly": "Deleted only",
+   "deletedBadge": "Deleted",
+   "deleted": "Deleted",
+   "channelCode": "No.",
+   "channelName": "Channel name",
+   "details": "Channel details",
+   "deleteTitle": "Delete sales channel {code}?",
+   "deleteBody": "The channel leaves the pick lists; drafts and invoices that used it keep it."
   }
  }
 }

@@ -23,6 +23,8 @@ things["money/treasuries"] = { load: () => import("./treasuries") };
 things["money/transfers"] = { load: () => import("./treasury-transfers") };
 things["money/bank-movements"] = { load: () => import("./bank-movements") };
 things["money/bank-transfers"] = { load: () => import("./bank-transfers") };
+things["hr/positions"] = { load: () => import("./positions") };
+things["hr/sales-channels"] = { load: () => import("./sales-channels") };
 things["setup/users"] = { load: () => import("./users") };
 things["control/accounts"] = { load: () => import("./control-accounts") };
 things["expenses/expense-types"] = { load: () => import("./expense-types") };
