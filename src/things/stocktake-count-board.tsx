@@ -69,7 +69,7 @@ export function Summary({ live, updatedAt, paused }: { live: Live; updatedAt: nu
         </div>
       )}
       <div className="sc-tiles">
-        {tile("expected", m("expected"), totals.expected)}
+        {tile("expected", m("actual"), totals.expected)}
         {tile("counted", m("counted"), totals.counted, "good")}
         {tile("remaining", closed ? m("missing") : m("remaining"), totals.remaining, left > 0 ? "warn" : "good")}
         {totals.outside.pieces > 0 && tile("outside", m("outside"), totals.outside, "warn")}
@@ -80,75 +80,75 @@ export function Summary({ live, updatedAt, paused }: { live: Live; updatedAt: nu
   );
 }
 
-// ───── Breakdown: by karat, by item, by category; sortable, searchable, the unfinished first ─────
-type Tab = "karat" | "item" | "category";
-type SortKey = "name" | "code" | "category" | "karat" | "expected" | "counted" | "remaining";
-const TEXT_KEYS = ["name", "code", "category", "karat"];
-type AnyLine = Line & { key: string; name: ReactNode; text: string; code?: number; karat?: string; category?: string };
+// ───── Breakdown: one row per item (and karat); sortable, searchable, the unfinished first. Looks like the pieces table below it ─────
+type SortKey = "name" | "code" | "category" | "karat" | "actualPieces" | "actualGrams" | "countedPieces" | "countedGrams" | "remainingPieces" | "remainingGrams";
+const TEXT_KEYS: SortKey[] = ["name", "code", "category", "karat"];
+const NUMBER_OF: Record<string, (l: Line) => number> = {
+  actualPieces: (l) => l.expected.pieces, actualGrams: (l) => l.expected.weightMg,
+  countedPieces: (l) => l.counted.pieces, countedGrams: (l) => l.counted.weightMg,
+  remainingPieces: (l) => l.remaining.pieces, remainingGrams: (l) => l.remaining.weightMg,
+};
+type ItemRow = Line & { key: string; text: string; name: string; code: number; karat: string; category: string };
 
 export function Breakdown({ live }: { live: Live }) {
   const { m, locale } = useM();
   const closed = live.status === "closed";
-  const [tab, setTab] = useState<Tab>("item");
   const [search, setSearch] = useState("");
   const [notDoneFirst, setNotDoneFirst] = useState(true);
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "remaining", dir: -1 });
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "remainingPieces", dir: -1 });
   const leftLabel = closed ? m("missing") : m("remaining");
 
-  const lines: AnyLine[] = useMemo(() => {
-    if (tab === "karat") return live.byKarat.map((l) => ({ ...l, key: l.karat, name: <span dir="ltr">{l.karat}</span>, text: l.karat }));
-    if (tab === "category") return live.byCategory.map((l) => ({ ...l, key: l.categoryId, name: l.categoryName, text: l.categoryName }));
-    return live.byItem.map((l) => ({ ...l, key: `${l.itemId}:${l.karat}`, name: l.itemName, text: `${l.itemCode} ${l.itemName} ${l.categoryName}`, code: l.itemCode, category: l.categoryName }));
-  }, [live, tab]);
+  const lines: ItemRow[] = useMemo(
+    () => live.byItem.map((l) => ({ ...l, key: `${l.itemId}:${l.karat}`, name: l.itemName, text: `${l.itemCode} ${l.itemName} ${l.categoryName}`, code: l.itemCode, category: l.categoryName })),
+    [live]);
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = q ? lines.filter((l) => l.text.toLowerCase().includes(q)) : [...lines];
-    const text = (l: AnyLine) => (sort.key === "name" ? l.text : sort.key === "code" ? String(l.code ?? "").padStart(9, "0") : String((sort.key === "category" ? l.category : l.karat) ?? ""));
-    const by = (a: AnyLine, b: AnyLine) => (TEXT_KEYS.includes(sort.key) ? text(a).localeCompare(text(b), locale, { numeric: true, sensitivity: "base" }) : a[sort.key as "expected"].pieces - b[sort.key as "expected"].pieces || a[sort.key as "expected"].weightMg - b[sort.key as "expected"].weightMg);
+    const text = (l: ItemRow) => (sort.key === "name" ? l.text : sort.key === "code" ? String(l.code).padStart(9, "0") : sort.key === "category" ? l.category : l.karat);
+    const by = (a: ItemRow, b: ItemRow) => (TEXT_KEYS.includes(sort.key) ? text(a).localeCompare(text(b), locale, { numeric: true, sensitivity: "base" }) : NUMBER_OF[sort.key](a) - NUMBER_OF[sort.key](b));
     return list.sort((a, b) =>
       (notDoneFirst ? Number(b.remaining.pieces > 0) - Number(a.remaining.pieces > 0) : 0)
       || sort.dir * by(a, b)
-      || (a.code ?? 0) - (b.code ?? 0));
+      || a.code - b.code);
   }, [lines, search, sort, notDoneFirst, locale]);
 
-  const head = (key: SortKey, label: string, span = 1) => {
-    const on = sort.key === key;
+  const head = (key: SortKey, label: string) => {
+    const on = sort.key === key, text = TEXT_KEYS.includes(key);
     return {
-      colSpan: span, num: !TEXT_KEYS.includes(key), label,
-      sort: { kind: (TEXT_KEYS.includes(key) ? "text" : "number") as "text" | "number", dir: on ? (sort.dir === 1 ? "asc" : "desc") as "asc" | "desc" : null, onSort: () => setSort(on ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: TEXT_KEYS.includes(key) ? 1 : -1 }) },
+      num: !text, label,
+      sort: { kind: (text ? "text" : "number") as "text" | "number", dir: on ? (sort.dir === 1 ? "asc" : "desc") as "asc" | "desc" : null, onSort: () => setSort(on ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: text ? 1 : -1 }) },
     };
   };
-  const pair = (t: Tally, cls = "") => <><Td num className={cls} dir="ltr">{t.pieces.toLocaleString("en-US")}</Td><Td num className={cls} dir="ltr">{milligramsText(t.weightMg)}</Td></>;
-  const leftCells = (l: Line) => l.remaining.pieces > 0 ? pair(l.remaining, "sc-left") : <Td num colSpan={2} className="sc-done"><Icon name="check" size={14} />{m("done")}</Td>;
-  const nameCols = tab === "item" ? 4 : 1;
+  const pair = (t: Tally) => <><Td num dir="ltr">{t.pieces.toLocaleString("en-US")}</Td><Td num dir="ltr">{milligramsText(t.weightMg)}</Td></>;
+  const leftCells = (l: Line) => l.remaining.pieces > 0 ? pair(l.remaining) : <Td num colSpan={2} className="sc-done"><Icon name="check" size={14} />{m("done")}</Td>;
+  const col = (what: string, unit: string) => `${what} (${unit})`;
+  const pieces = m("piecesCol"), grams = m("gramsCol");
 
   return (
     <section aria-labelledby="sc-bd-title" id="sc-breakdown">
       <h3 id="sc-bd-title" className="grp-title">{m("breakdown")}</h3>
       <div className="sc-tools">
-        <Seg label={m("breakdown")} value={tab} onChange={(k) => { setTab(k); setSearch(""); }}
-          items={(["item", "karat", "category"] as Tab[]).map((k) => ({ id: k, label: m(k === "karat" ? "byKarat" : k === "item" ? "byItem" : "byCategory"), attrs: { id: `sc-bd-${k}` } }))} />
-        {tab !== "karat" && (
-          <label className="search sc-search"><Icon name="search" size={16} />
-            <Input id="sc-bd-search" type="search" value={search} placeholder={m("searchBreakdown")} aria-label={m("searchBreakdown")} onChange={(e) => setSearch(e.target.value)} />
-          </label>
-        )}
+        <label className="search sc-search"><Icon name="search" size={16} />
+          <Input id="sc-bd-search" type="search" value={search} placeholder={m("searchBreakdown")} aria-label={m("searchBreakdown")} onChange={(e) => setSearch(e.target.value)} />
+        </label>
         <Checkbox id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={setNotDoneFirst}>{m("notDoneFirst")}</Checkbox>
       </div>
-      <DataTable className="sc-table" tableId="sc-bd-table" subHeadClassName="sc-sub"
-        head={[...(tab === "item" ? [head("name", m("item")), head("code", m("itemCode")), head("category", m("category")), head("karat", m("karat"))] : [head("name", tab === "karat" ? m("karat") : m("category"))]), head("expected", m("expected"), 2), head("counted", m("counted"), 2), head("remaining", leftLabel, 2)]}
-        subHead={[{ label: null, colSpan: nameCols, sortable: false as const }, ...[0, 1, 2].flatMap(() => [{ label: m("piecesCol"), num: true, sortable: false as const }, { label: m("gramsCol"), num: true, sortable: false as const }])]}   /* the group header above sorts by pieces, then grams */
+      <DataTable className="sc-table" tableId="sc-bd-table"
+        head={[head("name", m("item")), head("code", m("itemCode")), head("category", m("category")), head("karat", m("karat")),
+          head("actualPieces", col(m("actual"), pieces)), head("actualGrams", col(m("actual"), grams)),
+          head("countedPieces", col(m("counted"), pieces)), head("countedGrams", col(m("counted"), grams)),
+          head("remainingPieces", col(leftLabel, pieces)), head("remainingGrams", col(leftLabel, grams))]}
         foot={shown.length > 0 ? (
           <Tr className="foot">
-            <Td colSpan={nameCols}>{m("expected")}: {live.totals.expected.pieces.toLocaleString("en-US")}</Td>
-            {pair(live.totals.expected)}{pair(live.totals.counted)}{pair(live.totals.remaining, live.totals.remaining.pieces > 0 ? "sc-left" : "")}
+            <Td colSpan={4}>{m("actual")}: {live.totals.expected.pieces.toLocaleString("en-US")}</Td>
+            {pair(live.totals.expected)}{pair(live.totals.counted)}{pair(live.totals.remaining)}
           </Tr>
         ) : undefined}>
-        {shown.length === 0 && <Tr><Td colSpan={nameCols + 6} className="help">{m("noPieces")}</Td></Tr>}
+        {shown.length === 0 && <Tr><Td colSpan={10} className="help">{m("noPieces")}</Td></Tr>}
         {shown.map((l) => (
-          <Tr key={l.key} className={l.remaining.pieces > 0 ? "sc-row-left" : ""}>
+          <Tr key={l.key}>
             <Td>{l.name}</Td>
-            {tab === "item" && <><Td dir="ltr">{l.code}</Td><Td>{l.category}</Td><Td dir="ltr">{l.karat}</Td></>}
+            <Td dir="ltr">{l.code}</Td><Td>{l.category}</Td><Td dir="ltr">{l.karat}</Td>
             {pair(l.expected)}{pair(l.counted)}{leftCells(l)}
           </Tr>
         ))}
