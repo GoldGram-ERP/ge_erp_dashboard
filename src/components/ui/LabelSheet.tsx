@@ -2,9 +2,10 @@
 // The drawing of a piece label and of a sheet of them (kept free of app imports so it can be unit-tested). Printing: label-print.tsx.
 // Printed in its OWN window (label-print.tsx), never as the app page: hiding the app with `visibility:hidden` keeps its layout,
 // which at the label page size stretched into ~25 blank sheets.
-// "tag" = one 30 x 10 mm label per page (its four text lines are set small, 5.5pt, so the code and the price are not cut off), "a4" = 5 x 13 labels of 38.1 x 21.2 mm.
+// "tag" = one 30 x 10 mm label per page (its three text lines are set small, 5.5pt, so the code is not cut off), "a4" = 5 x 13 labels of 38.1 x 21.2 mm.
+// A label carries no price: code, name, karat (short: "ع 21" / "21K") and the weight in grams to 2 decimals.
 import type { Row } from "@/lib/engine-types";
-import { milligramsText, piastresText } from "@/lib/format";
+import { labelGramsText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { LabelQr } from "@/components/label-qr";
 
@@ -14,7 +15,7 @@ export const A4_PER_PAGE = 65;
 export const pageSize = (layout: Layout) => (layout === "tag" ? "30mm 10mm;margin:0" : "A4;margin:10.7mm 4.7mm");
 const pc = (tr: Pick<Tr, "t">, k: string, v?: Record<string, string | number>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
 
-// label = { pieceCode, labelKind: "qr"|"barcode", itemName or categoryName, karat, weight (mg), tagPrice (piastres, 0 = none) }
+// label = { pieceCode, labelKind: "qr"|"barcode", itemName or categoryName, karat, weight (mg) }; a tagPrice, if passed, is not printed
 export function Label({ l, layout, tr }: { l: Row; layout: Layout; tr: Pick<Tr, "t"> }) {
   const tag = layout === "tag", qr = l.labelKind === "qr";
   const name = l.itemName ?? l.categoryName;       // a returned customer piece prints its category
@@ -22,8 +23,7 @@ export function Label({ l, layout, tr }: { l: Row; layout: Layout; tr: Pick<Tr, 
     <>
       <span dir="ltr" data-label-code style={{ fontFamily: "monospace", fontWeight: 700 }}>{l.pieceCode}</span>
       {name && <span data-label-item style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingBlock: tag ? 0 : "0.15mm" }}>{name}</span>}
-      <span dir="ltr" style={{ whiteSpace: "nowrap" }}>{pc(tr, "karatValue", { karat: l.karat })} · {milligramsText(l.weight)} {pc(tr, "gram")}</span>
-      {l.tagPrice ? <span dir="ltr" style={{ fontWeight: 600 }}>{piastresText(l.tagPrice)}</span> : null}   {/* a tag price of 0 prints nothing */}
+      <span dir="ltr" style={{ whiteSpace: "nowrap" }}>{pc(tr, "karatShort", { karat: l.karat })} · {labelGramsText(l.weight)} {pc(tr, "gram")}</span>
     </>
   );
   const mark = qr

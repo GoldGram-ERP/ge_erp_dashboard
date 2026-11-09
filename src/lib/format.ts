@@ -36,6 +36,13 @@ export function milligramsText(mg: unknown): string {
   const neg = n < 0, d = String(Math.abs(n)).padStart(4, "0");
   return `${neg ? "-" : ""}${group(d.slice(0, -3))}.${d.slice(-3)}`;
 }
+// The weight as printed on a label: grams to 2 decimals, the third digit rounded half up (3005 -> "3.01", 3004 -> "3.00").
+export function labelGramsText(mg: unknown): string {
+  if (mg === null || mg === undefined || mg === "" || !Number.isFinite(Number(mg))) return "—";
+  const n = Number(mg);
+  const d = String(Math.round(Math.abs(n) / 10)).padStart(3, "0");
+  return `${n < 0 ? "-" : ""}${group(d.slice(0, -2))}.${d.slice(-2)}`;
+}
 // Whole piastres as the text a form field starts with (no thousands marks): 512550 -> "5125.50".
 export const piastresInput = (p: unknown) => piastresText(p).replace(/,/g, "");
 export const milligramsInput = (mg: unknown) => milligramsText(mg).replace(/,/g, "");

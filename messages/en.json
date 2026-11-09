@@ -1327,6 +1327,7 @@
    "deletePiece": "Delete piece {code}",
    "codedLines": "Coded lines",
    "karatValue": "Karat {karat}",
+   "karatShort": "{karat}K",
    "pieceDeleted": "Piece deleted",
    "deleteTitle": "Delete piece {code}?",
    "deleteBody": "It will no longer show in the lists. Delete cannot be undone.",

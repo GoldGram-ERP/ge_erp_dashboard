@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { customerLabelHtml, narrow, previewLines, readFind, readPiece, readQuantity, remainingToPay } from "./customer-pieces-rules";
 
-const tr = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (key === "purchaseCoding.karatValue" ? `Karat ${v?.karat}` : key === "purchaseCoding.gram" ? "g" : key) };
+const tr = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (key === "purchaseCoding.karatShort" ? `${v?.karat}K` : key === "purchaseCoding.gram" ? "g" : key) };
 const base = { itemId: "i1", quantity: "3", description: " ring ", customerName: " Mona ", customerPhone: "٠١٠١٢٣٤٥٦٧٨", cash: "", banks: [] };
 const TOTAL = 5348439;   // 21K buy 4,050.00/g + cashback 25.00/g, 4.375 g, three pieces: 3 x 17,828.13 (one piece = 17,828.125 half up)
 
@@ -80,7 +80,7 @@ describe("label", () => {
     const html = customerLabelHtml(record, tr);
     expect(html).toContain(">100234<");
     expect(html).toContain("Rings &lt;b&gt;");
-    expect(html).toContain("Karat 21 · 5.250 g");
+    expect(html).toContain("21K · 5.25 g");
     for (const leak of ["Mona", "01012345678", "9,900", "9900"]) expect(html).not.toContain(leak);
     expect(html).toContain("width:30mm");
     expect(customerLabelHtml(record, tr, "a4")).toContain("width:38.1mm");

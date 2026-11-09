@@ -1327,6 +1327,7 @@
    "deletePiece": "حذف القطعة {code}",
    "codedLines": "البنود المكوّدة",
    "karatValue": "عيار {karat}",
+   "karatShort": "ع {karat}",
    "pieceDeleted": "تم حذف القطعة",
    "deleteTitle": "حذف القطعة {code}؟",
    "deleteBody": "لن تظهر في السجلات بعد الآن. لا يمكن التراجع عن الحذف.",
