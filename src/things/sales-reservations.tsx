@@ -47,7 +47,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     filters: [{ name: "fromDate", label: si("fromDate"), type: "date" }, { name: "toDate", label: si("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) }],
     paging: { sizeParam: null, sizes: [20], size: 20 },
     columns: [
-      { key: "reservationNumber", label: m("reservationNumber"), render: (r) => <><Ltr>{code6(r.reservationNumber)}</Ltr>{r.deletedAt ? <> {badge("off", si("deletedBadge"))}</> : r.salesInvoiceId ? <> {badge("info", m("invoicedBadge"))}</> : null}</> },
+      { key: "reservationNumber", label: m("reservationNumber"), render: (r) => <><Ltr>{code6(r.reservationNumber)}</Ltr>{r.deletedAt ? <> {badge("off", si("deletedBadge"))}</> : null}</> },
       { key: "date", label: m("date"), type: "date" },
       { key: "customerName", label: si("customerName") },
       { key: "customerPhone", label: si("customerPhone") },
@@ -88,7 +88,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     filters: historyView.filters,
     paging: { sizeParam: null, sizes: [20], size: 20 },
     columns: [
-      { key: "reservationNumber", label: m("reservationNumber"), render: (r) => <><Ltr>{code6(r.reservationNumber)}</Ltr>{r.salesInvoiceId ? <> {badge("info", m("invoicedBadge"))}</> : null}</> },
+      { key: "reservationNumber", label: m("reservationNumber"), render: (r) => <Ltr>{code6(r.reservationNumber)}</Ltr> },
       { key: "date", label: m("date"), type: "date" },
       { key: "customerName", label: si("customerName") },
       { key: "customerPhone", label: si("customerPhone") },
