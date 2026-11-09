@@ -7,9 +7,11 @@ import { api } from "@/lib/api";
 import type { FieldConfig, Option, Row } from "@/lib/engine-types";
 import { useT } from "@/lib/t";
 import { addNewFor } from "@/lib/fields";
+import { useItems } from "@/lib/items";
 import { stepAmount } from "@/lib/price-step";
 import { useLookup } from "./useLookup";
 import { Select } from "./Select";
+import { ItemPicker } from "./ItemPicker";
 import { DatePicker } from "./DatePicker";
 import { FieldError } from "./FieldError";
 
@@ -64,6 +66,7 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
   const { L } = useT();
   const [shown, setShown] = useState(false);
   const lookup = useLookup(f.type === "select" ? f.optionsFrom : undefined);
+  const pickedItems = useItems({}, f.type === "select" && f.picker === "item");
   const id = fieldId(f), lid = `${id}-label`, err = fieldState.error?.message;
   const describedBy = [f.help && `${id}-help`, err && `${id}-err`].filter(Boolean).join(" ") || undefined;
   const onChange = (v: unknown) => { clearErrors(f.name); rhfChange(v); };   // typing in a field clears its own error
@@ -76,6 +79,15 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
 
   if (f.type === "checkbox") {
     return wrap(<><input id={id} type="checkbox" checked={!!value} disabled={f.disabled} aria-describedby={describedBy} onBlur={onBlur} onChange={(e) => onChange(e.target.checked)} />{label}{help}</>);
+  }
+  if (f.type === "select" && f.picker === "item") {
+    return wrap(<>
+      {label}
+      <ItemPicker id={id} name={f.name} value={String(value)} onChange={onChange} onBlur={onBlur} items={pickedItems.items ?? []} placeholder={f.placeholder}
+        disabled={f.disabled} labelledBy={lid} describedBy={describedBy} invalid={!!err} />
+      {pickedItems.failed && <div className="help">{L("تعذّر تحميل القائمة", "Could not load the list")}</div>}
+      {help}
+    </>);
   }
   if (f.type === "select") {
     const options: Option[] = f.options ?? lookup.options ?? [];

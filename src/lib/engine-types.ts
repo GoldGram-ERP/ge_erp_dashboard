@@ -10,7 +10,9 @@ export type Query = Record<string, string | number | boolean | undefined | null>
 
 export type FieldType = "text" | "textarea" | "password" | "number" | "money" | "weight" | "select" | "date" | "checkbox" | "code" | "html";
 /** [value, label, disabled?] */
-export type Option = [string | number, string, boolean?];
+/** What a richer option carries (the item picker, issue #34): a second line, a colour, the text a search also matches, and a group to filter by. */
+export type OptionMeta = { sub?: string; tone?: "good" | "bad"; search?: string; group?: string };
+export type Option = [string | number, string, boolean?, OptionMeta?];
 export type LookupSpec = { path: string; value?: string; label?: string | ((row: Row) => string); query?: Query; rowsPath?: string; paged?: boolean; pageOnly?: boolean };   // pageOnly: the list takes `page` but refuses `limit`
 
 export type FieldConfig = {
@@ -37,6 +39,7 @@ export type FieldConfig = {
   searchable?: boolean;                // select: search box (default: more than 8 options)
   options?: Option[];                  // select
   optionsFrom?: string | LookupSpec;   // select: LOOKUPS key or a backend list
+  picker?: "item";                     // select: the item picker (rows with code, group and brand; brand filter) fed by the items, instead of the plain options
   validate?: (v: any, all: Record<string, any>) => string | null | undefined;
   // code: the next document number preview (GET /document-numbers/next)
   documentType?: string;

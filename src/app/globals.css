@@ -1138,3 +1138,17 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 /* Sales desk areas: every bubble is as wide as its column and the gap between areas is the desk's one gap (see the Tidy block in things/sales-desk.css) */
 #sd .grp-block,#sd .grp-block.kv-block{width:100%;max-width:none;margin-top:0}
 #sd .grp-block .grp-panel,#sd .grp-block.kv-block .grp-panel{width:100%;max-width:none;min-width:0}
+
+/* The item picker (issue #34): a second line under each row, the brand filter on top, and the Sales desk's stock colours (green: in stock, red: none, not pickable). */
+.sel-pop li .lbl.two{display:flex;flex-direction:column;gap:1px;line-height:1.25}
+.sel-pop li .lbl .sub{display:block;font-size:.85em;font-weight:400;color:var(--mute);overflow:hidden;text-overflow:ellipsis}
+.sel-brands{display:flex;flex-wrap:wrap;gap:4px;padding:0 2px 6px}
+.sel-pop li[data-tone=good]{box-shadow:inset 3px 0 0 var(--good);background:color-mix(in srgb,var(--good) 8%,transparent)}
+.sel-pop li[data-tone=good] .lbl{color:var(--good)}
+.sel-pop li[data-tone=bad]{box-shadow:inset 3px 0 0 var(--warn);background:color-mix(in srgb,var(--warn) 7%,transparent)}
+.sel-pop li[data-tone=bad] .lbl{color:var(--warn)}
+.sel-pop li[data-tone=bad][aria-disabled=true]{opacity:1;cursor:not-allowed}
+.sel-pop li[data-tone=bad] .lbl .sub{color:inherit;opacity:.75}
+[dir=rtl] .sel-pop li[data-tone=good]{box-shadow:inset -3px 0 0 var(--good)}
+[dir=rtl] .sel-pop li[data-tone=bad]{box-shadow:inset -3px 0 0 var(--warn)}
+.sel-pop li.active[data-tone]{background:var(--gold-wash)}

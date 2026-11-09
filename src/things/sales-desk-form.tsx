@@ -5,8 +5,11 @@ import { Button, Disclosure, Input, Seg, TextButton } from "@/components/ui";
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ItemPicker } from "@/components/fields/ItemPicker";
+import { stockMapOf } from "@/lib/items";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
-import type { CustomFormProps, Row } from "@/lib/engine-types";
+import type { CustomFormProps, Option, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
 import { latinNumber, milligramsText, piastresInput, piastresText, timeText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
@@ -63,6 +66,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [typing, setTyping] = useState(false);
   const [leaving, setLeaving] = useState<number | null>(null);
   const [branchId, setBranchId] = useState("");
+  // The items in stock in the desk's branch (issue #188): the picker shows them green, and the others red and not pickable. This page only.
+  // Not heard (loading, or the read failed): nothing is coloured or blocked here; the backend still refuses a piece that is not in stock when the invoice is completed.
+  const stockAnswer = useQuery({ queryKey: ["sales-desk-item-stock", branchId], enabled: Boolean(branchId), staleTime: 15_000, queryFn: () => api("/sales-desk/item-stock", { query: { branchId } }) });
+  const stock = stockMapOf(stockAnswer.data);
   const [cust, setCust] = useState({ customerName: "", customerPhone: "", nationalId: "" });
   const [lines, setLines] = useState<DeskLine[]>([]);
   const [cash, setCash] = useState("");
@@ -165,9 +172,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const readonly = Boolean(draft && note && note.state !== "editable");
   const isNew = !draft;
   const buy = operation === "buy";
-  const itemOptions: [string, string][] = items.filter((x) => karatFits(metal, String(x.karat))).map((x) => [x.id, `${x.itemName} · ${x.karat ?? ""}`]);
+  const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
-  for (const l of draft?.lines ?? []) if (!itemOptions.some(([id]) => id === l.itemId)) itemOptions.push([l.itemId, `${l.itemName} · ${l.karat}`]);
+  const onDraft: Option[] = (draft?.lines ?? []).map((l: Row) => [l.itemId, `${l.itemName} · ${l.karat}`]);
   const total = draft?.totals?.total ?? 0;
   const against = plannedAgainst(total, cash, banks);
   const dsc = may ? readDiscount(kind, disc, Number.MAX_SAFE_INTEGER / 4) : { invalid: false, value: 0, tooBig: false, sent: undefined };
@@ -360,7 +367,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           <fieldset disabled={readonly || saving} className="tk-a">
             {!stepBranch ? <p className="tk-step-hint" id="sd-step-branch">{L("اختار الفرع الأول عشان تضيف قطع.", "Choose the branch first to add pieces.")}</p> : <Section title={L("القطع", "Pieces")}><section id="sec-items" className="tk-ticket tk-reveal">
               <div className="field tk-add"><label htmlFor="itadd">{L("إضافة قطعة", "Add a piece")}</label>
-                <Choice tr={tr} id="itadd" options={itemOptions} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
+                <ItemPicker id="itadd" name="itadd" items={pickable} stock={stock} extra={onDraft} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
               {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
               {metal === "silver" && lines.length > 0 && <div className="tk-wrap"><span className="tk-quiet">{d("desk.wrapping")}</span>
                 <Seg label={d("desk.wrapping")} value={wrapping} onChange={(k) => pick(() => setWrapping(k))}

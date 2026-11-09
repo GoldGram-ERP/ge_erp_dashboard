@@ -6,13 +6,14 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, keepsKey, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
+import { ItemPicker } from "@/components/fields/ItemPicker";
 import { esc, milligramsText, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
 import { Button } from "@/components/ui";
 import { CopyButton } from "@/components/shell/copy-button";
 import { useMe } from "@/lib/session";
-import { Choice, ErrBox, TextBox, allPages, code6, fe } from "./sales-form-parts";
+import { Choice, ErrBox, TextBox, allPages, code6, fe, sg } from "./sales-form-parts";
 import { itemProblem } from "./purchases-rules";
 import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { paymentKeyOf } from "./sales-invoices-math";
@@ -180,7 +181,6 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       </div>
     );
   }
-  const itemOptions: [string, string][] = (items ?? []).map((it) => [it.id, itemText(it)]);
   const left = total === null ? null : remainingToPay(total, v.cash, v.banks);
   const pv = preview.state === "ok" ? previewLines(preview.price) : null;
   return (
@@ -192,7 +192,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
           {needsBranch && <div className="field" data-k="branchId" data-err={errs.branchId ? "" : undefined}><label htmlFor="branchId">{cp(tr, "branch")} *</label>
             <Choice tr={tr} id="branchId" invalid={!!errs.branchId} options={branches} value={v.branchId ?? ""} onChange={(x) => set({ branchId: x })} />{err("branchId")}</div>}
           <div className="field" data-k="itemId" data-err={errs.itemId ? "" : undefined}><label htmlFor="itemId">{cp(tr, "item")} *</label>
-            <Choice tr={tr} id="itemId" invalid={!!errs.itemId} options={itemOptions} value={v.itemId} onChange={(x) => set({ itemId: x })} />
+            <ItemPicker id="itemId" name="itemId" invalid={!!errs.itemId} items={items ?? []} label={itemText} value={v.itemId} placeholder={sg(tr, "choose")} onChange={(x) => set({ itemId: x })} />
             {items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
             {err("itemId")}</div>
           <TextBox name="quantity" label={`${cp(tr, "quantity")} *`} value={v.quantity} maxLength={3} ltr error={errs.quantity} onChange={(x) => set({ quantity: x })} />

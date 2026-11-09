@@ -73,7 +73,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         { name: "branchId", label: rr("branchId"), type: "select", optionsFrom: branchSpec, placeholder: ALL },
         { name: "karat", label: rr("karat"), type: "select", options: ["18", "21", "24", "999"].map((k) => [k, k]), placeholder: ALL },
         { name: "itemType", label: rr("itemType"), type: "select", options: ["gold", "other_or_silver"].map((k) => [k, t("gold-accounts", `items.itemTypes.${k}`)]), placeholder: ALL },
-        { name: "itemId", label: rr("itemId"), type: "select", optionsFrom: itemSpec, placeholder: ALL },
+        { name: "itemId", label: rr("itemId"), type: "select", picker: "item", optionsFrom: itemSpec, placeholder: ALL },
         { name: "categoryId", label: rr("categoryId"), type: "select", optionsFrom: categorySpec, placeholder: ALL },
         { name: "customerName", label: rr("customerName"), type: "text", maxLength: 100 },
         { name: "customerPhone", label: rr("customerPhone"), type: "text", maxLength: 20, validate: (v) => (v && !/^\d{1,20}$/.test(latinNumber(v)) ? rr("phoneInvalid") : null), toQuery: (v) => (v ? { customerPhone: latinNumber(v) } : {}) },

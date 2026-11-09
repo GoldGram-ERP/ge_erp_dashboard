@@ -111,7 +111,8 @@ export function buildQuery(view: ViewConfig, vs: ViewState, o: { manyPages?: boo
 // ───── select search and the calendar ─────
 // Arabic-normalised text for searching: no diacritics or tatweel, alef/yeh/heh variants merged, Arabic digits -> Latin.
 export { norm } from "./search";
-export const filterOptions = <T extends [unknown, string, ...unknown[]]>(opts: T[], q: string) => (q.trim() ? opts.filter(([, l]) => matchesText(q, l)) : opts);
+export const filterOptions = <T extends [unknown, string, ...unknown[]]>(opts: T[], q: string) =>
+  (q.trim() ? opts.filter((o) => matchesText(q, o[1]) || matchesText(q, (o[3] as { search?: string } | undefined)?.search ?? "")) : opts);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 export const isoDay = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;           // m is 0-11
