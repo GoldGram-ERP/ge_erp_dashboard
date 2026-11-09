@@ -11,7 +11,7 @@ import { dateTimeText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { useAccess } from "./sales-access";
-import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
+import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, partsShown, placePart, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
 import { readLogo } from "./printer-logo";
 import { fetchLabelSettings, resetLabelSettings, saveLabelSettings, type SavedLabelSettings } from "./label-settings";
 
@@ -142,6 +142,9 @@ export default function Page() {
     </div>
   );
   const numField = (key: NumKey, label: string, help = "") => numBox(key, label, s[key], (n) => set({ [key]: n }), key === "copies", help);
+  const shown = partsShown(s);
+  // The name of place k: left/middle/right when side by side, top/middle/bottom when stacked.
+  const slotName = (k: number) => k === 0 ? m(s.direction === "side" ? "left" : "slotTop") : k === shown.length - 1 ? m(s.direction === "side" ? "right" : "slotBottom") : m("slotMiddle");
   const setLines = (lines: ExtraLine[]) => { setDraft({}); set({ lines }); };
   const patchLine = (i: number, patch: Partial<ExtraLine>) => set({ lines: updateLine(s.lines, i, patch) });
 
@@ -228,7 +231,6 @@ export default function Page() {
 
           <div className="card tp-block">
             <h3>{m("logo")}</h3>
-            <h3>{m("logo")}</h3>
             <div className="tp-actions">
               <Button onClick={() => logoRef.current?.click()}>{s.logo ? m("logoChange") : m("logoUpload")}</Button>
               <FileInput ref={logoRef} accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml" aria-label={m("logoUpload")} onChange={pickLogo} />
@@ -238,11 +240,11 @@ export default function Page() {
             <div className="help">{m("logoHint")}</div>
             {logoMsg && <div className="note warn" role="alert">{logoMsg}</div>}
             <div className="field"><span className="lbl">{m("logoPlace")}</span>
-              <Seg label={m("logoPlace")} value={s.logoPlacement} onChange={(v) => set({ logoPlacement: v })} items={[{ id: "left", label: m("left") }, { id: "middle", label: m("logoMiddle") }, { id: "right", label: m("right") }, { id: "inside", label: m("logoInside") }, { id: "none", label: m("logoNone") }]} />
+              <Seg label={m("logoPlace")} value={s.logoPlacement} onChange={(v) => set({ logoPlacement: v })} items={[{ id: "beside", label: m("logoBeside") }, { id: "inside", label: m("logoInside") }, { id: "none", label: m("logoNone") }]} />
               <div className="help">{m("logoPlaceHelp")}</div></div>
             {s.logoPlacement === "inside"
               ? numField("logoPct", m("logoPct"))
-              : s.logoPlacement !== "none" && numField("logoMm", m("logoMm"))}
+              : s.logoPlacement === "beside" && numField("logoMm", m("logoMm"))}
             {logoInside(s) && <div className="help" role="status">{m("logoLevelH")}</div>}
             {logoTooBigForQr(s) && <div className="note warn" role="alert">{m("logoTooBig30")}</div>}
           </div>
@@ -252,9 +254,15 @@ export default function Page() {
             <div className="field"><span className="lbl">{m("direction")}</span>
               <Seg label={m("direction")} value={s.direction} onChange={(v) => set({ direction: v })} items={[{ id: "stacked", label: m("stacked") }, { id: "side", label: m("side") }]} />
               <div className="help">{m("directionHelp")}</div></div>
-            <div className="field"><span className="lbl">{m("order")}</span>
-              <Seg label={m("order")} value={s.swap ? "qr" : "text"} onChange={(v) => set({ swap: v === "qr" })} items={[{ id: "text", label: m("textFirst") }, { id: "qr", label: m("qrFirst") }]} />
-              <div className="help">{m("orderHelp")}</div></div>
+            {shown.length > 1 && <div className="field"><span className="lbl">{m("places")}</span>
+              {shown.map((part, at) => (
+                <div className="tp-place" key={part}>
+                  <span id={`tp-place-${part}`}>{m(part === "text" ? "partText" : part === "logo" ? "partLogo" : "partQr")}</span>
+                  <Seg label={m(part === "text" ? "partText" : part === "logo" ? "partLogo" : "partQr")} value={String(at)} onChange={(v) => set({ order: placePart(s, part, Number(v)) })}
+                    items={shown.map((_, k) => ({ id: String(k), label: slotName(k) }))} />
+                </div>
+              ))}
+              <div className="help">{m("placesHelp")}</div></div>}
             <div className="tp-fields">{numField("paddingMm", m("padding"), m("paddingHelp"))}{numField("gapMm", m("gap"), m("gapHelp"))}</div>
           </div>
 

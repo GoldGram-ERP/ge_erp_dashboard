@@ -7,7 +7,11 @@ export type Rotate = 0 | 90 | 180 | 270;
 export type Align = "left" | "center" | "right";
 export type QrLevel = "L" | "M" | "Q" | "H";
 
-export type LogoPlacement = "left" | "middle" | "right" | "inside" | "none";
+/** The logo: "beside" = a part of its own (its place is set in `order`), "inside" = in the middle of the QR, "none" = hidden. */
+export type LogoPlacement = "beside" | "inside" | "none";
+/** The three things on a label. `order` is the place of each, first to last (left to right, or top to bottom). */
+export type Part = "text" | "logo" | "qr";
+export const PARTS: readonly Part[] = ["text", "logo", "qr"];
 
 export type LineAlign = Align | "inherit";
 export type LinesPlacement = "afterText" | "afterQr";
@@ -18,11 +22,11 @@ export type RenderLine = { text: string; fontPt: number; align: LineAlign; bold:
 
 export type Settings = {
   widthMm: number; heightMm: number; orientation: Orientation;
-  direction: Direction; swap: boolean; rotate: Rotate;
+  direction: Direction; order: Part[]; rotate: Rotate;
   fontPt: number; align: Align; paddingMm: number; gapMm: number;
   qrTopMm: number; qrSizeMm: number; level: QrLevel; copies: number;
   lines: ExtraLine[]; linesPlacement: LinesPlacement;
-  /** The logo as a data URL ("" = none). Left/middle/right are physical sides of the printed label. logoMm = the square the logo fits in (left/middle/right); logoPct = % of the QR width (inside). */
+  /** The logo as a data URL ("" = none). The places are the physical sides of the printed label. logoMm = the square the logo fits in (left/middle/right); logoPct = % of the QR width (inside). */
   logo: string; logoPlacement: LogoPlacement; logoMm: number; logoPct: number;
 };
 /** `extra` = the texts of Excel columns C, D, E... of this label; absent for the typed label (its lines come from Settings.lines). */
@@ -30,10 +34,10 @@ export type LabelItem = { text: string; code: string; extra?: string[] };
 export type Css = Record<string, string | number>;
 
 export const DEFAULTS: Settings = {
-  widthMm: 66, heightMm: 61, orientation: "portrait", direction: "stacked", swap: false, rotate: 0,
+  widthMm: 66, heightMm: 61, orientation: "portrait", direction: "stacked", order: ["logo", "text", "qr"], rotate: 0,
   fontPt: 14, align: "center", paddingMm: 1, gapMm: 0.5, qrTopMm: 6, qrSizeMm: 0, level: "M", copies: 1,
   lines: [], linesPlacement: "afterText",
-  logo: "", logoPlacement: "left", logoMm: 10, logoPct: 20,
+  logo: "", logoPlacement: "beside", logoMm: 10, logoPct: 20,
 };
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
@@ -58,19 +62,36 @@ export function clampSettings(raw: unknown): Settings {
     widthMm: num(r.widthMm, "widthMm"), heightMm: num(r.heightMm, "heightMm"),
     orientation: pick(r.orientation, ["portrait", "landscape"], DEFAULTS.orientation),
     direction: pick(r.direction, ["stacked", "side"], DEFAULTS.direction),
-    swap: typeof r.swap === "boolean" ? r.swap : DEFAULTS.swap,
+    order: cleanOrder(r),
     rotate: pick(r.rotate, [0, 90, 180, 270], DEFAULTS.rotate),
     fontPt: num(r.fontPt, "fontPt"), align: pick(r.align, ["left", "center", "right"], DEFAULTS.align),
     paddingMm: num(r.paddingMm, "paddingMm"), gapMm: num(r.gapMm, "gapMm"), qrTopMm: num(r.qrTopMm, "qrTopMm"), qrSizeMm: num(r.qrSizeMm, "qrSizeMm"),
     level: pick(r.level, ["L", "M", "Q", "H"], DEFAULTS.level), copies: num(r.copies, "copies"),
     lines: normaliseLines(r.lines), linesPlacement: pick(r.linesPlacement, ["afterText", "afterQr"], DEFAULTS.linesPlacement),
-    logo: cleanLogo(r.logo), logoPlacement: pick(r.logoPlacement, LOGO_PLACEMENTS, DEFAULTS.logoPlacement),
+    logo: cleanLogo(r.logo), logoPlacement: cleanLogoPlacement(r.logoPlacement),
     logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"),
   };
 }
 
 // ───── Logo ─────
-export const LOGO_PLACEMENTS: readonly LogoPlacement[] = ["left", "middle", "right", "inside", "none"];
+const cleanLogoPlacement = (v: unknown): LogoPlacement => (v === "inside" || v === "none" ? v : v === "beside" || v === "left" || v === "middle" || v === "right" ? "beside" : DEFAULTS.logoPlacement);
+/** A valid order of the three parts. Old stored data had `swap` and a left/middle/right logo: they become the same order. */
+function cleanOrder(r: Record<string, unknown>): Part[] {
+  const o = r.order;
+  if (Array.isArray(o) && o.length === 3 && PARTS.every((p) => o.includes(p))) return [...o] as Part[];
+  const base: Part[] = r.swap === true ? ["qr", "text"] : ["text", "qr"];
+  return r.logoPlacement === "middle" ? [base[0], "logo", base[1]] : r.logoPlacement === "right" ? [...base, "logo"] : ["logo", ...base];
+}
+/** The parts that are drawn, in their places: the logo only when it is a part of its own. */
+export const partsShown = (s: Pick<Settings, "order" | "logo" | "logoPlacement">): Part[] => s.order.filter((p) => p !== "logo" || (!!s.logo && s.logoPlacement === "beside"));
+/** Put `part` at place `to` of the drawn parts; the part that was there takes its old place (never two in one place). */
+export function placePart(s: Pick<Settings, "order" | "logo" | "logoPlacement">, part: Part, to: number): Part[] {
+  const target = partsShown(s)[to], out = [...s.order];
+  if (!target || target === part) return out;
+  const a = out.indexOf(part), b = out.indexOf(target);
+  [out[a], out[b]] = [out[b], out[a]];
+  return out;
+}
 export const LOGO_MAX_FILE = 3 * 1024 * 1024, LOGO_MAX_SIDE = 600, LOGO_WARN_PCT = 30, LOGO_DATA_MAX = 4_000_000;
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 /** Only an image data URL of a sane size is kept; anything else (a link, text, a huge string) is dropped, so stored data can never inject markup. */
@@ -210,12 +231,12 @@ export function frameCss(s: Settings): { outer: Css; inner: Css } {
 /** The row/column of the two layers: stacked = text above the QR, side = text and QR in a row; swap puts the QR first. */
 export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css; group: Css } {
   const stacked = s.direction === "stacked";
-  const dir = `${stacked ? "column" : "row"}${s.swap ? "-reverse" : ""}`;
+  const dir = stacked ? "column" : "row";
   const self = s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center";
   const fixed = s.qrSizeMm > 0;
   return {
-    box: { display: "flex", flexDirection: dir, alignItems: stacked ? "stretch" : "center", justifyContent: "center", gap: mm(s.gapMm), padding: logoShown(s) && s.logoPlacement !== "inside" ? 0 : mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
-    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${s.fontPt}pt`, lineHeight: 1.15, textAlign: s.align, whiteSpace: "pre-wrap", overflowWrap: "anywhere", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%" },
+    box: { display: "flex", flexDirection: dir, alignItems: stacked ? "stretch" : "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
+    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${s.fontPt}pt`, lineHeight: 1.15, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%" },
     qr: {
       display: "block", minWidth: 0, minHeight: 0, marginTop: mm(s.qrTopMm),
       ...(fixed ? { flex: "none", width: mm(s.qrSizeMm), height: mm(s.qrSizeMm), alignSelf: stacked ? self : "center" } : { flex: "1 1 0", width: "100%", height: "100%" }),
@@ -225,15 +246,8 @@ export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css; group: C
   };
 }
 
-/** Left/right/middle logo: a shell around the label content. Physical sides (direction ltr), so Left is left in Arabic too. */
-export function logoShellCss(s: Settings): { shell: Css; logo: Css; main: Css } {
-  const side = s.logoPlacement === "left" || s.logoPlacement === "right", sz = mm(s.logoMm);
-  return {
-    shell: { display: "flex", flexDirection: side ? (s.logoPlacement === "right" ? "row-reverse" : "row") : "column", alignItems: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
-    logo: { display: "block", flex: "none", width: sz, height: sz, maxWidth: side ? "50%" : "100%", objectFit: "contain" },
-    main: { flex: "1 1 0", minWidth: 0, minHeight: 0, width: side ? "auto" : "100%", height: side ? "100%" : "auto", alignSelf: "stretch" },
-  };
-}
+/** The logo as a part of its own: a square it fits in, never shrunk by the other parts. */
+export const logoCss = (s: Pick<Settings, "logoMm">): Css => ({ display: "block", flex: "none", width: mm(s.logoMm), height: mm(s.logoMm), objectFit: "contain", alignSelf: "center" });
 
 /** The style of one extra line: the text style with its own size, alignment (inherit = the label's) and weight. */
 export function lineCss(s: Settings, l: RenderLine): Css {

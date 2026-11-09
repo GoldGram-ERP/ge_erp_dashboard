@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
 import { labelGramsText } from "@/lib/format";
-import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoShellCss, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -68,7 +68,7 @@ describe("settings", () => {
   });
   it("words outside the allowed set fall back to the default", () => {
     const s = clampSettings({ orientation: "diagonal", direction: "x", rotate: 45, align: "justify", level: "Z", swap: "yes" });
-    expect([s.orientation, s.direction, s.rotate, s.align, s.level, s.swap]).toEqual(["portrait", "stacked", 0, "center", "M", false]);
+    expect([s.orientation, s.direction, s.rotate, s.align, s.level]).toEqual(["portrait", "stacked", 0, "center", "M"]);
     expect(clampSettings({ rotate: 270 }).rotate).toBe(270);
   });
 });
@@ -84,11 +84,29 @@ describe("copies", () => {
 });
 
 describe("layout direction and order", () => {
-  it("stacked is a column, side by side is a row, swap reverses", () => {
+  it("stacked is a column, side by side is a row; the order of the parts is `order`, not a reversed flex", () => {
     expect(layoutCss(S({ direction: "stacked" })).box.flexDirection).toBe("column");
-    expect(layoutCss(S({ direction: "stacked", swap: true })).box.flexDirection).toBe("column-reverse");
     expect(layoutCss(S({ direction: "side" })).box.flexDirection).toBe("row");
-    expect(layoutCss(S({ direction: "side", swap: true })).box.flexDirection).toBe("row-reverse");
+  });
+  it("text and extra lines never wrap: one line each, even when long", () => {
+    expect(layoutCss(S({})).text.whiteSpace).toBe("pre");
+    expect(lineCss(S({}), { text: "x", fontPt: 8, align: "inherit", bold: false }).whiteSpace).toBe("pre");
+  });
+  it("old stored data (swap, left/middle/right logo) becomes the same order; a bad order falls back", () => {
+    expect(clampSettings({ swap: true, logoPlacement: "left" }).order).toEqual(["logo", "qr", "text"]);
+    expect(clampSettings({ logoPlacement: "right" }).order).toEqual(["text", "qr", "logo"]);
+    expect(clampSettings({ logoPlacement: "middle" }).order).toEqual(["text", "logo", "qr"]);
+    expect(S({ order: ["qr", "qr", "text"] }).order).toEqual(["logo", "text", "qr"]);
+    expect(S({ order: ["qr", "logo", "text"] }).order).toEqual(["qr", "logo", "text"]);
+  });
+  it("the logo is drawn as a part only when there is one and it has its own place; placing a part swaps it with the one there", () => {
+    const o = { order: ["text", "logo", "qr"] as const };
+    expect(partsShown({ ...o, order: [...o.order], logo: "", logoPlacement: "beside" })).toEqual(["text", "qr"]);
+    expect(partsShown({ order: [...o.order], logo: PNG, logoPlacement: "inside" })).toEqual(["text", "qr"]);
+    const s3 = { order: [...o.order], logo: PNG, logoPlacement: "beside" as const };
+    expect(partsShown(s3)).toEqual(["text", "logo", "qr"]);
+    expect(placePart(s3, "qr", 0)).toEqual(["qr", "logo", "text"]);
+    expect(placePart(s3, "text", 0)).toEqual(["text", "logo", "qr"]);
   });
   it("the layout keeps left-to-right whatever the page language, and the gap, padding, font, align and top offset reach the css", () => {
     const l = layoutCss(S({ gapMm: 2, paddingMm: 3, fontPt: 20, align: "right", qrTopMm: 4 }));
@@ -202,9 +220,9 @@ describe("logo", () => {
     expect(cleanLogo(`data:image/png;base64,${"A".repeat(4_000_001)}`)).toBe("");
     expect(cleanLogo(5)).toBe("");
   });
-  it("placement falls back to Left; the size is clamped in mm (left/middle/right) and in % (inside), decimals kept", () => {
+  it("placement falls back to its own place; the size is clamped in mm (left/middle/right) and in % (inside), decimals kept", () => {
     expect(S({ logoPlacement: "inside" }).logoPlacement).toBe("inside");
-    expect(S({ logoPlacement: "top" }).logoPlacement).toBe("left");
+    expect(S({ logoPlacement: "top" }).logoPlacement).toBe("beside");
     expect(S({ logoMm: 12.5 }).logoMm).toBe(12.5);
     expect(S({ logoMm: 99999 }).logoMm).toBe(500);
     expect(S({ logoMm: -3 }).logoMm).toBe(0.5);
@@ -214,14 +232,14 @@ describe("logo", () => {
   });
   it("the QR level is forced to H only while a logo is inside the code", () => {
     expect(effectiveLevel(S({ level: "L", logo: PNG, logoPlacement: "inside" }))).toBe("H");
-    expect(effectiveLevel(S({ level: "L", logo: PNG, logoPlacement: "left" }))).toBe("L");
+    expect(effectiveLevel(S({ level: "L", logo: PNG, logoPlacement: "beside" }))).toBe("L");
     expect(effectiveLevel(S({ level: "L", logo: "", logoPlacement: "inside" }))).toBe("L");
     expect(effectiveLevel(S({ level: "Q", logo: PNG, logoPlacement: "none" }))).toBe("Q");
   });
   it("warns above 30 percent, only when the logo is inside", () => {
     expect(logoTooBigForQr(S({ logo: PNG, logoPlacement: "inside", logoPct: 30 }))).toBe(false);
     expect(logoTooBigForQr(S({ logo: PNG, logoPlacement: "inside", logoPct: 30.5 }))).toBe(true);
-    expect(logoTooBigForQr(S({ logo: PNG, logoPlacement: "left", logoPct: 90 }))).toBe(false);
+    expect(logoTooBigForQr(S({ logo: PNG, logoPlacement: "beside", logoPct: 90 }))).toBe(false);
   });
   it("files: png, jpg, webp, svg pass; others and over 3 MB are refused with a plain key", () => {
     expect(logoFileError({ type: "image/png", size: 1000 })).toBeNull();
@@ -244,11 +262,8 @@ describe("logo", () => {
     expect(b.backSide).toBeGreaterThan(b.side);
     expect(b.backX + b.backSide / 2).toBeCloseTo(14.5, 6);
   });
-  it("Left and Right are physical (row / row-reverse, direction ltr); Middle is a column", () => {
-    expect(logoShellCss(S({ logoPlacement: "left" })).shell).toMatchObject({ flexDirection: "row", direction: "ltr" });
-    expect(logoShellCss(S({ logoPlacement: "right" })).shell).toMatchObject({ flexDirection: "row-reverse", direction: "ltr" });
-    expect(logoShellCss(S({ logoPlacement: "middle" })).shell).toMatchObject({ flexDirection: "column" });
-    expect(logoShellCss(S({ logoMm: 7.5 })).logo).toMatchObject({ width: "7.5mm", height: "7.5mm" });
+  it("the logo part is a fixed square in mm that the other parts never shrink", () => {
+    expect(logoCss(S({ logoMm: 7.5 }))).toMatchObject({ width: "7.5mm", height: "7.5mm", flex: "none" });
   });
 });
 
@@ -263,7 +278,7 @@ describe("saved state", () => {
     expect(loadState(JSON.stringify({ v: 2 }), null)).toEqual(defaultState());
     expect(loadState(JSON.stringify([1, 2]), null)).toEqual(defaultState());
     const old = loadState(null, JSON.stringify({ widthMm: 40, heightMm: 30, orientation: "landscape", level: "Q" }));
-    expect(old.settings).toMatchObject({ widthMm: 40, heightMm: 30, orientation: "landscape", level: "Q", logo: "", logoPlacement: "left" });
+    expect(old.settings).toMatchObject({ widthMm: 40, heightMm: 30, orientation: "landscape", level: "Q", logo: "", logoPlacement: "beside" });
     expect(old.text).toBe("");
   });
   it("the new key wins over the old one; wrong field types fall back field by field", () => {
@@ -290,11 +305,11 @@ describe("saved state", () => {
 
 describe("the saved label profile", () => {
   const LOGO = "data:image/png;base64,AAAA";
-  const tuned = S({ widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", swap: true, rotate: 90, fontPt: 6, align: "left", paddingMm: 0.5, gapMm: 1, qrTopMm: 0, qrSizeMm: 10.5, level: "Q", logo: LOGO, logoPlacement: "inside", logoPct: 18, copies: 5, linesPlacement: "afterQr", lines: [{ text: "secret", fontPt: 5, align: "right", bold: true, keepBlank: true }] });
+  const tuned = S({ widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", order: ["qr", "text", "logo"], rotate: 90, fontPt: 6, align: "left", paddingMm: 0.5, gapMm: 1, qrTopMm: 0, qrSizeMm: 10.5, level: "Q", logo: LOGO, logoPlacement: "inside", logoPct: 18, copies: 5, linesPlacement: "afterQr", lines: [{ text: "secret", fontPt: 5, align: "right", bold: true, keepBlank: true }] });
 
   it("keeps the print styling and drops the test content (copies, line texts)", () => {
     const p = profileFromSettings(tuned);
-    expect(p).toMatchObject({ v: 1, widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", swap: true, rotate: 90, fontPt: 6, align: "left", paddingMm: 0.5, gapMm: 1, qrTopMm: 0, qrSizeMm: 10.5, level: "Q", logo: LOGO, logoPlacement: "inside", logoPct: 18, linesPlacement: "afterQr" });
+    expect(p).toMatchObject({ v: 1, widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", order: ["qr", "text", "logo"], rotate: 90, fontPt: 6, align: "left", paddingMm: 0.5, gapMm: 1, qrTopMm: 0, qrSizeMm: 10.5, level: "Q", logo: LOGO, logoPlacement: "inside", logoPct: 18, linesPlacement: "afterQr" });
     expect("copies" in p).toBe(false);
     expect(p.lines).toEqual([{ text: "", fontPt: 5, align: "right", bold: true, keepBlank: false }]);
     expect(JSON.stringify(p)).not.toContain("secret");
@@ -308,7 +323,7 @@ describe("the saved label profile", () => {
     for (const junk of [null, undefined, 5, "x", [], {}, { v: 2 }, { v: "1" }, { widthMm: 40 }]) expect(cleanProfile(junk)).toBeNull();
   });
   it("clamps like the page and drops a bad logo", () => {
-    const p = cleanProfile({ v: 1, widthMm: -5, heightMm: 99999, fontPt: "abc", rotate: 45, level: "Z", orientation: "diagonal", logo: "https://evil/x.png", logoPlacement: "left" });
+    const p = cleanProfile({ v: 1, widthMm: -5, heightMm: 99999, fontPt: "abc", rotate: 45, level: "Z", orientation: "diagonal", logo: "https://evil/x.png", logoPlacement: "beside" });
     expect(p).toMatchObject({ widthMm: 1, heightMm: 1000, fontPt: DEFAULTS.fontPt, rotate: 0, level: "M", orientation: "portrait", logo: "" });
     expect(cleanProfile({ v: 1, logo: "data:image/svg+xml;base64,PHN2Zz4=" })!.logo).toBe("data:image/svg+xml;base64,PHN2Zz4=");
     expect(cleanProfile({ v: 1, logo: 'data:image/png;base64,AA"onerror="x' })!.logo).toBe("");

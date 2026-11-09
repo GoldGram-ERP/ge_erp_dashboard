@@ -3,11 +3,11 @@
 // Like label-print.tsx, printing happens in its OWN window that holds only the labels: the ERP page (sidebar, header) is never printed,
 // and the @page rule exists only in that window, so it never touches any other screen.
 import { renderToStaticMarkup } from "react-dom/server";
-import { useMemo, type CSSProperties } from "react";
+import { Fragment, useMemo, type CSSProperties, type ReactNode } from "react";
 import { esc } from "@/lib/format";
 import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, effectiveLevel, frameCss, layoutCss, lineCss, logoInside, logoShellCss, logoShown, pageSize, previewZoom, printCss, qrLogoBox, type LabelItem, type Settings } from "@/things/printer-label-rules";
+import { buildLines, effectiveLevel, frameCss, layoutCss, lineCss, logoCss, logoInside, pageSize, partsShown, previewZoom, printCss, qrLogoBox, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
 
 /** One label at its real size in mm (the preview zooms it with CSS). */
 export function PrinterLabel({ s, item }: { s: Settings; item: LabelItem }) {
@@ -23,19 +23,16 @@ export function PrinterLabel({ s, item }: { s: Settings; item: LabelItem }) {
       {inside && <><rect x={inside.backX} y={inside.backX} width={inside.backSide} height={inside.backSide} fill="#fff" /><image href={s.logo} x={inside.x} y={inside.y} width={inside.side} height={inside.side} preserveAspectRatio="xMidYMid meet" /></>}
     </svg>
   );
-  const content = (
-    <div style={lay.box as CSSProperties}>
-      {!lines.length ? <>{textEl}{qrEl}</>
-        : underText ? <><div style={lay.group as CSSProperties}>{textEl}{lineEls}</div>{qrEl}</>
-        : <>{textEl}<div style={lay.group as CSSProperties}>{qrEl}{lineEls}</div></>}
-    </div>
-  );
-  // Left, middle, right: the logo sits outside the text and QR, in a shell (physical sides, so it does not flip in Arabic).
-  const out = logoShown(s) && s.logoPlacement !== "inside" ? logoShellCss(s) : null;
+  // Every part sits where `order` puts it; the extra lines stay glued to the text or to the QR.
+  const blocks: Record<Part, ReactNode> = {
+    text: lines.length && underText ? <div style={lay.group as CSSProperties}>{textEl}{lineEls}</div> : textEl,
+    qr: lines.length && !underText ? <div style={lay.group as CSSProperties}>{qrEl}{lineEls}</div> : qrEl,
+    logo: <img src={s.logo} alt="" style={logoCss(s) as CSSProperties} />,
+  };
   return (
     <div data-printer-label style={outer as CSSProperties}>
       <div style={inner as CSSProperties}>
-        {out ? <div style={out.shell as CSSProperties}><img src={s.logo} alt="" style={out.logo as CSSProperties} /><div style={out.main as CSSProperties}>{content}</div></div> : content}
+        <div style={lay.box as CSSProperties}>{partsShown(s).map((p) => <Fragment key={p}>{blocks[p]}</Fragment>)}</div>
       </div>
     </div>
   );

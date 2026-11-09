@@ -1,5 +1,20 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Test printer: the text and the extra lines always stay on one line, never wrapped. The logo is now a part of the label like the text and the QR, and one simple choice sets where each of the three goes (left, middle, right, or top, middle, bottom).",
+    "ar": "تست الطابعة: النص والسطور الزيادة بتفضل في سطر واحد ومبتنزلش سطر تاني. واللوجو بقى جزء من الليبل زي النص والـ QR، واختيار واحد بسيط بيحدد مكان كل واحد من التلاتة (يسار ونص ويمين، أو فوق ونص وتحت)."
+   },
+   {
+    "kind": "fixed",
+    "en": "Test printer: the Logo card showed its heading twice.",
+    "ar": "تست الطابعة: كارت اللوجو كان عنوانه ظاهر مرتين."
+   }
+  ]
+ },
+ {
   "version": "1.0.74",
   "date": "2026-11-09",
   "changes": [

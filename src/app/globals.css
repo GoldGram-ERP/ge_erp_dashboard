@@ -1163,6 +1163,7 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .tp-thumb img{max-width:100%;max-height:100%;object-fit:contain}
 .tp-lines{display:flex;flex-direction:column;gap:.625rem}
 .tp-line{display:flex;flex-direction:column;gap:.625rem;padding:.75rem;border:.0625rem solid var(--line-strong);border-radius:.75rem}
+.tp-place{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.625rem}
 .tp-actions{display:flex;flex-wrap:wrap;gap:.625rem;align-items:center}
 .tp-page .help{color:var(--mute);font-size:.78rem;line-height:1.4}
 .tp-preview{position:sticky;top:.75rem;display:flex;flex-direction:column;gap:.75rem;min-width:0}
