@@ -28,6 +28,8 @@ export const csp = [
 
 const nextConfig = {
   output: "standalone",
+  // A bug report carries up to 5 files of 25 MB: the proxy that forwards /api buffers a request body up to this size (the default is 10 MB).
+  experimental: { proxyClientMaxBodySize: "140mb" },
   poweredByHeader: false,
   // dev only: the e2e screenshots and traces are written inside the project; they must not make the dev server rebuild mid-test.
   webpack(config, { dev }) {

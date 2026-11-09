@@ -14,6 +14,7 @@ import { ChangePassword } from "./change-password";
 import { ChromeButton } from "@/components/ui/Button";
 import { Icon } from "./icon";
 import { SessionLock } from "./session-lock";
+import { ReportBug } from "./report-bug";
 import { SearchPalette, SidebarSearch } from "./search-palette";
 import { DASHBOARD_VERSION } from "@/version";
 import { identifyForRum } from "@/lib/rum";
@@ -189,6 +190,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
               ? <Link className="ver" id="app-version" dir="ltr" href="/whats-new" title={t("app.whatsNew.link")} aria-label={`${t("app.whatsNew.link")} v${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}{unseenLog ? <i className="wn-dot" aria-hidden="true" /> : null}</Link>
               : <span className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</span>}</div>
             <span className="actions">
+              <ReportBug />
               <Link className="ic-btn" href="/account" title={t("app.myAccount")} aria-label={t("app.myAccount")}><Icon name="profile" /></Link>
               <ChromeButton title={t("app.signOut")} aria-label={t("app.signOut")} onClick={signOut}><Icon name="out" /></ChromeButton>
             </span>

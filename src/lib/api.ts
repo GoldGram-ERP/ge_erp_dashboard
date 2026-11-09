@@ -1,5 +1,6 @@
 // The api client: session cookie, one error shape {message, values?, fields?}, an Idempotency-Key on every save.
 // Paths are the backend's own (/access/me, /sales-invoices ...). The browser calls this site's /api; Next forwards it (next.config.mjs).
+import { noteError } from "./recent-errors";
 export const SESSION_ENDED = "ge-erp:session-ended";
 const BASE = "/api";
 
@@ -21,7 +22,8 @@ const attempts = new Map<string, { key: string; inflight?: Promise<any> }>();
 export const keepsKey = (e: unknown) => e instanceof ApiFailure && (e.unreachable || e.status >= 500 || e.error.message === "saveInProgress");
 
 type Query = Record<string, string | number | boolean | undefined | null | (string | number)[]>;
-export type Call = { method?: string; body?: unknown; query?: Query; saveKey?: string; signal?: AbortSignal; blob?: boolean; cookie?: string };
+/** form: a multipart body (files); the browser sets its boundary, so no content-type is sent. */
+export type Call = { method?: string; body?: unknown; form?: FormData; query?: Query; saveKey?: string; signal?: AbortSignal; blob?: boolean; cookie?: string };
 
 function toQuery(url: URL, query?: Query) {
   for (const [k, v] of Object.entries(query ?? {})) {
@@ -59,15 +61,17 @@ async function send<T>(path: string, call: Call): Promise<T> {
   if (server && call.cookie) headers.cookie = call.cookie;
   let response: Response;
   try {
-    response = await fetch(url, { method, headers, credentials: "same-origin", signal: call.signal, body: call.body === undefined ? undefined : JSON.stringify(call.body), cache: "no-store" });
+    response = await fetch(url, { method, headers, credentials: "same-origin", signal: call.signal, body: call.form ?? (call.body === undefined ? undefined : JSON.stringify(call.body)), cache: "no-store" });
   } catch (e) {
     if ((e as Error)?.name === "AbortError") throw e;
+    if (!server) noteError(path, 0, "serverUnreachable");
     throw new ApiFailure(0, { message: "serverUnreachable" });
   }
   if (!response.ok) {
     let body: any = null;
     try { body = await response.json(); } catch { /* not json */ }
     const error: ApiError = body && typeof body.message === "string" ? body : { message: "unexpected" };
+    if (!server) noteError(path, response.status, error.message);
     if (!server && response.status === 401 && error.message === "signInRequired") window.dispatchEvent(new Event(SESSION_ENDED));
     throw new ApiFailure(response.status, error);
   }

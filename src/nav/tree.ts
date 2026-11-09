@@ -314,6 +314,13 @@ export const NAV: NavGroup[] = [
      "super-control/data-reset",
      "super-control/activity-log"
     ]
+   },
+   {
+    "id": "bug-reports",
+    "route": "/control/bug-reports",
+    "screens": [
+     "super-control/bug-reports"
+    ]
    }
   ]
  }

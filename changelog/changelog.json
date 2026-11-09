@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Report a bug: everyone has a button in the sidebar footer to send the developers a type of problem, a text, and any files or a pasted image. Super admin: a new Bug reports screen under Super control shows each report with who sent it, branch, session, screen, version, device and the last server errors, with a status and a private note.",
+    "ar": "ابلّغ عن مشكلة: كل مستخدم عنده زرار في آخر القايمة الجانبية يبعت للمطورين نوع المشكلة ووصفها وأي ملفات أو صورة ملصوقة. والسوبر أدمن عنده شاشة جديدة «بلاغات المشاكل» في التحكم، فيها كل بلاغ واللي بعته والفرع والجلسة والشاشة والنسخة والجهاز وآخر أخطاء السيرفر، مع حالة وملاحظة خاصة.",
+    "route": "/control/bug-reports"
+   }
+  ]
+ },
+ {
   "version": "1.0.69",
   "date": "2026-11-09",
   "changes": [

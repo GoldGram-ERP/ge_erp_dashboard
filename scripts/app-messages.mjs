@@ -5,7 +5,7 @@ export const APP = {
   "nav.group.sales": ["المبيعات", "Sales"], "nav.group.buy": ["الشراء والأصناف", "Purchasing and items"], "nav.group.stock": ["الجرد", "Stocktake"],
   "nav.group.money": ["الخزن والبنوك", "Treasuries and banks"], "nav.group.expenses": ["المصروفات", "Expenses"], "nav.group.setup": ["الإدارة", "Admin"], "nav.group.control": ["التحكم الكامل", "Full control"],
   "nav.item.invoices": ["فواتير المبيعات", "Sales invoices"], "nav.item.reservations": ["الحجوزات", "Reservations"], "nav.item.returns": ["المرتجعات", "Returns"], "nav.item.pieces": ["القطع والأرصدة", "Pieces and balances"],
-  "nav.item.items": ["الأصناف", "Items"], "nav.item.purchases": ["المشتريات", "Purchases"], "nav.item.merchants": ["التجار", "Merchants"], "nav.item.count": ["جرد الذهب", "Gold stocktake"], "nav.item.branch-stock": ["جرد الفرع", "Branch stock"],
+  "nav.item.items": ["الأصناف", "Items"], "nav.item.purchases": ["المشتريات", "Purchases"], "nav.item.merchants": ["التجار", "Merchants"], "nav.item.bug-reports": ["بلاغات المشاكل", "Bug reports"], "nav.item.count": ["جرد الذهب", "Gold stocktake"], "nav.item.branch-stock": ["جرد الفرع", "Branch stock"],
   "nav.item.cash": ["حركات النقدية", "Cash movements"], "nav.item.treasuries": ["الخزن", "Treasuries"], "nav.item.transfers": ["تحويلات الخزن", "Treasury transfers"], "nav.item.banks": ["البنوك", "Banks"],
   "nav.item.bank-movements": ["الحركات البنكية", "Bank movements"], "nav.item.bank-transfers": ["التحويل بين الحسابات", "Transfers between accounts"],
   "nav.item.expense-types": ["أنواع المصروفات", "Expense types"], "nav.item.expenses": ["المصروفات", "Expenses"],
@@ -149,6 +149,8 @@ Object.assign(APP, {
   "errors.makingRuleNotFound": ["القاعدة دي مش موجودة.", "This rule does not exist."],
   "errors.settlementNotFound": ["الدفعة أو الاستلام ده مش موجود.", "This payment or receipt does not exist."],
   "errors.adjustmentNotFound": ["التسوية دي مش موجودة.", "This adjustment does not exist."],
+  "errors.bugReportNotFound": ["البلاغ ده مش موجود.", "This report does not exist."],
+  "errors.bugReportFileNotFound": ["الملف ده مش موجود.", "This file does not exist."],
   "errors.customerPiecePurchaseNotFound": ["شراء القطع هذا غير موجود.","This purchase of pieces does not exist."],
 });
 // One payment block, the totals bar and the read-only line price (issue #3, backend #166): cash plus any number of bank rows on every

@@ -908,7 +908,9 @@
   "salesChannelNameTaken": "Another sales channel already has this name.",
   "positionInUse": "Not deleted: {count, plural, =0 {no users hold} one {# user holds} other {# users hold}} this Position. Move them to another Position first.",
   "positionNotFound": "This Position does not exist.",
-  "salesChannelNotFound": "This sales channel does not exist."
+  "salesChannelNotFound": "This sales channel does not exist.",
+  "bugReportNotFound": "This report does not exist.",
+  "bugReportFileNotFound": "This file does not exist."
  },
  "expenses": {
   "expenseTypes": {
@@ -3084,7 +3086,8 @@
    "sales-desk": "Sales desk",
    "merchants": "Merchants",
    "positions": "Positions",
-   "sales-channels": "Sales channels"
+   "sales-channels": "Sales channels",
+   "bug-reports": "Bug reports"
   }
  },
  "app": {

@@ -35,3 +35,4 @@ things["setup/item-fees"] = { load: () => import("./item-fees") };
 things["setup/test-printer"] = { load: () => import("./test-printer") };
 things["setup/settings"] = { load: () => import("./settings") };
 things["control/security"] = { load: () => import("./control-security") };
+things["control/bug-reports"] = { load: () => import("./bug-reports") };

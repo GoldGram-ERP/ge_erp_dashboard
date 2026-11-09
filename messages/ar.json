@@ -908,7 +908,9 @@
   "salesChannelNameTaken": "توجد قناة بيع أخرى بنفس الاسم.",
   "positionInUse": "لم يُحذف: يحمل هذا المسمى الوظيفي {count, plural, zero {لا أحد} one {مستخدم واحد} two {مستخدمان} few {# مستخدمين} other {# مستخدماً}}. انقلهم إلى مسمى آخر أولاً.",
   "positionNotFound": "هذا المسمى الوظيفي غير موجود.",
-  "salesChannelNotFound": "قناة البيع هذه غير موجودة."
+  "salesChannelNotFound": "قناة البيع هذه غير موجودة.",
+  "bugReportNotFound": "البلاغ ده مش موجود.",
+  "bugReportFileNotFound": "الملف ده مش موجود."
  },
  "expenses": {
   "expenseTypes": {
@@ -3084,7 +3086,8 @@
    "sales-desk": "مكتب المبيعات",
    "merchants": "التجار",
    "positions": "المسميات الوظيفية",
-   "sales-channels": "قنوات البيع"
+   "sales-channels": "قنوات البيع",
+   "bug-reports": "بلاغات المشاكل"
   }
  },
  "app": {
