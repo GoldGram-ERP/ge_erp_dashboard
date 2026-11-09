@@ -1,5 +1,16 @@
 [
  {
+  "version": "1.0.86",
+  "date": "2026-11-09",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales return: the refund must equal the return total, (buy price + cashback) x weight, not higher and not lower, whatever the piece was sold for.",
+    "ar": "مرتجع المبيعات: المبلغ المرتجع لازم يساوي إجمالي المرتجع، (سعر الشراء + الكاش باك) × الوزن، مش أكتر ولا أقل، بغض النظر عن سعر بيع القطعة."
+   }
+  ]
+ },
+ {
   "version": "1.0.85",
   "date": "2026-11-09",
   "changes": [
