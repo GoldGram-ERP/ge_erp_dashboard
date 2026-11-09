@@ -838,6 +838,8 @@
   "reservationNotFound": "هذا الحجز غير موجود.",
   "reservationInvoiced": "لم يُحذف: فاتورة بيع أخذت هذا الحجز. احذف تلك الفاتورة أولاً.",
   "reservationAlreadyInvoiced": "لم يتم الحفظ: صدرت من هذا الحجز الفاتورة رقم {invoiceNumber} من قبل.",
+  "pieceNotForReservation": "لا يمكن حجز هذه القطعة لهذا الحجز.",
+  "reservationPiecesIncomplete": "أضف كل قطع الحجز أولاً ثم أنشئ الفاتورة: المحجوز {held} من {total}.",
   "reservationItemsMismatch": "لم يتم الحفظ: القطع لا تطابق أصناف الحجز وكمياتها.",
   "unknownScreen": "إحدى الشاشات غير متاحة للمستخدمين. أعد تحميل الصفحة.",
   "changedSinceLoaded": "غيّر شخص آخر هذا بعد فتحك للصفحة. أعد التحميل لترى التغيير.",

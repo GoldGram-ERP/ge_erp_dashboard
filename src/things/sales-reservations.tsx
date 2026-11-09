@@ -12,6 +12,7 @@ import { useSession } from "@/stores/session";
 import type { Tr } from "@/lib/t";
 import { Kv, Ltr, Section, ThingPage, cellNode } from "@/components/engine";
 import { ReservationForm } from "./sales-reservation-form";
+import { ReservationPiecesForm } from "@/components/fields/ReservationPieces";
 import { code6 } from "./sales-form-parts";
 import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
 
@@ -49,10 +50,30 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       { key: "customerName", label: si("customerName") },
       { key: "customerPhone", label: si("customerPhone") },
       { key: "quantity", label: si("lineCount"), type: "int", get: (r) => r.totals.quantity },
+      { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{`${r.piecesHeld} / ${r.piecesTotal}`}</Ltr> },
       { key: "total", label: si("total"), type: "money", get: (r) => r.totals.total },
       { key: "paid", label: m("paid"), type: "money", get: (r) => r.totals.paid },
     ],
     rowClass: (r) => (r.deletedAt ? "deleted" : ""),
+  };
+
+  // The reservations that still miss pieces (issue #36): a click opens the step of adding them.
+  const needsPiecesView: ViewConfig = {
+    id: "needs-pieces", label: L("حجوزات بدون قطع", "Reservations without pieces"), keys: ["gold-sales/reservations-list"],
+    endpoint: "/reservations", rowKey: "id", query: { needsPieces: "true", order: undefined },
+    search: { param: "search", placeholder: m("searchPlaceholder") },
+    chips: [{ id: "all", label: ALL }],
+    filters: historyView.filters,
+    paging: { sizeParam: null, sizes: [20], size: 20 },
+    columns: [
+      { key: "reservationNumber", label: m("reservationNumber"), render: (r) => <Ltr>{code6(r.reservationNumber)}</Ltr> },
+      { key: "date", label: m("date"), type: "date" },
+      { key: "customerName", label: si("customerName") },
+      { key: "customerPhone", label: si("customerPhone") },
+      { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{`${r.piecesHeld} / ${r.piecesTotal}`}</Ltr> },
+      { key: "total", label: si("total"), type: "money", get: (r) => r.totals.total },
+    ],
+    onRow: (row, h) => h.openForm("assignPieces", row),
   };
 
   // The two reports: one row per reservation line.
@@ -95,6 +116,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     create: [{ form: "create", label: m("add"), keys: ["gold-sales/reservations"] }],
     views: [
       historyView,
+      needsPiecesView,
       reportView("reserved-pieces", "reservedPieces", "/reports/reserved-pieces", (c) => c("daysReserved", "int", (r) => r.daysReserved)),
       reportView("cancelled-reservations", "cancelledReservations", "/reports/cancelled-reservations", (c) => c("cancelledDate", "date", (r) => r.cancelledDate)),
     ].map((v) => (v.onRow === undefined ? { ...v, onRow: (row: Row, h: { open: (r: Row) => void }) => h.open(row) } : v)),
@@ -129,6 +151,14 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
                 { key: "price", label: m("linePrice"), kind: "number", get: (l) => l.linePrice, show: (l) => piastresText(l.linePrice), num: true },
                 { key: "disc", label: si("cashDiscount"), kind: "number", get: (l) => l.cashDiscount ?? 0, show: (l) => piastresText(l.cashDiscount ?? 0), num: true }]} />
             </Section>
+            <Section title={L("القطع المحجوزة", "Held pieces")} wide>
+              <Kv k={L("المحجوز", "Held")}><Ltr>{`${r.piecesHeld} / ${r.piecesTotal}`}</Ltr></Kv>
+              {r.pieces?.length > 0 && <SortedTable tableId="reservation-pieces" rows={r.pieces as Row[]} rowKey={(p) => String(p.pieceCode)} cols={[
+                { key: "code", label: si("pieceCode"), kind: "text", get: (p) => p.pieceCode, show: (p) => p.pieceCode, ltr: true },
+                { key: "item", label: m("item"), kind: "text", get: (p) => (r.lines as Row[]).find((l) => l.itemId === p.itemId)?.itemName ?? "", show: (p) => (r.lines as Row[]).find((l) => l.itemId === p.itemId)?.itemName ?? "" },
+                { key: "karat", label: si("karat"), kind: "text", get: (p) => p.karat, show: (p) => p.karat, ltr: true }]} />}
+              {!r.deletedAt && !r.salesInvoiceId && !r.piecesComplete && <div className="note" role="status">{L("أضف قطع الحجز أولاً لإنشاء الفاتورة.", "Add the reservation's pieces first to make the invoice.")}</div>}
+            </Section>
             <Section title={m("payment")}>
               <Kv k={si("cash")}><Ltr>{piastresText(r.cash)}</Ltr></Kv>
               <BankKvs tr={tr} rows={r.bankPayments} names={r.bankNames} />
@@ -142,13 +172,19 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       },
       // Create sales invoice: only a live reservation no invoice took, for a person who has the sales-invoices screen.
       actions: [{
+        // The step of adding pieces (issue #36): while no invoice took the reservation; pieces can be added a few at a time.
+        id: "assignPieces", icon: "plus", label: L("إضافة القطع", "Add pieces"),
+        when: (r) => !r.deletedAt && !r.salesInvoiceId && canOpen(useSession.getState().me, ["gold-sales/reservations"]),
+        run: (r, h) => { h.close(); h.openForm("assignPieces", r); },
+      }, {
         // Edit (issue #175): only when the server says this user may edit it now (not deleted, no invoice took it, the day lock does not hold them).
         id: "edit", icon: "edit", label: t("common", "edit"),
         when: (r) => !!r.editable && !r.deletedAt,
         run: (r, h) => { h.close(); h.openForm("edit", r); },
       }, {
         id: "createInvoice", icon: "plus", label: m("createInvoice"),
-        when: (r) => !r.deletedAt && !r.salesInvoiceId && canOpen(useSession.getState().me, ["gold-sales/sales-invoices"]),
+        // Only once every line has all its pieces (issue #36): the invoice uses them, with no piece entry.
+        when: (r) => !r.deletedAt && !r.salesInvoiceId && Boolean(r.piecesComplete) && canOpen(useSession.getState().me, ["gold-sales/sales-invoices"]),
         run: (r, h) => { h.close(); window.location.assign(`/${tr.locale}/sales/invoices?new=create&reservation=${r.id}`); },
       }],
       // Delete = cancel. The backend refuses it (409 reservationInvoiced) once an invoice took it, so the button is hidden then.
@@ -162,6 +198,8 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       create: { title: m("new"), display: "page", path: () => "/reservations", fields: [], custom: (p: CustomFormProps) => <ReservationForm {...p} /> },
       // The same form with the saved reservation: the branch, date and number stay.
       edit: { title: m("new"), display: "page", path: (r) => `/reservations/${r?.id}`, method: "PUT", fields: [], custom: (p: CustomFormProps) => <ReservationForm {...p} /> },
+      // Add the pieces to a reservation (issue #36): the whole set it holds, saved with PUT /reservations/:id/pieces.
+      assignPieces: { title: L("إضافة قطع إلى الحجز", "Add pieces to the reservation"), display: "page", path: (r) => `/reservations/${r?.id}/pieces`, method: "PUT", fields: [], custom: (p: CustomFormProps) => <ReservationPiecesForm {...p} /> },
     },
   };
 };

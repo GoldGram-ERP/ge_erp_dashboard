@@ -78,6 +78,11 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     let r: Row | null = null, g = false;
     try { r = await api(`/reservations/${reservationId}`); g = Boolean(r?.deletedAt); } catch (e) { g = e instanceof ApiFailure && e.status === 404; }
     setMade(r); setGone(g);
+    // The invoice made from a reservation sells the pieces it holds (issue #36): they are the lines, read with their prices; nothing is scanned here.
+    if (r && !edit && r.pieces?.length) {
+      const found = await Promise.all((r.pieces as Row[]).map((p) => api("/piece-look-up", { query: { pieceCode: p.pieceCode } }).catch(() => null)));
+      setLines(found.flatMap((piece) => (piece && piece.kind === "piece" ? [{ pieceCode: piece.pieceCode, itemName: piece.itemName, karat: piece.karat, weight: piece.weight, weight24Mg: piece.weight24Mg, pricePerGram24: piece.pricePerGram24, goldValue: piece.goldValue, makingCharge: piece.makingCharge, makingChargePerGram: piece.makingChargePerGram, linePrice: piece.livePrice ?? piece.priceAfterDiscount ?? piece.priceBeforeDiscount ?? ((piece.goldValue ?? 0) + (piece.makingCharge ?? 0)) }] : [])));
+    }
     if (r) {
       setBranchId(r.branchId);
       api(`/branches/${r.branchId}`).then((b) => setBranchName(b.branchName)).catch(() => {});
@@ -138,7 +143,10 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const showCustomer = Boolean(made) || lines.length > 0;
   const showPayment = Boolean(made) || (lines.length > 0 && customerValid);
   const open = !reservationId || Boolean(made && !gone && (!made.salesInvoiceId || made.salesInvoiceId === edit?.id) && takenBy === undefined);   // an edit may keep the reservation its own invoice took
-  const may = open && lines.length > 0 && allFilled && tot.left === 0 && !saving && !d.invalid && !d.tooBig;
+  // A new invoice from a reservation uses the pieces it holds: it waits until every line has all its pieces, and has no piece box (issue #36).
+  const fromHolds = Boolean(made) && !edit;
+  const waitsForPieces = fromHolds && !made!.piecesComplete;
+  const may = open && lines.length > 0 && allFilled && tot.left === 0 && !saving && !d.invalid && !d.tooBig && !waitsForPieces;
   const nothingToPay = Boolean(made) && made!.totals.remaining === 0;
 
   // ── the piece box ──
@@ -211,6 +219,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     if (Object.keys(e).length || gen) { revealFirstError(); return; }
     if (d.invalid || d.tooBig) { revealFirstError(); return; }
     if (tot.left !== 0) { setShort(true); revealFirstError(); return; }
+    if (waitsForPieces) { setGeneral(L("أضف قطع الحجز أولاً ثم أنشئ الفاتورة.", "Add the reservation's pieces first, then make the invoice.")); revealFirstError(); return; }
     if (!allFilled || (reservationId && !made)) { setGeneral(m("fillAll")); revealFirstError(); return; }   // never a silent click
     setSaving(true);
     const c = cust.getValues();
@@ -220,7 +229,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
       ...(cash !== "" ? { cash: typedPiastres(cash) } : {}),
       bankPayments: sentBanks(banks),
       ...(d.sent && !made ? { cashDiscount: d.sent } : {}),   // the kind and the number typed; the backend works the discount out itself (a reservation invoice has the reservation's)
-      lines: lines.map((l) => ({ pieceCode: l.pieceCode })),
+      ...(fromHolds ? {} : { lines: lines.map((l) => ({ pieceCode: l.pieceCode })) }),   // from a reservation: the backend sells the held pieces
       ...(gift ? { isGift: true, giftRecipientName: recipient.name.trim(), giftRecipientPhone: latinNumber(recipient.phone.trim()) } : {}),
       ...(made ? (edit ? {} : { reservationId: made.id }) : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), ...(String(c.nationalId ?? "").trim() ? { nationalId: latinNumber(String(c.nationalId).trim()) } : {}) }),
     };
@@ -276,7 +285,8 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
           {made && <><h3 className="grp-title">{m("fromReservation", { number: code6(made.reservationNumber) })} <small>{m("fromReservationNote")}</small></h3>
             <DataTable fixedOrder bodyId="fillRows" head={[m("item"), m("karat"), { label: m("toFill"), num: true }, { label: m("agreedPrice"), num: true }]}>{made.lines.map((ln: Row, i: number) => <Tr key={i}><Td>{ln.itemName}</Td><Td dir="ltr">{ln.karat}</Td><Td num><b>{m("filledOf", { scanned: scannedOf(ln), expected: ln.quantity })}</b></Td><Td num>{piastresText(ln.linePrice)}</Td></Tr>)}</DataTable></>}
           <h3>{m("pieces")} <small id="pcCount">{m("pieceCount", { count: lines.length })}</small></h3>
-          <div className="field" data-k="pieceCode" data-err={errs.pieceCode ? "" : undefined} style={{ maxWidth: 560 }}><label htmlFor="pc">{m("pieceCode")} *</label>
+          {fromHolds && <div className="note" id="held-note" role="status">{waitsForPieces ? <>{L("أضف قطع الحجز أولاً. ", "Add the reservation's pieces first. ")}<a href={`/${tr.locale}/sales/reservations?open=${made!.id}`}>{L("فتح الحجز", "Open the reservation")}</a></> : L("قطع الفاتورة هي القطع المحجوزة على الحجز.", "The invoice sells the pieces held on the reservation.")}</div>}
+          {!fromHolds && <div className="field" data-k="pieceCode" data-err={errs.pieceCode ? "" : undefined} style={{ maxWidth: 560 }}><label htmlFor="pc">{m("pieceCode")} *</label>
             <div style={{ display: "flex", gap: 8 }}>
               <Input id="pc" dir="ltr" list="pcl" maxLength={20} autoComplete="off" placeholder={m("pieceCodePlaceholder")} style={{ fontFamily: "monospace" }} value={pc}
                 onChange={(e) => { setPc(e.target.value); setPcErr(""); const hit = choices.some((c) => c.pieceCode === e.target.value && !c.sold && !c.inTransfer); if (hit && (e.nativeEvent as InputEvent).inputType === "insertReplacementText") addPiece(e.target.value); }}
@@ -286,12 +296,12 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
               <Button id="addPiece" onClick={() => addPiece()}><Icon name="plus" />{m("addPiece")}</Button></div>
             {scanning && <PieceScanner label={m("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); setPcErr(""); void addPiece(c); }} />}
             <div className="help">{m("pieceCodeHint")}</div>
-            <div id="pcErr">{pcErr && <ErrBox>{pcErr}{pcErr === m("pieceNoGoldPrice") && <> <NavLink href="/setup/gold-prices">{m("enterGoldPrice")}</NavLink></>}</ErrBox>}{errs.pieceCode && <ErrBox>{errs.pieceCode}</ErrBox>}</div></div>
+            <div id="pcErr">{pcErr && <ErrBox>{pcErr}{pcErr === m("pieceNoGoldPrice") && <> <NavLink href="/setup/gold-prices">{m("enterGoldPrice")}</NavLink></>}</ErrBox>}{errs.pieceCode && <ErrBox>{errs.pieceCode}</ErrBox>}</div></div>}
           <DataTable fixedOrder style={{ marginTop: 12 }} bodyId="lineRows" head={[m("lineHeading"), m("pieceCode"), m("item"), m("karat"), { label: m("weight"), num: true }, { label: m("weight24"), num: true }, { label: m("pricePerGram24"), num: true }, { label: m("goldValue"), num: true }, { label: m("makingCharge"), num: true }, { label: m("linePrice"), num: true }, ""]}>{lines.length === 0 && <Tr id="noPieces"><Td colSpan={11} className="mute" style={{ textAlign: "center", padding: "22px 12px" }}>{m("noPieces")}</Td></Tr>}{lines.map((l, i) => <FragmentRow key={l.pieceCode}>
               <Tr data-line={i}><Td className="num">{i + 1}</Td><Td dir="ltr"><b>{l.pieceCode}</b></Td><Td>{l.itemName}</Td><Td dir="ltr">{l.karat}</Td>
                 <Td className="num">{milligramsText(l.weight)}</Td><Td className="num">{l.weight24Mg === null ? "—" : milligramsText(l.weight24Mg)}</Td><Td className="num">{l.pricePerGram24 === null ? "—" : piastresText(l.pricePerGram24)}</Td>
                 <Td className="num">{piastresText(l.goldValue)}</Td><Td className="num">{piastresText(l.makingCharge)}</Td><Td className="num">{made ? m("priceByReservation") : <PriceButton tr={tr} id={l.pieceCode} price={l.linePrice} parts={partsOf(l)} open={how === l.pieceCode} onToggle={() => setHow(how === l.pieceCode ? "" : l.pieceCode)} />}</Td>
-                <Td><Button size="sm" danger data-rm={i} aria-label={m("removePiece", { code: l.pieceCode })} onClick={() => { setLines(lines.filter((_, j) => j !== i)); edited(); }}><Icon name="trash" size={15} />{m("remove")}</Button></Td></Tr>
+                <Td>{!fromHolds && <Button size="sm" danger data-rm={i} aria-label={m("removePiece", { code: l.pieceCode })} onClick={() => { setLines(lines.filter((_, j) => j !== i)); edited(); }}><Icon name="trash" size={15} />{m("remove")}</Button>}</Td></Tr>
               {how === l.pieceCode && !made && <Tr><Td colSpan={11} style={{ height: "auto", whiteSpace: "normal" }}><Breakdown tr={tr} id={l.pieceCode} parts={partsOf(l)} price={l.linePrice} /></Td></Tr>}
               {lineErr[l.pieceCode] && <Tr><Td colSpan={11}><ErrBox>{lineErr[l.pieceCode]}</ErrBox></Td></Tr>}
             </FragmentRow>)}</DataTable>
