@@ -21,8 +21,12 @@ export type DeskMessageInput = {
   payment1: string; payment2?: string;
   /** Piastres of the first method when there are two methods. */
   split?: number | bigint;
+  /** The desk's one payment list (issue #35): a line for each row, when there are two or more. Wins over payment2 / split. */
+  payments?: { name: string; amount: number | bigint }[];
   /** Discount percent on the workmanship (0 = none). */
   discount: number;
+  /** A discount typed as an amount, in piastres (0 or left out = none): printed as money, with the totals before and after it. */
+  discountAmount?: number | bigint;
   /** The first payment is Visa. */
   visa: boolean; visaPercent: number;
   /** Pounds per gram before Visa (the base) and the final price after Visa. */
@@ -52,12 +56,15 @@ export function buildDeskMessage(d: DeskMessageInput): string {
     : `سعر الجرام: ${money(d.finalPrice21)}`;
   const manual = d.manual || d.finalPrice24 != null;
   const t = d.totals;
+  const discounted = Boolean(d.discount) || Number(d.discountAmount ?? 0) > 0;
   const totals = visaTotals
-    ? `إجمالي السعر قبل ${pct}%: ${cents(t.cashTotal ?? 0)}\nإجمالي السعر بعد ${pct}%: ${cents(t.final)}${d.discount ? `\nإجمالى سعر قبل خصم (بعد ${pct}%): ${cents(t.before)}` : ""}`
-    : d.discount ? `إجمالى سعر قبل خصم: ${cents(t.before)}\nإجمالى سعر بعد خصم: ${cents(t.final)}` : `إجمالي السعر: ${cents(t.final)}`;
+    ? `إجمالي السعر قبل ${pct}%: ${cents(t.cashTotal ?? 0)}\nإجمالي السعر بعد ${pct}%: ${cents(t.final)}${discounted ? `\nإجمالى سعر قبل خصم (بعد ${pct}%): ${cents(t.before)}` : ""}`
+    : discounted ? `إجمالى سعر قبل خصم: ${cents(t.before)}\nإجمالى سعر بعد خصم: ${cents(t.final)}` : `إجمالي السعر: ${cents(t.final)}`;
   const split = Number(d.split ?? 0);
-  const payment = d.payment2
+  const payment = d.payments && d.payments.length > 1
+    ? d.payments.map((p) => `${p.name}: ${cents(Number(p.amount))} جنيه`).join("\n")
+    : d.payment2
     ? `${d.payment1}: ${cents(split)} جنيه\n${d.payment2}: ${cents(Number(t.final) - split)} جنيه`
     : `طريقة الدفع: ${d.payment1}`;
-  return `التاريخ: ${d.date}\nالفرع: ${d.branch}\nقناة البيع: ${d.channel || "قطاعي"}${silver ? " قطعة فضه" : ""}\nاسم البائع: ${d.seller}\nاسم العميل: ${d.customer}\nرقم البطاقة: ${d.nationalId}\nرقم العميل: ${d.phone}\nتفاصيل القطع: ${sell ? "بيع" : "شراء"}\n${price}${manual ? `\nسعر جرام 21 المعتمد: ${money(d.finalPrice21)}` : ""}\n${d.finalPrice24 != null ? `سعر عيار 24 المعتمد: ${money(d.finalPrice24)}\n` : ""}${sell ? "مصنعية" : "كاش باك"}: ${lines.map((l) => l.feePerGram).join(" + ")}\n${d.discount ? `خصم ${d.discount}% على المصنعية\n` : ""}الأوزان:\n${lines.map((l) => `${l.quantity} ${l.productName}${silver ? ` ${l.wrapping === "unwrapped" ? "غير مغلف" : "مغلف"}` : ""}`).join("\n")}\n${totals}\n${payment}`;
+  return `التاريخ: ${d.date}\nالفرع: ${d.branch}\nقناة البيع: ${d.channel || "قطاعي"}${silver ? " قطعة فضه" : ""}\nاسم البائع: ${d.seller}\nاسم العميل: ${d.customer}\nرقم البطاقة: ${d.nationalId}\nرقم العميل: ${d.phone}\nتفاصيل القطع: ${sell ? "بيع" : "شراء"}\n${price}${manual ? `\nسعر جرام 21 المعتمد: ${money(d.finalPrice21)}` : ""}\n${d.finalPrice24 != null ? `سعر عيار 24 المعتمد: ${money(d.finalPrice24)}\n` : ""}${sell ? "مصنعية" : "كاش باك"}: ${lines.map((l) => l.feePerGram).join(" + ")}\n${d.discount ? `خصم ${d.discount}% على المصنعية\n` : Number(d.discountAmount ?? 0) > 0 ? `خصم ${cents(Number(d.discountAmount))} جنيه على المصنعية\n` : ""}الأوزان:\n${lines.map((l) => `${l.quantity} ${l.productName}${silver ? ` ${l.wrapping === "unwrapped" ? "غير مغلف" : "مغلف"}` : ""}`).join("\n")}\n${totals}\n${payment}`;
 }

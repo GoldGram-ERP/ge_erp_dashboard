@@ -80,6 +80,8 @@ export function paymentErrors(cash: string, banks: Bank[], need: "any" | "none" 
 
 // What the backend takes: the filled rows only, amounts as piastres.
 const filled = (r: Bank) => Boolean(r.bankAccountId) && String(r.amount ?? "").trim() !== "";
+/** The rows the backend takes (an account and an amount), in order: the same filter as sentBanks, for the callers that carry more on each row. */
+export const filledBanks = <T extends Bank>(rows: readonly T[]): T[] => rows.filter(filled);
 export const sentBanks = (rows: Bank[]) => rows.flatMap((r) => (filled(r) ? [{ bankAccountId: r.bankAccountId, amount: typedPiastres(String(r.amount).trim()) }] : []));
 
 // The backend counts only the rows sent: its "bankPayments.N.x" is the Nth sent row of the form.

@@ -11,24 +11,24 @@ import { stockMapOf } from "@/lib/items";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Option, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
-import { latinNumber, milligramsText, piastresInput, piastresText, timeText, today, typedPiastres } from "@/lib/format";
+import { latinNumber, milligramsText, piastresText, timeText, today } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
 import { revealFirstError } from "@/lib/submit-guard";
 import { Section } from "@/components/ui";
 import { Link as NavLink } from "@/i18n/navigation";
-import { bankPaid, cashPaid, paymentErrors, paymentKeyOf, readDiscount, sentBanks, type Bank } from "./sales-invoices-math";
+import { bankPaid, cashPaid, paymentErrors, paymentKeyOf, readDiscount, sentBanks } from "./sales-invoices-math";
 import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscount, readPieceCode, sg, type DiscountKind } from "./sales-form-parts";
-import { PaymentBlock, TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
+import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
+import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
 import { LINES_MAX, canCompleteDraft, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
-import { DISCOUNTS, PAYMENT_NAMES, VISA_PERCENT, deskChoices, karatFits, manualPrice, messageInput, paymentChoices, quoteBody, restoreChoices, secondChoices, splitProblem, type Metal, type Operation, type Payment, type Quote, type Wrapping } from "./sales-desk-quote";
+import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
 
 const trimZeros = (t: string) => t.replace(/\.0+$|(\.\d*?)0+$/, "$1");
 const INVOICES_KEY = "gold-sales/sales-invoices";
-const banksOf = (d: Row | null): Bank[] => (d?.bankPayments ?? []).map((b: Row) => ({ bankAccountId: b.bankAccountId, amount: piastresInput(b.amount) }));
 type Scanned = { code: string; itemName: string; karat: string };
 
 export function DraftForm({ row, close, tr }: CustomFormProps) {
@@ -50,10 +50,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [operation, setOperation] = useState<Operation>("sell");
   const [metal, setMetal] = useState<Metal>("gold");
   const [wrapping, setWrapping] = useState<Wrapping>("wrapped");
-  const [payment, setPayment] = useState<Payment>("cash");
-  const [payment2, setPayment2] = useState<Payment | "">("");
-  const [split, setSplit] = useState("");
-  const [pct, setPct] = useState(0);
   const [manual, setManual] = useState({ sell: "", buy: "" });
   const [sellers, setSellers] = useState<Row[]>([]);
   const [sellerId, setSellerId] = useState("");
@@ -73,7 +69,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [cust, setCust] = useState({ customerName: "", customerPhone: "", nationalId: "" });
   const [lines, setLines] = useState<DeskLine[]>([]);
   const [cash, setCash] = useState("");
-  const [banks, setBanks] = useState<Bank[]>([]);
+  const [banks, setBanks] = useState<DeskBank[]>([]);
   const [kind, setKind] = useState<DiscountKind>("amount");
   const [disc, setDisc] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -107,10 +103,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     setDraft(x); setType(x.invoiceType ?? "sale"); setBranchId(x.branchId ?? "");
     setCust({ customerName: x.customerName ?? "", customerPhone: x.customerPhone ?? "", nationalId: x.nationalId ?? "" });
     setLines(x.lines?.length ? x.lines.map((l: Row) => ({ itemId: l.itemId, count: String(l.quantity) })) : []);
-    setCash(x.cash ? piastresInput(x.cash) : ""); setBanks(banksOf(x));
     const r = restoreChoices(x);   // the desk's choices come back exactly as saved
-    setOperation(r.operation); setMetal(r.metal); setWrapping(r.wrapping); setPayment(r.payment); setPayment2(r.payment2); setSplit(r.split); setPct(r.pct); setManual(r.manual);
-    setKind("amount"); setDisc(r.typedDiscount);
+    setCash(r.cash); setBanks(r.banks);
+    setOperation(r.operation); setMetal(r.metal); setWrapping(r.wrapping); setManual(r.manual);
+    setKind(r.kind); setDisc(r.disc);
     setDirty(false); setErrs({}); setGeneral(""); setPayRefusal(null);
   };
 
@@ -142,7 +138,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // The price of everything on the screen is the backend's quote (debounced); nothing is worked out here.
-  const form = { operation, metal, payment, discountPercent: pct, manualSell: manual.sell, manualBuy: manual.buy, wrapping, lines };
+  // One payment list and one discount (issue #35): Visa is what a Visa row says; the discount is an amount or a percent, the same one the draft saves.
+  const buy = operation === "buy";
+  const dsc = may ? readDiscount(kind, disc, Number.MAX_SAFE_INTEGER / 4) : { invalid: false, value: 0, tooBig: false, sent: undefined };
+  const payment = quotePayment(operation, banks);
+  const form = { operation, metal, payment, discount: !buy ? dsc.sent : undefined, manualSell: manual.sell, manualBuy: manual.buy, wrapping, lines };
   const body = quoteBody(form);
   const quoteKey = `${JSON.stringify(body)}|${tick}`;
   useEffect(() => {
@@ -171,13 +171,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const note = draft ? lockNote(draft as never, tr) : null;
   const readonly = Boolean(draft && note && note.state !== "editable");
   const isNew = !draft;
-  const buy = operation === "buy";
   const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
   const onDraft: Option[] = (draft?.lines ?? []).map((l: Row) => [l.itemId, `${l.itemName} · ${l.karat}`]);
   const total = draft?.totals?.total ?? 0;
   const against = plannedAgainst(total, cash, banks);
-  const dsc = may ? readDiscount(kind, disc, Number.MAX_SAFE_INTEGER / 4) : { invalid: false, value: 0, tooBig: false, sent: undefined };
 
   async function save() {
     if (saving || readonly) return;
@@ -192,14 +190,13 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     }
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
     if (dsc.invalid && !buy) e.cashDiscount = sg(tr, "cashDiscountInvalid");
-    if (payment2 && quote && splitProblem(split, quote.q.totalPiastres)) e.splitAmount = d(`desk.splitErr.${splitProblem(split, quote.q.totalPiastres)}`);
     setErrs(e);
     if (Object.keys(e).length || !c.payload || !l.payload) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     // the draft keeps the desk's choices and the methods' amounts of the quote: no quote (a typed price that is not valid, a refused price) means nothing to save
     if (!quote || manualPrice(manual.sell).invalid || manualPrice(manual.buy).invalid) { setGeneral(quoteMsg || d("desk.manualInvalid")); revealFirstError(); return; }
     setSaving(true);
     const body = {
-      ...(isNew && !isUser && branchId ? { branchId } : {}), invoiceType: type, ...c.payload, ...deskChoices(form, quote.q.totalPiastres, { payment2: payment2 || undefined, split }, l.payload),
+      ...(isNew && !isUser && branchId ? { branchId } : {}), invoiceType: type, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
       ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(banks), ...(dsc.sent && !buy ? { cashDiscount: dsc.sent } : {}),
     };
     try {
@@ -220,7 +217,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     for (const f of ((err.error.fields ?? []) as { field: string; message?: string }[])) {
       let r: RegExpExecArray | null;
       const payKey = paymentKeyOf(f.field, banks);
-      if (f.field === "cashDiscount" && f.message === "notAllowed" && pct > 0) gen = d("refused.discountNotAllowed");
+      if (f.field === "cashDiscount" && f.message === "notAllowed" && (dsc.sent?.value ?? 0) > 0) gen = d("refused.discountNotAllowed");
       else if (f.field === "payments" && v.total === undefined) gen = d("refused.visaAlone");   // Visa with planned cash or bank rows: no amounts come with this refusal
       else if (f.field === "payments") setPayRefusal({ total: Number(v.total ?? 0), paid: Number(v.paid ?? 0) });
       else if (["discountPercent", "paymentMethods", "payByVisa"].includes(f.field)) gen = d(`refused.${f.field}`);
@@ -301,9 +298,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
   const branchLabel = draft?.branchName ?? (isUser ? ownBranch : branches.find((b) => b.id === branchId)?.branchName) ?? "";
   const sellerName = draft?.employeeName ?? (isUser ? me?.name : (([u]) => u && ([u.firstName, u.familyName].filter(Boolean).join(" ") || u.username))(sellers.filter((x) => x.id === sellerId)) ?? me?.name) ?? "";
-  const second = payment2 ? payment2 : undefined;
-  const splitErr = second && quote ? splitProblem(split, quote.q.totalPiastres) : "";
-  const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), payment2: second, split })) : "";
+  const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
   const typedManual = manualPrice(operation === "sell" ? manual.sell : manual.buy);
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
@@ -323,10 +318,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const statusText = price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading");
   const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone);
   // Progressive steps (owner, 2026-11-08): the branch first, then the pieces, then the customer and saving. A saved draft, and any error, shows everything.
-  const payErr = Object.keys(errs).some((k) => k === "cash" || k === "sum" || k === "cashDiscount" || k === "splitAmount" || k.startsWith("bank"));
+  const payErr = Object.keys(errs).some((k) => k === "cash" || k === "sum" || k === "cashDiscount" || k.startsWith("bank"));
   const stepBranch = !(isNew && !isUser) || Boolean(branchId);
   const showMore = !isNew || lines.length > 0 || custErr || payErr;
-  const sel2 = secondChoices(operation, payment);
 
   return (
     <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }}>
@@ -351,14 +345,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           </div>
           <fieldset disabled={readonly || saving} className="tk-segs">
             <Seg label={d("desk.operation")} value={operation}
-              onChange={(k) => pick(() => { setOperation(k); setPayment("cash"); setPayment2(""); setSplit(""); setPct(0); setType("sale"); })}
+              onChange={(k) => pick(() => { setOperation(k); setBanks((bs) => bs.map((b) => (bankMethodChoices(k).includes(b.method) ? b : { ...b, method: "bank_transfer" }))); if (k === "buy") { setKind("amount"); setDisc(""); } setType("sale"); })}
               items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} />
             <Seg label={d("desk.metal")} value={metal} onChange={(k) => pick(() => { setMetal(k); setLines([]); })}
               items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} />
             {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); setType(k); }}
               items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} />}
           </fieldset>
-          {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setPct(0); setManual({ sell: "", buy: "" }); setSplit(""); setPayment2(""); }}>{d("desk.clear")}</Button>}
+          {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
           {!draft && <p className="tk-quiet tk-intro">{L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
           {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </header>
@@ -434,29 +428,13 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                 <dl className="tk-how">
                   {quote && <><dt>{d("desk.before")}</dt><dd id="sd-before" dir="ltr">{piastresText(quote.q.beforeDiscountPiastres)}</dd>
                     <dt>{d(buy ? "desk.cashback" : "desk.workmanship")}</dt><dd id="sd-fees" dir="ltr">{piastresText(quote.q.feeTotalPiastres)}</dd>
-                    {pct > 0 && !buy && <><dt>{d("desk.discountPercent")}</dt><dd dir="ltr">{pct}%</dd></>}
+                    {dsc.sent && !buy && <><dt>{d("desk.discountPercent")}</dt><dd dir="ltr">{dsc.sent.kind === "percent" ? `${dsc.sent.value}%` : piastresText(dsc.sent.value)}</dd></>}
                     {!buy && payment === "visa" && quote.cash && <><dt>{d("desk.pay.visa")} +{VISA_PERCENT}%</dt><dd dir="ltr">{piastresText(quote.q.totalPiastres)}</dd></>}
                     <dt>{d("desk.weight")}</dt><dd id="sd-weight" dir="ltr">{trimZeros(milligramsText(quote.q.weightMg))}</dd>
                     <dt>{d("desk.units")}</dt><dd id="sd-units" dir="ltr">{quote.q.units}</dd></>}
                 </dl>
               </Disclosure>
             </section>
-
-            <fieldset disabled={readonly || saving} className="tk-card tk-pay">
-              <div className="tk-prow"><span className="tk-quiet">{d("desk.payment")}</span>
-                <Seg label={d("desk.payment")} value={payment} onChange={(k) => pick(() => { setPayment(k); if (k === "visa" || k === payment2) { setPayment2(""); setSplit(""); } })}
-                  items={paymentChoices(operation).map((k) => ({ id: k, label: d(`desk.pay.${k}`), attrs: { "data-pay": k } }))} /></div>
-              {sel2.length > 0 && <div className="tk-prow"><span className="tk-quiet">{L("طريقة ثانية (اختياري)", "Second method (optional)")}</span>
-                <Seg label={d("desk.payment2")} value={payment2 || "none"} onChange={(k) => pick(() => setPayment2(k === "none" ? "" : (k as Payment)))}
-                  items={[{ id: "none", label: d("desk.none"), attrs: { "data-pay2": "none" } }, ...sel2.map((k) => ({ id: k as string, label: d(`desk.pay.${k}`), attrs: { "data-pay2": k } }))]} /></div>}
-              {second && <TextBox kind="money" name="splitAmount" label={d("desk.split", { method: d(`desk.pay.${payment}`) })} value={split} ltr maxLength={14}
-                error={splitErr ? d(`desk.splitErr.${splitErr}`) : undefined} onChange={(v) => { touch(); setSplit(v); }} />}
-              {second && quote && !splitErr && <div className="tk-remain"><span className="tk-quiet">{d(`desk.pay.${second}`)}</span><b dir="ltr" id="sd-remaining">{piastresText(quote.q.totalPiastres - (typedPiastres(split) ?? 0))}</b></div>}
-              {!buy && <div className="tk-prow"><span className="tk-quiet">{d("desk.discountPercent")}</span>
-                <Seg label={d("desk.discountPercent")} value={String(pct)} onChange={(k) => pick(() => setPct(Number(k)))}
-                  items={DISCOUNTS.map((n) => ({ id: String(n), label: `${n}%`, attrs: { "data-disc": String(n) } }))} /></div>}
-              {!buy && payment === "visa" && <p className="tk-quiet">{L(`الفيزا تضيف ${VISA_PERCENT}% على الإجمالي.`, `Visa adds ${VISA_PERCENT}% to the total.`)}</p>}
-            </fieldset>
 
             <section className="tk-card" id="sec-wa">
               <p id="wa-text" className="tk-bubble" dir="rtl">{waText || d("desk.waEmpty")}</p>
@@ -466,9 +444,13 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
           <div className="tk-c">
             <fieldset disabled={readonly || saving} className="tk-save">
-              {showMore && <Section id="sec-payment" collapsible title={L("الدفع والحفظ", "Payment and saving")} defaultOpen={canComplete} hasError={payErr}>
+              {showMore && <Section id="sec-payment" collapsible title={L("الدفع والحفظ", "Payment and saving")} defaultOpen hasError={payErr}>
                 <div className="tk-draft"><p className="tk-quiet">{d("plannedHelp")}</p>
-                  <PaymentBlock tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }} banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
+                  <DeskPayRows tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }}
+                    banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b as DeskBank[]); if (visaChosen(operation, b as DeskBank[])) setCash(""); setErrs(withoutPayErrors); }}
+                    accounts={accountOptions(accounts)} methods={bankMethodChoices(operation)} methodLabel={(m) => d(`desk.pay.${m}`)} blank={() => blankDeskBank(operation)}
+                    total={quote?.q.totalPiastres} paid={cashPaid(cash) + bankPaid(banks)} errors={errs} />
+                  {!buy && payment === "visa" && <p className="tk-quiet">{L(`الفيزا تضيف ${VISA_PERCENT}% على الإجمالي.`, `Visa adds ${VISA_PERCENT}% to the total.`)}</p>}
                   {!buy && <div className="field" data-k="cashDiscount"><label htmlFor="cashDiscount">{d("discount")}</label>
                     <DiscountBox tr={tr} may={may} kind={kind} disc={disc} onKind={(k) => { touch(); setKind(k); }} onDisc={(v) => { touch(); setDisc(v); }}
                       error={dsc.invalid ? <ErrBox>{sg(tr, "cashDiscountInvalid")}</ErrBox> : errs.cashDiscount ? <ErrBox>{errs.cashDiscount}</ErrBox> : null} /></div>}
