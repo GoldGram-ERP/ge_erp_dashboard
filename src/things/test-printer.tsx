@@ -5,11 +5,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Checkbox, FileInput, Input, Seg, Textarea, useConfirm } from "@/components/ui";
 import { PrinterLabelPreview, printPrinterLabels } from "@/components/ui/PrinterLabel";
+import { toast } from "@/components/engine";
+import { ApiFailure } from "@/lib/api";
+import { dateTimeText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { useAccess } from "./sales-access";
-import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
+import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
 import { readLogo } from "./printer-logo";
+import { fetchLabelSettings, resetLabelSettings, saveLabelSettings, type SavedLabelSettings } from "./label-settings";
 
 type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrTopMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct";
 
@@ -28,6 +32,10 @@ export default function Page() {
   const [message, setMessage] = useState("");
   const [saveNote, setSaveNote] = useState("");
   const [logoMsg, setLogoMsg] = useState("");
+  const [server, setServer] = useState<SavedLabelSettings | null | undefined>(undefined);   // undefined = still asking, null = could not ask
+  const [busy, setBusy] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
+  const hadLocal = useRef(true);
   const [confirm, dialog] = useConfirm();
   const fileRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
@@ -35,11 +43,23 @@ export default function Page() {
   // Read after mount (the server render has no localStorage), so the first paint is the defaults.
   useEffect(() => {
     try {
+      hadLocal.current = localStorage.getItem(STATE_KEY) !== null || localStorage.getItem(STORAGE_KEY) !== null;
       const st = loadState(localStorage.getItem(STATE_KEY), localStorage.getItem(STORAGE_KEY));
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setS(st.settings); setText(st.text); setCode(st.code); setBatch(st.batch); setBatchName(st.batchName);
     } catch { /* private mode: the defaults stay */ }
     setReady(true);
+  }, []);
+  // The look saved for the whole ERP. With nothing of its own in this browser the page starts from it (and only while the person has not changed anything yet).
+  useEffect(() => {
+    let live = true;
+    fetchLabelSettings().then((r) => {
+      if (!live) return;
+      setServer(r);
+      const p = r.profile;
+      if (p && !hadLocal.current) setS((old) => (sameProfile(profileFromSettings(old), profileFromSettings(defaultState().settings)) ? settingsFromProfile(p) : old));
+    }, () => { if (live) setServer(null); });
+    return () => { live = false; };
   }, []);
   // Everything is saved about 300 ms after the last change. A full or blocked storage never breaks the page: one plain line says so.
   useEffect(() => {
@@ -92,6 +112,22 @@ export default function Page() {
     try { localStorage.removeItem(STATE_KEY); localStorage.removeItem(STORAGE_KEY); } catch { /* blocked: nothing stored to clear */ }
     setS(d.settings); setText(d.text); setCode(d.code); setBatch(d.batch); setBatchName(d.batchName); setDraft({}); setMessage(""); setLogoMsg("");
   }
+  const errText = (e: unknown) => !(e instanceof ApiFailure) ? m("labelErrFail") : e.unreachable ? m("labelErrOffline") : e.status === 403 ? m("labelErrForbidden") : e.status === 413 ? m("labelErrTooBig") : m("labelErrFail");
+  async function saveForAll() {
+    setBusy(true); setSaveErr("");
+    try { setServer(await saveLabelSettings(profileFromSettings(s))); toast(m("labelSavedToast")); } catch (e) { setSaveErr(errText(e)); }
+    setBusy(false);
+  }
+  async function backToFactory() {
+    if (!(await confirm({ title: m("labelFactoryTitle"), text: m("labelFactoryText"), ok: m("labelFactory"), cancel: t("common", "cancel"), danger: true }))) return;
+    setBusy(true); setSaveErr("");
+    try { await resetLabelSettings(); setServer({ profile: null, updatedAt: null, updatedByName: null }); toast(m("labelFactoryToast")); } catch (e) { setSaveErr(errText(e)); }
+    setBusy(false);
+  }
+  const saved = server?.profile ?? null;
+  const status = server === undefined ? "" : saveErr ? saveErr : server === null ? m("labelLoadFail") : !saved ? m("labelNothing")
+    : !sameProfile(saved, profileFromSettings(s)) ? m("labelChanged")
+    : server?.updatedByName ? m("labelSavedBy", { name: server.updatedByName, when: dateTimeText(server.updatedAt, tr.locale) }) : m("labelSavedOn", { when: dateTimeText(server?.updatedAt, tr.locale) });
   const clearBatch = () => { setBatch([]); setBatchName(""); setMessage(""); };
   const print = () => printPrinterLabels(s, toPrint, { title: m("windowTitle"), print: t("common", "print"), popup: m("popup"), rtl: tr.isAr });
 
@@ -246,6 +282,11 @@ export default function Page() {
             {!toPrint.length && <span className="help">{m("nothing")}</span>}
           </div>
         </div>
+      </div>
+      <div className="formbar" id="tp-save-bar">
+        <Button variant="primary" id="tp-save-all" disabled={busy || server === undefined} onClick={saveForAll}>{m("labelSave")}</Button>
+        <Button danger disabled={busy || !saved} onClick={backToFactory}>{m("labelFactory")}</Button>
+        {status && <span role="status" id="tp-save-status">{status}</span>}
       </div>
     </div>
   );

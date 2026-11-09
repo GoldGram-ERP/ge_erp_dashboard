@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Test printer: a Save button applies its settings (size, rotation, spacing, QR, text and logo) to every QR label the ERP prints; Back to factory returns to the old labels.",
+    "ar": "اختبار الطابعة: زرار حفظ بيطبّق الإعدادات (المقاس والتدوير والمسافات والـ QR والنص واللوجو) على كل ليبل فيه QR بيطبعه النظام؛ وزرار رجّع زي المصنع بيرجّع الليبلات زي الأول."
+   }
+  ]
+ },
+ {
   "version": "1.0.68",
   "date": "2026-11-09",
   "changes": [

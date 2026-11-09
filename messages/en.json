@@ -3318,6 +3318,21 @@
   "resetAllText": "The settings, texts, extra lines, logo and imported Excel labels go back to the start, and what is saved in this browser is cleared.",
   "saveFail": "Could not save in this browser",
   "batchNotSaved": "The imported Excel labels are too big to save in this browser. They stay until you reload the page.",
-  "windowTitle": "Test printer labels"
+  "windowTitle": "Test printer labels",
+  "labelSave": "Save for the whole ERP",
+  "labelFactory": "Back to factory",
+  "labelFactoryTitle": "Back to factory?",
+  "labelFactoryText": "The saved look is removed for the whole ERP. Labels print as they did before. This page keeps what you have now.",
+  "labelNothing": "Nothing saved yet: labels print as before",
+  "labelChanged": "Changed since the last save",
+  "labelSavedBy": "Saved by {name} on {when}",
+  "labelSavedOn": "Saved on {when}",
+  "labelSavedToast": "Saved. Every QR label in the ERP now prints with these settings.",
+  "labelFactoryToast": "Back to factory. Labels print as before.",
+  "labelLoadFail": "Could not read what is saved for the ERP",
+  "labelErrOffline": "Could not reach the server. Check the connection and try again.",
+  "labelErrForbidden": "Only an Admin can change this.",
+  "labelErrTooBig": "The settings are too big to save. Use a smaller logo.",
+  "labelErrFail": "Could not save. Try again."
  }
 }
