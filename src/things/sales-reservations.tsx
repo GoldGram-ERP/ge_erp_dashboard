@@ -27,6 +27,8 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
   const categorySpec = { path: "/categories", value: "id", label: "categoryName", query: { pageSize: undefined } };
   const itemSpec = { path: "/items", value: "id", label: "itemName", query: { pageSize: undefined } };
   const badge = (cls: string, label: string) => <span className={`st ${cls}`}><i />{label}</span>;
+  // Pieces held out of pieces asked for. An invoiced reservation sold its pieces (its holds closed when the invoice took them): all of them.
+  const piecesText = (r: Row) => (r.salesInvoiceId ? `${r.piecesTotal} / ${r.piecesTotal}` : `${r.piecesHeld} / ${r.piecesTotal}`);
 
   const from = () => ({ name: "fromDate", label: rr("fromDate"), type: "date" as const });
   const to = () => ({ name: "toDate", label: rr("toDate"), type: "date" as const, validate: (v: any, all: any) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) });
@@ -50,7 +52,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       { key: "customerName", label: si("customerName") },
       { key: "customerPhone", label: si("customerPhone") },
       { key: "quantity", label: si("lineCount"), type: "int", get: (r) => r.totals.quantity },
-      { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{`${r.piecesHeld} / ${r.piecesTotal}`}</Ltr> },
+      { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{piecesText(r)}</Ltr> },
       { key: "total", label: si("total"), type: "money", get: (r) => r.totals.total },
       { key: "paid", label: m("paid"), type: "money", get: (r) => r.totals.paid },
     ],
@@ -70,11 +72,36 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       { key: "date", label: m("date"), type: "date" },
       { key: "customerName", label: si("customerName") },
       { key: "customerPhone", label: si("customerPhone") },
-      { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{`${r.piecesHeld} / ${r.piecesTotal}`}</Ltr> },
+      { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{piecesText(r)}</Ltr> },
       { key: "total", label: si("total"), type: "money", get: (r) => r.totals.total },
     ],
     onRow: (row, h) => h.openForm("assignPieces", row),
   };
+
+  // The life of a reservation (tabs): without pieces -> ready for the invoice (pieces complete, no invoice yet) -> invoiced. A click opens the record,
+  // whose "إنشاء فاتورة" action shows once the pieces are complete.
+  const lifeView = (id: string, label: string, query: Record<string, string>, extra: Column[] = []): ViewConfig => ({
+    id, label, keys: ["gold-sales/reservations-list"],
+    endpoint: "/reservations", rowKey: "id", query,
+    search: { param: "search", placeholder: m("searchPlaceholder") },
+    chips: [{ id: "all", label: ALL }],
+    filters: historyView.filters,
+    paging: { sizeParam: null, sizes: [20], size: 20 },
+    columns: [
+      { key: "reservationNumber", label: m("reservationNumber"), render: (r) => <><Ltr>{code6(r.reservationNumber)}</Ltr>{r.salesInvoiceId ? <> {badge("info", m("invoicedBadge"))}</> : null}</> },
+      { key: "date", label: m("date"), type: "date" },
+      { key: "customerName", label: si("customerName") },
+      { key: "customerPhone", label: si("customerPhone") },
+      ...extra,
+      { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{piecesText(r)}</Ltr> },
+      { key: "total", label: si("total"), type: "money", get: (r) => r.totals.total },
+      { key: "paid", label: m("paid"), type: "money", get: (r) => r.totals.paid },
+    ],
+    onRow: (row, h) => h.open(row),
+  });
+  const readyView = lifeView("ready-for-invoice", L("حجوزات جاهزة للفاتورة", "Ready for the invoice"), { readyForInvoice: "true" });
+  const invoicedView = lifeView("invoiced", L("حجوزات صدرت لها فاتورة", "Invoiced reservations"), { invoiced: "true" },
+    [{ key: "salesInvoiceNumber", label: m("invoicedBy"), render: (r) => <Ltr>{r.salesInvoiceNumber === null || r.salesInvoiceNumber === undefined ? "" : code6(r.salesInvoiceNumber)}</Ltr> }]);
 
   // The two reports: one row per reservation line.
   const reportView = (id: string, keyName: string, endpoint: string, own: (c: (key: string, type: Column["type"], get: (r: Row) => unknown) => Column) => Column): ViewConfig => {
@@ -117,6 +144,8 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     views: [
       historyView,
       needsPiecesView,
+      readyView,
+      invoicedView,
       reportView("reserved-pieces", "reservedPieces", "/reports/reserved-pieces", (c) => c("daysReserved", "int", (r) => r.daysReserved)),
       reportView("cancelled-reservations", "cancelledReservations", "/reports/cancelled-reservations", (c) => c("cancelledDate", "date", (r) => r.cancelledDate)),
     ].map((v) => (v.onRow === undefined ? { ...v, onRow: (row: Row, h: { open: (r: Row) => void }) => h.open(row) } : v)),
