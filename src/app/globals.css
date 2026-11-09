@@ -1202,7 +1202,8 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .cb-mono{font-family:ui-monospace,Menlo,Consolas,monospace}
 .cb-pos{z-index:60}
 .cb-pop{--cb-shadow:0 0 0 1px rgba(43,37,25,.1),0 12px 32px rgba(43,37,25,.16);min-width:var(--anchor-width);width:max-content;max-width:min(27.5rem,calc(100vw - 1rem));box-sizing:border-box;padding:.25rem;background:var(--surface);color:var(--ink);border-radius:.75rem;box-shadow:var(--cb-shadow);outline:0}
-.cb-list{max-height:min(15rem,var(--available-height,15rem));overflow:auto;overscroll-behavior:contain}
+.cb-list{max-height:min(15rem,var(--available-height,15rem));overflow:auto;overscroll-behavior:contain;scrollbar-width:none}   /* no visible scrollbar: the rows still scroll by wheel, touch and arrow keys */
+.cb-list::-webkit-scrollbar{display:none}
 .cb-item{display:flex;align-items:baseline;gap:.625rem;min-height:1.875rem;padding:.3125rem .5rem;border-radius:.5rem;font-size:.8125rem;line-height:1.5;cursor:default;user-select:none}
 .cb-item[data-highlighted]{background:var(--gold-wash)}
 .cb-text{flex:none;font-weight:600;font-variant-numeric:tabular-nums}

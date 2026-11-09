@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "The piece code list no longer shows a scrollbar; it still scrolls with the mouse wheel, touch and arrow keys.",
+    "ar": "قايمة كود القطعة مبقاش فيها شريط تمرير ظاهر، ولسه بتتحرك بعجلة الماوس واللمس وأسهم الكيبورد.",
+    "route": "/sales/invoices"
+   }
+  ]
+ },
+ {
   "version": "1.0.84",
   "date": "2026-11-09",
   "changes": [
