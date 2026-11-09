@@ -3,15 +3,16 @@
 // One sold piece per return; the refund limit is the server's (409 refundAboveLinePrice). Ported from sales-returns-form.js.
 // With a `row` (issue #175) it is the EDIT of that return: the branch, date and piece are shown and stay; only how the refund is paid changes (PUT).
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
-import { piastresInput, today, typedPiastres } from "@/lib/format";
+import { milligramsText, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { backendFieldErrors } from "@/lib/fields";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { Icon, toast } from "@/components/engine";
 import { Button, Combobox, Input } from "@/components/ui";
-import { paymentErrors, paymentKeyOf, sentBanks, type Bank } from "./sales-invoices-math";
+import { bankPaid, cashPaid, paymentErrors, paymentKeyOf, sentBanks, type Bank } from "./sales-invoices-math";
 import { revealFirstError } from "@/lib/submit-guard";
 import { Choice, ErrBox, allPages, code6, fe, pieceChoices, readPieceCode, sg } from "./sales-form-parts";
 import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
@@ -60,6 +61,13 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
   }, [piece, branchId]);
 
   const pc = readPieceCode(tr, piece);
+  // The piece typed, read with its buy price per gram, its cashback and what the shop pays back for it (the server works the number out: (buy price + cashback) x weight).
+  const [lookCode, setLookCode] = useState("");
+  useEffect(() => { const h = setTimeout(() => setLookCode(pc.code ?? ""), 300); return () => clearTimeout(h); }, [pc.code]);
+  const look = useQuery({ queryKey: ["piece-look-up", lookCode], enabled: Boolean(lookCode), retry: false, staleTime: 30_000, queryFn: () => api("/piece-look-up", { query: { pieceCode: lookCode } }) as Promise<Row> });
+  const found = look.data?.kind === "piece" ? look.data : null;
+  const returnTotal: number | null = found && typeof found.returnTotal === "number" ? found.returnTotal : null;
+  const paidNow = cashPaid(cash) + bankPaid(banks);
   const refundShown = Boolean(branchId) && DAY.test(date) && piece.trim() !== "" && !pc.error;   // an edit has all three already
   const payCodes = paymentErrors(cash, banks, "any");
   const may = refundShown && !Object.keys(payCodes).length && !saving;
@@ -133,10 +141,29 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
         </div>
         )}
       </div>
+      {refundShown && lookCode && (
+        <div className="card" id="sec-piece"><h3>{L("تفاصيل القطعة", "Piece details")}</h3>
+          {look.isPending && <p className="help" role="status">{t("common", "loading")}</p>}
+          {look.isError && <p className="help" id="piece-unknown">{L("لا توجد قطعة بهذا الكود.", "No piece has this code.")}</p>}
+          {found && <div id="pieceDetails">
+            <div className="kv"><span>{L("الاسم", "Name")}</span><span>{found.itemName}</span></div>
+            <div className="kv"><span>{L("العيار", "Karat")}</span><span dir="ltr">{found.karat}</span></div>
+            <div className="kv"><span>{L("الوزن (جم)", "Weight (g)")}</span><span dir="ltr">{milligramsText(found.weight)}</span></div>
+            <div className="kv"><span>{L("سعر الشراء للجرام", "Buy price per gram")}</span><span dir="ltr">{found.buyPricePerGram === null ? "—" : piastresText(found.buyPricePerGram)}</span></div>
+            <div className="kv"><span>{L("الكاش باك للجرام", "Cashback per gram")}</span><span dir="ltr">{found.cashbackPerGram === null ? "—" : piastresText(found.cashbackPerGram)}</span></div>
+            <div className="kv"><b>{rt("refundTotal")}</b><b dir="ltr" id="piece-total">{returnTotal === null ? "—" : piastresText(returnTotal)}</b></div>
+            {found.cashbackPerGram === null && <p className="help">{L("لا يوجد كاش باك محفوظ لهذا الصنف، فالإجمالي بدونه.", "This item has no cashback saved, so the total is without it.")}</p>}
+            {found.buyPricePerGram === null && <p className="help">{L("لا يوجد سعر شراء لهذا العيار في أسعار اليوم.", "There is no buy price for this karat in today's prices.")}</p>}
+            {!found.sold && <div className="note warn" role="alert">{L("هذه القطعة لم تُبع، فلا يمكن إرجاعها.", "This piece was not sold, so it cannot be returned.")}</div>}
+          </div>}
+        </div>
+      )}
       {refundShown && (
         <div className="card" id="sec-refund"><h3>{rt("refund")}</h3>
-          <PaymentBlock tr={tr} cashName="cashRefund" cashLabel={rt("cashRefund")} sumLabel={rt("refundTotal")} cash={cash} onCash={(v) => { edited(); setCash(v); setErrs(withoutPayErrors); }}
+          {found && <div className="pay-sum" id="ret-total"><span className="help">{rt("refundTotal")}</span><b dir="ltr" data-summary>{returnTotal === null ? "—" : piastresText(returnTotal)}</b></div>}
+          <PaymentBlock tr={tr} cashName="cashRefund" cashLabel={rt("cashRefund")} sumLabel={L("المدفوع", "Paid")} cash={cash} onCash={(v) => { edited(); setCash(v); setErrs(withoutPayErrors); }}
             banks={banks} onBanks={(b) => { edited(); setBanks(b); setErrs(withoutPayErrors); }} accounts={accountOptions(accounts)} errors={errs} />
+          {returnTotal !== null && <div className="pay-sum" id="ret-left"><span className="help">{returnTotal - paidNow < 0 ? L("زيادة", "Over") : L("المتبقي", "Remaining")}</span><b dir="ltr" data-summary>{piastresText(Math.abs(returnTotal - paidNow))}</b></div>}
         </div>
       )}
       {refundShown && (
