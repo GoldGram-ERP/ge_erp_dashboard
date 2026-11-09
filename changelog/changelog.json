@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Report a bug: the form opens as a panel on the page, no longer squeezed into the bottom of the sidebar.",
+    "ar": "ابلّغ عن مشكلة: النموذج بيتفتح كلوحة في الصفحة ومش محشور تحت في القايمة الجانبية."
+   }
+  ]
+ },
+ {
   "version": "1.0.71",
   "date": "2026-11-09",
   "changes": [

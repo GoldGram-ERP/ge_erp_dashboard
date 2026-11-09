@@ -3,6 +3,7 @@
 // clipboard. The reporter gets a thank-you and nothing else: no list of their reports, no status, no follow-up (owner, 2026-11-09).
 // The server records who they are, their branch and session; here we add the screen, the version and the last errors the screen got.
 import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button, FileInput, Sheet } from "@/components/ui";
 import { ChromeButton } from "@/components/ui/Button";
 import { toast } from "@/components/engine";
@@ -25,7 +26,8 @@ export function ReportBug() {
   return (
     <>
       <ChromeButton title={L("ابلّغ عن مشكلة", "Report a bug")} aria-label={L("ابلّغ عن مشكلة", "Report a bug")} onClick={() => setOpen(true)}><Icon name="alert" /></ChromeButton>
-      {open && <ReportSheet onClose={() => setOpen(false)} />}
+      {/* The sheet is a side panel placed against .main (position:relative), like every other sheet: mounted here in the sidebar it would anchor to the footer. */}
+      {open && (() => { const sheet = <ReportSheet onClose={() => setOpen(false)} />; const host = document.querySelector<HTMLElement>(".main"); return host ? createPortal(sheet, host) : sheet; })()}
     </>
   );
 }
