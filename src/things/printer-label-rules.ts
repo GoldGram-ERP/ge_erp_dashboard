@@ -82,6 +82,18 @@ function cleanOrder(r: Record<string, unknown>): Part[] {
   const base: Part[] = r.swap === true ? ["qr", "text"] : ["text", "qr"];
   return r.logoPlacement === "middle" ? [base[0], "logo", base[1]] : r.logoPlacement === "right" ? [...base, "logo"] : ["logo", ...base];
 }
+/** Free drag, fixed places: the place a dragged part snaps to is the place whose centre is nearest to where the part's centre now is.
+ *  centres = the parts' centres along the row (or column) in order, from = the dragged one, delta = how far it moved along it. */
+export function nearestPlace(centres: number[], from: number, delta: number): number {
+  const at = centres[from] + delta;
+  return centres.reduce((best, c, i) => (Math.abs(c - at) < Math.abs(centres[best] - at) ? i : best), from);
+}
+/** Resizing a part on the canvas: the part's size at pick-up times ratio, snapped to clean steps (text 0.5 pt, mm 0.5, % 1). start.qrMm = the QR's drawn size
+ *  in mm at pick-up (when its size is automatic). The result goes through clampSettings like every other change. */
+export function resizePatch(part: Part, start: { fontPt: number; logoMm: number; logoPct: number; qrMm: number }, inside: boolean, ratio: number): Partial<Settings> {
+  const snap = (v: number, step: number) => Math.max(step, Math.round((v * ratio) / step) * step);
+  return part === "text" ? { fontPt: snap(start.fontPt, 0.5) } : part === "qr" ? { qrSizeMm: snap(start.qrMm, 0.5) } : inside ? { logoPct: snap(start.logoPct, 1) } : { logoMm: snap(start.logoMm, 0.5) };
+}
 /** The parts that are drawn, in their places: the logo only when it is a part of its own. */
 export const partsShown = (s: Pick<Settings, "order" | "logo" | "logoPlacement">): Part[] => s.order.filter((p) => p !== "logo" || (!!s.logo && s.logoPlacement === "beside"));
 /** Put `part` at place `to` of the drawn parts; the part that was there takes its old place (never two in one place). */
@@ -235,7 +247,7 @@ export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css; group: C
   const self = s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center";
   const fixed = s.qrSizeMm > 0;
   return {
-    box: { display: "flex", flexDirection: dir, alignItems: stacked ? "stretch" : "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
+    box: { display: "flex", flexDirection: dir, alignItems: "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
     text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${s.fontPt}pt`, lineHeight: 1.15, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%" },
     qr: {
       display: "block", minWidth: 0, minHeight: 0, marginTop: mm(s.qrTopMm),
@@ -267,10 +279,10 @@ export function labelList(items: LabelItem[], copies: number): LabelItem[] {
 
 export const describe = (s: Settings): { w: number; h: number; orientation: Orientation } => ({ ...pageSize(s), orientation: s.orientation });
 
-const PX_PER_MM = 96 / 25.4;
-/** How much to enlarge or shrink a label (mm sized) to fit a preview box of boxW x boxH px, never above 4x. */
+export const PX_PER_MM = 96 / 25.4;
+/** How much to enlarge or shrink a label (mm sized) to fit a preview box of boxW x boxH px, never above 8x (a 38 mm roll label still fills the canvas). */
 export const previewZoom = (p: { w: number; h: number }, boxW: number, boxH: number): number =>
-  Math.min(4, boxW / (p.w * PX_PER_MM), boxH / (p.h * PX_PER_MM));
+  Math.max(0, Math.min(8, boxW / (p.w * PX_PER_MM), boxH / (p.h * PX_PER_MM)));
 
 // ───── The saved profile: the Test printer's look, applied to every QR label the ERP prints (owner, 2026-11-09) ─────
 /** Only the print styling of the page's Settings. Never the test content (free text, QR content, Excel batch, copies) and never the texts of the extra lines (their size, alignment and weight are kept). */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
 import { labelGramsText } from "@/lib/format";
-import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -118,11 +118,38 @@ describe("layout direction and order", () => {
   });
 });
 
+describe("free drag, fixed places", () => {
+  it("a dragged part snaps to the place whose centre is nearest, staying put until it is nearer another", () => {
+    const c = [50, 150, 250];
+    expect(nearestPlace(c, 0, 0)).toBe(0);
+    expect(nearestPlace(c, 0, 49)).toBe(0);
+    expect(nearestPlace(c, 0, 51)).toBe(1);
+    expect(nearestPlace(c, 0, 400)).toBe(2);
+    expect(nearestPlace(c, 2, -120)).toBe(1);
+    expect(nearestPlace(c, 2, -500)).toBe(0);
+    expect(nearestPlace([50, 150], 1, -40)).toBe(1);
+  });
+});
+
+describe("resize on the canvas", () => {
+  const st = { fontPt: 10, logoMm: 8, logoPct: 20, qrMm: 11.3 };
+  it("scales the picked part from its size at pick-up and snaps to clean steps", () => {
+    expect(resizePatch("text", st, false, 1.26)).toEqual({ fontPt: 12.5 });
+    expect(resizePatch("qr", st, false, 1)).toEqual({ qrSizeMm: 11.5 });
+    expect(resizePatch("logo", st, false, 0.5)).toEqual({ logoMm: 4 });
+    expect(resizePatch("logo", st, true, 1.13)).toEqual({ logoPct: 23 });
+  });
+  it("never reaches zero, however far it is shrunk", () => {
+    expect(resizePatch("text", st, false, 0)).toEqual({ fontPt: 0.5 });
+    expect(resizePatch("qr", st, false, -3)).toEqual({ qrSizeMm: 0.5 });
+  });
+});
+
 describe("preview", () => {
-  it("fits the box on the tighter side and never passes 4x", () => {
+  it("fits the box on the tighter side and never passes 8x", () => {
     const z = previewZoom({ w: 100, h: 10 }, 360, 300);
     expect(z).toBeCloseTo(360 / (100 * (96 / 25.4)), 5);
-    expect(previewZoom({ w: 10, h: 10 }, 5000, 5000)).toBe(4);
+    expect(previewZoom({ w: 10, h: 10 }, 5000, 5000)).toBe(8);
   });
 });
 

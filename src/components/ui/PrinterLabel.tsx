@@ -3,45 +3,52 @@
 // Like label-print.tsx, printing happens in its OWN window that holds only the labels: the ERP page (sidebar, header) is never printed,
 // and the @page rule exists only in that window, so it never touches any other screen.
 import { renderToStaticMarkup } from "react-dom/server";
-import { Fragment, useMemo, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { esc } from "@/lib/format";
 import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, effectiveLevel, frameCss, layoutCss, lineCss, logoCss, logoInside, pageSize, PARTS, partsShown, placePart, previewZoom, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
+import { buildLines, effectiveLevel, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
 
-/** The preview's editing: drag a part onto another (or tap one, then the other) to swap their places. Never set for a printed label. */
-export type LabelEdit = { selected: Part | null; onPick: (p: Part) => void; onDrop: (from: Part, to: Part) => void };
+/** The preview's editing (never set for a printed label). px = one screen pixel in the label's own units (1 / zoom), so rings stay 2 px on screen.
+ *  held = the part being dragged and how far (screen px); target = the place it will snap to. */
+export type LabelPick = {
+  selected: Part | null; px: number; held: { part: Part; dx: number; dy: number } | null; target: Part | null;
+  down: (e: ReactPointerEvent<Element>, p: Part) => void; move: (e: ReactPointerEvent<Element>) => void; up: () => void; cancel: () => void;
+};
 
 /** One label at its real size in mm (the preview zooms it with CSS). */
-export function PrinterLabel({ s, item, edit }: { s: Settings; item: LabelItem; edit?: LabelEdit }) {
+export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; pick?: LabelPick }) {
   const { outer, inner } = frameCss(s), lay = layoutCss(s);
   const level = effectiveLevel(s), shape = useMemo(() => (item.code ? qrShape(item.code, level) : null), [item.code, level]);
   const inside = shape && logoInside(s) ? qrLogoBox(shape.size, QUIET, s.logoPct) : null;
   const lines = buildLines(s, item), underText = s.linesPlacement === "afterText";
-  // Editing marks: a dashed frame on each part (solid on the picked one) and the drag and tap handlers.
-  const grab = (part: Part) => edit ? {
-    draggable: true,
-    onDragStart: (e: DragEvent<HTMLElement>) => { e.dataTransfer.setData("text/plain", part); e.dataTransfer.effectAllowed = "move"; },
-    onDragOver: (e: DragEvent<HTMLElement>) => e.preventDefault(),
-    onDrop: (e: DragEvent<HTMLElement>) => { e.preventDefault(); const from = e.dataTransfer.getData("text/plain") as Part; if (PARTS.includes(from)) edit.onDrop(from, part); },
-    onClick: () => edit.onPick(part),
-  } : {};
-  const mark = (part: Part): Css => edit ? { cursor: "grab", outline: `0.3mm ${edit.selected === part ? "solid" : "dashed"} #7a5710`, outlineOffset: "-0.15mm" } : {};
-  const textEl = item.text && <p dir="auto" style={{ ...(lines.length && underText ? { ...lay.text, flex: "none" } : lay.text), ...(lines.length && underText ? {} : mark("text")) } as CSSProperties} {...(lines.length && underText ? {} : grab("text"))}>{item.text}</p>;
+  const grouped = (part: Part) => lines.length > 0 && (part === "text" ? underText : !underText);
+  // Editing: each part can be grabbed (touch-action none so a finger drags instead of scrolling). The held part follows the pointer 1:1;
+  // the place it will snap to gets a dashed ring, the picked part a solid one (both 2 screen px).
+  const tap = (part: Part) => pick ? { "data-part": part, onPointerDown: (e: ReactPointerEvent<Element>) => pick.down(e, part), onPointerMove: pick.move, onPointerUp: pick.up, onPointerCancel: pick.cancel } : {};
+  const ring = (part: Part): Css => {
+    if (!pick) return {};
+    const px = pick.px, held = pick.held?.part === part ? pick.held : null;
+    const line = held ? null : pick.target === part ? "dashed" : pick.selected === part && !pick.held ? "solid" : null;
+    return {
+      cursor: held ? "grabbing" : "grab", touchAction: "none", userSelect: "none",
+      ...(line ? { outline: `${2 * px}px ${line} #7a5710`, outlineOffset: `${2 * px}px`, borderRadius: `${2 * px}px` } : {}),
+      ...(held ? { transform: `translate(${held.dx * px}px, ${held.dy * px}px)`, opacity: 0.85, position: "relative", zIndex: 2, boxShadow: `0 ${4 * px}px ${14 * px}px rgba(0,0,0,.25)` } : {}),
+    };
+  };
+  const textEl = item.text && <p dir="auto" style={{ ...(grouped("text") ? { ...lay.text, flex: "none" } : { ...lay.text, ...ring("text") }) } as CSSProperties} {...(grouped("text") ? {} : tap("text"))}>{item.text}</p>;
   const lineEls = lines.map((l, i) => <p key={i} dir="auto" style={lineCss(s, l) as CSSProperties}>{l.text}</p>);
-  const svg = shape && (
-    <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={(edit ? { display: "block", width: "100%", height: "100%" } : lay.qr) as CSSProperties}>
+  const qrEl = shape && (
+    <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={{ ...lay.qr, ...(grouped("qr") ? {} : ring("qr")) } as CSSProperties} {...(grouped("qr") ? {} : tap("qr"))}>
       <path d={shape.d} fill="#000" />
       {inside && <><rect x={inside.backX} y={inside.backX} width={inside.backSide} height={inside.backSide} fill="#fff" /><image href={s.logo} x={inside.x} y={inside.y} width={inside.side} height={inside.side} preserveAspectRatio="xMidYMid meet" /></>}
     </svg>
   );
-  // An svg cannot be dragged on its own: while editing it sits in a box that takes its place in the row.
-  const qrEl = svg && (edit && !(lines.length && !underText) ? <div style={{ ...lay.qr, ...mark("qr") } as CSSProperties} {...grab("qr")}>{svg}</div> : svg);
   // Every part sits where `order` puts it; the extra lines stay glued to the text or to the QR.
   const blocks: Record<Part, ReactNode> = {
-    text: lines.length && underText ? <div style={{ ...lay.group, ...mark("text") } as CSSProperties} {...grab("text")}>{textEl}{lineEls}</div> : textEl,
-    qr: lines.length && !underText ? <div style={{ ...lay.group, ...mark("qr") } as CSSProperties} {...grab("qr")}>{qrEl}{lineEls}</div> : qrEl,
-    logo: <img src={s.logo} alt="" style={{ ...logoCss(s), ...mark("logo") } as CSSProperties} {...grab("logo")} />,
+    text: grouped("text") ? <div style={{ ...lay.group, ...ring("text") } as CSSProperties} {...tap("text")}>{textEl}{lineEls}</div> : textEl,
+    qr: grouped("qr") ? <div style={{ ...lay.group, ...ring("qr") } as CSSProperties} {...tap("qr")}>{qrEl}{lineEls}</div> : qrEl,
+    logo: <img src={s.logo} alt="" draggable={false} style={{ ...logoCss(s), ...ring("logo") } as CSSProperties} {...tap("logo")} />,
   };
   return (
     <div data-printer-label style={outer as CSSProperties}>
@@ -52,12 +59,76 @@ export function PrinterLabel({ s, item, edit }: { s: Settings; item: LabelItem; 
   );
 }
 
-/** A label on screen inside a box of boxW x boxH px, with the page edge drawn. With onOrder, its parts can be dragged (or tapped) into new places. */
-export function PrinterLabelPreview({ s, item, boxW, boxH, onOrder }: { s: Settings; item: LabelItem; boxW: number; boxH: number; onOrder?: (order: Part[]) => void }) {
-  const [picked, setPicked] = useState<Part | null>(null);
-  const move = (from: Part, to: Part) => { if (from !== to) onOrder?.(placePart(s, from, partsShown(s).indexOf(to))); setPicked(null); };
-  const edit: LabelEdit | undefined = onOrder ? { selected: picked, onPick: (p) => (picked ? move(picked, p) : setPicked(p)), onDrop: move } : undefined;
-  return <div className="tp-paper" style={{ zoom: previewZoom(pageSize(s), boxW, boxH) }}><PrinterLabel s={s} item={item} edit={edit} /></div>;
+/** A label on screen, zoomed to fit. With boxW/boxH it fits that fixed box (thumbnails); without, it fills its parent and follows its size.
+ *  With onOrder: drag any part freely; on release it snaps to the nearest place and swaps with the part there. A tap (no drag) picks the part. */
+export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPick, onOrder, onResize }: {
+  s: Settings; item: LabelItem; boxW?: number; boxH?: number; selected?: Part | null; onPick?: (p: Part) => void; onOrder?: (order: Part[]) => void;
+  onResize?: (patch: Partial<Settings>) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null), wrap = useRef<HTMLDivElement>(null);
+  // The resize handle sits on the picked part's bottom-right corner, in screen px (measured after every render that can move it).
+  const [frame, setFrame] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [sizing, setSizing] = useState<{ x: number; y: number; w: number; h: number; start: Parameters<typeof resizePatch>[1] } | null>(null);
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const [drag, setDrag] = useState<{ part: Part; from: number; x: number; y: number; dx: number; dy: number; moved: boolean; centres: number[] } | null>(null);
+  useEffect(() => {
+    const host = wrap.current?.parentElement;
+    if (boxW || !host) return;
+    const ro = new ResizeObserver(([e]) => setBox({ w: e.contentRect.width, h: e.contentRect.height }));
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, [boxW]);
+  const zoom = previewZoom(pageSize(s), boxW ?? box?.w ?? 0, boxH ?? box?.h ?? 0) || 1;
+  const shown = partsShown(s), vertical = s.direction === "stacked";
+  const to = drag?.moved ? nearestPlace(drag.centres, drag.from, vertical ? drag.dy : drag.dx) : -1;
+  const pick: LabelPick | undefined = onPick || onOrder ? {
+    selected, px: 1 / zoom, held: drag?.moved ? { part: drag.part, dx: drag.dx, dy: drag.dy } : null, target: to >= 0 && to !== drag?.from ? shown[to] : null,
+    down: (e, part) => {
+      if (e.button !== 0) return;
+      // The places are where the parts are now, measured on screen once at pick-up.
+      const els = [...(ref.current?.querySelectorAll<HTMLElement>("[data-part]") ?? [])];
+      const centres = shown.map((p) => { const r = els.find((el) => el.dataset.part === p)?.getBoundingClientRect(); return r ? (vertical ? r.top + r.height / 2 : r.left + r.width / 2) : 0; });
+      e.currentTarget.setPointerCapture(e.pointerId);
+      setDrag({ part, from: shown.indexOf(part), x: e.clientX, y: e.clientY, dx: 0, dy: 0, moved: false, centres });
+    },
+    move: (e) => { if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; setDrag({ ...drag, dx, dy, moved: drag.moved || Math.hypot(dx, dy) > 6 }); } },
+    up: () => {
+      if (!drag) return;
+      if (!drag.moved) onPick?.(drag.part);
+      else if (to >= 0 && to !== drag.from) onOrder?.(placePart(s, drag.part, to));
+      setDrag(null);
+    },
+    cancel: () => setDrag(null),
+  } : undefined;
+  useLayoutEffect(() => {
+    const el = selected && !drag?.moved ? wrap.current?.querySelector<HTMLElement>(`[data-part="${selected}"]`) : null, base = wrap.current?.getBoundingClientRect();
+    const r = el?.getBoundingClientRect();
+    const next = r && base ? { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height } : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFrame((old) => (old && next && old.x === next.x && old.y === next.y && old.w === next.w && old.h === next.h ? old : next));
+  });
+  const handle = onResize && frame && selected && (
+    <span className="tp-resize" role="presentation" style={{ left: frame.x + frame.w - 7, top: frame.y + frame.h - 7 }}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setSizing({ x: e.clientX, y: e.clientY, w: frame.w, h: frame.h, start: { fontPt: s.fontPt, logoMm: s.logoMm, logoPct: s.logoPct, qrMm: s.qrSizeMm > 0 ? s.qrSizeMm : frame.w / zoom / PX_PER_MM } });
+      }}
+      onPointerMove={(e) => {
+        if (!sizing) return;
+        const ratio = 1 + ((e.clientX - sizing.x) + (e.clientY - sizing.y)) / (sizing.w + sizing.h);
+        onResize(resizePatch(selected, sizing.start, logoIn(s), ratio));
+      }}
+      onPointerUp={() => setSizing(null)} onPointerCancel={() => setSizing(null)} />
+  );
+  return (
+    <div ref={wrap} className="tp-fit">
+      <div ref={ref} className="tp-paper" style={{ zoom, visibility: boxW || box ? "visible" : "hidden" }}>
+        <PrinterLabel s={s} item={item} pick={pick} />
+      </div>
+      {handle}
+    </div>
+  );
 }
 
 type PrintText = { title: string; print: string; popup: string; rtl: boolean };

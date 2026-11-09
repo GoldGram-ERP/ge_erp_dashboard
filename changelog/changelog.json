@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Test printer redesigned as a label designer: a big canvas on the left shows the label and every direction choice (page, rotation, row or column, alignment); drag any part and it snaps into place, tap it to edit, drag its corner to resize. The panel on the right holds only what you type or upload, in four tabs, with a clean As-it-prints preview on top. Fewer options, no help lines.",
+    "ar": "تست الطابعة اتعمل من جديد زي برنامج تصميم ليبل: على الشمال لوحة كبيرة فيها الليبل وكل اختيارات الاتجاه (الصفحة، اللف، صف ولا عمود، المحاذاة)؛ اسحب أي جزء وهو يتظبط في مكانه، دوس عليه عشان تعدّله، واسحب الركن عشان تكبّره أو تصغّره. وعلى اليمين بس اللي بتكتبه أو بترفعه في أربع تابات، وفوقهم معاينة زي ما هيتطبع بالظبط. اختيارات أقل ومفيش سطور شرح."
+   }
+  ]
+ },
+ {
   "version": "1.0.76",
   "date": "2026-11-09",
   "changes": [

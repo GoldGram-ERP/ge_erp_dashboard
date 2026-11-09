@@ -11,11 +11,12 @@ import { dateTimeText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { useAccess } from "./sales-access";
-import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
+import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Part, type Settings } from "./printer-label-rules";
 import { readLogo } from "./printer-logo";
 import { fetchLabelSettings, resetLabelSettings, saveLabelSettings, type SavedLabelSettings } from "./label-settings";
 
-type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrTopMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct";
+type Tab = "label" | Part;
+type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct";
 
 export default function Page() {
   const tr = useT(), { t, L } = tr;
@@ -34,6 +35,8 @@ export default function Page() {
   const [logoMsg, setLogoMsg] = useState("");
   const [server, setServer] = useState<SavedLabelSettings | null | undefined>(undefined);   // undefined = still asking, null = could not ask
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<Tab>("label");
+  const [at, setAt] = useState(0);   // which Excel label the canvas shows
   const [saveErr, setSaveErr] = useState("");
   const hadLocal = useRef(true);
   const [confirm, dialog] = useConfirm();
@@ -80,7 +83,6 @@ export default function Page() {
   const items = batch.length ? batch : hasContent(single) || s.lines.some((l) => l.text.trim()) ? [single] : [];
   const toPrint = labelList(items, s.copies);
   const page = pageSize(s);
-  const orientationText = s.orientation === "landscape" ? m("landscape") : m("portrait");
 
   async function importFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -94,7 +96,7 @@ export default function Page() {
       const header = rows[0] && (rows[0].text.toLowerCase() === "free text" || rows[0].code.toLowerCase() === "qr");
       const got = (header ? rows.slice(1) : rows).filter(hasContent);
       if (!got.length) { setMessage(m("noLabels", { name: file.name })); return; }
-      setBatch(got); setBatchName(file.name);
+      setBatch(got); setBatchName(file.name); setAt(0);
     } catch { setMessage(m("readFail", { name: file.name })); }
   }
   async function pickLogo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -128,7 +130,7 @@ export default function Page() {
   const status = server === undefined ? "" : saveErr ? saveErr : server === null ? m("labelLoadFail") : !saved ? m("labelNothing")
     : !sameProfile(saved, profileFromSettings(s)) ? m("labelChanged")
     : server?.updatedByName ? m("labelSavedBy", { name: server.updatedByName, when: dateTimeText(server.updatedAt, tr.locale) }) : m("labelSavedOn", { when: dateTimeText(server?.updatedAt, tr.locale) });
-  const clearBatch = () => { setBatch([]); setBatchName(""); setMessage(""); };
+  const clearBatch = () => { setBatch([]); setBatchName(""); setMessage(""); setAt(0); };
   const print = () => printPrinterLabels(s, toPrint, { title: m("windowTitle"), print: t("common", "print"), popup: m("popup"), rtl: tr.isAr });
 
   // A number box keeps what is typed until it loses focus; the preview follows every valid number (clamped), the box then shows the clamped value.
@@ -147,37 +149,72 @@ export default function Page() {
 
   if (me && !(me.userType === "admin" || me.userType === "super_admin") || (access.canOpen && me && !access.canOpen(["administration/settings"]))) return <div className="empty"><strong>{L("غير مسموح لك بفتح هذه الصفحة.", "You are not allowed to open this page.")}</strong></div>;
 
+  const tabs: { id: Tab; label: string }[] = [{ id: "label", label: m("tabLabel") }, { id: "text", label: m("content") }, { id: "logo", label: m("logo") }, { id: "qr", label: m("qrSection") }];
+  const pickPart = (p: Part) => setTab(p);
+  const dir = (label: string, control: React.ReactNode) => <div className="tp-dir"><span className="lbl">{label}</span>{control}</div>;
+  // With nothing typed yet the canvas shows sample content, so there is always something to see and drag; printing uses only what was typed.
+  const shownItem = batch.length ? batch[Math.min(at, batch.length - 1)] : { text: single.text || m("sampleText"), code: single.code || "GE-SAMPLE-0001" };
+
   return (
     <div className="st-page" id="test-printer-page">
       <div className="head"><div><h1>{m("title")}</h1><div className="sub">{m("sub")}</div></div></div>
       {dialog}
-      <div className="tp-page">
-        <div className="tp-settings">
-          <div className="tp-actions">
-            <Button danger onClick={resetAll}>{m("resetAll")}</Button>
-            {saveNote && <span className="help" role="status">{saveNote}</span>}
+      <div className="tp-designer">
+        <div className="card tp-canvas">
+          <div className="tp-stage"><PrinterLabelPreview s={s} item={shownItem} selected={tab === "label" ? null : tab} onPick={pickPart} onOrder={(order) => set({ order })} onResize={(patch) => { setDraft({}); set(patch); }} /></div>
+          <div className="tp-bar">
+            <span className="help" dir="ltr">{m("pageBox", { w: page.w, h: page.h })}</span>
+            {batch.length > 0 && (
+              <span className="tp-actions">
+                <Button size="sm" disabled={at === 0} aria-label={m("prev")} onClick={() => setAt(at - 1)}>‹</Button>
+                <span className="help" role="status">{m("batchOf", { n: Math.min(at, batch.length - 1) + 1, count: batch.length })}</span>
+                <Button size="sm" disabled={at >= batch.length - 1} aria-label={m("next")} onClick={() => setAt(at + 1)}>›</Button>
+              </span>
+            )}
           </div>
-          <div className="card tp-block">
-            <h3>{m("size")}</h3>
+          <div className="help">{m("dragHint")}</div>
+          {/* Every choice of direction or place lives here, beside the label it changes; the panel on the right only holds what is typed or uploaded. */}
+          <div className="tp-dirs">
+            {dir(m("orientation"), <Seg label={m("orientation")} value={s.orientation} onChange={(v) => set({ orientation: v })} items={[{ id: "portrait", label: m("portrait") }, { id: "landscape", label: m("landscape") }]} />)}
+            {dir(m("rotate"), <Seg label={m("rotate")} value={String(s.rotate)} onChange={(v) => set({ rotate: Number(v) as Settings["rotate"] })} items={["0", "90", "180", "270"].map((d) => ({ id: d, label: `${d}°` }))} />)}
+            {dir(m("direction"), <Seg label={m("direction")} value={s.direction} onChange={(v) => set({ direction: v })} items={[{ id: "side", label: m("side") }, { id: "stacked", label: m("stacked") }]} />)}
+            {dir(m("align"), <Seg label={m("align")} value={s.align} onChange={(v) => set({ align: v })} items={[{ id: "left", label: m("left") }, { id: "center", label: m("center") }, { id: "right", label: m("right") }]} />)}
+            {s.lines.length > 0 && dir(m("placement"), <Seg label={m("placement")} value={s.linesPlacement} onChange={(v) => set({ linesPlacement: v })} items={[{ id: "afterText", label: m("afterText") }, { id: "afterQr", label: m("afterQr") }]} />)}
+            {s.logo && dir(m("logoPlace"), <Seg label={m("logoPlace")} value={s.logoPlacement} onChange={(v) => set({ logoPlacement: v })} items={[{ id: "beside", label: m("logoBeside") }, { id: "inside", label: m("logoInside") }, { id: "none", label: m("logoNone") }]} />)}
+          </div>
+          <div className="tp-actions">
+            <Button variant="primary" disabled={!toPrint.length} onClick={print}>{batch.length ? m("printN", { count: toPrint.length }) : t("common", "print")}</Button>
+            {!toPrint.length && <span className="help">{m("nothing")}</span>}
+          </div>
+        </div>
+
+        <div className="card tp-inspector">
+          <figure className="tp-pure"><PrinterLabelPreview s={s} item={shownItem} boxW={240} boxH={120} /><figcaption className="help">{m("asPrinted")}</figcaption></figure>
+          <Seg label={m("inspector")} value={tab} onChange={(v) => setTab(v)} items={tabs} />
+          {tab === "label" && <>
             <div className="field"><span className="lbl" id="tp-presets-l">{m("presets")}</span>
               <div className="tp-actions" role="group" aria-labelledby="tp-presets-l">
                 {PRESETS.map(([w, h]) => <Button key={`${w}x${h}`} variant={s.widthMm === w && s.heightMm === h ? "primary" : "quiet"} aria-pressed={s.widthMm === w && s.heightMm === h} onClick={() => set({ widthMm: w, heightMm: h })}>{`${w} × ${h}`}</Button>)}
               </div></div>
-            <div className="tp-fields">{numField("widthMm", m("width"), m("widthHelp"))}{numField("heightMm", m("height"), m("heightHelp"))}</div>
-            <div className="field"><span className="lbl" id="tp-orient-l">{m("orientation")}</span>
-              <Seg label={m("orientation")} value={s.orientation} onChange={(v) => set({ orientation: v })} items={[{ id: "portrait", label: m("portrait") }, { id: "landscape", label: m("landscape") }]} />
-              <div className="help">{m("orientationHelp")}</div></div>
-            <div className="help" role="status">{m("printsAs", { w: page.w, h: page.h, orientation: orientationText })}</div>
-          </div>
-
-          <div className="card tp-block">
-            <h3>{m("content")}</h3>
+            <div className="tp-fields">{numField("widthMm", m("width"))}{numField("heightMm", m("height"))}</div>
+            <div className="tp-fields">{numField("paddingMm", m("padding"))}{numField("gapMm", m("gap"))}{numField("copies", m("copies"))}</div>
+            <div className="tp-actions">
+              <Button onClick={() => fileRef.current?.click()}>{m("import")}</Button>
+              <FileInput ref={fileRef} accept=".xlsx" aria-label={m("import")} onChange={importFile} />
+              {batch.length > 0 && <Button variant="plain" onClick={clearBatch}>{m("clear")}</Button>}
+            </div>
+            <div className="help">{m("importHint")}</div>
+            {batch.length > 0 && <div className="help" role="status">{m("loaded", { count: batch.length, name: batchName })}</div>}
+            {message && <div className="note warn" role="alert">{message}</div>}
+            <div className="tp-actions">
+              <Button danger onClick={resetAll}>{m("resetAll")}</Button>
+              {saveNote && <span className="help" role="status">{saveNote}</span>}
+            </div>
+          </>}
+          {tab === "text" && <>
             <div className="field"><label htmlFor="tp-text">{m("text")}</label>
               <Textarea id="tp-text" rows={2} maxLength={200} dir="auto" disabled={batch.length > 0} placeholder={m("textPh")} value={text} onChange={(e) => setText(e.target.value)} /></div>
-            <div className="tp-fields">{numField("fontPt", m("font"), m("fontHelp"))}</div>
-            <div className="field"><span className="lbl">{m("align")}</span>
-              <Seg label={m("align")} value={s.align} onChange={(v) => set({ align: v })} items={[{ id: "left", label: m("left") }, { id: "center", label: m("center") }, { id: "right", label: m("right") }]} />
-              <div className="help">{m("alignHelp")}</div></div>
+            <div className="tp-fields">{numField("fontPt", m("font"))}</div>
             <div className="tp-lines">
               {s.lines.map((l, i) => (
                 <div className="tp-line" key={i} role="group" aria-label={m("lineN", { n: i + 1 })}>
@@ -185,14 +222,9 @@ export default function Page() {
                     <Input id={`tp-line-${i}`} dir="auto" autoComplete="off" maxLength={200} placeholder={m("linePh")} value={l.text} onChange={(e) => patchLine(i, { text: e.target.value })} /></div>
                   <div className="tp-fields">
                     {numBox(`line-${i}-pt`, m("lineFont"), l.fontPt, (n) => patchLine(i, { fontPt: n }))}
-                    <div className="field"><span className="lbl">{m("lineAlign")}</span>
-                      <Seg label={m("lineAlign")} value={l.align} onChange={(v) => patchLine(i, { align: v })} items={[{ id: "inherit", label: m("inherit") }, { id: "left", label: m("left") }, { id: "center", label: m("center") }, { id: "right", label: m("right") }]} /></div>
                   </div>
                   <div className="tp-actions">
                     <Checkbox checked={l.bold} onChange={(v) => patchLine(i, { bold: v })}>{m("bold")}</Checkbox>
-                    <Checkbox checked={l.keepBlank} onChange={(v) => patchLine(i, { keepBlank: v })}>{m("keepBlank")}</Checkbox>
-                    <Button size="sm" disabled={i === 0} onClick={() => setLines(moveLine(s.lines, i, -1))}>{m("up")}</Button>
-                    <Button size="sm" disabled={i === s.lines.length - 1} onClick={() => setLines(moveLine(s.lines, i, 1))}>{m("down")}</Button>
                     <Button size="sm" danger onClick={() => setLines(removeLine(s.lines, i))}>{m("remove")}</Button>
                   </div>
                 </div>
@@ -202,32 +234,8 @@ export default function Page() {
               <Button onClick={() => setLines(addLine(s.lines, s.fontPt))}>{m("addLine")}</Button>
               <span className="help" role="status">{m("linesCount", { count: s.lines.length })}</span>
             </div>
-            <div className="field"><span className="lbl">{m("placement")}</span>
-              <Seg label={m("placement")} value={s.linesPlacement} onChange={(v) => set({ linesPlacement: v })} items={[{ id: "afterText", label: m("afterText") }, { id: "afterQr", label: m("afterQr") }]} />
-              <div className="help">{m("linesHelp")}</div></div>
-            <div className="tp-actions">
-              <Button onClick={() => fileRef.current?.click()}>{m("import")}</Button>
-              <FileInput ref={fileRef} accept=".xlsx" aria-label={m("import")} onChange={importFile} />
-              {batch.length > 0 && <Button variant="plain" onClick={clearBatch}>{m("clear")}</Button>}
-            </div>
-            <div className="help">{m("importHint")}</div>
-            {batch.length > 0 && <div className="help" role="status">{m("loaded", { count: batch.length, name: batchName })}</div>}
-            {message && <div className="note warn" role="alert">{message}</div>}
-          </div>
-
-          <div className="card tp-block">
-            <h3>{m("qrSection")}</h3>
-            <div className="field"><label htmlFor="tp-code">{m("code")}</label>
-              <Input id="tp-code" maxLength={500} dir="auto" autoComplete="off" disabled={batch.length > 0} placeholder={m("codePh")} value={code} onChange={(e) => setCode(e.target.value)} />
-              <div className="help">{m("codeHelp")}</div></div>
-            <div className="tp-fields">{numField("qrSizeMm", m("qrSize"), m("qrSizeHelp"))}{numField("qrTopMm", m("qrTop"), m("qrTopHelp"))}</div>
-            <div className="field"><span className="lbl">{m("level")}</span>
-              <Seg label={m("level")} value={effectiveLevel(s)} onChange={(v) => { if (!logoInside(s)) set({ level: v }); }} items={["L", "M", "Q", "H"].map((l) => ({ id: l as Settings["level"], label: l }))} />
-              <div className="help">{m("levelHelp")}</div></div>
-          </div>
-
-          <div className="card tp-block">
-            <h3>{m("logo")}</h3>
+          </>}
+          {tab === "logo" && <>
             <div className="tp-actions">
               <Button onClick={() => logoRef.current?.click()}>{s.logo ? m("logoChange") : m("logoUpload")}</Button>
               <FileInput ref={logoRef} accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml" aria-label={m("logoUpload")} onChange={pickLogo} />
@@ -236,45 +244,17 @@ export default function Page() {
             {s.logo && <div className="tp-thumb"><img src={s.logo} alt={m("logo")} /></div>}
             <div className="help">{m("logoHint")}</div>
             {logoMsg && <div className="note warn" role="alert">{logoMsg}</div>}
-            <div className="field"><span className="lbl">{m("logoPlace")}</span>
-              <Seg label={m("logoPlace")} value={s.logoPlacement} onChange={(v) => set({ logoPlacement: v })} items={[{ id: "beside", label: m("logoBeside") }, { id: "inside", label: m("logoInside") }, { id: "none", label: m("logoNone") }]} />
-              <div className="help">{m("logoPlaceHelp")}</div></div>
             {s.logoPlacement === "inside"
               ? numField("logoPct", m("logoPct"))
               : s.logoPlacement === "beside" && numField("logoMm", m("logoMm"))}
             {logoInside(s) && <div className="help" role="status">{m("logoLevelH")}</div>}
             {logoTooBigForQr(s) && <div className="note warn" role="alert">{m("logoTooBig30")}</div>}
-          </div>
-
-          <div className="card tp-block">
-            <h3>{m("printing")}</h3>
-            <div className="field"><span className="lbl">{m("rotate")}</span>
-              <Seg label={m("rotate")} value={String(s.rotate)} onChange={(v) => set({ rotate: Number(v) as Settings["rotate"] })} items={["0", "90", "180", "270"].map((d) => ({ id: d, label: `${d}°` }))} />
-              <div className="help">{m("rotateHelp")}</div></div>
-            <div className="tp-fields">{numField("copies", m("copies"), m("copiesHelp"))}</div>
-          </div>
-        </div>
-
-        <div className="card tp-preview">
-          <h3>{batch.length ? m("previewAll", { count: batch.length }) : m("preview")}</h3>
-          <div className="help" dir="ltr">{m("pageBox", { w: page.w, h: page.h })}</div>
-          {batch.length ? (
-            <div className="tp-batch">
-              {batch.map((item, i) => <figure key={i}><PrinterLabelPreview s={s} item={item} boxW={110} boxH={110} /><figcaption>{i + 1}</figcaption></figure>)}
-            </div>
-          ) : (
-            <>
-              <div className="tp-stage"><PrinterLabelPreview s={s} item={single} boxW={360} boxH={300} onOrder={(order) => set({ order })} /></div>
-              <div className="help">{m("dragHint")}</div>
-              <div className="field"><span className="lbl">{m("direction")}</span>
-                <Seg label={m("direction")} value={s.direction} onChange={(v) => set({ direction: v })} items={[{ id: "side", label: m("side") }, { id: "stacked", label: m("stacked") }]} /></div>
-              <div className="tp-fields">{numField("paddingMm", m("padding"), m("paddingHelp"))}{numField("gapMm", m("gap"), m("gapHelp"))}</div>
-            </>
-          )}
-          <div className="tp-actions">
-            <Button variant="primary" disabled={!toPrint.length} onClick={print}>{batch.length ? m("printN", { count: toPrint.length }) : t("common", "print")}</Button>
-            {!toPrint.length && <span className="help">{m("nothing")}</span>}
-          </div>
+          </>}
+          {tab === "qr" && <>
+            <div className="field"><label htmlFor="tp-code">{m("code")}</label>
+              <Input id="tp-code" maxLength={500} dir="auto" autoComplete="off" disabled={batch.length > 0} placeholder={m("codePh")} value={code} onChange={(e) => setCode(e.target.value)} /></div>
+            <div className="tp-fields">{numField("qrSizeMm", m("qrSize"))}</div>
+          </>}
         </div>
       </div>
       <div className="formbar" id="tp-save-bar">
