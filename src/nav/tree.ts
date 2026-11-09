@@ -83,6 +83,13 @@ export const NAV: NavGroup[] = [
      "gold-accounts/purchase-coding",
      "gold-accounts/pieces-list"
     ]
+   },
+   {
+    "id": "merchants",
+    "route": "/buy/merchants",
+    "screens": [
+     "merchants/merchants"
+    ]
    }
   ]
  },

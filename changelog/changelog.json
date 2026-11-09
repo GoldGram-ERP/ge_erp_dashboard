@@ -1,5 +1,21 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Users: the screens are grouped like the sidebar, and the by-task tab is hidden for now. An email can be any address.",
+    "ar": "المستخدمين: الشاشات متجمعة زي القايمة الجانبية، وتبويب «حسب المهمة» مخفي دلوقتي. والإيميل ممكن يبقى أي إيميل."
+   },
+   {
+    "kind": "new",
+    "en": "Merchants: a new screen under Items and Purchases, for Admins only: each merchant's account in money and gold, payments, receipts and adjustments.",
+    "ar": "التجار: شاشة جديدة تحت الأصناف والمشتريات للمدير بس: حساب كل تاجر بالفلوس والذهب، ودفع واستلام وتسويات.",
+    "route": "/buy/merchants"
+   }
+  ]
+ },
+ {
   "version": "1.0.59",
   "date": "2026-11-09",
   "changes": [

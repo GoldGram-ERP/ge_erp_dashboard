@@ -15,6 +15,8 @@ import { useMe } from "@/lib/session";
 import type { Tr } from "@/lib/t";
 import { Kv, Ltr, Section, toast, useConfirm } from "@/components/engine";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
+import { NAV } from "@/nav/tree";
+import { NAV_LABELS } from "@/nav/labels.generated";
 import { JOBS, SECTIONS, type ScreenName, type Section as Sec } from "./admin-names";
 
 import { code6 } from "@/lib/code6";
@@ -137,7 +139,8 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   const [screens, setScreens] = useState<Set<string>>(new Set(row?.screens ?? []));
   const [jobs, setJobs] = useState<Set<string>>(new Set());
   const [jobsInit, setJobsInit] = useState("[]");
-  const [tab, setTab] = useState<"job" | "screen">((row as Row | null)?.openTab === "screen" ? "screen" : "job");
+  // "By task" is hidden for now (owner, 2026-11-09): screens are the only way to give access. The task code stays for when it returns.
+  const [, setTab] = useState<"job" | "screen">("screen");
   const [q, setQ] = useState("");
   const [permErr, setPermErr] = useState(""), [alert, setAlert] = useState(""), [note, setNote] = useState(""), [saving, setSaving] = useState(false);
   const permQ = useQuery({ queryKey: ["users", "screens-jobs"], staleTime: Infinity, queryFn: async () => { const [s, j] = await Promise.all([api("/users/screens"), api("/users/jobs")]); return { screens: s, jobScreens: Object.fromEntries((j.jobs ?? []).map((x: any) => [x.id, x.screens as string[]])) as Record<string, string[]> }; } });
@@ -146,6 +149,13 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   const jobScreens = (id: string) => permQ.data?.jobScreens[id] ?? [];
   const mods = useMemo(() => offeredModules(tr, permQ.data?.screens), [tr, permQ.data]);
   const offered = mods.flatMap((m) => m.list.map((x) => x.key)), offSet = new Set(offered);
+  const navGroups = (() => {
+    const lab = (kind: "group" | "item", id: string) => { const x = (NAV_LABELS[kind] as Record<string, [string, string]>)[id]; return x ? L(x[0], x[1]) : id; };
+    const groups = NAV.filter((g) => !g.superOnly).map((g) => ({ id: g.id, name: lab("group", g.id), items: g.items.map((i) => ({ id: i.id, name: lab("item", i.id), keys: i.screens.filter((k) => offSet.has(k)) })).filter((i) => i.keys.length) })).filter((g) => g.items.length);
+    const used = new Set(groups.flatMap((g) => g.items.flatMap((i) => i.keys)));
+    const rest = offered.filter((k) => !used.has(k));
+    return rest.length ? [...groups, { id: "other", name: L("أخرى", "Other"), items: rest.map((k) => ({ id: k, name: keyName(tr, k), keys: [k] })) }] : groups;
+  })();
   const jobsOpenFor = (ids: string[], scr: Iterable<string>) => { const open = new Set(scr); return ids.filter((id) => jobScreens(id).some((k) => open.has(k))); };
   const givable = (id: string) => jobScreens(id).every((k) => offSet.has(k));
   const offeredJobs = () => JOBS.map((j) => j[0]).filter((id) => permQ.data?.jobScreens[id] && givable(id));
@@ -201,9 +211,8 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   };
 
   const ql = q.trim().toLowerCase();
-  const loaded = !!permQ.data, shownTab = permErr ? "screen" : tab;
-  const nOfJobs = [...jobs].filter((id) => givable(id)).length;
-  const summary = L(`${nOfJobs} وظيفة · ${screens.size} شاشة`, `${nOfJobs} jobs · ${screens.size} screens`);
+  const loaded = !!permQ.data, shownTab: "job" | "screen" = "screen";
+  const summary = L(`${screens.size} شاشة`, `${screens.size} screens`);
   const box = (on: boolean, off = false): React.CSSProperties => ({ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: 14, border: `1px solid ${on ? "var(--gold)" : "var(--line)"}`, background: on ? "var(--gold-wash)" : "var(--surface)", cursor: off ? "default" : "pointer", opacity: off ? 0.6 : 1 });
   const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 8 };
   const small: React.CSSProperties = { display: "block", fontSize: 12, color: "var(--mute)", marginTop: 2, lineHeight: 1.45 };
@@ -223,23 +232,23 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
               {has && missing.length > 0 && !preview && <span className="note warn" style={{ display: "block", marginTop: 4 }}>{u("jobs.partMissing", { names: missing.map((k) => keyName(tr, k)).join(tr.isAr ? "، " : ", ") })} <Button size="sm" onClick={(e) => { e.preventDefault(); keys.forEach((k) => screens.add(k)); setScreens(new Set(screens)); mark(); }}>{u("jobs.giveMissing")}</Button></span>}</span>
           </label>; })}</div></div>; });
   };
-  const switcher = (off: boolean) => <div className="seg" role="tablist" aria-label={u("jobs.tabs")}>{(["job", "screen"] as const).map((k) => <button key={k} type="button" disabled={off} role="tab" aria-pressed={shownTab === k} aria-selected={shownTab === k} onClick={() => setTab(k)}>{u(k === "job" ? "jobs.byJob" : "jobs.byScreen")}</button>)}</div>;
   const perm = ty !== "user" && ty
-    ? <><p className="mute">{u(`screens.fixed.${ty}`)}</p><p className="mute">{u("jobs.all")}</p></>
+    ? <p className="mute">{u(`screens.fixed.${ty}`)}</p>
     : permQ.isError ? <><div className="note warn">{c("couldNotLoad")}</div><Button onClick={() => permQ.refetch()}>{c("retry")}</Button></>
     : !loaded ? <div className="skeleton" aria-busy="true"><i /><i /><i /></div>
-    : !ty ? <><p className="mute">{L("اختر نوع المستخدم لتحديد وظائفه وشاشاته.", "Choose a user type to give it jobs and screens.")}</p>{switcher(true)}<div aria-hidden="true">{jobCards(true).slice(0, 1)}</div></>
+    : !ty ? <><p className="mute">{L("اختر نوع المستخدم لتحديد شاشاته.", "Choose a user type to give it screens.")}</p></>
     : <>
-      <div className="actions" style={{ justifyContent: "space-between" }}>{switcher(false)}<b dir="auto" aria-live="polite">{summary}</b></div>
+      <div className="actions" style={{ justifyContent: "flex-end" }}><b dir="auto" aria-live="polite">{summary}</b></div>
       {shownTab === "screen" ? (() => { const open = offered.filter((k) => screens.has(k)).length; return <>
         <div className="actions"><span dir="ltr" aria-live="polite">{u("screens.count", { open, all: offered.length })}</span>
           <Button size="sm" disabled={open === offered.length} onClick={() => toggleScreens(offered, true)}>{u("screens.selectAll")}</Button>
           <Button size="sm" disabled={open === 0} onClick={() => toggleScreens(offered, false)}>{u("screens.unselectAll")}</Button></div>
         <Input id="screen-q" placeholder={L("ابحث عن شاشة", "Search screens")} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" aria-label={L("ابحث عن شاشة", "Search screens")} />
-        {mods.map((m0) => { const m = { ...m0, list: m0.list.filter((x) => !ql || `${x.name} ${m0.name}`.toLowerCase().includes(ql)) }; if (!m.list.length) return null; const keys = m.list.map((x) => x.key), on = keys.filter((k) => screens.has(k)).length;
-          return <div key={m.id} style={{ marginTop: 12 }}>
-            <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: m.name })} label={<><b>{m.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span> <span className="mute">· {u("screens.selectAll")}</span></>} />
-            <div style={grid}>{m.list.map((x) => <label key={x.key} style={box(screens.has(x.key))}><CheckInput data-screen={x.key} checked={screens.has(x.key)} onChange={(v) => toggleScreens([x.key], v)} style={{ marginTop: 3 }} /><span>{x.name}</span></label>)}</div></div>; })}
+        {navGroups.map((g0) => { const g = { ...g0, items: g0.items.filter((x) => !ql || `${x.name} ${g0.name}`.toLowerCase().includes(ql)) }; if (!g.items.length) return null; const keys = g.items.flatMap((x) => x.keys), on = keys.filter((k) => screens.has(k)).length;
+          return <div key={g.id} style={{ marginTop: 12 }}>
+            <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: g.name })} label={<><b>{g.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span> <span className="mute">· {u("screens.selectAll")}</span></>} />
+            <div style={grid}>{g.items.map((x) => { const all = x.keys.every((k) => screens.has(k)), some = x.keys.some((k) => screens.has(k));
+              return <label key={x.id} style={box(all)}><CheckInput data-screen={x.keys[0]} checked={all} indeterminate={some && !all} onChange={(v) => toggleScreens(x.keys, v)} style={{ marginTop: 3 }} /><span>{x.name}</span></label>; })}</div></div>; })}
       </>; })() : jobCards(false)}
     </>;
 

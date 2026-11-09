@@ -8,7 +8,7 @@ import { Button, DataTable, Input, Td, Tr } from "@/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
-import { dateText, milligramsText, today } from "@/lib/format";
+import { dateText, milligramsText, piastresInput, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { toast, Icon } from "@/components/engine";
 import { FieldError } from "@/components/fields/FieldError";
@@ -20,9 +20,10 @@ import { LINES_MAX, itemProblem, lineWeightOf, readInvoice, totalsOf } from "./p
 
 import { code6 as code6 } from "@/lib/code6";
 const itemLabel = (code: unknown, name?: string) => `${code6(code)} · ${name || code6(code)}`;
-const FIELD = /^(date|lines\.\d+\.(itemId|quantity))$/;
-type Line = { itemId: string; label: string; quantity: string; itemWeight: number | null };
-const blank = (): Line => ({ itemId: "", label: "", quantity: "1", itemWeight: null });
+const FIELD = /^(date|merchantId|lines\.\d+\.(itemId|quantity|karat|pricePerGramPiastres))$/;
+// karat and price (typed, EGP a gram) are the merchant side of a line: only an Admin or the Super admin, and only with a merchant on the invoice.
+type Line = { itemId: string; label: string; quantity: string; itemWeight: number | null; karat: string; price: string };
+const blank = (): Line => ({ itemId: "", label: "", quantity: "1", itemWeight: null, karat: "", price: "" });
 
 /** The items of these ids, read in full (weight, workmanship, Active), by id. One that fails to load is left out. */
 // Items read a moment ago are reused (the coding page re-reads them after every save); `fresh` reads them again, for when the answer must be current.
@@ -48,9 +49,13 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
   const { data: me } = useMe();
   const editing = Boolean(row);
   const picksBranch = !editing && !!me && me.userType !== "user";   // an Admin starts on their own branch and may pick another; the Super admin picks one
+  // The merchant is for an Admin or the Super admin only (docs/designs/merchants.md): a branch user never sees the field, and the API refuses it.
+  const isAdmin = !!me && me.userType !== "user";
+  const [merchantId, setMerchantId] = useState<string>(row?.merchantId ?? "");
+  const [merchants, setMerchants] = useState<[string, string][]>([]);
   const [date, setDate] = useState(editing ? dateText(row!.date) : today());
   const [branchId, setBranchId] = useState(me?.userType === "user" ? "" : (me?.branchId ?? ""));
-  const [lines, setLines] = useState<Line[]>(editing ? (row!.lines as Row[]).map((l) => ({ itemId: l.itemId, label: itemLabel(l.itemCode, l.itemName), quantity: String(l.quantity), itemWeight: l.weight % l.quantity === 0 ? l.weight / l.quantity : null })) : [blank()]);
+  const [lines, setLines] = useState<Line[]>(editing ? (row!.lines as Row[]).map((l) => ({ itemId: l.itemId, label: itemLabel(l.itemCode, l.itemName), quantity: String(l.quantity), itemWeight: l.weight % l.quantity === 0 ? l.weight / l.quantity : null, karat: l.merchant?.karat ?? "", price: l.merchant ? piastresInput(l.merchant.pricePerGramPiastres) : "" })) : [blank()]);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState("");
   const [saving, setSaving] = useState(false);
@@ -83,6 +88,15 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { if (picksBranch) loadLookup({ path: "/branches", value: "id", label: "branchName" }).then((o) => setBranches(o as [string, string][])).catch(() => {}); }, [picksBranch]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    loadLookup({ path: "/merchants", value: "id", label: "merchantName", query: { active: "yes" } }).then((o) => {
+      const list = o as [string, string][];
+      // A merchant already on this invoice stays pickable even when he has since been set inactive.
+      setMerchants(row?.merchantId && !list.some(([id]) => id === row.merchantId) ? [[row.merchantId, row.merchantName ?? ""], ...list] : list);
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
   const next = useQuery({
     enabled: !editing && (!picksBranch || !!branchId), retry: false,
     queryKey: ["next-number", "purchase_invoice", branchId, date.slice(0, 4)],
@@ -113,13 +127,18 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
     const r = readInvoice({ date, lines });
     const e = Object.fromEntries(Object.entries(r.errors).map(([k, v]) => [k, fieldText(k, v)]));
     lines.forEach((l, i) => { const it = known.current.get(l.label), p = !l.itemId && it && itemProblem(it); if (p) e[`lines.${i}.itemId`] = fieldText(`lines.${i}.itemId`, p, l.label); });   // why, not just "required"
+    if (isAdmin && merchantId) lines.forEach((l, i) => {   // a merchant line needs its karat and its price per gram
+      if (!["18", "21", "24"].includes(l.karat)) e[`lines.${i}.karat`] = t("common", "fieldErrors.required");
+      if (typedPiastres(l.price) === undefined) e[`lines.${i}.pricePerGramPiastres`] = t("common", `fieldErrors.${l.price.trim() === "" ? "required" : "invalid"}`);
+    });
     if (picksBranch && !branchId) e.branchId = m("branchRequired");
     setBanner(""); setErrs(e);
     if (Object.keys(e).length) { revealFirstError(); return; }
     if (!r.payload) { setBanner(tr.L("راجع بيانات الفاتورة", "Check the invoice details")); revealFirstError(); return; }
     setSaving(true);
     try {
-      const body = editing ? { ...r.payload, version: row!.version } : { ...r.payload, ...(picksBranch ? { branchId } : {}) };
+      const payload = isAdmin ? { ...r.payload, merchantId: merchantId || null, lines: r.payload.lines.map((ln, i) => (merchantId ? { ...ln, karat: lines[i].karat, pricePerGramPiastres: typedPiastres(lines[i].price) } : ln)) } : r.payload;
+      const body = editing ? { ...payload, version: row!.version } : { ...payload, ...(picksBranch ? { branchId } : {}) };
       const saved = await api(editing ? `/purchase-invoices/${row!.id}` : "/purchase-invoices", { method: editing ? "PATCH" : "POST", body, saveKey: saveKey.current });
       toast(editing ? m("changesSaved") : m("savedNumber", { code: code6(saved.invoiceNumber) }));
       reload();
@@ -156,11 +175,14 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
           )}
           <div className="field" data-k="date" data-err={errs.date ? "" : undefined}><label htmlFor="inv-date-btn">{m("date")} *</label>
             <DatePicker id="inv-date" name="inv-date" value={date} required onChange={(v) => { touch(); setDate(v); }} />{err("date")}</div>
+          {isAdmin && <div className="field" data-k="merchantId" data-err={errs.merchantId ? "" : undefined}><label htmlFor="inv-merchant-btn">{tr.L("التاجر (اختياري)", "Merchant (optional)")}</label>
+            <Select id="inv-merchant" name="inv-merchant" value={merchantId} options={[["", tr.L("بدون تاجر", "No merchant")], ...merchants]} placeholder={tr.L("بدون تاجر", "No merchant")} onChange={(v) => { touch(); setMerchantId(v); }} />{err("merchantId")}
+            <div className="help">{tr.L("لو اخترت تاجر، الفاتورة بتتسجل في حسابه: لازم عيار وسعر الجرام لكل سطر.", "With a merchant, the invoice goes on his account: each line needs a karat and a price per gram.")}</div></div>}
         </div>
       </form>
       <div className="card">
         <h3>{m("lines")} <span className="sub">{m("linesOf", { count: lines.length })}</span></h3>
-        <DataTable fixedOrder tableClassName="lines" bodyId="inv-lines" head={[{ label: "#", num: true }, <>{m("item")} *</>, <>{m("quantity")} *</>, m("weight"), ""]}>{lines.map((l, i) => (
+        <DataTable fixedOrder tableClassName="lines" bodyId="inv-lines" head={[{ label: "#", num: true }, <>{m("item")} *</>, <>{m("quantity")} *</>, m("weight"), ...(isAdmin && merchantId ? [<>{tr.L("العيار", "Karat")} *</>, { label: <>{tr.L("سعر الجرام", "Price per gram")} *</>, num: true }] : []), ""]}>{lines.map((l, i) => (
             <Tr key={i} data-i={i}>
               <Td num>{i + 1}</Td>
               <Td><div className="field" data-k={`lines.${i}.itemId`} data-err={errs[`lines.${i}.itemId`] ? "" : undefined}>
@@ -169,6 +191,12 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
                   onChange={(ev) => { const label = ev.target.value, it = known.current.get(label); touch(); setLines((ls) => ls.map((x, j) => (j === i ? pick({ ...x, label }, it) : x))); problemText(i, label, it); searchItems(label); }} />{err(`lines.${i}.itemId`)}</div></Td>
               <Td><div className="field" data-k={`lines.${i}.quantity`} data-err={errs[`lines.${i}.quantity`] ? "" : undefined}><Input data-f="quantity" dir="ltr" inputMode="numeric" aria-label={m("quantity")} value={l.quantity} onChange={(ev) => setLine(i, { quantity: ev.target.value })} />{err(`lines.${i}.quantity`)}</div></Td>
               <Td><div className="field"><Input data-f="weight" dir="ltr" readOnly aria-label={m("weight")} aria-describedby="inv-weight-help" placeholder="—" value={milligramsOrEmpty(lineWeightOf(l.itemWeight, l.quantity))} /></div></Td>
+              {isAdmin && merchantId && <>
+                <Td><div className="field" data-k={`lines.${i}.karat`} data-err={errs[`lines.${i}.karat`] ? "" : undefined}>
+                  <Select id={`inv-karat-${i}`} name={`inv-karat-${i}`} value={l.karat} options={[["18", "18"], ["21", "21"], ["24", "24"]]} placeholder={c("choose")} onChange={(v) => setLine(i, { karat: v })} />{err(`lines.${i}.karat`)}</div></Td>
+                <Td><div className="field" data-k={`lines.${i}.pricePerGramPiastres`} data-err={errs[`lines.${i}.pricePerGramPiastres`] ? "" : undefined}>
+                  <Input dir="ltr" inputMode="decimal" aria-label={tr.L("سعر الجرام", "Price per gram")} placeholder="0.00" value={l.price} onChange={(ev) => setLine(i, { price: ev.target.value })} />{err(`lines.${i}.pricePerGramPiastres`)}</div></Td>
+              </>}
               <Td><Button size="sm" data-remove={i} disabled={lines.length === 1} aria-label={m("removeLine", { number: i + 1 })} onClick={() => { touch(); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{m("remove")}</Button></Td>
             </Tr>))}</DataTable>
         <div className="help" id="inv-weight-help" style={{ marginTop: 8 }}>{m("weightFromItem")}</div>

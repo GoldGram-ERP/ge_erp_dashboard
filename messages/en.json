@@ -887,7 +887,16 @@
   "documentLocked": "Not saved: this was made on {day} and is locked. A normal user edits on the day it was made; ask an Admin.",
   "draftCompleted": "This draft is already completed. It cannot be edited, deleted or completed again.",
   "draftItemsMismatch": "The scanned pieces do not match the draft's items and counts. Check the table and scan again.",
-  "salesDraftNotFound": "This draft was not found."
+  "salesDraftNotFound": "This draft was not found.",
+  "merchantNotFound": "This merchant does not exist.",
+  "merchantNameTaken": "A merchant with this name already exists.",
+  "merchantInUse": "Not deleted: this merchant has documents. Set him inactive instead.",
+  "merchantOpeningLocked": "The opening balance changes by an adjustment once the merchant has documents.",
+  "merchantSettled": "This merchant is inactive and nothing is owed either way: no payment or adjustment.",
+  "makingRuleTaken": "A making-charge rule for that target already exists.",
+  "makingRuleNotFound": "This rule does not exist.",
+  "settlementNotFound": "This payment or receipt does not exist.",
+  "adjustmentNotFound": "This adjustment does not exist."
  },
  "expenses": {
   "expenseTypes": {
@@ -3051,7 +3060,8 @@
    "accounts": "Accounts and sessions",
    "security": "Security and data",
    "returned-pieces": "Returned pieces (not from us)",
-   "sales-desk": "Sales desk"
+   "sales-desk": "Sales desk",
+   "merchants": "Merchants"
   }
  },
  "app": {
