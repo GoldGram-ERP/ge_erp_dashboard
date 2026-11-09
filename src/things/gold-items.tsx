@@ -43,9 +43,8 @@ async function allPages(path: string, query: Record<string, string> = {}): Promi
   }
   return out;
 }
-const CATS = ["gold-accounts", "categories"], KARATS = ["gold-accounts", "karats"];
+const CATS = ["gold-accounts", "categories"], KARATS = ["gold-accounts", "karats"], BRANDS = ["gold-accounts", "brands"];
 const loadCats = () => allPages("/categories");
-const BRANDS = ["gold-accounts", "brands"];
 const loadBrands = () => allPages("/brands");
 
 type Ctx = { cats: Row[]; brands: Row[]; qc: QueryClient };
