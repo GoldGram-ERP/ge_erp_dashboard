@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Test printer: a new Setup tab for Admins to test the label printer. Set the page size, portrait or landscape, text and QR side by side or stacked, and rotate the print, then print.",
+    "ar": "تجربة الطابعة: تبويب جديد في الإعدادات للأدمن علشان يجرّب طابعة الليبل. حدد مقاس الصفحة، طولي ولا عرضي، النص والكود جنب بعض ولا فوق بعض، ولفّ الطباعة، وبعدين اطبع.",
+    "route": "/setup/test-printer"
+   }
+  ]
+ },
+ {
   "version": "1.0.61",
   "date": "2026-11-09",
   "changes": [

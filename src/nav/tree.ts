@@ -249,6 +249,14 @@ export const NAV: NavGroup[] = [
      "administration/settings"
     ]
    },
+   // Test printer: label printer tests (size, orientation, layout, rotation). Admin and Super admin only, the same screen key as Settings.
+   {
+    "id": "test-printer",
+    "route": "/setup/test-printer",
+    "screens": [
+     "administration/settings"
+    ]
+   },
    // The Settings page is commented out of the sidebar, the search and its address (owner, 2026-11-05) until further notice.
    // To bring it back, remove the comment markers around this entry; nothing else was removed.
    /*

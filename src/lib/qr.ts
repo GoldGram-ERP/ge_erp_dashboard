@@ -7,8 +7,8 @@ const QUIET = 2;
 export type QrShape = { size: number; d: string };
 
 /** The modules of `text` as an SVG path in a (size x size) box, where size includes the quiet zone. */
-export function qrShape(text: string): QrShape {
-  const q = qrcode(0, "M");
+export function qrShape(text: string, level: "L" | "M" | "Q" | "H" = "M"): QrShape {
+  const q = qrcode(0, level);
   q.addData(text);
   q.make();
   const n = q.getModuleCount();

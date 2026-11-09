@@ -32,5 +32,6 @@ things["expenses/expenses"] = { load: () => import("./expenses") };
 things["setup/branches"] = { load: () => import("./branches") };
 things["setup/karats"] = { load: () => import("./karats") };
 things["setup/item-fees"] = { load: () => import("./item-fees") };
+things["setup/test-printer"] = { load: () => import("./test-printer") };
 things["setup/settings"] = { load: () => import("./settings") };
 things["control/security"] = { load: () => import("./control-security") };
