@@ -7,7 +7,9 @@ import { useEffect, useRef, useState } from "react";
 import { Button, DataTable, Input, Td, Tr } from "@/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
-import type { CustomFormProps, Row } from "@/lib/engine-types";
+import type { CustomFormProps, Option, Row } from "@/lib/engine-types";
+import { ItemPicker } from "@/components/fields/ItemPicker";
+import { useItems } from "@/lib/items";
 import { dateText, milligramsText, today } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { toast, Icon } from "@/components/engine";
@@ -59,8 +61,9 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
   const [banner, setBanner] = useState("");
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<[string, string][]>([]);
-  const [choices, setChoices] = useState<[string, string][]>([]);
-  const known = useRef(new Map<string, Row>());          // datalist label -> item
+  // The items offered on a line (issue #34): every active item with its weight and workmanship, in the shared item picker (code, group and brand, brand filter).
+  const { items: allItems } = useItems({ active: "true" });
+  const offered = (allItems ?? []).filter((it) => !itemProblem(it));
   const saveKey = useRef(newSaveKey());
   const touch = () => { saveKey.current = newSaveKey(); };   // what is typed after a Save is another Save
 
@@ -102,20 +105,6 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
     queryFn: () => api<{ next: number }>("/document-numbers/next", { query: { documentType: "purchase_invoice", branchId: branchId || undefined, year: date.slice(0, 4) || undefined } }),
   });
 
-  const search = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const searchItems = (text: string) => {
-    clearTimeout(search.current);
-    search.current = setTimeout(async () => {
-      try {
-        const r = await api("/items", { query: { search: text || undefined, order: "newest", active: "true" } });
-        const items = (r.items ?? []) as Row[];
-        for (const it of items) known.current.set(itemLabel(it.itemCode, it.itemName), it);
-        setChoices(items.filter((it) => !itemProblem(it)).map((it) => [it.id, itemLabel(it.itemCode, it.itemName)]));   // only items with their weight and workmanship are offered
-        setLines((ls) => ls.map((l, i) => { if (l.itemId || !known.current.has(l.label)) return l; const it = known.current.get(l.label); problemText(i, l.label, it); return pick(l, it); }));
-      } catch { /* the box still takes a typed code or name; the backend refuses an unknown item */ }
-    }, 250);
-  };
-  useEffect(() => () => clearTimeout(search.current), []);
 
   const setLine = (i: number, patch: Partial<Line>) => { touch(); setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l))); };
   const tot = totalsOf(lines);
@@ -125,7 +114,6 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
     const r = readInvoice({ date, lines });
     const e = Object.fromEntries(Object.entries(r.errors).map(([k, v]) => [k, fieldText(k, v)]));
-    lines.forEach((l, i) => { const it = known.current.get(l.label), p = !l.itemId && it && itemProblem(it); if (p) e[`lines.${i}.itemId`] = fieldText(`lines.${i}.itemId`, p, l.label); });   // why, not just "required"
     if (picksBranch && !branchId) e.branchId = m("branchRequired");
     setBanner(""); setErrs(e);
     if (Object.keys(e).length) { revealFirstError(); return; }
@@ -152,7 +140,6 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
   const numberText = editing ? code6(row!.invoiceNumber) : next.data ? code6(next.data.next) : "";
   return (
     <>
-      <datalist id="inv-items">{choices.map(([id, l]) => <option key={id} value={l} />)}</datalist>
       <form id="inv" className="card" noValidate onSubmit={(ev) => { ev.preventDefault(); save(); }}>
         {banner && <div id="inv-alert"><div className="note warn" role="alert" data-field-error>{banner}</div></div>}
         <h3>{m("details")}</h3>
@@ -181,9 +168,9 @@ export function InvoiceForm({ row, close, reload, tr }: CustomFormProps) {
             <Tr key={i} data-i={i}>
               <Td num>{i + 1}</Td>
               <Td><div className="field" data-k={`lines.${i}.itemId`} data-err={errs[`lines.${i}.itemId`] ? "" : undefined}>
-                <Input data-f="item" list="inv-items" autoComplete="off" aria-label={m("item")} placeholder={m("itemSearchPlaceholder")} value={l.label}
-                  onFocus={() => { if (!choices.length) searchItems(""); }}
-                  onChange={(ev) => { const label = ev.target.value, it = known.current.get(label); touch(); setLines((ls) => ls.map((x, j) => (j === i ? pick({ ...x, label }, it) : x))); problemText(i, label, it); searchItems(label); }} />{err(`lines.${i}.itemId`)}</div></Td>
+                <ItemPicker id={`inv-item-${i}`} name={`inv-item-${i}`} items={offered} label={(it) => itemLabel(it.itemCode, it.itemName)} value={l.itemId} placeholder={m("itemSearchPlaceholder")} invalid={!!errs[`lines.${i}.itemId`]}
+                  extra={l.itemId && !offered.some((it) => it.id === l.itemId) ? [[l.itemId, l.label] as Option] : undefined}
+                  onChange={(id) => { const it = offered.find((x) => x.id === id), label = it ? itemLabel(it.itemCode, it.itemName) : ""; touch(); setLines((ls) => ls.map((x, j) => (j === i ? pick({ ...x, label }, it) : x))); problemText(i, label, it); }} />{err(`lines.${i}.itemId`)}</div></Td>
               <Td><div className="field" data-k={`lines.${i}.quantity`} data-err={errs[`lines.${i}.quantity`] ? "" : undefined}><Input data-f="quantity" dir="ltr" inputMode="numeric" aria-label={m("quantity")} value={l.quantity} onChange={(ev) => setLine(i, { quantity: ev.target.value })} />{err(`lines.${i}.quantity`)}</div></Td>
               <Td><div className="field"><Input data-f="weight" dir="ltr" readOnly aria-label={m("weight")} aria-describedby="inv-weight-help" placeholder="—" value={milligramsOrEmpty(lineWeightOf(l.itemWeight, l.quantity))} /></div></Td>
               <Td><Button size="sm" data-remove={i} disabled={lines.length === 1} aria-label={m("removeLine", { number: i + 1 })} onClick={() => { touch(); setLines((ls) => ls.filter((_, j) => j !== i)); }}>{m("remove")}</Button></Td>
