@@ -7,7 +7,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { esc } from "@/lib/format";
 import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, effectiveLevel, fitLabel, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, resizeWidth, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
+import { buildLines, effectiveLevel, fitLabel, placeCss, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, resizeWidth, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
 
 /** The preview's editing (never set for a printed label). px = one screen pixel in the label's own units (1 / zoom), so rings stay 2 px on screen.
  *  held = the part being dragged and how far (screen px); target = the place it will snap to. */
@@ -44,6 +44,7 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
       {inside && <><rect x={inside.backX} y={inside.backX} width={inside.backSide} height={inside.backSide} fill="#fff" /><image href={s.logo} x={inside.x} y={inside.y} width={inside.side} height={inside.side} preserveAspectRatio="xMidYMid meet" /></>}
     </svg>
   );
+  const shown = partsShown(s).filter((p) => p !== "qr" || !!item.code);
   // Every part sits where `order` puts it; the extra lines stay glued to the text or to the QR.
   const blocks: Record<Part, ReactNode> = {
     text: grouped("text") ? <div style={{ ...lay.group, ...ring("text") } as CSSProperties} {...tap("text")}>{textEl}{lineEls}</div> : textEl,
@@ -53,7 +54,7 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
   return (
     <div data-printer-label style={outer as CSSProperties}>
       <div style={inner as CSSProperties}>
-        <div style={lay.box as CSSProperties}>{partsShown(s).map((p) => <Fragment key={p}>{blocks[p]}</Fragment>)}</div>
+        <div style={lay.box as CSSProperties}>{shown.map((p, i) => { const pin = placeCss(s, f, i); return Object.keys(pin).length ? <div key={p} style={{ ...pin, display: "flex", minWidth: 0, maxWidth: "100%" } as CSSProperties}>{blocks[p]}</div> : <Fragment key={p}>{blocks[p]}</Fragment>; })}</div>
       </div>
     </div>
   );

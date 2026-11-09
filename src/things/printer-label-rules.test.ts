@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
 import { labelGramsText } from "@/lib/format";
-import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, resizeWidth, fitLabel, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, resizeWidth, fitLabel, placeCss, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -190,6 +190,44 @@ describe("text box width", () => {
     expect(resizeWidth(20, -100 * px, 1)).toBe(1);
     expect(resizeWidth(20, 100 * px, 1, 48)).toBe(48);
     expect(resizeWidth(20, 100 * px, 1, 35.7)).toBe(35.5);
+  });
+});
+
+describe("spread: together, to the edges, equal gaps", () => {
+  const row = S({ widthMm: 60, heightMm: 15, orientation: "landscape", direction: "side", logo: PNG, logoPlacement: "beside", logoMm: 10, qrSizeMm: 10, paddingMm: 1, gapMm: 1, order: ["logo", "text", "qr"] });
+  const item = { text: "test", code: "GE-1" };
+  it("defaults to together and falls back to it for unknown words", () => {
+    expect(S({}).spread).toBe("together");
+    expect(S({ spread: "sideways" }).spread).toBe("together");
+  });
+  it("three parts to the edges: a [1fr auto 1fr] grid with the first at the start, the middle centred, the last at the end", () => {
+    const s = { ...row, spread: "edges" as const }, f = fitLabel(s, item);
+    expect(f.count).toBe(3);
+    expect(layoutCss(s, f).box).toMatchObject({ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)" });
+    expect([0, 1, 2].map((i) => placeCss(s, f, i).justifySelf)).toEqual(["start", "center", "end"]);
+    expect(placeCss({ ...s, direction: "stacked" }, f, 2)).toEqual({ alignSelf: "end" });
+  });
+  it("two parts to the edges and equal gaps are a flex row; together stays centred; spread out, the text hugs its words", () => {
+    const two = { ...row, logo: "", spread: "edges" as const };
+    const f2 = fitLabel(two, item);
+    expect(f2.count).toBe(2);
+    expect(layoutCss(two, f2).box).toMatchObject({ display: "flex", justifyContent: "space-between" });
+    expect(placeCss(two, f2, 0)).toEqual({});
+    expect(layoutCss({ ...row, spread: "even" }, fitLabel({ ...row, spread: "even" }, item)).box.justifyContent).toBe("space-evenly");
+    expect(layoutCss(row, fitLabel(row, item)).box.justifyContent).toBe("center");
+    expect(layoutCss({ ...row, spread: "even" }).text.flex).toBe("0 1 auto");
+    expect(layoutCss(row).text.flex).toBe("1 1 0");
+  });
+  it("to the edges keeps everything inside: with the text in the middle it gets the room between the two edge columns", () => {
+    const s = { ...row, spread: "edges" as const }, f = fitLabel(s, { text: "A long product name here", code: "X" });
+    const free = 58 - 2;
+    const textW = [..."A long product name here"].length * f.fontPt * (25.4 / 72) * 0.6;
+    expect(textW).toBeLessThanOrEqual(free - 2 * Math.max(f.qrMm, f.logoMm) + 1e-6);
+  });
+  it("with the text at an edge, the far square still fits its half and the text fits its column", () => {
+    const s = { ...row, spread: "edges" as const, order: ["text", "logo", "qr"] as ("text" | "logo" | "qr")[] }, f = fitLabel(s, item);
+    const free = 58 - 2;
+    expect(f.logoMm + 2 * f.qrMm).toBeLessThanOrEqual(free * 0.8 + 1e-6);
   });
 });
 

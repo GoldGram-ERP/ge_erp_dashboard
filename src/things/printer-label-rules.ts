@@ -30,7 +30,11 @@ export type Settings = {
   logo: string; logoPlacement: LogoPlacement; logoMm: number; logoPct: number;
   /** The text box's width in mm (0 = automatic). Never wider than the label lets it be: fitLabel caps it. */
   textWidthMm: number;
+  /** How the parts spread along the row (or column): together in the middle; to the edges (first at the start edge, the middle one exactly
+   *  centred, the last at the end edge); or equal gaps everywhere, the ends included (owner, 2026-11-09). */
+  spread: Spread;
 };
+export type Spread = "together" | "edges" | "even";
 /** `extra` = the texts of Excel columns C, D, E... of this label; absent for the typed label (its lines come from Settings.lines). */
 export type LabelItem = { text: string; code: string; extra?: string[] };
 export type Css = Record<string, string | number>;
@@ -39,7 +43,7 @@ export const DEFAULTS: Settings = {
   widthMm: 66, heightMm: 61, orientation: "portrait", direction: "stacked", order: ["logo", "text", "qr"], rotate: 0,
   fontPt: 14, align: "center", paddingMm: 1, gapMm: 0.5, qrTopMm: 6, qrSizeMm: 0, level: "M", copies: 1,
   lines: [], linesPlacement: "afterText",
-  logo: "", logoPlacement: "beside", logoMm: 10, logoPct: 20, textWidthMm: 0,
+  logo: "", logoPlacement: "beside", logoMm: 10, logoPct: 20, textWidthMm: 0, spread: "together",
 };
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
@@ -71,7 +75,7 @@ export function clampSettings(raw: unknown): Settings {
     level: pick(r.level, ["L", "M", "Q", "H"], DEFAULTS.level), copies: num(r.copies, "copies"),
     lines: normaliseLines(r.lines), linesPlacement: pick(r.linesPlacement, ["afterText", "afterQr"], DEFAULTS.linesPlacement),
     logo: cleanLogo(r.logo), logoPlacement: cleanLogoPlacement(r.logoPlacement),
-    logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"), textWidthMm: num(r.textWidthMm, "textWidthMm"),
+    logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"), textWidthMm: num(r.textWidthMm, "textWidthMm"), spread: pick(r.spread, ["together", "edges", "even"], DEFAULTS.spread),
   };
 }
 
@@ -253,7 +257,7 @@ const PT_MM = 25.4 / 72, CHAR_EM = 0.6, LINE_H = 1.15;
 /** The sizes really drawn. The QR and the logo are squares no bigger than the label's free height (in a row) or width (in a column), and they leave room
  *  for the text. Each text line keeps one line and its font is scaled down until its estimated width (0.6 em a character, on the safe side) fits. */
 /** textMm = the text box's drawn width when the person set one (0 = automatic). */
-export type Fit = { qrMm: number; logoMm: number; fontPt: number; linePts: number[]; textMm: number };
+export type Fit = { qrMm: number; logoMm: number; fontPt: number; linePts: number[]; textMm: number; count: number };
 export function fitLabel(s: Settings, item: LabelItem): Fit {
   const r = rotation(pageSize(s), s.rotate), side = s.direction === "side";
   const w = Math.max(0.5, r.w - 2 * s.paddingMm), h = Math.max(0.5, r.h - 2 * s.paddingMm);
@@ -265,12 +269,27 @@ export function fitLabel(s: Settings, item: LabelItem): Fit {
   const textAlong = !hasText ? 0 : side ? w * 0.4 : ((item.text ? s.fontPt : 0) + lines.reduce((a, l) => a + l.fontPt, 0)) * PT_MM * LINE_H;
   const room = Math.max(0, (side ? w : h) - gaps - textAlong);
   if (qr + logo > room) { const k = room / (qr + logo); qr *= k; logo *= k; }
-  const autoRoom = side ? Math.max(0.5, w - gaps - qr - logo) : w;
+  let autoRoom = side ? Math.max(0.5, w - gaps - qr - logo) : w;
+  // To the edges with three parts in a row: the middle one is exactly centred, so each side column is (w - middle - 2 gaps) / 2.
+  // The squares are kept small enough for that, and the text gets the room of the column it sits in.
+  if (s.spread === "edges" && side && parts.length === 3) {
+    const size = (p: Part) => (p === "qr" ? qr : p === "logo" ? logo : 0), free = w - 2 * s.gapMm;
+    const scale = (k: number) => { if (k < 1) { qr *= k; logo *= k; } };
+    if (parts[1] === "text") {
+      const e = Math.max(size(parts[0]), size(parts[2]));
+      if (e > 0) scale((free * 0.3) / e);
+      autoRoom = Math.max(0.5, free - 2 * Math.max(size(parts[0]), size(parts[2])));
+    } else {
+      const other = size(parts[0] === "text" ? parts[2] : parts[0]), m = size(parts[1]);
+      if (m + 2 * other > free * 0.8) scale((free * 0.8) / (m + 2 * other));
+      autoRoom = Math.max(0.5, (free - size(parts[1])) / 2);
+    }
+  }
   // A set width never goes past the room the label gives the text, so nothing leaves the label; the lines under the text share its box.
   const textRoom = s.textWidthMm > 0 ? Math.min(s.textWidthMm, autoRoom) : autoRoom, lineRoom = s.linesPlacement === "afterText" ? textRoom : autoRoom;
   const fit = (text: string, pt: number, roomMm: number) => { const need = [...text].length * pt * PT_MM * CHAR_EM; return need > roomMm ? Math.max(1, Math.floor((pt * roomMm / need) * 4) / 4) : pt; };
   const r3 = (n: number) => Math.round(n * 1000) / 1000;
-  return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt, textRoom), linePts: lines.map((l) => fit(l.text, l.fontPt, lineRoom)), textMm: s.textWidthMm > 0 ? r3(textRoom) : 0 };
+  return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt, textRoom), linePts: lines.map((l) => fit(l.text, l.fontPt, lineRoom)), textMm: s.textWidthMm > 0 ? r3(textRoom) : 0, count: parts.length };
 }
 
 /** The row/column of the parts, with the fitted sizes (f): every part is exactly as big as it is drawn, so nothing leaves the label and a highlight covers the whole part. */
@@ -280,13 +299,30 @@ export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css;
   const q = f?.qrMm ?? s.qrSizeMm;
   // A set text width: a fixed box (placed by the label's alignment in a column), else the automatic width of today.
   const fixed: Css = f?.textMm ? { width: mm(f.textMm), flex: "none", alignSelf: stacked ? self : "center" } : {};
+  // Spread: three parts to the edges is a grid of [1fr auto 1fr], so the middle part is exactly centred whatever the sizes of the others
+  // (each part is pinned by placeCss); two parts to the edges, and equal gaps, are a flex row. Together keeps today's centred group.
+  // Spread out, the text hugs its words instead of taking the free room, so the free room becomes the gaps.
+  const grid = s.spread === "edges" && (f?.count ?? 0) === 3;
+  const justify = s.spread === "edges" ? "space-between" : s.spread === "even" ? "space-evenly" : "center";
+  const base: Css = { gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" };
+  const box: Css = grid
+    ? { ...base, display: "grid", [stacked ? "gridTemplateRows" : "gridTemplateColumns"]: "minmax(0, 1fr) auto minmax(0, 1fr)", [stacked ? "gridTemplateColumns" : "gridTemplateRows"]: "minmax(0, 1fr)", alignItems: "center", justifyItems: "center" }
+    : { ...base, display: "flex", flexDirection: stacked ? "column" : "row", alignItems: "center", justifyContent: justify };
+  const textFlex = stacked ? "none" : s.spread === "together" ? "1 1 0" : "0 1 auto";
   return {
-    box: { display: "flex", flexDirection: stacked ? "column" : "row", alignItems: "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
-    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%", ...fixed },
+    box,
+    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: textFlex, maxWidth: "100%", ...fixed },
     qr: { display: "block", flex: "none", width: mm(q), height: mm(q), alignSelf: stacked ? self : "center" },
     // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under.
-    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? "1 1 0" : "none", ...(s.linesPlacement === "afterText" ? fixed : {}) },
+    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? textFlex : "none", ...(s.linesPlacement === "afterText" ? fixed : {}) },
   };
+}
+
+/** Where part number i (of the drawn parts) is pinned when three parts spread to the edges: start, exact centre, end. Else nothing. */
+export function placeCss(s: Pick<Settings, "spread" | "direction">, f: Pick<Fit, "count">, i: number): Css {
+  if (s.spread !== "edges" || f.count !== 3) return {};
+  const at = i === 0 ? "start" : i === 1 ? "center" : "end";
+  return s.direction === "stacked" ? { alignSelf: at } : { justifySelf: at };
 }
 
 /** The logo as a part of its own: the fitted square. */

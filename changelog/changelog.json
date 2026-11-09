@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Test printer: a Spread choice beside the canvas. Together (grouped in the middle), To the edges (the first part against the left edge, the middle one exactly centred, the last against the right edge), or Equal gaps. The gap you set is always kept, and nothing leaves the label.",
+    "ar": "تست الطابعة: اختيار جديد جنب اللوحة اسمه توزيع الأجزاء: جنب بعض في النص، أو على الأطراف (الأول لازق في الشمال، اللي في النص متوسّط بالظبط، والأخير لازق في اليمين)، أو مسافات متساوية. المسافة اللي انت حاططها بتفضل موجودة، ومفيش حاجة بتطلع برا الليبل."
+   }
+  ]
+ },
+ {
   "version": "1.0.80",
   "date": "2026-11-09",
   "changes": [
