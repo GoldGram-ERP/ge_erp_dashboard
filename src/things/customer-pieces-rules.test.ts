@@ -82,7 +82,7 @@ describe("label", () => {
     expect(html).toContain("Rings &lt;b&gt;");
     expect(html).toContain("21K · 5.25 g");
     for (const leak of ["Mona", "01012345678", "9,900", "9900"]) expect(html).not.toContain(leak);
-    expect(html).toContain("width:30mm");
+    expect(html).toContain("width:38mm");
     expect(customerLabelHtml(record, tr, "a4")).toContain("width:38.1mm");
   });
 });
