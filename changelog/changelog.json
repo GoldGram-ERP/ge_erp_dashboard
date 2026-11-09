@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Merchant purchases: the purchase invoice no longer asks for a karat or a price per gram; the weight goes on the merchant's gold balance in the item's karat (21K equivalent). Money on merchant invoices is postponed.",
+    "ar": "مشتريات التجار: فاتورة الشراء مابقتش بتطلب عيار ولا سعر الجرام؛ الوزن بينزل على رصيد الذهب بتاع التاجر بعيار الصنف (مكافئ 21). والفلوس على فواتير التجار مأجلة.",
+    "route": "/buy/merchants"
+   }
+  ]
+ },
+ {
   "version": "1.0.62",
   "date": "2026-11-09",
   "changes": [
