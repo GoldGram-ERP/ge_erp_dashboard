@@ -146,7 +146,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
           {look.isPending && <p className="help" role="status">{t("common", "loading")}</p>}
           {look.isError && <p className="help" id="piece-unknown">{L("لا توجد قطعة بهذا الكود.", "No piece has this code.")}</p>}
           {found && <div id="pieceDetails">
-            <div className="kv"><span>{L("الاسم", "Name")}</span><span>{found.itemName}</span></div>
+            <div className="kv"><span>{L("الاسم", "Name")}</span><span dir="ltr">{found.itemName}</span></div>
             <div className="kv"><span>{L("العيار", "Karat")}</span><span dir="ltr">{found.karat}</span></div>
             <div className="kv"><span>{L("الوزن (جم)", "Weight (g)")}</span><span dir="ltr">{milligramsText(found.weight)}</span></div>
             <div className="kv"><span>{L("سعر الشراء للجرام", "Buy price per gram")}</span><span dir="ltr">{found.buyPricePerGram === null ? "—" : piastresText(found.buyPricePerGram)}</span></div>
