@@ -3,6 +3,11 @@
   "version": "next",
   "changes": [
    {
+    "kind": "fixed",
+    "en": "Sales desk: the Open the invoice button on a completed draft now opens the invoice made from that draft, not the list of all invoices.",
+    "ar": "مكتب المبيعات: زرار فتح الفاتورة بقى بيفتح الفاتورة بتاعة المسودة دي بس، مش كل الفواتير."
+   },
+   {
     "kind": "better",
     "en": "Bug reports: each row has an Action menu (mark as read or unread, cancel the report, copy its text, copy its image), opening a new report marks it as read, and a Cancelled filter.",
     "ar": "بلاغات المشاكل: كل صف بقى فيه زرار إجراء (علّمه مقروء أو مش مقروء، الغي البلاغ، انسخ النص، انسخ الصورة)، وأول ما تفتح بلاغ جديد بيتعلّم مقروء، وفيه فلتر للملغي."

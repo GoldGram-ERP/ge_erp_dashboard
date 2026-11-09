@@ -501,7 +501,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             </div></div>}
 
             {draft?.status === "completed" && <div className="tk-card" id="sd-done" role="status"><b>{d("completed", { number: draft.salesInvoiceNumber })}</b>
-              {mayOpenInvoice ? <NavLink href="/sales/invoices" className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
+              {mayOpenInvoice ? <NavLink href={`/sales/invoices?open=${draft.salesInvoiceId}`} className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
 
             {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
