@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
+import { ItemPicker } from "@/components/fields/ItemPicker";
+import { useItems } from "@/lib/items";
 import { backendFieldErrors } from "@/lib/fields";
 import { today } from "@/lib/format";
 import { useMe } from "@/lib/session";
@@ -15,7 +17,7 @@ import { revealFirstError } from "@/lib/submit-guard";
 import { toast } from "@/components/engine";
 import { Button, Input } from "@/components/ui";
 import { Select } from "@/components/fields/Select";
-import { code6, useOptions, type Lists } from "./stocktake-shared";
+import { code6, type Lists } from "./stocktake-shared";
 
 export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { lists: Lists; onStarted: (count: Row) => void }) {
   const { t, L } = tr;
@@ -31,7 +33,7 @@ export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { l
   useEffect(() => { saveKey.current = newSaveKey(); }, [branchId, categoryId, itemId, karat]);   // edited: a new attempt, a new key
 
   const { branches, categories } = lists;
-  const items = useOptions("/items", "itemName", categoryId ? { categoryId } : undefined);
+  const { items } = useItems(categoryId ? { categoryId } : {});
   const next = useQuery({ queryKey: ["next-number", "stock_count", branchId], retry: false, queryFn: () => api<{ next: number }>("/document-numbers/next", { query: { documentType: "stock_count", branchId: branchId || undefined } }) });
   const numberHelp = next.data ? t("common", "upcomingNumber") : branchId ? m("filledBySystem") : t("common", "chooseBranchForNumber");
 
@@ -77,7 +79,7 @@ export function StartForm({ tr, close, lists, onStarted }: CustomFormProps & { l
           </div>
           {branchId && <>
             {field("categoryId", m("category"), <Select id="f-categoryId" name="categoryId" value={categoryId} onChange={(v) => { setCategoryId(v); setItemId(""); }} options={categories} placeholder={m("allCategories")} />)}
-            {field("itemId", m("item"), <Select id="f-itemId" name="itemId" value={itemId} onChange={setItemId} options={items} placeholder={m("anyItem")} />)}
+            {field("itemId", m("item"), <ItemPicker id="f-itemId" name="itemId" value={itemId} onChange={setItemId} items={items ?? []} placeholder={m("anyItem")} />)}
             {field("karat", m("karat"), <Select id="f-karat" name="karat" value={karat} onChange={setKarat} options={["18", "21", "24", "999"].map((k) => [k, k])} placeholder={m("anyKarat")} searchable={false} />)}
           </>}
         </div>

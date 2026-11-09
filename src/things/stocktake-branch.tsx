@@ -32,7 +32,7 @@ export const makeConfigWith = (treasuries: GoldTreasury[], lists: Lists): MakeCo
     codeField("fromCode", m("branchStock.fromCode")),
     { ...codeField("toCode", m("branchStock.toCode")), validate: (v, all) => (v !== "" && all.fromCode !== "" && v < all.fromCode ? m("branchStock.toCodeBelowFrom") : null) },
     { name: "categoryId", label: m("branchStock.categoryId"), type: "select", options: lists.categories, placeholder: ALL },
-    { name: "itemId", label: m("branchStock.itemId"), type: "select", options: lists.items, placeholder: ALL },
+    { name: "itemId", label: m("branchStock.itemId"), type: "select", picker: "item", options: lists.items, placeholder: ALL },
   ];
 
   // ───── stock by category / by item ─────

@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
+import { ItemPicker } from "@/components/fields/ItemPicker";
 import { backendFieldErrors } from "@/lib/fields";
 import { latinNumber, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
@@ -215,7 +216,7 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
             return (
               <div className="formgrid" data-line={i} key={i} style={{ marginBottom: 10 }}>
                 <div className="field" data-k={`line${i}Item`} data-err={errs[`line${i}Item`] ? "" : undefined}><label htmlFor={`it${i}`}>{rm("itemNumber", { number: String(i + 1) })} *</label>
-                  <Choice tr={tr} id={`it${i}`} options={items.map((x) => [x.id, `${x.itemName} · ${x.karat ?? ""}`])} value={l.itemId} onChange={(v) => setLine(i, { itemId: v })} />
+                  <ItemPicker id={`it${i}`} name={`it${i}`} items={items} value={l.itemId} placeholder={sg(tr, "choose")} onChange={(v) => setLine(i, { itemId: v })} />
                   <div className="help" data-karat={i}>{it?.karat ? sg(tr, "karatOf", { karat: it.karat }) : ""}</div>{err(`line${i}Item`)}</div>
                 <div className="field" data-k={`line${i}Quantity`} data-err={errs[`line${i}Quantity`] ? "" : undefined}><label htmlFor={`iq${i}`}>{rm("quantity")} *</label>
                   <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" value={l.quantity} style={ltrStyle} onChange={(e) => setLine(i, { quantity: e.target.value })} />{err(`line${i}Quantity`)}</div>

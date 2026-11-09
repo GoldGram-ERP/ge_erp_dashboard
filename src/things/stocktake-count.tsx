@@ -111,7 +111,7 @@ export const makeConfigWith = (onScan: (id: string) => void, lists: Lists): Make
         { name: "karat", label: m("missingPieces.karat"), type: "select", options: ["18", "21", "24", "999"].map((k) => [k, karatName(k)]), placeholder: ALL },
         { name: "itemType", label: m("missingPieces.itemType"), type: "select", options: ["gold", "other_or_silver"].map((k) => [k, t("gold-accounts", `items.itemTypes.${k}`)]), placeholder: ALL },
         { name: "categoryId", label: m("missingPieces.categoryId"), type: "select", options: lists.categories, placeholder: ALL },
-        { name: "itemId", label: m("missingPieces.itemId"), type: "select", options: lists.items, placeholder: ALL },
+        { name: "itemId", label: m("missingPieces.itemId"), type: "select", picker: "item", options: lists.items, placeholder: ALL },
         from("missingPieces"), to("missingPieces"),
       ],
       sort: { default: { key: "countNumber", dir: "desc" } },

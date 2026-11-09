@@ -67,7 +67,7 @@ export const makeConfigWith = (treasuries: Treasury[], scan?: () => void): MakeC
     { name: "karat", label: gs("karat"), type: "select", options: ["18", "21", "24", "999"].map((k) => [k, k]), placeholder: ALL },
     { name: "itemType", label: gs("itemType"), type: "select", options: ["gold", "other_or_silver"].map((k) => [k, t("gold-accounts", `items.itemTypes.${k}`)]), placeholder: ALL },
     { name: "categoryId", label: gs("categoryId"), type: "select", optionsFrom: categorySpec, placeholder: ALL },
-    { name: "itemId", label: gs("itemId"), type: "select", optionsFrom: itemSpec, placeholder: ALL },
+    { name: "itemId", label: gs("itemId"), type: "select", picker: "item", optionsFrom: itemSpec, placeholder: ALL },
     { name: "untilDate", label: gs("untilDate"), type: "date", placeholder: gs("today") },
     { name: "fromWeight", label: gs("fromWeight"), type: "weight", toQuery: (v) => (v === "" || v === undefined ? {} : { fromWeight: gramsQuery(v) }) },
     { name: "toWeight", label: gs("toWeight"), type: "weight", toQuery: (v) => (v === "" || v === undefined ? {} : { toWeight: gramsQuery(v) }),

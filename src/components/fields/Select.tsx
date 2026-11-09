@@ -12,6 +12,8 @@ type Props = {
   id: string; name: string; value: string; onChange: (v: string) => void; onBlur?: () => void;
   options: Option[]; placeholder?: string; disabled?: boolean; searchable?: boolean; className?: string;
   labelledBy?: string; describedBy?: string; invalid?: boolean; addNew?: AddNew;
+  /** Above the list, under the search (the item picker's brand filter). */
+  header?: React.ReactNode;
 };
 
 /** A trigger button whose caller wrote a plain <label for=id> (not our Field) still gets its name: point aria-labelledby at that label. */
@@ -26,7 +28,7 @@ export function useLabelFallback(btn: React.RefObject<HTMLButtonElement | null>,
   });
 }
 
-export function Select({ id, name, value, onChange, onBlur, options, placeholder, disabled, searchable, className = "", labelledBy, describedBy, invalid, addNew }: Props) {
+export function Select({ id, name, value, onChange, onBlur, options, placeholder, disabled, searchable, className = "", labelledBy, describedBy, invalid, addNew, header }: Props) {
   const { L } = useT();
   const locale = useLocale();
   const real = options.filter((o) => String(o[0]) !== "");
@@ -98,11 +100,12 @@ export function Select({ id, name, value, onChange, onBlur, options, placeholder
                 value={q} onChange={(e) => { setQ(e.target.value); setActive(0); }} onKeyDown={keys} />
             </div>
           )}
+          {header}
           <ul ref={list} role="listbox" id={pid}>
-            {shown.length ? shown.map(([v, l, dis], k) => (
-              <li key={String(v)} role="option" id={`${pid}-${k}`} className={k === active ? "active" : undefined} aria-disabled={dis || undefined} aria-selected={String(v) === value}
+            {shown.length ? shown.map(([v, l, dis, meta], k) => (
+              <li key={String(v)} role="option" id={`${pid}-${k}`} className={k === active ? "active" : undefined} data-tone={meta?.tone} aria-disabled={dis || undefined} aria-selected={String(v) === value}
                 onPointerUp={() => pick(k)} onPointerMove={() => k !== active && setActive(k)}>
-                <span className="lbl" title={l}>{l}</span>
+                <span className={meta?.sub ? "lbl two" : "lbl"} title={l}>{l}{meta?.sub && <small className="sub">{meta.sub}</small>}</span>
                 <span className="tick"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span>
               </li>
             )) : <li className="sel-empty" role="presentation">{L("لا توجد نتائج", "No results")}</li>}
