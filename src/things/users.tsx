@@ -101,7 +101,8 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
       actions: [
         { id: "edit", label: t("common", "edit"), icon: "edit", when: can, run: (r, h) => { h.close(); h.openForm("edit", r); } },
         { id: "screens", label: L("تحديد الشاشات", "Assign screens"), icon: "key", when: (r) => can(r) && r.userType === "user", run: (r, h) => { h.close(); h.openForm("edit", { ...r, openTab: "screen" }); } },
-        { id: "jobs", label: L("تحديد الوظائف", "Assign jobs"), icon: "key", when: (r) => can(r) && r.userType === "user", run: (r, h) => { h.close(); h.openForm("edit", { ...r, openTab: "job" }); } },
+        // Hidden (owner, 2026-11-09): the "Assign jobs" button on a user. To bring it back, remove the // below; nothing else was removed.
+        // { id: "jobs", label: L("تحديد الوظائف", "Assign jobs"), icon: "key", when: (r) => can(r) && r.userType === "user", run: (r, h) => { h.close(); h.openForm("edit", { ...r, openTab: "job" }); } },
         { id: "print", label: t("common", "print"), icon: "print", run: () => window.print() },
         { id: "unlock", label: u("unlock"), icon: "key", when: (r) => can(r) && !!r.locked, run: async (r, h) => { await api(`/users/${r.id}/unlock`, { method: "POST" }); h.close(); h.toast(u("unlocked")); h.reload(); } },
       ],

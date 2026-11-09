@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Users: the Assign jobs button is hidden on a user page for now.",
+    "ar": "المستخدمين: زرار «تحديد الوظائف» مخفي دلوقتي في صفحة المستخدم."
+   }
+  ]
+ },
+ {
   "version": "1.0.63",
   "date": "2026-11-09",
   "changes": [
