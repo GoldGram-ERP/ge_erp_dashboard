@@ -1,5 +1,17 @@
 [
  {
+  "version": "1.0.73",
+  "date": "2026-11-09",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "The sales invoice form total now matches the saved total exactly (it was off by up to 2 pounds). New All button beside cash, Fill the rest beside each bank, and a copy button for the remaining to pay.",
+    "ar": "إجمالي فاتورة البيع في الشاشة بقى بيطابق إجمالي الحفظ بالظبط (كان فيه فرق جنيهين). وزرار «الكل» جنب الكاش، و«كمّل الباقي» جنب كل بنك، وزرار ينسخ المتبقي للدفع.",
+    "route": "/sales/invoices"
+   }
+  ]
+ },
+ {
   "version": "1.0.72",
   "date": "2026-11-09",
   "changes": [
