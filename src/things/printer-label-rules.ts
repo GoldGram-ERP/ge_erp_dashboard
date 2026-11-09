@@ -7,6 +7,8 @@ export type Rotate = 0 | 90 | 180 | 270;
 export type Align = "left" | "center" | "right";
 export type QrLevel = "L" | "M" | "Q" | "H";
 
+export type LogoPlacement = "left" | "middle" | "right" | "inside" | "none";
+
 export type LineAlign = Align | "inherit";
 export type LinesPlacement = "afterText" | "afterQr";
 /** One extra text line: its own text and style. keepBlank = an empty text still takes its row (spacing control). */
@@ -20,6 +22,8 @@ export type Settings = {
   fontPt: number; align: Align; paddingMm: number; gapMm: number;
   qrTopMm: number; qrSizeMm: number; level: QrLevel; copies: number;
   lines: ExtraLine[]; linesPlacement: LinesPlacement;
+  /** The logo as a data URL ("" = none). Left/middle/right are physical sides of the printed label. logoMm = the square the logo fits in (left/middle/right); logoPct = % of the QR width (inside). */
+  logo: string; logoPlacement: LogoPlacement; logoMm: number; logoPct: number;
 };
 /** `extra` = the texts of Excel columns C, D, E... of this label; absent for the typed label (its lines come from Settings.lines). */
 export type LabelItem = { text: string; code: string; extra?: string[] };
@@ -29,12 +33,13 @@ export const DEFAULTS: Settings = {
   widthMm: 66, heightMm: 61, orientation: "portrait", direction: "stacked", swap: false, rotate: 0,
   fontPt: 14, align: "center", paddingMm: 1, gapMm: 0.5, qrTopMm: 6, qrSizeMm: 0, level: "M", copies: 1,
   lines: [], linesPlacement: "afterText",
+  logo: "", logoPlacement: "left", logoMm: 10, logoPct: 20,
 };
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
 
 // Wide on purpose (owner, 2026-11-09): the test page must take any size, 1 mm up; a smaller box used to snap back to 10.
-const RANGES = { widthMm: [1, 1000], heightMm: [1, 1000], fontPt: [1, 200], paddingMm: [0, 100], gapMm: [0, 100], qrTopMm: [0, 500], qrSizeMm: [0, 1000], copies: [1, 100] } as const;
+const RANGES = { widthMm: [1, 1000], heightMm: [1, 1000], fontPt: [1, 200], paddingMm: [0, 100], gapMm: [0, 100], qrTopMm: [0, 500], qrSizeMm: [0, 1000], copies: [1, 100], logoMm: [0.5, 500], logoPct: [1, 100] } as const;
 type NumKey = keyof typeof RANGES;
 
 const num = (v: unknown, key: NumKey): number => {
@@ -59,7 +64,36 @@ export function clampSettings(raw: unknown): Settings {
     paddingMm: num(r.paddingMm, "paddingMm"), gapMm: num(r.gapMm, "gapMm"), qrTopMm: num(r.qrTopMm, "qrTopMm"), qrSizeMm: num(r.qrSizeMm, "qrSizeMm"),
     level: pick(r.level, ["L", "M", "Q", "H"], DEFAULTS.level), copies: num(r.copies, "copies"),
     lines: normaliseLines(r.lines), linesPlacement: pick(r.linesPlacement, ["afterText", "afterQr"], DEFAULTS.linesPlacement),
+    logo: cleanLogo(r.logo), logoPlacement: pick(r.logoPlacement, LOGO_PLACEMENTS, DEFAULTS.logoPlacement),
+    logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"),
   };
+}
+
+// ───── Logo ─────
+export const LOGO_PLACEMENTS: readonly LogoPlacement[] = ["left", "middle", "right", "inside", "none"];
+export const LOGO_MAX_FILE = 3 * 1024 * 1024, LOGO_MAX_SIDE = 600, LOGO_WARN_PCT = 30, LOGO_DATA_MAX = 4_000_000;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+/** Only an image data URL of a sane size is kept; anything else (a link, text, a huge string) is dropped, so stored data can never inject markup. */
+export const cleanLogo = (v: unknown): string => (typeof v === "string" && /^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length <= LOGO_DATA_MAX ? v : "");
+/** A chosen file -> the plain message key to show, or null when it is fine. */
+export const logoFileError = (f: { type: string; size: number }): "logoBadType" | "logoTooBig" | null =>
+  !LOGO_TYPES.includes(f.type) ? "logoBadType" : f.size > LOGO_MAX_FILE ? "logoTooBig" : null;
+/** The size a raster logo is redrawn at: the longest side at most 600 px, the ratio kept, never enlarged. */
+export function downscaleSize(w: number, h: number, max: number = LOGO_MAX_SIDE): { w: number; h: number } {
+  const k = Math.min(1, max / Math.max(w, h));
+  return { w: Math.max(1, Math.round(w * k)), h: Math.max(1, Math.round(h * k)) };
+}
+/** The logo shows only when there is one and the choice is not "No logo". */
+export const logoShown = (s: Pick<Settings, "logo" | "logoPlacement">): boolean => !!s.logo && s.logoPlacement !== "none";
+export const logoInside = (s: Pick<Settings, "logo" | "logoPlacement">): boolean => !!s.logo && s.logoPlacement === "inside";
+/** The QR error level really used: H while a logo sits inside the code (the logo hides part of it), else the person's choice. */
+export const effectiveLevel = (s: Pick<Settings, "logo" | "logoPlacement" | "level">): QrLevel => (logoInside(s) ? "H" : s.level);
+/** Plain warning when the inside logo is so big the code may stop scanning. */
+export const logoTooBigForQr = (s: Pick<Settings, "logo" | "logoPlacement" | "logoPct">): boolean => logoInside(s) && s.logoPct > LOGO_WARN_PCT;
+/** The logo and its white backing square inside the QR svg box (size = modules + quiet zone, same units as the viewBox). pct is % of the module area width. */
+export function qrLogoBox(size: number, quiet: number, pct: number): { x: number; y: number; side: number; backX: number; backSide: number } {
+  const side = ((size - 2 * quiet) * pct) / 100, backSide = side * 1.1;
+  return { x: (size - side) / 2, y: (size - side) / 2, side, backX: (size - backSide) / 2, backSide };
 }
 
 const LINE_TEXT_MAX = 200;
@@ -137,6 +171,33 @@ export function place(r: { tx: number; ty: number }, deg: Rotate, x: number, y: 
   return [c * x - s * y + r.tx, s * x + c * y + r.ty];
 }
 
+// ───── Saved state: everything on the page, in one versioned key ─────
+export const STATE_KEY = "test-printer-state-v2", BATCH_MAX_JSON = 1_500_000;
+export type SavedState = { settings: Settings; text: string; code: string; batch: LabelItem[]; batchName: string };
+export const defaultState = (): SavedState => ({ settings: clampSettings({}), text: "", code: "", batch: [], batchName: "" });
+const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+function cleanBatch(raw: unknown): LabelItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isObj).map((r) => ({
+    text: str(r.text, 2000), code: str(r.code, 2000),
+    ...(Array.isArray(r.extra) ? { extra: r.extra.map((x) => str(x, LINE_TEXT_MAX)) } : {}),
+  })).filter(hasContent);
+}
+/** The stored texts -> a valid state. v2 wins; else the old settings-only key; broken or missing data gives the defaults field by field. */
+export function loadState(v2: string | null | undefined, legacy: string | null | undefined): SavedState {
+  let o: unknown;
+  try { o = v2 ? JSON.parse(v2) : null; } catch { o = null; }
+  if (isObj(o) && o.v === 2) {
+    return { settings: clampSettings(o.settings), text: str(o.text, 200), code: str(o.code, 500), batch: cleanBatch(o.batch), batchName: str(o.batchName, 200) };
+  }
+  return { ...defaultState(), settings: parseSettings(legacy) };
+}
+/** The state -> the JSON to store. A batch whose JSON is over about 1.5 MB is left out (batchDropped = tell the person). */
+export function saveState(st: SavedState): { json: string; batchDropped: boolean } {
+  const big = JSON.stringify(st.batch).length > BATCH_MAX_JSON;
+  return { json: JSON.stringify({ v: 2, ...st, ...(big ? { batch: [], batchName: "" } : {}) }), batchDropped: big };
+}
+
 /** The page frame (page size, clips) and the turned inner box. */
 export function frameCss(s: Settings): { outer: Css; inner: Css } {
   const p = pageSize(s), r = rotation(p, s.rotate);
@@ -153,7 +214,7 @@ export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css; group: C
   const self = s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center";
   const fixed = s.qrSizeMm > 0;
   return {
-    box: { display: "flex", flexDirection: dir, alignItems: stacked ? "stretch" : "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
+    box: { display: "flex", flexDirection: dir, alignItems: stacked ? "stretch" : "center", justifyContent: "center", gap: mm(s.gapMm), padding: logoShown(s) && s.logoPlacement !== "inside" ? 0 : mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
     text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${s.fontPt}pt`, lineHeight: 1.15, textAlign: s.align, whiteSpace: "pre-wrap", overflowWrap: "anywhere", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%" },
     qr: {
       display: "block", minWidth: 0, minHeight: 0, marginTop: mm(s.qrTopMm),
@@ -161,6 +222,16 @@ export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css; group: C
     },
     // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under, swap or not.
     group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: (s.linesPlacement === "afterText" ? stacked : fixed) ? "none" : "1 1 0" },
+  };
+}
+
+/** Left/right/middle logo: a shell around the label content. Physical sides (direction ltr), so Left is left in Arabic too. */
+export function logoShellCss(s: Settings): { shell: Css; logo: Css; main: Css } {
+  const side = s.logoPlacement === "left" || s.logoPlacement === "right", sz = mm(s.logoMm);
+  return {
+    shell: { display: "flex", flexDirection: side ? (s.logoPlacement === "right" ? "row-reverse" : "row") : "column", alignItems: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
+    logo: { display: "block", flex: "none", width: sz, height: sz, maxWidth: side ? "50%" : "100%", objectFit: "contain" },
+    main: { flex: "1 1 0", minWidth: 0, minHeight: 0, width: side ? "auto" : "100%", height: side ? "100%" : "auto", alignSelf: "stretch" },
   };
 }
 

@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Test printer: upload a logo and put it on the left, in the middle, on the right or inside the QR code; everything you type is now remembered on refresh, and Reset everything starts again from the defaults.",
+    "ar": "اختبار الطابعة: ارفع لوجو وحطه يمين أو يسار أو في النص أو جوه الـ QR؛ وكل اللي بتكتبه بقى بيتحفظ بعد الريفريش، وزرار رجّع كل حاجة بيبدأ من الأول."
+   }
+  ]
+ },
+ {
   "version": "1.0.67",
   "date": "2026-11-09",
   "changes": [

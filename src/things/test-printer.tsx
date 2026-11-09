@@ -3,21 +3,22 @@
 // the person can change until the printout is right. Admin and Super admin only (same gate as Settings); nothing is saved on the server,
 // the settings are remembered in this browser. The rules are in printer-label-rules.ts (tested there); the print window is in components/printer-label.tsx.
 import { useEffect, useRef, useState } from "react";
-import { Button, Checkbox, FileInput, Input, Seg, Textarea } from "@/components/ui";
+import { Button, Checkbox, FileInput, Input, Seg, Textarea, useConfirm } from "@/components/ui";
 import { PrinterLabelPreview, printPrinterLabels } from "@/components/ui/PrinterLabel";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { useAccess } from "./sales-access";
-import { DEFAULTS, PRESETS, STORAGE_KEY, addLine, clampSettings, hasContent, labelList, moveLine, pageSize, parseSettings, removeLine, rowToItem, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
+import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
+import { readLogo } from "./printer-logo";
 
-type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrTopMm" | "qrSizeMm" | "copies";
+type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrTopMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct";
 
 export default function Page() {
   const tr = useT(), { t, L } = tr;
   const m = (k: string, v?: Record<string, string | number>) => t("test-printer", k, v);
   const access = useAccess();
   const { data: me } = useMe();
-  const [s, setS] = useState<Settings>(DEFAULTS);
+  const [s, setS] = useState<Settings>(() => defaultState().settings);
   const [ready, setReady] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [text, setText] = useState("");
@@ -25,12 +26,34 @@ export default function Page() {
   const [batch, setBatch] = useState<LabelItem[]>([]);
   const [batchName, setBatchName] = useState("");
   const [message, setMessage] = useState("");
+  const [saveNote, setSaveNote] = useState("");
+  const [logoMsg, setLogoMsg] = useState("");
+  const [confirm, dialog] = useConfirm();
   const fileRef = useRef<HTMLInputElement>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
 
   // Read after mount (the server render has no localStorage), so the first paint is the defaults.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { try { setS(parseSettings(localStorage.getItem(STORAGE_KEY))); } catch { /* private mode: the defaults stay */ } setReady(true); }, []);
-  useEffect(() => { if (ready) try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch { /* not remembered */ } }, [s, ready]);
+  useEffect(() => {
+    try {
+      const st = loadState(localStorage.getItem(STATE_KEY), localStorage.getItem(STORAGE_KEY));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setS(st.settings); setText(st.text); setCode(st.code); setBatch(st.batch); setBatchName(st.batchName);
+    } catch { /* private mode: the defaults stay */ }
+    setReady(true);
+  }, []);
+  // Everything is saved about 300 ms after the last change. A full or blocked storage never breaks the page: one plain line says so.
+  useEffect(() => {
+    if (!ready) return;
+    const id = setTimeout(() => {
+      try {
+        const out = saveState({ settings: s, text, code, batch, batchName });
+        localStorage.setItem(STATE_KEY, out.json);
+        setSaveNote(out.batchDropped ? m("batchNotSaved") : "");
+      } catch { setSaveNote(m("saveFail")); }
+    }, 300);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s, text, code, batch, batchName, ready]);
 
   const set = (patch: Partial<Settings>) => setS((old) => clampSettings({ ...old, ...patch }));
   const single: LabelItem = { text: text.trim(), code: code.trim() };
@@ -54,6 +77,21 @@ export default function Page() {
       setBatch(got); setBatchName(file.name);
     } catch { setMessage(m("readFail", { name: file.name })); }
   }
+  async function pickLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setLogoMsg("");
+    const bad = logoFileError(file);
+    if (bad) { setLogoMsg(m(bad)); return; }
+    try { set({ logo: await readLogo(file) }); } catch { setLogoMsg(m("logoReadFail")); }
+  }
+  async function resetAll() {
+    if (!(await confirm({ title: m("resetAllTitle"), text: m("resetAllText"), ok: m("resetAll"), cancel: t("common", "cancel"), danger: true }))) return;
+    const d = defaultState();
+    try { localStorage.removeItem(STATE_KEY); localStorage.removeItem(STORAGE_KEY); } catch { /* blocked: nothing stored to clear */ }
+    setS(d.settings); setText(d.text); setCode(d.code); setBatch(d.batch); setBatchName(d.batchName); setDraft({}); setMessage(""); setLogoMsg("");
+  }
   const clearBatch = () => { setBatch([]); setBatchName(""); setMessage(""); };
   const print = () => printPrinterLabels(s, toPrint, { title: m("windowTitle"), print: t("common", "print"), popup: m("popup"), rtl: tr.isAr });
 
@@ -75,8 +113,13 @@ export default function Page() {
   return (
     <div className="st-page" id="test-printer-page">
       <div className="head"><div><h1>{m("title")}</h1><div className="sub">{m("sub")}</div></div></div>
+      {dialog}
       <div className="tp-page">
         <div className="tp-settings">
+          <div className="tp-actions">
+            <Button danger onClick={resetAll}>{m("resetAll")}</Button>
+            {saveNote && <span className="help" role="status">{saveNote}</span>}
+          </div>
           <div className="card tp-block">
             <h3>{m("content")}</h3>
             <div className="field"><label htmlFor="tp-text">{m("text")}</label>
@@ -121,6 +164,26 @@ export default function Page() {
           </div>
 
           <div className="card tp-block">
+            <h3>{m("logo")}</h3>
+            <div className="tp-actions">
+              <Button onClick={() => logoRef.current?.click()}>{s.logo ? m("logoChange") : m("logoUpload")}</Button>
+              <FileInput ref={logoRef} accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml" aria-label={m("logoUpload")} onChange={pickLogo} />
+              {s.logo && <Button variant="plain" danger onClick={() => set({ logo: "" })}>{m("logoRemove")}</Button>}
+            </div>
+            {s.logo && <div className="tp-thumb"><img src={s.logo} alt={m("logo")} /></div>}
+            <div className="help">{m("logoHint")}</div>
+            {logoMsg && <div className="note warn" role="alert">{logoMsg}</div>}
+            <div className="field"><span className="lbl">{m("logoPlace")}</span>
+              <Seg label={m("logoPlace")} value={s.logoPlacement} onChange={(v) => set({ logoPlacement: v })} items={[{ id: "left", label: m("left") }, { id: "middle", label: m("logoMiddle") }, { id: "right", label: m("right") }, { id: "inside", label: m("logoInside") }, { id: "none", label: m("logoNone") }]} />
+              <div className="help">{m("logoPlaceHelp")}</div></div>
+            {s.logoPlacement === "inside"
+              ? numField("logoPct", m("logoPct"))
+              : s.logoPlacement !== "none" && numField("logoMm", m("logoMm"))}
+            {logoInside(s) && <div className="help" role="status">{m("logoLevelH")}</div>}
+            {logoTooBigForQr(s) && <div className="note warn" role="alert">{m("logoTooBig30")}</div>}
+          </div>
+
+          <div className="card tp-block">
             <h3>{m("size")}</h3>
             <div className="field"><span className="lbl" id="tp-presets-l">{m("presets")}</span>
               <div className="tp-actions" role="group" aria-labelledby="tp-presets-l">
@@ -144,12 +207,11 @@ export default function Page() {
             <div className="field"><span className="lbl">{m("align")}</span>
               <Seg label={m("align")} value={s.align} onChange={(v) => set({ align: v })} items={[{ id: "left", label: m("left") }, { id: "center", label: m("center") }, { id: "right", label: m("right") }]} /></div>
             <div className="field"><span className="lbl">{m("level")}</span>
-              <Seg label={m("level")} value={s.level} onChange={(v) => set({ level: v })} items={["L", "M", "Q", "H"].map((l) => ({ id: l as Settings["level"], label: l }))} /></div>
+              <Seg label={m("level")} value={effectiveLevel(s)} onChange={(v) => { if (!logoInside(s)) set({ level: v }); }} items={["L", "M", "Q", "H"].map((l) => ({ id: l as Settings["level"], label: l }))} /></div>
             <div className="tp-fields">
               {numField("fontPt", m("font"))}{numField("paddingMm", m("padding"))}{numField("gapMm", m("gap"))}
               {numField("qrTopMm", m("qrTop"))}{numField("qrSizeMm", m("qrSize"))}{numField("copies", m("copies"))}
             </div>
-            <div className="tp-actions"><Button variant="plain" onClick={() => { setS(DEFAULTS); setDraft({}); }}>{m("reset")}</Button></div>
           </div>
         </div>
 

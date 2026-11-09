@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
-import { DEFAULTS, addLine, buildLines, clampSettings, frameCss, hasContent, labelList, layoutCss, lineCss, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoShellCss, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -189,5 +189,100 @@ describe("extra lines", () => {
     const s = S({ align: "right" });
     expect(lineCss(s, { text: "x", fontPt: 7.25, align: "inherit", bold: true })).toMatchObject({ fontSize: "7.25pt", fontWeight: 700, textAlign: "right" });
     expect(lineCss(s, { text: "x", fontPt: 7, align: "left", bold: false })).toMatchObject({ fontWeight: 400, textAlign: "left" });
+  });
+});
+
+const PNG = "data:image/png;base64,iVBORw0KGgo=";
+describe("logo", () => {
+  it("only a small image data URL is kept; links, other types and huge strings fall back to no logo", () => {
+    expect(cleanLogo(PNG)).toBe(PNG);
+    expect(cleanLogo("https://x.test/a.png")).toBe("");
+    expect(cleanLogo("data:text/html;base64,PHNjcmlwdD4=")).toBe("");
+    expect(cleanLogo(`data:image/png;base64,${"A".repeat(4_000_001)}`)).toBe("");
+    expect(cleanLogo(5)).toBe("");
+  });
+  it("placement falls back to Left; the size is clamped in mm (left/middle/right) and in % (inside), decimals kept", () => {
+    expect(S({ logoPlacement: "inside" }).logoPlacement).toBe("inside");
+    expect(S({ logoPlacement: "top" }).logoPlacement).toBe("left");
+    expect(S({ logoMm: 12.5 }).logoMm).toBe(12.5);
+    expect(S({ logoMm: 99999 }).logoMm).toBe(500);
+    expect(S({ logoMm: -3 }).logoMm).toBe(0.5);
+    expect(S({ logoPct: 22.5 }).logoPct).toBe(22.5);
+    expect(S({ logoPct: 400 }).logoPct).toBe(100);
+    expect(DEFAULTS.logoPct).toBe(20);
+  });
+  it("the QR level is forced to H only while a logo is inside the code", () => {
+    expect(effectiveLevel(S({ level: "L", logo: PNG, logoPlacement: "inside" }))).toBe("H");
+    expect(effectiveLevel(S({ level: "L", logo: PNG, logoPlacement: "left" }))).toBe("L");
+    expect(effectiveLevel(S({ level: "L", logo: "", logoPlacement: "inside" }))).toBe("L");
+    expect(effectiveLevel(S({ level: "Q", logo: PNG, logoPlacement: "none" }))).toBe("Q");
+  });
+  it("warns above 30 percent, only when the logo is inside", () => {
+    expect(logoTooBigForQr(S({ logo: PNG, logoPlacement: "inside", logoPct: 30 }))).toBe(false);
+    expect(logoTooBigForQr(S({ logo: PNG, logoPlacement: "inside", logoPct: 30.5 }))).toBe(true);
+    expect(logoTooBigForQr(S({ logo: PNG, logoPlacement: "left", logoPct: 90 }))).toBe(false);
+  });
+  it("files: png, jpg, webp, svg pass; others and over 3 MB are refused with a plain key", () => {
+    expect(logoFileError({ type: "image/png", size: 1000 })).toBeNull();
+    expect(logoFileError({ type: "image/svg+xml", size: 3 * 1024 * 1024 })).toBeNull();
+    expect(logoFileError({ type: "image/gif", size: 10 })).toBe("logoBadType");
+    expect(logoFileError({ type: "application/pdf", size: 10 })).toBe("logoBadType");
+    expect(logoFileError({ type: "image/png", size: 3 * 1024 * 1024 + 1 })).toBe("logoTooBig");
+  });
+  it("downscale: longest side at most 600, ratio kept, never enlarged", () => {
+    expect(downscaleSize(1200, 600)).toEqual({ w: 600, h: 300 });
+    expect(downscaleSize(300, 1500)).toEqual({ w: 120, h: 600 });
+    expect(downscaleSize(200, 100)).toEqual({ w: 200, h: 100 });
+    expect(downscaleSize(600, 600)).toEqual({ w: 600, h: 600 });
+    expect(downscaleSize(5000, 1)).toEqual({ w: 600, h: 1 });
+  });
+  it("inside the QR: a centred square of pct of the module area, with a slightly bigger backing square", () => {
+    const b = qrLogoBox(29, 2, 20);
+    expect(b.side).toBeCloseTo(5, 6);
+    expect(b.x).toBeCloseTo(12, 6);
+    expect(b.backSide).toBeGreaterThan(b.side);
+    expect(b.backX + b.backSide / 2).toBeCloseTo(14.5, 6);
+  });
+  it("Left and Right are physical (row / row-reverse, direction ltr); Middle is a column", () => {
+    expect(logoShellCss(S({ logoPlacement: "left" })).shell).toMatchObject({ flexDirection: "row", direction: "ltr" });
+    expect(logoShellCss(S({ logoPlacement: "right" })).shell).toMatchObject({ flexDirection: "row-reverse", direction: "ltr" });
+    expect(logoShellCss(S({ logoPlacement: "middle" })).shell).toMatchObject({ flexDirection: "column" });
+    expect(logoShellCss(S({ logoMm: 7.5 })).logo).toMatchObject({ width: "7.5mm", height: "7.5mm" });
+  });
+});
+
+describe("saved state", () => {
+  const full = () => ({ ...defaultState(), settings: S({ widthMm: 50, logo: PNG, logoPlacement: "inside", logoPct: 25 }), text: "hi", code: "c1", batch: [{ text: "a", code: "b", extra: ["x"] }], batchName: "f.xlsx" });
+  it("what is saved loads back the same", () => {
+    expect(loadState(saveState(full()).json, null)).toEqual(full());
+  });
+  it("missing or broken data gives the defaults; the old settings-only key still loads", () => {
+    expect(loadState(null, null)).toEqual(defaultState());
+    expect(loadState("{not json", "also bad")).toEqual(defaultState());
+    expect(loadState(JSON.stringify({ v: 2 }), null)).toEqual(defaultState());
+    expect(loadState(JSON.stringify([1, 2]), null)).toEqual(defaultState());
+    const old = loadState(null, JSON.stringify({ widthMm: 40, heightMm: 30, orientation: "landscape", level: "Q" }));
+    expect(old.settings).toMatchObject({ widthMm: 40, heightMm: 30, orientation: "landscape", level: "Q", logo: "", logoPlacement: "left" });
+    expect(old.text).toBe("");
+  });
+  it("the new key wins over the old one; wrong field types fall back field by field", () => {
+    const st = loadState(JSON.stringify({ v: 2, settings: { widthMm: "abc", level: "H" }, text: 5, code: "k", batch: "no" }), JSON.stringify({ widthMm: 11 }));
+    expect(st.settings).toMatchObject({ widthMm: DEFAULTS.widthMm, level: "H" });
+    expect(st).toMatchObject({ text: "", code: "k", batch: [] });
+  });
+  it("a batch over about 1.5 MB is left out and flagged; a small one is kept", () => {
+    const big = { ...full(), batch: Array.from({ length: 200 }, (_, i) => ({ text: `${i}`.repeat(10), code: "x".repeat(BATCH_MAX_JSON / 100) })) };
+    const out = saveState(big);
+    expect(out.batchDropped).toBe(true);
+    expect(loadState(out.json, null).batch).toEqual([]);
+    expect(loadState(out.json, null).settings.logo).toBe(PNG);
+    expect(saveState(full()).batchDropped).toBe(false);
+    expect(STATE_KEY).toBe("test-printer-state-v2");
+  });
+  it("reset gives exactly the defaults: no logo, no texts, no batch, default settings", () => {
+    const d = defaultState();
+    expect(d.settings).toEqual(clampSettings(DEFAULTS));
+    expect(d).toEqual({ settings: DEFAULTS, text: "", code: "", batch: [], batchName: "" });
+    expect(d.settings.logo).toBe("");
   });
 });

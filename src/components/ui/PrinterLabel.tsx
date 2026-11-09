@@ -5,30 +5,37 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { useMemo, type CSSProperties } from "react";
 import { esc } from "@/lib/format";
-import { qrShape } from "@/lib/qr";
+import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, frameCss, layoutCss, lineCss, pageSize, previewZoom, printCss, type LabelItem, type Settings } from "@/things/printer-label-rules";
+import { buildLines, effectiveLevel, frameCss, layoutCss, lineCss, logoInside, logoShellCss, logoShown, pageSize, previewZoom, printCss, qrLogoBox, type LabelItem, type Settings } from "@/things/printer-label-rules";
 
 /** One label at its real size in mm (the preview zooms it with CSS). */
 export function PrinterLabel({ s, item }: { s: Settings; item: LabelItem }) {
   const { outer, inner } = frameCss(s), lay = layoutCss(s);
-  const shape = useMemo(() => (item.code ? qrShape(item.code, s.level) : null), [item.code, s.level]);
+  const level = effectiveLevel(s), shape = useMemo(() => (item.code ? qrShape(item.code, level) : null), [item.code, level]);
+  const inside = shape && logoInside(s) ? qrLogoBox(shape.size, QUIET, s.logoPct) : null;
   const lines = buildLines(s, item), underText = s.linesPlacement === "afterText";
   const textEl = item.text && <p dir="auto" style={(lines.length && underText ? { ...lay.text, flex: "none" } : lay.text) as CSSProperties}>{item.text}</p>;
   const lineEls = lines.map((l, i) => <p key={i} dir="auto" style={lineCss(s, l) as CSSProperties}>{l.text}</p>);
   const qrEl = shape && (
     <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={lay.qr as CSSProperties}>
       <path d={shape.d} fill="#000" />
+      {inside && <><rect x={inside.backX} y={inside.backX} width={inside.backSide} height={inside.backSide} fill="#fff" /><image href={s.logo} x={inside.x} y={inside.y} width={inside.side} height={inside.side} preserveAspectRatio="xMidYMid meet" /></>}
     </svg>
   );
+  const content = (
+    <div style={lay.box as CSSProperties}>
+      {!lines.length ? <>{textEl}{qrEl}</>
+        : underText ? <><div style={lay.group as CSSProperties}>{textEl}{lineEls}</div>{qrEl}</>
+        : <>{textEl}<div style={lay.group as CSSProperties}>{qrEl}{lineEls}</div></>}
+    </div>
+  );
+  // Left, middle, right: the logo sits outside the text and QR, in a shell (physical sides, so it does not flip in Arabic).
+  const out = logoShown(s) && s.logoPlacement !== "inside" ? logoShellCss(s) : null;
   return (
     <div data-printer-label style={outer as CSSProperties}>
       <div style={inner as CSSProperties}>
-        <div style={lay.box as CSSProperties}>
-          {!lines.length ? <>{textEl}{qrEl}</>
-            : underText ? <><div style={lay.group as CSSProperties}>{textEl}{lineEls}</div>{qrEl}</>
-            : <>{textEl}<div style={lay.group as CSSProperties}>{qrEl}{lineEls}</div></>}
-        </div>
+        {out ? <div style={out.shell as CSSProperties}><img src={s.logo} alt="" style={out.logo as CSSProperties} /><div style={out.main as CSSProperties}>{content}</div></div> : content}
       </div>
     </div>
   );

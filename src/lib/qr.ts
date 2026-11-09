@@ -2,7 +2,7 @@
 // Error correction M; the quiet zone is two modules around the code so a scanner finds it on the label.
 import qrcode from "qrcode-generator";
 
-const QUIET = 2;
+export const QUIET = 2;
 
 export type QrShape = { size: number; d: string };
 
