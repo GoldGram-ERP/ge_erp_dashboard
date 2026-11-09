@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
-import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoShellCss, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { labelGramsText } from "@/lib/format";
+import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoShellCss, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -284,5 +285,66 @@ describe("saved state", () => {
     expect(d.settings).toEqual(clampSettings(DEFAULTS));
     expect(d).toEqual({ settings: DEFAULTS, text: "", code: "", batch: [], batchName: "" });
     expect(d.settings.logo).toBe("");
+  });
+});
+
+describe("the saved label profile", () => {
+  const LOGO = "data:image/png;base64,AAAA";
+  const tuned = S({ widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", swap: true, rotate: 90, fontPt: 6, align: "left", paddingMm: 0.5, gapMm: 1, qrTopMm: 0, qrSizeMm: 10.5, level: "Q", logo: LOGO, logoPlacement: "inside", logoPct: 18, copies: 5, linesPlacement: "afterQr", lines: [{ text: "secret", fontPt: 5, align: "right", bold: true, keepBlank: true }] });
+
+  it("keeps the print styling and drops the test content (copies, line texts)", () => {
+    const p = profileFromSettings(tuned);
+    expect(p).toMatchObject({ v: 1, widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", swap: true, rotate: 90, fontPt: 6, align: "left", paddingMm: 0.5, gapMm: 1, qrTopMm: 0, qrSizeMm: 10.5, level: "Q", logo: LOGO, logoPlacement: "inside", logoPct: 18, linesPlacement: "afterQr" });
+    expect("copies" in p).toBe(false);
+    expect(p.lines).toEqual([{ text: "", fontPt: 5, align: "right", bold: true, keepBlank: false }]);
+    expect(JSON.stringify(p)).not.toContain("secret");
+  });
+  it("survives the server round trip unchanged", () => {
+    const p = profileFromSettings(tuned);
+    expect(cleanProfile(JSON.parse(JSON.stringify(p)))).toEqual(p);
+    expect(settingsFromProfile(p)).toEqual({ ...tuned, copies: 1, lines: p.lines });
+  });
+  it("junk from the server is null, never a half label", () => {
+    for (const junk of [null, undefined, 5, "x", [], {}, { v: 2 }, { v: "1" }, { widthMm: 40 }]) expect(cleanProfile(junk)).toBeNull();
+  });
+  it("clamps like the page and drops a bad logo", () => {
+    const p = cleanProfile({ v: 1, widthMm: -5, heightMm: 99999, fontPt: "abc", rotate: 45, level: "Z", orientation: "diagonal", logo: "https://evil/x.png", logoPlacement: "left" });
+    expect(p).toMatchObject({ widthMm: 1, heightMm: 1000, fontPt: DEFAULTS.fontPt, rotate: 0, level: "M", orientation: "portrait", logo: "" });
+    expect(cleanProfile({ v: 1, logo: "data:image/svg+xml;base64,PHN2Zz4=" })!.logo).toBe("data:image/svg+xml;base64,PHN2Zz4=");
+    expect(cleanProfile({ v: 1, logo: 'data:image/png;base64,AA"onerror="x' })!.logo).toBe("");
+  });
+  it("sameProfile tells a real change from none", () => {
+    const a = profileFromSettings(tuned);
+    expect(sameProfile(a, cleanProfile(JSON.parse(JSON.stringify(a))))).toBe(true);
+    expect(sameProfile(a, profileFromSettings({ ...tuned, qrSizeMm: 9 }))).toBe(false);
+    expect(sameProfile(a, null)).toBe(false);
+    expect(sameProfile(null, null)).toBe(true);
+  });
+
+  const fmt = { karat: (k: unknown) => `${k}K`, weight: labelGramsText, gram: "g" };
+  it("maps a piece: name -> text line, code -> QR, then code and karat/weight as extra lines in order", () => {
+    const item = pieceLabelItem({ pieceCode: "001190", itemName: "Ring", categoryName: "Rings", karat: "21", weight: 3005 }, fmt);
+    expect(item).toEqual({ text: "Ring", code: "001190", extra: ["001190", "21K · 3.01 g"] });
+    const drawn = buildLines(S({ lines: [] }), item).map((l) => l.text);
+    expect(drawn).toEqual(["001190", "21K · 3.01 g"]);
+  });
+  it("a returned customer piece prints its category as the name; no name leaves the text empty", () => {
+    expect(pieceLabelItem({ pieceCode: "7", itemName: null, categoryName: "Bracelets", karat: "18", weight: 1000 }, fmt).text).toBe("Bracelets");
+    expect(pieceLabelItem({ pieceCode: "7", karat: "18", weight: 1000 }, fmt).text).toBe("");
+  });
+  it("the extra lines take the saved style by position", () => {
+    const s = settingsFromProfile(profileFromSettings(S({ lines: [{ text: "", fontPt: 4, align: "left", bold: true, keepBlank: false }, { text: "", fontPt: 5, align: "right", bold: false, keepBlank: false }] })));
+    const lines = buildLines(s, pieceLabelItem({ pieceCode: "A1", itemName: "N", karat: "21", weight: 100 }, fmt));
+    expect(lines.map((l) => [l.fontPt, l.align, l.bold])).toEqual([[4, "left", true], [5, "right", false]]);
+  });
+
+  it("is used only for the tag roll, QR labels and a valid profile", () => {
+    const p = profileFromSettings(tuned);
+    expect(profileForPrint("tag", p, ["qr", "qr"])).toEqual(p);
+    expect(profileForPrint("a4", p, ["qr"])).toBeNull();
+    expect(profileForPrint("tag", p, ["qr", "barcode"])).toBeNull();
+    expect(profileForPrint("tag", p, [])).toBeNull();
+    expect(profileForPrint("tag", null, ["qr"])).toBeNull();
+    expect(profileForPrint("tag", { v: 9 }, ["qr"])).toBeNull();
   });
 });

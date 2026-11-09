@@ -257,3 +257,35 @@ const PX_PER_MM = 96 / 25.4;
 /** How much to enlarge or shrink a label (mm sized) to fit a preview box of boxW x boxH px, never above 4x. */
 export const previewZoom = (p: { w: number; h: number }, boxW: number, boxH: number): number =>
   Math.min(4, boxW / (p.w * PX_PER_MM), boxH / (p.h * PX_PER_MM));
+
+// ───── The saved profile: the Test printer's look, applied to every QR label the ERP prints (owner, 2026-11-09) ─────
+/** Only the print styling of the page's Settings. Never the test content (free text, QR content, Excel batch, copies) and never the texts of the extra lines (their size, alignment and weight are kept). */
+export type LabelProfile = { v: 1 } & Omit<Settings, "copies" | "lines"> & { lines: ExtraLine[] };
+
+export function profileFromSettings(s: Settings): LabelProfile {
+  const style: Partial<Settings> = { ...s };
+  delete style.copies;
+  return { v: 1, ...(style as Omit<Settings, "copies" | "lines">), lines: s.lines.map((l) => ({ ...l, text: "", keepBlank: false })) };
+}
+/** The profile as the Settings the one label renderer takes (one copy; the ERP lists every label itself). */
+export const settingsFromProfile = (p: LabelProfile): Settings => clampSettings({ ...p, copies: 1 });
+
+/** Anything from the server is untrusted: not an object or not version 1 gives null; else every field is clamped like the page does and the logo must pass cleanLogo. */
+export function cleanProfile(raw: unknown): LabelProfile | null {
+  if (!isObj(raw) || raw.v !== 1) return null;
+  return profileFromSettings(clampSettings(raw));
+}
+/** Same look? (compares the cleaned forms, so a field order or an out-of-range value never makes a false difference) */
+export const sameProfile = (a: LabelProfile | null, b: LabelProfile | null): boolean =>
+  a === b || (!!a && !!b && JSON.stringify(cleanProfile(a)) === JSON.stringify(cleanProfile(b)));
+
+/** The ERP label to draw: its name is the text line, its code is the QR, and the printed data follow as extra lines (code in words, then karat and weight). */
+export function pieceLabelItem(l: { pieceCode?: unknown; itemName?: unknown; categoryName?: unknown; karat?: unknown; weight?: unknown }, fmt: { karat: (karat: unknown) => string; weight: (mg: unknown) => string; gram: string }): LabelItem {
+  const code = String(l.pieceCode ?? "").trim(), name = String(l.itemName ?? l.categoryName ?? "").trim();
+  return { text: name, code, extra: [code, `${fmt.karat(l.karat)} · ${fmt.weight(l.weight)} ${fmt.gram}`] };
+}
+
+/** The one decision: the profile is used only for the tag roll (QR labels) and only when a valid profile exists and every label of the print is a QR label (a barcode label keeps the old sheet). */
+export function profileForPrint(layout: "tag" | "a4", profile: unknown, kinds: unknown[]): LabelProfile | null {
+  return layout === "tag" && kinds.length > 0 && kinds.every((k) => k === "qr") ? cleanProfile(profile) : null;
+}

@@ -46,10 +46,10 @@ export function PrinterLabelPreview({ s, item, boxW, boxH }: { s: Settings; item
   return <div className="tp-paper" style={{ zoom: previewZoom(pageSize(s), boxW, boxH) }}><PrinterLabel s={s} item={item} /></div>;
 }
 
-/** Opens the print window from the click and writes only the labels (one per page) and a Print button into it. */
-export function printPrinterLabels(s: Settings, labels: LabelItem[], text: { title: string; print: string; popup: string; rtl: boolean }): void {
-  const w = window.open("", "_blank");
-  if (!w) { toast(text.popup, { error: true }); return; }
+type PrintText = { title: string; print: string; popup: string; rtl: boolean };
+
+/** Writes only the labels (one per page) and a Print button into an open print window. The Test printer and every QR label of the ERP go through this one function. */
+export function writePrinterLabels(w: Window, s: Settings, labels: LabelItem[], text: Pick<PrintText, "title" | "print" | "rtl">): void {
   const body = labels.map((item) => `<div class="sheet">${renderToStaticMarkup(<PrinterLabel s={s} item={item} />)}</div>`).join("");
   w.document.open();
   w.document.write(`<!doctype html><html dir="${text.rtl ? "rtl" : "ltr"}"><head><meta charset="utf-8"><title>${esc(text.title)}</title><style>`
@@ -62,4 +62,11 @@ export function printPrinterLabels(s: Settings, labels: LabelItem[], text: { tit
     + `@media print{.sheet{margin:0}}`
     + `</style></head><body><div class="bar"><b>${esc(text.title)} · ${labels.length}</b><button onclick="print()">${esc(text.print)}</button></div>${body}</body></html>`);
   w.document.close();
+}
+
+/** Opens the print window from the click and writes only the labels (one per page) and a Print button into it. */
+export function printPrinterLabels(s: Settings, labels: LabelItem[], text: PrintText): void {
+  const w = window.open("", "_blank");
+  if (!w) { toast(text.popup, { error: true }); return; }
+  writePrinterLabels(w, s, labels, text);
 }
