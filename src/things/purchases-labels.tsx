@@ -1,6 +1,6 @@
 "use client";
 import { Button, Seg } from "@/components/ui";
-// Piece labels as the dashboard prints them: "tag" = one 30 x 10 mm label per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm; the layout is remembered on this device.
+// Piece labels as the dashboard prints them: "tag" = one 38 x 12.5 mm label per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm; the layout is remembered on this device.
 // The QR symbol is a real, scannable QR code of the piece code (src/lib/qr.ts); the Code 128 bars stay a labelled box (shortcut: draw them with JsBarcode when a barcode label is needed).
 import { useEffect, useState } from "react";
 import type { Row } from "@/lib/engine-types";

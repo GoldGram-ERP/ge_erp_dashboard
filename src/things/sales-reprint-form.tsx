@@ -1,7 +1,7 @@
 "use client";
 // Reprint label (sales/pieces form): one piece code, or a range of numeric codes, a template and a layout.
 // POST /reprint-label (Idempotency-Key) records one "reprint" activity row and answers the labels; nothing else changes.
-// Ported from docs/nav-preview/app/things/sales-reprint-form.js. Labels as the dashboard prints them: "tag" = 30 x 10 mm per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm.
+// Ported from docs/nav-preview/app/things/sales-reprint-form.js. Labels as the dashboard prints them: "tag" = 38 x 12.5 mm per page, "a4" = 5 x 13 labels of 38.1 x 21.2 mm.
 // The QR symbol is a real, scannable QR code of the piece code (src/lib/qr.ts); the Code 128 bars stay a labelled box (shortcut: draw them with JsBarcode when a barcode label is needed).
 import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";

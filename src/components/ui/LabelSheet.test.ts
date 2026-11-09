@@ -21,17 +21,17 @@ describe("label sheet", () => {
     expect(count(h, "break-after:page")).toBe(2);
   });
   it("page size follows the layout", () => {
-    expect(pageSize("tag")).toBe("30mm 10mm;margin:0");
+    expect(pageSize("tag")).toBe("38mm 12.5mm;margin:0");
     expect(pageSize("a4")).toBe("A4;margin:10.7mm 4.7mm");
   });
 });
 
 describe("the text of a label fits its size", () => {
-  it("a 30 x 10 mm tag sets its three lines small (5.5pt, tight lines) so the code is not cut off; an A4 label keeps 7pt", () => {
+  it("a 38 x 12.5 mm tag (the roll of the tag printer) sets its three lines at 6pt with tight lines so the code is not cut off; an A4 label keeps 7pt", () => {
     const tag = html(1, "tag"), a4 = html(1, "a4");
-    expect(tag).toContain("width:30mm;height:10mm");
-    expect(tag).toContain("font-size:5.5pt");
-    expect(tag).toContain("line-height:1.1");
+    expect(tag).toContain("width:38mm;height:12.5mm");
+    expect(tag).toContain("font-size:6pt");
+    expect(tag).toContain("line-height:1.15");
     expect(a4).toContain("font-size:7pt");
     expect(a4).toContain("line-height:1.3");
   });
@@ -43,9 +43,22 @@ describe("the text of a label fits its size", () => {
     expect(h).not.toContain("15,072");
     expect(h).not.toContain("1507200");
   });
-  it("three lines of 5.5pt at line height 1.1 are at most the 10 mm of the label", () => {
+  it("a barcode-type label draws real Code 128 bars of the piece code, inside the label, not a box that says Code 128", () => {
+    const bars = renderToStaticMarkup(createElement(Sheet, { labels: [{ ...piece(1), pieceCode: "001190", labelKind: "barcode" }], layout: "tag", tr }));
+    expect(bars).toContain("data-bars-code");
+    expect(bars).toContain('aria-label="001190"');
+    expect(bars).not.toContain("Code 128");
+    expect(bars).toContain('width="32mm"');   // a bit narrower than the 38 mm of the label
+  });
+  it("a code Code 128 cannot hold draws no bars, and the label still prints with the code as text", () => {
+    const box = renderToStaticMarkup(createElement(Sheet, { labels: [{ ...piece(1), pieceCode: "جولد", labelKind: "barcode" }], layout: "tag", tr }));
+    expect(box).not.toContain("data-bars");
+    expect(box).toContain("data-label-code");
+  });
+  it("three lines of 6pt at line height 1.15 are at most the 12.5 mm of the label, and the QR fits its height", () => {
     const mm = (pt: number) => (pt * 25.4) / 72;
-    expect(3 * mm(5.5) * 1.1).toBeLessThanOrEqual(10);
+    expect(3 * mm(6) * 1.15).toBeLessThanOrEqual(12.5);
+    expect(10.5).toBeLessThanOrEqual(12.5);
     expect(4 * mm(7) * 1.3).toBeGreaterThan(10);   // why the 7pt text was cut off
   });
 });
