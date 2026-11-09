@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
-import { DEFAULTS, clampSettings, frameCss, labelList, layoutCss, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, rotation, type Rotate } from "./printer-label-rules";
+import { DEFAULTS, addLine, buildLines, clampSettings, frameCss, hasContent, labelList, layoutCss, lineCss, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -122,5 +122,72 @@ describe("the Test printer page is Admin only (the address uses the nav leaf's s
   });
   it("its screen key is the one the Workmanship and cashback leaf uses, so both are given to the same people", () => {
     expect(findLeaf("/setup/item-fees")?.screens).toEqual(leaf?.screens);
+  });
+});
+
+describe("extra lines", () => {
+  const L = (o: object = {}): ExtraLine => ({ text: "x", fontPt: 10, align: "inherit", bold: false, keepBlank: false, ...o });
+  it("old stored JSON without lines loads with none; bad data falls back", () => {
+    expect(parseSettings(JSON.stringify({ widthMm: 50 })).lines).toEqual([]);
+    expect(parseSettings(JSON.stringify({ lines: "nope", linesPlacement: "sideways" }))).toMatchObject({ lines: [], linesPlacement: "afterText" });
+  });
+  it("any count is kept; junk entries are dropped; each value is clamped or defaulted", () => {
+    const many = Array.from({ length: 250 }, (_, i) => L({ text: `t${i}` }));
+    expect(normaliseLines(many)).toHaveLength(250);
+    const got = normaliseLines([null, 5, "s", [1], L({ fontPt: 9999, align: "up", bold: "yes", text: 7 }), { fontPt: "12.375", text: "k" }]);
+    expect(got).toEqual([
+      { text: "", fontPt: 200, align: "inherit", bold: false, keepBlank: false },
+      { text: "k", fontPt: 12.375, align: "inherit", bold: false, keepBlank: false },
+    ]);
+    expect(normaliseLines([L({ fontPt: 0 })])[0].fontPt).toBe(1);
+    expect(normaliseLines([L({ text: "a".repeat(500) })])[0].text).toHaveLength(200);
+  });
+  it("the list survives a round trip through the stored text, with the placement", () => {
+    const s = S({ lines: [L({ text: "a", bold: true, align: "right", keepBlank: true })], linesPlacement: "afterQr" });
+    expect(parseSettings(JSON.stringify(s))).toEqual(s);
+  });
+  it("add, remove, update and move", () => {
+    const a = L({ text: "a" }), b = L({ text: "b" }), c = L({ text: "c" });
+    expect(addLine([a], 9)).toEqual([a, { text: "", fontPt: 9, align: "inherit", bold: false, keepBlank: false }]);
+    expect(removeLine([a, b, c], 1)).toEqual([a, c]);
+    expect(updateLine([a, b], 1, { bold: true })).toEqual([a, { ...b, bold: true }]);
+    expect(moveLine([a, b, c], 1, -1)).toEqual([b, a, c]);
+    expect(moveLine([a, b, c], 1, 1)).toEqual([a, c, b]);
+    expect(moveLine([a, b, c], 0, -1)).toEqual([a, b, c]);
+    expect(moveLine([a, b, c], 2, 1)).toEqual([a, b, c]);
+  });
+  it("a typed label prints its lines in order, each with its own style; an empty one prints nothing", () => {
+    const s = S({ fontPt: 14, lines: [L({ text: "one", fontPt: 8.5, bold: true, align: "left" }), L({ text: "  " }), L({ text: "three" })] });
+    expect(buildLines(s, { text: "t", code: "" })).toEqual([
+      { text: "one", fontPt: 8.5, align: "left", bold: true },
+      { text: "three", fontPt: 10, align: "inherit", bold: false },
+    ]);
+  });
+  it("keep blank keeps the row (a non-breaking space) so spacing can be controlled", () => {
+    const s = S({ lines: [L({ text: "", keepBlank: true })] });
+    expect(buildLines(s, { text: "", code: "" })).toEqual([{ text: " ", fontPt: 10, align: "inherit", bold: false }]);
+  });
+  it("an Excel label uses the cells for the text and the list for the style by index; beyond the list the defaults", () => {
+    const s = S({ fontPt: 14, lines: [L({ text: "typed ignored", fontPt: 6, bold: true })] });
+    expect(buildLines(s, { text: "", code: "", extra: ["c1", "", "e1"] })).toEqual([
+      { text: "c1", fontPt: 6, align: "inherit", bold: true },
+      { text: "e1", fontPt: 14, align: "inherit", bold: false },
+    ]);
+    expect(buildLines(S(), { text: "", code: "" })).toEqual([]);
+  });
+  it("Excel rows: A text, B code, C onward extra lines; a row with only extra cells still counts", () => {
+    expect(rowToItem([" a ", 7, "c", null, "e"])).toEqual({ text: "a", code: "7", extra: ["c", "", "e"] });
+    expect(rowToItem(["a"])).toEqual({ text: "a", code: "" });
+    expect(hasContent(rowToItem([null, null, "only"]))).toBe(true);
+    expect(hasContent(rowToItem([null, null, ""]))).toBe(false);
+  });
+  it("placement decides what the group wraps; lines take their own size, weight and alignment (inherit = the label's)", () => {
+    expect(layoutCss(S({ direction: "stacked", linesPlacement: "afterText" })).group.flex).toBe("none");
+    expect(layoutCss(S({ direction: "side", linesPlacement: "afterText" })).group.flex).toBe("1 1 0");
+    expect(layoutCss(S({ qrSizeMm: 20, linesPlacement: "afterQr" })).group.flex).toBe("none");
+    expect(layoutCss(S({ qrSizeMm: 0, linesPlacement: "afterQr" })).group.flex).toBe("1 1 0");
+    const s = S({ align: "right" });
+    expect(lineCss(s, { text: "x", fontPt: 7.25, align: "inherit", bold: true })).toMatchObject({ fontSize: "7.25pt", fontWeight: 700, textAlign: "right" });
+    expect(lineCss(s, { text: "x", fontPt: 7, align: "left", bold: false })).toMatchObject({ fontWeight: 400, textAlign: "left" });
   });
 });

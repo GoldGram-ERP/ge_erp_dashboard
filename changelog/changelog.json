@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Test printer: add as many extra text lines as you like under the free text, each with its own size, alignment and bold, and fill them from Excel columns C onward.",
+    "ar": "اختبار الطابعة: ضيف أد ما تحب من سطور النص تحت النص الحر، وكل سطر له حجمه ومحاذاته وعريضه، وتملاهم من أعمدة C وما بعدها في الإكسل."
+   }
+  ]
+ },
+ {
   "version": "1.0.65",
   "date": "2026-11-09",
   "changes": [

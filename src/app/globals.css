@@ -1159,6 +1159,8 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .tp-block{display:flex;flex-direction:column;gap:.75rem}
 .tp-block h3,.tp-preview h3{margin-bottom:0}
 .tp-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(8.75rem,1fr));gap:.75rem}
+.tp-lines{display:flex;flex-direction:column;gap:.625rem}
+.tp-line{display:flex;flex-direction:column;gap:.625rem;padding:.75rem;border:.0625rem solid var(--line-strong);border-radius:.75rem}
 .tp-actions{display:flex;flex-wrap:wrap;gap:.625rem;align-items:center}
 .tp-page .help{color:var(--mute);font-size:.78rem;line-height:1.4}
 .tp-preview{position:sticky;top:.75rem;display:flex;flex-direction:column;gap:.75rem;min-width:0}

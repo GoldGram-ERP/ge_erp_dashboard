@@ -7,18 +7,28 @@ export type Rotate = 0 | 90 | 180 | 270;
 export type Align = "left" | "center" | "right";
 export type QrLevel = "L" | "M" | "Q" | "H";
 
+export type LineAlign = Align | "inherit";
+export type LinesPlacement = "afterText" | "afterQr";
+/** One extra text line: its own text and style. keepBlank = an empty text still takes its row (spacing control). */
+export type ExtraLine = { text: string; fontPt: number; align: LineAlign; bold: boolean; keepBlank: boolean };
+/** A line as it is drawn: empty ones are already gone (or a non-breaking space when kept). */
+export type RenderLine = { text: string; fontPt: number; align: LineAlign; bold: boolean };
+
 export type Settings = {
   widthMm: number; heightMm: number; orientation: Orientation;
   direction: Direction; swap: boolean; rotate: Rotate;
   fontPt: number; align: Align; paddingMm: number; gapMm: number;
   qrTopMm: number; qrSizeMm: number; level: QrLevel; copies: number;
+  lines: ExtraLine[]; linesPlacement: LinesPlacement;
 };
-export type LabelItem = { text: string; code: string };
+/** `extra` = the texts of Excel columns C, D, E... of this label; absent for the typed label (its lines come from Settings.lines). */
+export type LabelItem = { text: string; code: string; extra?: string[] };
 export type Css = Record<string, string | number>;
 
 export const DEFAULTS: Settings = {
   widthMm: 66, heightMm: 61, orientation: "portrait", direction: "stacked", swap: false, rotate: 0,
   fontPt: 14, align: "center", paddingMm: 1, gapMm: 0.5, qrTopMm: 6, qrSizeMm: 0, level: "M", copies: 1,
+  lines: [], linesPlacement: "afterText",
 };
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
@@ -48,8 +58,55 @@ export function clampSettings(raw: unknown): Settings {
     fontPt: num(r.fontPt, "fontPt"), align: pick(r.align, ["left", "center", "right"], DEFAULTS.align),
     paddingMm: num(r.paddingMm, "paddingMm"), gapMm: num(r.gapMm, "gapMm"), qrTopMm: num(r.qrTopMm, "qrTopMm"), qrSizeMm: num(r.qrSizeMm, "qrSizeMm"),
     level: pick(r.level, ["L", "M", "Q", "H"], DEFAULTS.level), copies: num(r.copies, "copies"),
+    lines: normaliseLines(r.lines), linesPlacement: pick(r.linesPlacement, ["afterText", "afterQr"], DEFAULTS.linesPlacement),
   };
 }
+
+const LINE_TEXT_MAX = 200;
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+/** Any value -> a valid list of extra lines, any count: non-objects are dropped, each field is clamped or falls back (old stored JSON has no list: empty). */
+export function normaliseLines(raw: unknown): ExtraLine[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isObj).map((r) => ({
+    text: typeof r.text === "string" ? r.text.slice(0, LINE_TEXT_MAX) : "",
+    fontPt: num(r.fontPt, "fontPt"), align: pick(r.align, ["inherit", "left", "center", "right"], "inherit"),
+    bold: r.bold === true, keepBlank: r.keepBlank === true,
+  }));
+}
+/** A fresh line (the label's own size until the person changes it). */
+export const newLine = (fontPt: number = DEFAULTS.fontPt): ExtraLine => ({ text: "", fontPt, align: "inherit", bold: false, keepBlank: false });
+export const addLine = (lines: ExtraLine[], fontPt?: number): ExtraLine[] => [...lines, newLine(fontPt)];
+export const removeLine = (lines: ExtraLine[], i: number): ExtraLine[] => lines.filter((_, j) => j !== i);
+export const updateLine = (lines: ExtraLine[], i: number, patch: Partial<ExtraLine>): ExtraLine[] => lines.map((l, j) => (j === i ? { ...l, ...patch } : l));
+/** Move line i up (-1) or down (+1); at an end it stays where it is. */
+export function moveLine(lines: ExtraLine[], i: number, dir: -1 | 1): ExtraLine[] {
+  const j = i + dir;
+  if (i < 0 || i >= lines.length || j < 0 || j >= lines.length) return lines;
+  const out = [...lines];
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
+}
+
+/** The extra lines of one label, in order. Typed label: the list's own texts. Excel label: the cells of columns C onward, styled by the line at the same
+ *  index in the list (the label's own size and defaults when the list is shorter). An empty text prints nothing, unless that line says keepBlank. */
+export function buildLines(s: Pick<Settings, "lines" | "fontPt">, item: LabelItem): RenderLine[] {
+  const texts = item.extra ?? s.lines.map((l) => l.text);
+  const out: RenderLine[] = [];
+  texts.forEach((raw, i) => {
+    const st = s.lines[i] ?? newLine(s.fontPt), text = (raw ?? "").trim();
+    if (!text && !st.keepBlank) return;
+    out.push({ text: text || "\u00A0", fontPt: st.fontPt, align: st.align, bold: st.bold });
+  });
+  return out;
+}
+
+/** One Excel row -> a label: A = free text, B = QR content, C onward = extra line texts (all trimmed, empty cells kept as empty strings). */
+export function rowToItem(row: unknown[]): LabelItem {
+  const c = (v: unknown) => String(v ?? "").trim();
+  const extra = row.slice(2).map(c);
+  return { text: c(row[0]), code: c(row[1]), ...(extra.length ? { extra } : {}) };
+}
+export const hasContent = (i: LabelItem): boolean => !!(i.text || i.code || i.extra?.some(Boolean));
 
 /** The stored JSON text -> Settings. Missing, empty or broken JSON gives the defaults; a partial object is merged over them. */
 export function parseSettings(stored: string | null | undefined): Settings {
@@ -90,7 +147,7 @@ export function frameCss(s: Settings): { outer: Css; inner: Css } {
 }
 
 /** The row/column of the two layers: stacked = text above the QR, side = text and QR in a row; swap puts the QR first. */
-export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css } {
+export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css; group: Css } {
   const stacked = s.direction === "stacked";
   const dir = `${stacked ? "column" : "row"}${s.swap ? "-reverse" : ""}`;
   const self = s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center";
@@ -102,7 +159,14 @@ export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css } {
       display: "block", minWidth: 0, minHeight: 0, marginTop: mm(s.qrTopMm),
       ...(fixed ? { flex: "none", width: mm(s.qrSizeMm), height: mm(s.qrSizeMm), alignSelf: stacked ? self : "center" } : { flex: "1 1 0", width: "100%", height: "100%" }),
     },
+    // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under, swap or not.
+    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: (s.linesPlacement === "afterText" ? stacked : fixed) ? "none" : "1 1 0" },
   };
+}
+
+/** The style of one extra line: the text style with its own size, alignment (inherit = the label's) and weight. */
+export function lineCss(s: Settings, l: RenderLine): Css {
+  return { ...layoutCss(s).text, flex: "none", fontSize: `${l.fontPt}pt`, textAlign: l.align === "inherit" ? s.align : l.align, fontWeight: l.bold ? 700 : 400 };
 }
 
 /** The stylesheet of the print window: the page size, no margin, one label per page. */

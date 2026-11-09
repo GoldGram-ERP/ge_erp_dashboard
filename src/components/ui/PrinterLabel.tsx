@@ -7,22 +7,27 @@ import { useMemo, type CSSProperties } from "react";
 import { esc } from "@/lib/format";
 import { qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { frameCss, layoutCss, pageSize, previewZoom, printCss, type LabelItem, type Settings } from "@/things/printer-label-rules";
+import { buildLines, frameCss, layoutCss, lineCss, pageSize, previewZoom, printCss, type LabelItem, type Settings } from "@/things/printer-label-rules";
 
 /** One label at its real size in mm (the preview zooms it with CSS). */
 export function PrinterLabel({ s, item }: { s: Settings; item: LabelItem }) {
   const { outer, inner } = frameCss(s), lay = layoutCss(s);
   const shape = useMemo(() => (item.code ? qrShape(item.code, s.level) : null), [item.code, s.level]);
+  const lines = buildLines(s, item), underText = s.linesPlacement === "afterText";
+  const textEl = item.text && <p dir="auto" style={(lines.length && underText ? { ...lay.text, flex: "none" } : lay.text) as CSSProperties}>{item.text}</p>;
+  const lineEls = lines.map((l, i) => <p key={i} dir="auto" style={lineCss(s, l) as CSSProperties}>{l.text}</p>);
+  const qrEl = shape && (
+    <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={lay.qr as CSSProperties}>
+      <path d={shape.d} fill="#000" />
+    </svg>
+  );
   return (
     <div data-printer-label style={outer as CSSProperties}>
       <div style={inner as CSSProperties}>
         <div style={lay.box as CSSProperties}>
-          {item.text && <p dir="auto" style={lay.text as CSSProperties}>{item.text}</p>}
-          {shape && (
-            <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={lay.qr as CSSProperties}>
-              <path d={shape.d} fill="#000" />
-            </svg>
-          )}
+          {!lines.length ? <>{textEl}{qrEl}</>
+            : underText ? <><div style={lay.group as CSSProperties}>{textEl}{lineEls}</div>{qrEl}</>
+            : <>{textEl}<div style={lay.group as CSSProperties}>{qrEl}{lineEls}</div></>}
         </div>
       </div>
     </div>
