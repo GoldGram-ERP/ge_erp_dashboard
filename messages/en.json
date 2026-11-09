@@ -838,6 +838,8 @@
   "reservationNotFound": "This reservation does not exist.",
   "reservationInvoiced": "Not deleted: a sales invoice took this reservation. Delete that invoice first.",
   "reservationAlreadyInvoiced": "Not saved: invoice {invoiceNumber} was already made from this reservation.",
+  "pieceNotForReservation": "This piece cannot be held for this reservation.",
+  "reservationPiecesIncomplete": "Add all the reservation's pieces first, then make the invoice: {held} of {total} held.",
   "reservationItemsMismatch": "Not saved: the pieces are not the items of the reservation in its quantities.",
   "unknownScreen": "One of the screens is not offered to Users. Reload the page.",
   "changedSinceLoaded": "Someone changed this since you opened the page. Reload to see their change.",
