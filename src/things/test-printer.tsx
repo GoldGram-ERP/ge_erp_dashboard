@@ -16,7 +16,7 @@ import { readLogo } from "./printer-logo";
 import { fetchLabelSettings, resetLabelSettings, saveLabelSettings, type SavedLabelSettings } from "./label-settings";
 
 type Tab = "label" | Part;
-type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct";
+type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct" | "textWidthMm";
 
 export default function Page() {
   const tr = useT(), { t, L } = tr;
@@ -214,7 +214,7 @@ export default function Page() {
           {tab === "text" && <>
             <div className="field"><label htmlFor="tp-text">{m("text")}</label>
               <Textarea id="tp-text" rows={2} maxLength={200} dir="auto" disabled={batch.length > 0} placeholder={m("textPh")} value={text} onChange={(e) => setText(e.target.value)} /></div>
-            <div className="tp-fields">{numField("fontPt", m("font"))}</div>
+            <div className="tp-fields">{numField("fontPt", m("font"))}{numField("textWidthMm", m("textWidth"))}</div>
             <div className="tp-lines">
               {s.lines.map((l, i) => (
                 <div className="tp-line" key={i} role="group" aria-label={m("lineN", { n: i + 1 })}>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
 import { labelGramsText } from "@/lib/format";
-import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, fitLabel, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, resizeWidth, fitLabel, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -144,6 +144,52 @@ describe("fit: nothing ever leaves the label", () => {
   });
   it("no QR content = no QR space taken", () => {
     expect(fitLabel(roll, { text: "x", code: "" }).qrMm).toBe(0);
+  });
+});
+
+describe("text box width", () => {
+  const st = S({ widthMm: 50, heightMm: 30, orientation: "landscape", direction: "stacked", fontPt: 14, paddingMm: 1 });
+  it("old saved data without it loads as 0 (automatic); junk and negatives fall back or clamp", () => {
+    expect(clampSettings({ widthMm: 50 }).textWidthMm).toBe(0);
+    expect(DEFAULTS.textWidthMm).toBe(0);
+    expect(clampSettings({ textWidthMm: "abc" }).textWidthMm).toBe(0);
+    expect(clampSettings({ textWidthMm: -5 }).textWidthMm).toBe(0);
+    expect(clampSettings({ textWidthMm: 5000 }).textWidthMm).toBe(1000);
+    expect(cleanProfile({ v: 1, textWidthMm: 20 })?.textWidthMm).toBe(20);
+  });
+  it("0 keeps today's automatic box: no fixed width in the css", () => {
+    const f = fitLabel(st, { text: "Hi", code: "" });
+    expect(f.textMm).toBe(0);
+    expect(layoutCss(st, f).text.width).toBeUndefined();
+  });
+  it("a set width is the drawn width, and the font shrinks to fit inside it", () => {
+    const s = S({ ...st, textWidthMm: 20 }), text = "A long name here";
+    const f = fitLabel(s, { text, code: "" });
+    expect(f.textMm).toBe(20);
+    expect(f.fontPt).toBeLessThan(14);
+    expect([...text].length * f.fontPt * (25.4 / 72) * 0.6).toBeLessThanOrEqual(20 + 1e-6);
+    expect(layoutCss(s, f).text).toMatchObject({ width: "20mm", flex: "none" });
+  });
+  it("a huge width never leaves the label: it stops at the room the label gives (column and row)", () => {
+    expect(fitLabel(S({ ...st, textWidthMm: 1000 }), { text: "Hi", code: "" }).textMm).toBe(48);
+    const row = S({ widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", paddingMm: 1, gapMm: 0.5, textWidthMm: 1000 });
+    const f = fitLabel(row, { text: "Ring", code: "X" });
+    expect(f.textMm + f.qrMm + 0.5).toBeLessThanOrEqual(36 + 1e-6);
+  });
+  it("lines under the text share its box; lines under the QR do not", () => {
+    const s = S({ ...st, textWidthMm: 15, lines: [{ text: "A long extra line here", fontPt: 14, align: "inherit", bold: false, keepBlank: false }] });
+    expect(fitLabel(s, { text: "x", code: "" }).linePts[0]).toBeLessThan(fitLabel({ ...s, linesPlacement: "afterQr" }, { text: "x", code: "" }).linePts[0]);
+    expect(layoutCss(s, fitLabel(s, { text: "x", code: "" })).group.width).toBe("15mm");
+    expect(layoutCss({ ...s, linesPlacement: "afterQr" }, fitLabel(s, { text: "x", code: "" })).group.width).toBeUndefined();
+  });
+  it("dragging the edge: start width plus the move in mm, snapped to 0.5, at least 1, at most the label's limit", () => {
+    const px = 96 / 25.4;
+    expect(resizeWidth(20, 10 * px, 1)).toBe(30);
+    expect(resizeWidth(20, 10 * px * 4, 4)).toBe(30);
+    expect(resizeWidth(20, 1.2 * px, 1)).toBe(21);
+    expect(resizeWidth(20, -100 * px, 1)).toBe(1);
+    expect(resizeWidth(20, 100 * px, 1, 48)).toBe(48);
+    expect(resizeWidth(20, 100 * px, 1, 35.7)).toBe(35.5);
   });
 });
 

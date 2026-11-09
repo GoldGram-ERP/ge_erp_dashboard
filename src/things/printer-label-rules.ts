@@ -28,6 +28,8 @@ export type Settings = {
   lines: ExtraLine[]; linesPlacement: LinesPlacement;
   /** The logo as a data URL ("" = none). The places are the physical sides of the printed label. logoMm = the square the logo fits in (left/middle/right); logoPct = % of the QR width (inside). */
   logo: string; logoPlacement: LogoPlacement; logoMm: number; logoPct: number;
+  /** The text box's width in mm (0 = automatic). Never wider than the label lets it be: fitLabel caps it. */
+  textWidthMm: number;
 };
 /** `extra` = the texts of Excel columns C, D, E... of this label; absent for the typed label (its lines come from Settings.lines). */
 export type LabelItem = { text: string; code: string; extra?: string[] };
@@ -37,13 +39,13 @@ export const DEFAULTS: Settings = {
   widthMm: 66, heightMm: 61, orientation: "portrait", direction: "stacked", order: ["logo", "text", "qr"], rotate: 0,
   fontPt: 14, align: "center", paddingMm: 1, gapMm: 0.5, qrTopMm: 6, qrSizeMm: 0, level: "M", copies: 1,
   lines: [], linesPlacement: "afterText",
-  logo: "", logoPlacement: "beside", logoMm: 10, logoPct: 20,
+  logo: "", logoPlacement: "beside", logoMm: 10, logoPct: 20, textWidthMm: 0,
 };
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
 
 // Wide on purpose (owner, 2026-11-09): the test page must take any size, 1 mm up; a smaller box used to snap back to 10.
-const RANGES = { widthMm: [1, 1000], heightMm: [1, 1000], fontPt: [1, 200], paddingMm: [0, 100], gapMm: [0, 100], qrTopMm: [0, 500], qrSizeMm: [0, 1000], copies: [1, 100], logoMm: [0.5, 500], logoPct: [1, 100] } as const;
+const RANGES = { widthMm: [1, 1000], heightMm: [1, 1000], fontPt: [1, 200], paddingMm: [0, 100], gapMm: [0, 100], qrTopMm: [0, 500], qrSizeMm: [0, 1000], copies: [1, 100], logoMm: [0.5, 500], logoPct: [1, 100], textWidthMm: [0, 1000] } as const;
 type NumKey = keyof typeof RANGES;
 
 const num = (v: unknown, key: NumKey): number => {
@@ -69,7 +71,7 @@ export function clampSettings(raw: unknown): Settings {
     level: pick(r.level, ["L", "M", "Q", "H"], DEFAULTS.level), copies: num(r.copies, "copies"),
     lines: normaliseLines(r.lines), linesPlacement: pick(r.linesPlacement, ["afterText", "afterQr"], DEFAULTS.linesPlacement),
     logo: cleanLogo(r.logo), logoPlacement: cleanLogoPlacement(r.logoPlacement),
-    logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"),
+    logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"), textWidthMm: num(r.textWidthMm, "textWidthMm"),
   };
 }
 
@@ -93,6 +95,12 @@ export function nearestPlace(centres: number[], from: number, delta: number): nu
 export function resizePatch(part: Part, start: { fontPt: number; logoMm: number; logoPct: number; qrMm: number }, inside: boolean, ratio: number): Partial<Settings> {
   const snap = (v: number, step: number) => Math.max(step, Math.round((v * ratio) / step) * step);
   return part === "text" ? { fontPt: snap(start.fontPt, 0.5) } : part === "qr" ? { qrSizeMm: snap(start.qrMm, 0.5) } : inside ? { logoPct: snap(start.logoPct, 1) } : { logoMm: snap(start.logoMm, 0.5) };
+}
+/** Dragging the text box's edge on the canvas: its width at pick-up (mm) plus the pointer's move (screen px, already times `scale`: 2 when the box is centred,
+ *  so the edge stays under the pointer), snapped to 0.5 mm, at least 1 and at most `max` (the widest the label allows, so there is no dead zone past the limit). */
+export function resizeWidth(startMm: number, deltaPx: number, zoom: number, max = Infinity): number {
+  const mmNow = startMm + deltaPx / (zoom || 1) / PX_PER_MM;
+  return Math.min(Math.max(1, Math.floor(max * 2) / 2), Math.max(1, Math.round(mmNow * 2) / 2));
 }
 /** The parts that are drawn, in their places: the logo only when it is a part of its own. */
 export const partsShown = (s: Pick<Settings, "order" | "logo" | "logoPlacement">): Part[] => s.order.filter((p) => p !== "logo" || (!!s.logo && s.logoPlacement === "beside"));
@@ -244,7 +252,8 @@ export function frameCss(s: Settings): { outer: Css; inner: Css } {
 const PT_MM = 25.4 / 72, CHAR_EM = 0.6, LINE_H = 1.15;
 /** The sizes really drawn. The QR and the logo are squares no bigger than the label's free height (in a row) or width (in a column), and they leave room
  *  for the text. Each text line keeps one line and its font is scaled down until its estimated width (0.6 em a character, on the safe side) fits. */
-export type Fit = { qrMm: number; logoMm: number; fontPt: number; linePts: number[] };
+/** textMm = the text box's drawn width when the person set one (0 = automatic). */
+export type Fit = { qrMm: number; logoMm: number; fontPt: number; linePts: number[]; textMm: number };
 export function fitLabel(s: Settings, item: LabelItem): Fit {
   const r = rotation(pageSize(s), s.rotate), side = s.direction === "side";
   const w = Math.max(0.5, r.w - 2 * s.paddingMm), h = Math.max(0.5, r.h - 2 * s.paddingMm);
@@ -256,10 +265,12 @@ export function fitLabel(s: Settings, item: LabelItem): Fit {
   const textAlong = !hasText ? 0 : side ? w * 0.4 : ((item.text ? s.fontPt : 0) + lines.reduce((a, l) => a + l.fontPt, 0)) * PT_MM * LINE_H;
   const room = Math.max(0, (side ? w : h) - gaps - textAlong);
   if (qr + logo > room) { const k = room / (qr + logo); qr *= k; logo *= k; }
-  const textRoom = side ? Math.max(0.5, w - gaps - qr - logo) : w;
-  const fit = (text: string, pt: number) => { const need = [...text].length * pt * PT_MM * CHAR_EM; return need > textRoom ? Math.max(1, Math.floor((pt * textRoom / need) * 4) / 4) : pt; };
+  const autoRoom = side ? Math.max(0.5, w - gaps - qr - logo) : w;
+  // A set width never goes past the room the label gives the text, so nothing leaves the label; the lines under the text share its box.
+  const textRoom = s.textWidthMm > 0 ? Math.min(s.textWidthMm, autoRoom) : autoRoom, lineRoom = s.linesPlacement === "afterText" ? textRoom : autoRoom;
+  const fit = (text: string, pt: number, roomMm: number) => { const need = [...text].length * pt * PT_MM * CHAR_EM; return need > roomMm ? Math.max(1, Math.floor((pt * roomMm / need) * 4) / 4) : pt; };
   const r3 = (n: number) => Math.round(n * 1000) / 1000;
-  return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt), linePts: lines.map((l) => fit(l.text, l.fontPt)) };
+  return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt, textRoom), linePts: lines.map((l) => fit(l.text, l.fontPt, lineRoom)), textMm: s.textWidthMm > 0 ? r3(textRoom) : 0 };
 }
 
 /** The row/column of the parts, with the fitted sizes (f): every part is exactly as big as it is drawn, so nothing leaves the label and a highlight covers the whole part. */
@@ -267,12 +278,14 @@ export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css;
   const stacked = s.direction === "stacked";
   const self = s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center";
   const q = f?.qrMm ?? s.qrSizeMm;
+  // A set text width: a fixed box (placed by the label's alignment in a column), else the automatic width of today.
+  const fixed: Css = f?.textMm ? { width: mm(f.textMm), flex: "none", alignSelf: stacked ? self : "center" } : {};
   return {
     box: { display: "flex", flexDirection: stacked ? "column" : "row", alignItems: "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
-    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%" },
+    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%", ...fixed },
     qr: { display: "block", flex: "none", width: mm(q), height: mm(q), alignSelf: stacked ? self : "center" },
     // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under.
-    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? "1 1 0" : "none" },
+    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? "1 1 0" : "none", ...(s.linesPlacement === "afterText" ? fixed : {}) },
   };
 }
 

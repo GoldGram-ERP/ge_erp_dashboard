@@ -3248,6 +3248,7 @@
   "center": "Center",
   "right": "Right",
   "font": "Text size (pt)",
+  "textWidth": "Text box width (mm, 0 = automatic)",
   "padding": "Space from the edge (mm)",
   "gap": "Space between text and QR (mm)",
   "qrSize": "QR size (mm, 0 = fill the space)",

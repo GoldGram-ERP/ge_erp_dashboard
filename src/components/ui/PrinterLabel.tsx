@@ -7,7 +7,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { esc } from "@/lib/format";
 import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, effectiveLevel, fitLabel, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
+import { buildLines, effectiveLevel, fitLabel, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, resizeWidth, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
 
 /** The preview's editing (never set for a printed label). px = one screen pixel in the label's own units (1 / zoom), so rings stay 2 px on screen.
  *  held = the part being dragged and how far (screen px); target = the place it will snap to. */
@@ -69,6 +69,7 @@ export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPi
   // The resize handle sits on the picked part's bottom-right corner, in screen px (measured after every render that can move it).
   const [frame, setFrame] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [sizing, setSizing] = useState<{ x: number; y: number; w: number; h: number; start: Parameters<typeof resizePatch>[1] } | null>(null);
+  const [widening, setWidening] = useState<{ x: number; y: number; startMm: number; max: number } | null>(null);
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
   const [drag, setDrag] = useState<{ part: Part; from: number; x: number; y: number; dx: number; dy: number; moved: boolean; centres: number[] } | null>(null);
   useEffect(() => {
@@ -121,11 +122,32 @@ export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPi
       }}
       onPointerUp={() => setSizing(null)} onPointerCancel={() => setSizing(null)} />
   );
+  // The text box's width: a pill on its end edge, physical like the label (always left-to-right inside, then turned). axis = where the content's
+  // +x points on screen after the turn; a right-aligned column keeps its end edge, so its handle sits on the start edge and pulls the other way.
+  // A centred box grows on both sides, so the move counts twice (the edge stays under the pointer).
+  const flip = s.direction === "stacked" && s.align === "right", sideways = s.rotate === 90 || s.rotate === 270;
+  const axis = ({ 0: [1, 0], 90: [0, 1], 180: [-1, 0], 270: [0, -1] } as const)[s.rotate].map((v) => (flip ? -v : v));
+  const scale = s.direction === "stacked" && s.align !== "center" ? 1 : 2;
+  const wHandle = onResize && frame && selected === "text" && (
+    <span className={sideways ? "tp-width across" : "tp-width"} role="presentation"
+      style={{ left: frame.x + (axis[0] > 0 ? frame.w : axis[0] < 0 ? 0 : frame.w / 2) - (sideways ? 9 : 3), top: frame.y + (axis[1] > 0 ? frame.h : axis[1] < 0 ? 0 : frame.h / 2) - (sideways ? 3 : 9) }}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setWidening({ x: e.clientX, y: e.clientY, startMm: (sideways ? frame.h : frame.w) / zoom / PX_PER_MM, max: fitLabel({ ...s, textWidthMm: 1000 }, item).textMm });
+      }}
+      onPointerMove={(e) => {
+        if (!widening) return;
+        onResize({ textWidthMm: resizeWidth(widening.startMm, ((e.clientX - widening.x) * axis[0] + (e.clientY - widening.y) * axis[1]) * scale, zoom, widening.max) });
+      }}
+      onPointerUp={() => setWidening(null)} onPointerCancel={() => setWidening(null)} />
+  );
   return (
     <div ref={wrap} className="tp-fit">
       <div ref={ref} className="tp-paper" style={{ zoom, visibility: boxW || box ? "visible" : "hidden" }}>
         <PrinterLabel s={s} item={item} pick={pick} />
       </div>
+      {wHandle}
       {handle}
     </div>
   );

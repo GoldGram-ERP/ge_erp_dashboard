@@ -1175,6 +1175,9 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .tp-paper{background:white;box-shadow:0 0 0 .0625rem var(--line-strong),0 .25rem .875rem rgba(0,0,0,.18);flex:none}
 .tp-resize{position:absolute;width:.875rem;height:.875rem;border-radius:.25rem;background:white;box-shadow:0 0 0 .125rem var(--gold),0 .0625rem .1875rem rgba(0,0,0,.25);cursor:nwse-resize;touch-action:none;z-index:3}
 .tp-resize::before{content:"";position:absolute;inset:-.625rem}
+.tp-width{position:absolute;width:.375rem;height:1.125rem;border-radius:.1875rem;background:white;box-shadow:0 0 0 .125rem var(--gold),0 .0625rem .1875rem rgba(0,0,0,.25);cursor:ew-resize;touch-action:none;z-index:3}
+.tp-width.across{width:1.125rem;height:.375rem;cursor:ns-resize}
+.tp-width::before{content:"";position:absolute;inset:-.625rem}
 .tp-dirs{display:grid;grid-template-columns:max-content max-content;align-items:center;gap:.5rem .875rem;justify-content:start}
 .tp-dir{display:contents}
 .tp-dir .lbl{font-size:.8rem;color:var(--ink-2)}
