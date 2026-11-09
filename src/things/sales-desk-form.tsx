@@ -438,13 +438,12 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                 </dl>
               </Disclosure>
             </section>
-          </div>
 
-          {/* The message card is not part of the sticky group: a tall column would have to scroll inside itself (owner, 2026-11-09). */}
+          {/* Inside the sticky group, so the group can never slide over it; no max-height, so it never scrolls inside itself. */}
           <section className="tk-card tk-wa" id="sec-wa">
             <p id="wa-text" className="tk-bubble" dir="rtl">{waText || d("desk.waEmpty")}</p>
             <CopyButton id="sd-copy" text={waText} disabled={!waText} label={d("desk.copy")}>{d("desk.copy")}</CopyButton>
-          </section></div>
+          </section></div></div>
 
           <div className="tk-c">
             <fieldset disabled={readonly || saving} className="tk-save">

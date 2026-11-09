@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Sales desk: the Copy button of the WhatsApp message no longer sits on top of the total card; the message card now moves with the prices and the total.",
+    "ar": "مكتب المبيعات: زرار النسخ بتاع رسالة الواتساب مبقاش بيركب فوق كارت الإجمالي، وكارت الرسالة بقى بيتحرك مع الأسعار والإجمالي."
+   }
+  ]
+ },
+ {
   "version": "1.0.73",
   "date": "2026-11-09",
   "changes": [
