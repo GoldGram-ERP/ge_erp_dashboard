@@ -8,6 +8,7 @@ export { Button, TextButton, ChromeButton, type ButtonProps } from "./Button";
 export { Badge, Status, Bubble } from "./Badge";
 export { DataTable, Tr, Td, Th, useTableSort, SortedTable } from "./DataTable";
 export { Input, Textarea } from "./Input";
+export { Combobox, type ComboOption } from "./Combobox";
 export { Disclosure } from "./Disclosure";
 export { FileInput } from "./FileInput";
 export { Field, fieldId } from "../fields/Field";

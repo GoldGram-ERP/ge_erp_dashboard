@@ -10,7 +10,7 @@ import { useMe } from "@/lib/session";
 import { backendFieldErrors } from "@/lib/fields";
 import { DatePicker } from "@/components/fields/DatePicker";
 import { Icon, toast } from "@/components/engine";
-import { Button, Input } from "@/components/ui";
+import { Button, Combobox, Input } from "@/components/ui";
 import { paymentErrors, paymentKeyOf, sentBanks, type Bank } from "./sales-invoices-math";
 import { revealFirstError } from "@/lib/submit-guard";
 import { Choice, ErrBox, allPages, code6, fe, pieceChoices, readPieceCode, sg } from "./sales-form-parts";
@@ -124,11 +124,12 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
           {field("date", "f-date-btn", `${rt("date")} *`, <DatePicker id="f-date" name="date" value={date} onChange={(v) => { edited(); setDate(v || date); }} max={isUser ? today() : undefined} required />)}
           {field("pieceCode", "pc", `${rt("pieceCode")} *`, <>
             <div style={{ display: "flex", gap: 8 }}>
-              <Input id="pc" kind="code" dir="ltr" list="pcl" maxLength={20} autoComplete="off" value={piece} onChange={(e) => { edited(); setPiece(e.target.value); }} style={{ fontFamily: "monospace", flex: 1, minWidth: 0 }} />
+              <Combobox id="pc" kind="code" dir="ltr" mono maxLength={20} value={piece} onChange={(v) => { edited(); setPiece(v); }}
+                options={choices.map((p) => ({ text: p.pieceCode, hint: `${p.itemName ?? ""} · ${p.karat ?? ""}` }))} />
               <Button id="scan-piece" style={{ width: 42, padding: 0, flex: "none" }} title={t("gold-sales", "pieceLookUp.scanWithCamera")} aria-label={t("gold-sales", "pieceLookUp.scanWithCamera")} onClick={() => setScanning(true)}><Icon name="camera" size={18} /></Button>
             </div>
             {scanning && <PieceScanner label={rt("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { edited(); setPiece(c); setScanning(false); }} />}
-            <datalist id="pcl">{choices.map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName ?? ""} · ${p.karat ?? ""}`}</option>)}</datalist></>, rt("pieceCodeHint"))}
+</>, rt("pieceCodeHint"))}
         </div>
         )}
       </div>

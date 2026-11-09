@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "The piece code field on sales invoices, returns and label reprint now opens a clean list that filters as you type, instead of the browser's plain popup.",
+    "ar": "خانة كود القطعة في فواتير البيع والمرتجعات وإعادة طباعة الملصقات بقت بتفتح قايمة شكلها متناسق وبتفلتر وانت بتكتب، بدل القايمة العادية بتاعة المتصفح.",
+    "route": "/sales/invoices"
+   }
+  ]
+ },
+ {
   "version": "1.0.77",
   "date": "2026-11-09",
   "changes": [

@@ -9,7 +9,7 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
 import { latinNumber } from "@/lib/format";
 import { toast } from "@/components/engine";
-import { Button, Input } from "@/components/ui";
+import { Button, Combobox, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, pieceChoices, readPieceCode } from "./sales-form-parts";
 import { LAYOUT_KEY, Sheet } from "@/components/ui/LabelSheet";
 import { printLabels } from "@/components/ui/label-print";
@@ -84,8 +84,8 @@ export function ReprintForm({ tr }: CustomFormProps) {
         <div id="banners">{banner && <div className="note warn" role="alert" data-field-error><b>{banner}</b></div>}</div>
         <div className="formgrid" id="grid">
           <div className="field" data-k="pieceCode" data-err={errs.pieceCode ? "" : undefined}><label htmlFor="pc">{rl("pieceCode")}</label>
-            <Input id="pc" dir="ltr" list="pcl" maxLength={40} autoComplete="off" style={{ fontFamily: "monospace" }} value={code} onChange={(ev) => { touch(); setCode(ev.target.value); }} />
-            <datalist id="pcl">{choices.map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName ?? ""} · ${p.karat ?? ""}`}</option>)}</datalist>{err("pieceCode")}</div>
+            <Combobox id="pc" dir="ltr" mono maxLength={40} value={code} onChange={(v) => { touch(); setCode(v); }}
+              options={choices.map((p) => ({ text: p.pieceCode, hint: `${p.itemName ?? ""} · ${p.karat ?? ""}` }))} />{err("pieceCode")}</div>
           <div className="field wide"><div className="help">{rl("orRange")}</div></div>
           <TextBox name="fromCode" label={rl("fromCode")} value={fromCode} maxLength={12} ltr error={errs.fromCode} onChange={(v) => { touch(); setFromCode(v); }} />
           <TextBox name="toCode" label={rl("toCode")} value={toCode} maxLength={12} ltr error={errs.toCode} onChange={(v) => { touch(); setToCode(v); }} />

@@ -35,6 +35,7 @@ const forbidden: Record<string, RegExp> = {
   'a raw switch (use SwitchInput from @/components/ui)': /role="switch"/g,
   "a raw <select> (use Select from @/components/ui)": /<select\b/g,
   "a raw <textarea> (use Textarea from @/components/ui)": /<textarea\b/g,
+  "a native <datalist> or an <input list> (use Combobox from @/components/ui; the browser's suggestion popup is raw and not RTL-aware)": /<datalist\b|\blist=["{]/g,
   "a native <dialog> (use Sheet / ConfirmDialog from @/components/ui)": /<dialog\b/g,
   "a native <details> (use Disclosure from @/components/ui)": /<details\b/g,
   "a raw file input (use FileInput from @/components/ui)": /type="file"/g,

@@ -1,5 +1,5 @@
 "use client";
-import { Button, DataTable, Input, Seg, Td, Tr } from "@/components/ui";
+import { Button, Combobox, DataTable, Input, Seg, Td, Tr } from "@/components/ui";
 // The new sales invoice, a workspace page. System values (number, gold price, date, branch, seller) are the system's and locked;
 // steps unlock in order (type + branch -> pieces -> customer -> payment -> save); money is integer piastres.
 // Also the invoice made from a reservation: /sales/invoices?reservation=<id> (the page then opens whole). Ported from sales-invoices-form.js.
@@ -300,10 +300,10 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
           {fromHolds && <div className="note" id="held-note" role="status">{waitsForPieces ? <>{L("أضف قطع الحجز أولاً. ", "Add the reservation's pieces first. ")}<a href={`/${tr.locale}/sales/reservations?open=${made!.id}`}>{L("فتح الحجز", "Open the reservation")}</a></> : L("قطع الفاتورة هي القطع المحجوزة على الحجز.", "The invoice sells the pieces held on the reservation.")}</div>}
           {!fromHolds && <div className="field" data-k="pieceCode" data-err={errs.pieceCode ? "" : undefined} style={{ maxWidth: 560 }}><label htmlFor="pc">{m("pieceCode")} *</label>
             <div style={{ display: "flex", gap: 8 }}>
-              <Input id="pc" dir="ltr" list="pcl" maxLength={20} autoComplete="off" placeholder={m("pieceCodePlaceholder")} style={{ fontFamily: "monospace" }} value={pc}
-                onChange={(e) => { setPc(e.target.value); setPcErr(""); const hit = choices.some((c) => c.pieceCode === e.target.value && !c.sold && !c.inTransfer); if (hit && (e.nativeEvent as InputEvent).inputType === "insertReplacementText") addPiece(e.target.value); }}
+              <Combobox id="pc" dir="ltr" mono maxLength={20} placeholder={m("pieceCodePlaceholder")} value={pc}
+                options={choices.filter((p) => !p.sold && !p.inTransfer && !lines.some((l) => l.pieceCode === p.pieceCode)).map((p) => ({ text: p.pieceCode, hint: `${p.itemName} · ${p.karat} · ${milligramsText(p.weight)}` }))}
+                onChange={(v) => { setPc(v); setPcErr(""); }} onPick={(o) => addPiece(o.text)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPiece(); } }} />
-              <datalist id="pcl">{choices.filter((p) => !p.sold && !p.inTransfer && !lines.some((l) => l.pieceCode === p.pieceCode)).map((p) => <option key={p.pieceCode} value={p.pieceCode}>{`${p.itemName} · ${p.karat} · ${milligramsText(p.weight)}`}</option>)}</datalist>
               <Button id="scan-piece" onClick={() => setScanning(true)}><Icon name="camera" />{t("gold-sales", "pieceLookUp.scanWithCamera")}</Button>
               <Button id="addPiece" onClick={() => addPiece()}><Icon name="plus" />{m("addPiece")}</Button></div>
             {scanning && <PieceScanner label={m("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); setPcErr(""); void addPiece(c); }} />}
