@@ -15,6 +15,7 @@ export { Field, fieldId } from "../fields/Field";
 export { Select, useLabelFallback } from "../fields/Select";
 export { DatePicker } from "../fields/DatePicker";
 export { Popover } from "../fields/Popover";
-export { CopyButton, copyText } from "../shell/copy-button";
+export { CopyButton, copyImage, copyText } from "../shell/copy-button";
+export { ActionMenu, type MenuAction } from "./ActionMenu";
 // engine/ui.tsx has its own Icon; shell/icon.tsx has a second, same-signature copy (a duplicate to unify next).
 export { Icon, Section, Kv, Ltr, Seg, Sheet, Skeleton, EmptyState, toast, ToastHost, useConfirm, ConfirmDialog } from "../engine/ui";

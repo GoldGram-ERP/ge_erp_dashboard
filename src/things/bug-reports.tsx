@@ -7,9 +7,9 @@ import type { FieldConfig, MakeConfig, Row, ThingConfig } from "@/lib/engine-typ
 import { api, newSaveKey } from "@/lib/api";
 import type { Tr } from "@/lib/t";
 import { ThingPage, Kv, Ltr, Section } from "@/components/engine";
+import { fileUrl, isImage, MarkReadOnOpen, ReportActions } from "@/components/shell/bug-report-actions";
 
-const TONE: Record<string, "warn" | "info" | "good"> = { new: "warn", seen: "info", fixed: "good" };
-
+const TONE: Record<string, "warn" | "info" | "good" | "off"> = { new: "warn", seen: "info", fixed: "good", cancelled: "off" };
 export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
   const { L } = tr;
   const types: Record<string, string> = {
@@ -21,11 +21,9 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     no_access: L("مش قادر أدخل شاشة", "No access to a screen"),
     other: L("حاجة تانية", "Something else"),
   };
-  const statuses: Record<string, string> = { new: L("جديد", "New"), seen: L("اتشاف", "Seen"), fixed: L("اتصلّح", "Fixed") };
+  const statuses: Record<string, string> = { new: L("جديد", "New"), seen: L("اتشاف", "Seen"), fixed: L("اتصلّح", "Fixed"), cancelled: L("اتلغى", "Cancelled") };
   const stamp = (x: unknown) => (x ? <Ltr>{String(x).slice(0, 19).replace("T", " ")}</Ltr> : "");
   const statusNode = (s: string) => <Status tone={TONE[s] ?? "info"}>{statuses[s] ?? s}</Status>;
-  const fileUrl = (r: Row, fileId: string) => `/api/bug-reports/${r.id}/files/${fileId}`;
-  const isImage = (mime: string) => ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(mime);
   const bytes = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
   const noteFields: FieldConfig[] = [{ name: "note", label: L("ملاحظة للمطورين (خاصة)", "Private note for the developers"), type: "textarea", wide: true, maxLength: 4000 }];
@@ -44,6 +42,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         { id: "new", label: statuses.new, query: { status: "new" } },
         { id: "seen", label: statuses.seen, query: { status: "seen" } },
         { id: "fixed", label: statuses.fixed, query: { status: "fixed" } },
+        { id: "cancelled", label: statuses.cancelled, query: { status: "cancelled" } },
       ],
       paging: { sizeParam: null },
       columns: [
@@ -55,6 +54,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         { key: "status", label: L("الحالة", "Status"), render: (r) => statusNode(r.status) },
         { key: "fileCount", label: L("ملفات", "Files"), type: "int" },
         { key: "createdAt", label: L("وقت البلاغ", "Sent"), render: (r) => stamp(r.createdAt) },
+        { key: "actions", label: L("إجراء", "Action"), render: (r) => <ReportActions r={r} L={L} /> },
       ],
     }],
     record: {
@@ -62,6 +62,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       endpoint: (r) => `/bug-reports/${r.id}`,
       render: (r) => (
         <>
+          <MarkReadOnOpen r={r} />
           <Section title={L("البلاغ", "The report")}>
             <Kv k={L("النوع", "Type")}>{types[r.type] ?? r.type}</Kv>
             <Kv k={L("الحالة", "Status")}>{statusNode(r.status)}</Kv>
@@ -98,8 +99,8 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
             {(r.files as Row[]).length === 0 && <span className="mute">{L("مفيش ملفات.", "No files.")}</span>}
             {(r.files as Row[]).map((f) => (
               <Kv key={f.id} k={bytes(f.size)}>
-                <a href={fileUrl(r, f.id)} target="_blank" rel="noreferrer" download={isImage(f.mimeType) ? undefined : f.fileName} dir="auto">{f.fileName}</a>
-                {isImage(f.mimeType) && <img src={fileUrl(r, f.id)} alt={f.fileName} loading="lazy" width={320} />}
+                <a href={fileUrl(r.id, f.id)} target="_blank" rel="noreferrer" download={isImage(f.mimeType) ? undefined : f.fileName} dir="auto">{f.fileName}</a>
+                {isImage(f.mimeType) && <img src={fileUrl(r.id, f.id)} alt={f.fileName} loading="lazy" width={320} />}
               </Kv>
             ))}
           </Section>

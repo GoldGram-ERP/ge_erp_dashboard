@@ -17,6 +17,11 @@ export async function copyText(text: string): Promise<boolean> {
   } catch { return false; }
 }
 
+/** Copies an image to the clipboard. `png` may still be loading: the write starts inside the click (Safari needs that) and waits for it. */
+export async function copyImage(png: Promise<Blob>): Promise<boolean> {
+  try { await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]); return true; } catch { return false; }
+}
+
 /**
  * The one Copy button: the universal copy icon, which answers the press at once, and turns into a drawn check (with a soft
  * pop) for a moment once the text is on the clipboard. Reduced motion gets a plain cross-fade. The name read aloud stays
