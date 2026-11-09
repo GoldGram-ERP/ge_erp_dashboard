@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "A list or date box with nothing chosen is the same height as the boxes next to it inside a table (the Item box on the purchase invoice lines was taller, with its text pushed down), in English and Arabic.",
+    "ar": "القايمة أو خانة التاريخ اللي لسه ما اتختارش فيها حاجة بقت نفس ارتفاع الخانات اللي جنبها جوه الجدول (خانة الصنف في بنود فاتورة الشراء كانت أطول والكلام نازل لتحت)، بالعربي والإنجليزي."
+   }
+  ]
+ },
+ {
   "version": "1.0.66",
   "date": "2026-11-09",
   "changes": [

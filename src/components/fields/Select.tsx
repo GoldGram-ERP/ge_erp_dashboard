@@ -84,7 +84,7 @@ export function Select({ id, name, value, onChange, onBlur, options, placeholder
     <div className={`sel ${className}`} data-select>
       <input type="hidden" id={id} name={name} value={value} readOnly />
       <button
-        ref={btn} type="button" id={`${id}-btn`} className={`sel-btn${current ? "" : " empty"}`} role="combobox" aria-haspopup="listbox" aria-expanded={open}
+        ref={btn} type="button" id={`${id}-btn`} className={`sel-btn${current ? "" : " unset"}`} role="combobox" aria-haspopup="listbox" aria-expanded={open}
         aria-controls={open ? pid : undefined} aria-activedescendant={open && !hasSearch ? focusId : undefined}
         aria-labelledby={labelledBy} aria-describedby={describedBy} aria-invalid={invalid || undefined} disabled={disabled}
         onClick={() => (open ? shut() : show())} onKeyDown={keys} onKeyUp={(e) => { if (e.key === " ") e.preventDefault(); }} onBlur={() => { if (!open) onBlur?.(); }}

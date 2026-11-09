@@ -60,7 +60,7 @@ export function DatePicker({ id, name, value, onChange, onBlur, min = "", max = 
   return (
     <div className="sel dp" data-date>
       <input type="hidden" id={id} name={name} value={val} readOnly />
-      <button ref={btn} type="button" id={`${id}-btn`} className={`sel-btn dp-btn${val ? "" : " empty"}`} aria-haspopup="dialog" aria-expanded={open} aria-labelledby={labelledBy ? `${labelledBy} ${id}-val` : undefined} aria-describedby={describedBy} aria-invalid={invalid || undefined}
+      <button ref={btn} type="button" id={`${id}-btn`} className={`sel-btn dp-btn${val ? "" : " unset"}`} aria-haspopup="dialog" aria-expanded={open} aria-labelledby={labelledBy ? `${labelledBy} ${id}-val` : undefined} aria-describedby={describedBy} aria-invalid={invalid || undefined}
         disabled={disabled} onClick={() => (open ? shut() : show())} onKeyDown={(e) => { if (!open && e.key === "ArrowDown") { e.preventDefault(); show(); } }} onBlur={() => { if (!open) onBlur?.(); }}>
         <span className="sel-val" id={`${id}-val`} dir="ltr">{val || placeholder || L("اختر التاريخ", "Pick a date")}</span>{ICON}
       </button>
