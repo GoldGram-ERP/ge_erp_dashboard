@@ -5,6 +5,7 @@
 import type { Tr } from "@/lib/t";
 import { piastresText } from "@/lib/format";
 import { Button, Input } from "@/components/ui";
+import { methodOptionsFor } from "@/things/sales-desk-rules";
 import { FieldError } from "./FieldError";
 import { Select } from "./Select";
 
@@ -50,7 +51,7 @@ export function DeskPayRows({ tr, cash, onCash, banks, onBanks, accounts, method
             <div className="field" data-k={`bank${i}Method`}>
               <label htmlFor={`bmt${i}-btn`}>{L("طريقة الدفع", "Paid by")}</label>
               <Select id={`bmt${i}`} name={`bmt${i}`} value={b.method} searchable={false} disabled={disabled}
-                options={methods.filter((m) => m !== "visa" || visaFits || b.method === "visa").map((m) => [m, methodLabel(m)])}
+                options={methodOptionsFor(i, banks, methods).filter((m) => m !== "visa" || visaFits || b.method === "visa").map((m) => [m, methodLabel(m)])}
                 onChange={(v) => { if (v) set(i, { method: v }); }} />
             </div>
             <div className="field" data-k={`bank${i}Account`} data-err={errors[`bank${i}Account`] ? "" : undefined}>

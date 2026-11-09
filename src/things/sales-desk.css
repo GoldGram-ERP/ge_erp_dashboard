@@ -30,8 +30,12 @@
 @container tk (min-width:700px){
   .tk-grid{grid-template-columns:minmax(0,680px) minmax(320px,380px);justify-content:start;grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr}
 }
-@container tk (min-width:1024px){
-  .tk-sticky[data-fit=true]{position:sticky;top:12px}  /* sticks only while the whole summary fits the screen; taller, it flows with the page (one scroll per screen) */
+/* The summary sticks while the page scrolls, only where it sits beside the form (700 and up; one column it would cover the form).
+   The scroller is .ws (overflow:auto), the topbar is a sibling above it (hidden over 900px), so top is a plain offset inside .ws; a tall summary scrolls on its own.
+   .tk-b must stretch to the grid's height, or sticky has no room to travel. */
+@container tk (min-width:700px){
+  .tk-b{align-self:stretch}
+  .tk-sticky{position:sticky;top:12px;max-height:calc(100dvh - var(--topbar) - 3.5rem);overflow-y:auto;overscroll-behavior:contain}
 }
 .tk-sticky{display:grid;gap:12px;padding:2px}
 .tk-card{background:var(--bubble);border-radius:1.4rem;box-shadow:0 0 0 .0625rem var(--line-strong);padding:12px 14px;display:grid;gap:10px;justify-items:start;min-width:0}

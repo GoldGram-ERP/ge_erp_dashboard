@@ -4,7 +4,7 @@ import { Button, Disclosure, Input, Seg, TextButton } from "@/components/ui";
 // The Sales desk draft page (issue #6): ONE page for a new draft, an edit and an Admin opening it. Type -> customer -> item + count lines
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ItemPicker } from "@/components/fields/ItemPicker";
 import { stockMapOf } from "@/lib/items";
@@ -23,7 +23,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, mixedNonCash, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
 
@@ -78,13 +78,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [general, setGeneral] = useState("");
   const [payRefusal, setPayRefusal] = useState<{ total: number; paid: number } | null>(null);
   const [saving, setSaving] = useState(false);
-  // the summary sticks only while it fits the screen; taller, it flows with the page (never its own scrollbar). A callback ref: the column mounts after the draft loads.
-  const sumRef = useCallback((el: HTMLDivElement | null) => {
-    if (!el) return;
-    const fit = () => { el.dataset.fit = String(el.offsetHeight + 24 <= window.innerHeight); };
-    const ro = new ResizeObserver(fit); ro.observe(el); window.addEventListener("resize", fit); fit();
-    return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
-  }, []);
   const saveKey = useRef(newSaveKey());
   const touch = () => { saveKey.current = newSaveKey(); setDirty(true); setGeneral(""); setPayRefusal(null); };
 
@@ -196,6 +189,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
     if (dsc.invalid && !buy) e.cashDiscount = sg(tr, "cashDiscountInvalid");
     setErrs(e);
+    if (!buy && mixedNonCash(banks)) { setGeneral(d("refused.oneNonCash")); revealFirstError(); return; }   // an older draft with two kinds: told, never changed silently
     if (Object.keys(e).length || !c.payload || !l.payload) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     // the draft keeps the desk's choices and the methods' amounts of the quote: no quote (a typed price that is not valid, a refused price) means nothing to save
     if (!quote || manualPrice(manual.sell).invalid || manualPrice(manual.buy).invalid) { setGeneral(quoteMsg || d("desk.manualInvalid")); revealFirstError(); return; }
@@ -408,7 +402,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             </Section>}
           </fieldset>
 
-          <div className="tk-b"><div className="tk-sticky" ref={sumRef}>
+          <div className="tk-b"><div className="tk-sticky">
             <section className="tk-card" id="sec-prices">
               <div className="tk-prices">
                 {(["sell", "buy"] as const).map((s) => (

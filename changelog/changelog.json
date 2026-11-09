@@ -11,6 +11,11 @@
     "kind": "better",
     "en": "Users list: a new Position column shows each user's Position.",
     "ar": "قايمة المستخدمين: عمود جديد بيبيّن المسمى الوظيفي لكل مستخدم."
+   },
+   {
+    "kind": "better",
+    "en": "Sales desk: the summary (prices, total, WhatsApp message) stays beside the form while you scroll, and a sale takes only one of Instapay, Visa or bank transfer.",
+    "ar": "شاشة البيع: الملخص (الأسعار والإجمالي ورسالة الواتساب) بيفضل قدامك جنب الفورم وإنت بتنزل، والعملية بتقبل طريقة واحدة بس من إنستاباي أو فيزا أو تحويل بنكي."
    }
   ]
  },

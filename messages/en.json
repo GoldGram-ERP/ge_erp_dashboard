@@ -2046,6 +2046,7 @@
     "discountNotAllowed": "You do not have the cash discount permission, so a draft with a discount cannot be saved.",
     "paymentMethods": "The payment methods are not valid: the amounts together are more than the total, or these methods cannot go together.",
     "visaAlone": "Visa must be the only payment: remove the planned cash and bank rows.",
+    "oneNonCash": "A sale takes only one of Instapay, Visa or bank transfer. Make all the payment rows the same way, then save.",
     "payByVisa": "A Buy cannot be paid by Visa.",
     "operation": "A Buy draft cannot be completed into an invoice."
    },

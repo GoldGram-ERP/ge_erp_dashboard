@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, lockNote, methodOptionsFor, mixedNonCash, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -101,5 +101,41 @@ describe("the sales channel picker", () => {
     expect(channelError("", opts)).toBe("required");
     expect(channelError("x", opts)).toBe("invalid");
     expect(channelError("h", opts)).toBeNull();
+  });
+});
+
+describe("one non-cash kind per sale", () => {
+  const ALL = ["instapay", "bank_transfer", "visa"], r = (...m: string[]) => m.map((method) => ({ method }));
+  it("an empty list or a single row offers everything", () => {
+    expect(methodOptionsFor(0, [], ALL)).toEqual(ALL);
+    expect(methodOptionsFor(0, r("instapay"), ALL)).toEqual(ALL);
+  });
+  it("one Instapay row: the second row offers only Instapay (not bank transfer or Visa)", () => {
+    expect(methodOptionsFor(1, r("instapay", "instapay"), ALL)).toEqual(["instapay"]);
+    expect(methodOptionsFor(1, r("instapay", "bank_transfer"), ALL)).toEqual(["instapay", "bank_transfer"]);   // a mixed legacy pair: each keeps its own
+  });
+  it("bank transfer and Visa work the same way", () => {
+    expect(methodOptionsFor(1, r("bank_transfer", "bank_transfer"), ALL)).toEqual(["bank_transfer"]);
+    expect(methodOptionsFor(1, r("visa", "visa"), ALL)).toEqual(["visa"]);
+  });
+  it("cash rows never block and are always offered", () => {
+    expect(methodOptionsFor(1, r("cash", "instapay"), ["cash", ...ALL])).toEqual(["cash", ...ALL]);
+    expect(methodOptionsFor(1, r("instapay", "cash"), ["cash", ...ALL])).toEqual(["cash", "instapay"]);
+  });
+  it("deleting the row frees the kinds", () => {
+    const rows = r("instapay", "instapay");
+    expect(methodOptionsFor(0, rows.slice(0, 1), ALL)).toEqual(ALL);
+  });
+  it("a row keeps its own value in its list", () => {
+    expect(methodOptionsFor(0, r("visa", "instapay"), ALL)).toEqual(["instapay", "visa"]);
+  });
+  it("a buy offers only what it has", () => {
+    expect(methodOptionsFor(1, r("bank_transfer", "bank_transfer"), ["bank_transfer"])).toEqual(["bank_transfer"]);
+  });
+  it("a draft saved with two kinds is detected (and shown as it is)", () => {
+    expect(mixedNonCash(r("instapay", "bank_transfer"))).toBe(true);
+    expect(mixedNonCash(r("instapay", "instapay", "cash"))).toBe(false);
+    expect(mixedNonCash([])).toBe(false);
+    expect(methodOptionsFor(0, r("instapay", "bank_transfer"), ALL)).toEqual(["instapay", "bank_transfer"]);
   });
 });

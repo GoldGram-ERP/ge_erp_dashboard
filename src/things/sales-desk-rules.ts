@@ -66,3 +66,13 @@ export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" |
  *  refuses with 403 notAllowed too), and neither does anyone while the user type is still unknown (the page is loading). A Buy draft is a quote only. */
 export const canCompleteDraft = (userType: string | undefined, status: string | undefined, buy: boolean): boolean =>
   (userType === "admin" || userType === "super_admin") && status === "open" && !buy;
+
+/** A sale takes at most one non-cash kind (Instapay, Visa or bank transfer; owner, 2026-11-09). The methods row `i` may offer: once another row holds a non-cash
+ *  kind, only that kind (plus "cash", which never blocks) is offered; the row's own value always stays in its list. Backend untouched: this is a UI rule. */
+export function methodOptionsFor(i: number, rows: readonly { method: string }[], all: readonly string[]): string[] {
+  const taken = new Set(rows.filter((r, j) => j !== i && r.method !== "cash").map((r) => r.method));
+  const own = rows[i]?.method;
+  return all.filter((m) => m === "cash" || m === own || taken.size === 0 || taken.has(m));
+}
+/** True when the rows already hold two different non-cash kinds (a draft saved before the rule): it opens as it is and is refused on save. */
+export const mixedNonCash = (rows: readonly { method: string }[]): boolean => new Set(rows.map((r) => r.method).filter((m) => m !== "cash")).size > 1;
