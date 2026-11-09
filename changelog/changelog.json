@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "The GoldGram logo everywhere: the browser tab icon, the phone home-screen icon, the top of the side menu and the sign-in page.",
+    "ar": "لوجو جولد جرام بقى في كل حتة: أيقونة التاب في المتصفح، وأيقونة الشاشة الرئيسية على الموبايل، وفوق القايمة الجانبية، وفي صفحة الدخول."
+   }
+  ]
+ },
+ {
   "version": "1.0.83",
   "date": "2026-11-09",
   "changes": [

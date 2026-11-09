@@ -29,6 +29,7 @@ svg{flex-shrink:0}
 aside{width:268px;background:var(--side);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:width .24s var(--calm)}
 .side-head{display:flex;align-items:center;gap:4px;padding:14px 12px 6px 12px;min-height:56px}
 .brand{flex:1;padding:0 6px;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden}
+.brand-mark{display:inline-block;width:2rem;height:auto;vertical-align:middle;margin-inline-end:.5rem}
 nav{flex:1;overflow:auto;padding:12px 10px 22px;-webkit-mask-image:linear-gradient(transparent,#000 12px,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(transparent,#000 12px,#000 calc(100% - 22px),transparent)}
 nav::-webkit-scrollbar{width:6px} nav::-webkit-scrollbar-thumb{background:transparent;border-radius:6px} nav:hover::-webkit-scrollbar-thumb{background:#d4c9aa}
 .sec{margin-bottom:4px}
@@ -208,6 +209,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-start}
 .signin form{width:min(400px,100%);background:var(--surface);border-radius:18px;box-shadow:0 0 0 1px var(--line),0 24px 60px -20px rgba(60,45,10,.25);padding:30px;display:grid;gap:16px}
 .signin h1{font-size:22px}
 .signin p{color:var(--mute);margin-top:-8px}
+.signin-logo{display:block;width:5.5rem;height:5.5rem;border-radius:1.125rem;justify-self:center}
 
 /* ───── Jobs ───── */
 .jobs-title{font-size:26px;margin-bottom:6px}

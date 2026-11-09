@@ -149,7 +149,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
       ) : null}
       <aside id="side"><div className="side-inner">
         <div className="side-head">
-          <div className="brand" id="brand">GoldGram</div>
+          <div className="brand" id="brand"><img className="brand-mark" src="/goldgram-mark.png" alt="" width={32} height={19} />GoldGram</div>
           <ChromeButton id="notif-btn" aria-haspopup="dialog" aria-expanded={notif} title={t("app.notifications.title")} aria-label={t("app.notifications.title")} onClick={() => setNotif((v) => !v)}><Icon name="bell" size={18} /></ChromeButton>
           <ChromeButton id="fold-all" title={allOpen ? t("app.foldAll") : t("app.unfoldAll")} aria-label={allOpen ? t("app.foldAll") : t("app.unfoldAll")} onClick={() => ui.setGroups(allOpen ? [] : allIds)}><Icon name={allOpen ? "fold" : "unfold"} /></ChromeButton>
           <ChromeButton id="collapse" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></ChromeButton>

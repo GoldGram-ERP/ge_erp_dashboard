@@ -54,8 +54,8 @@ export default function SignInPage() {
   return (
     <div className="signin">
       <form onSubmit={submit} noValidate>
+        <img className="signin-logo" src="/goldgram-logo.png" alt="GoldGram" width={88} height={88} />
         <h1>{t("title")}</h1>
-        <p>GoldGram</p>
         {error ? <div className="note warn" role="alert" data-field-error>{error}</div> : null}
         <div className="field"><label htmlFor="f-email">{t("email")}</label><Input id="f-email" name="email" autoComplete="username" dir="ltr" style={{ textAlign: "start" }} autoFocus /></div>
         <div className="field"><label htmlFor="f-password">{t("password")}</label>
