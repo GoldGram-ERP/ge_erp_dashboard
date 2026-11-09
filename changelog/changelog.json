@@ -1,5 +1,16 @@
 [
  {
+  "version": "1.0.82",
+  "date": "2026-11-09",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales return details: the item name now sits next to its label, like the other values.",
+    "ar": "تفاصيل مرتجع المبيعات: اسم الصنف بقى جنب عنوانه زي باقي القيم."
+   }
+  ]
+ },
+ {
   "version": "1.0.81",
   "date": "2026-11-09",
   "changes": [
