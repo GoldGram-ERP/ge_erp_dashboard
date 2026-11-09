@@ -31,13 +31,15 @@
   .tk-grid{grid-template-columns:minmax(0,680px) minmax(320px,380px);justify-content:start;grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr}
 }
 /* The summary sticks while the page scrolls, only where it sits beside the form (700 and up; one column it would cover the form).
-   The scroller is .ws (overflow:auto), the topbar is a sibling above it (hidden over 900px), so top is a plain offset inside .ws; a tall summary scrolls on its own.
-   .tk-b must stretch to the grid's height, or sticky has no room to travel. */
+   The scroller is .ws (overflow:auto), the topbar is a sibling above it (hidden over 900px), so top is a plain offset inside .ws.
+   Only the prices and the total stick (they always fit, so the group never scrolls inside itself); the message card after them scrolls with the page.
+   .tk-b must stretch to the grid's height, or sticky has no room to travel; it stays a block (a grid cell would end at its content). */
 @container tk (min-width:700px){
   .tk-b{align-self:stretch}
-  .tk-sticky{position:sticky;top:12px;max-height:calc(100dvh - var(--topbar) - 3.5rem);overflow-y:auto;overscroll-behavior:contain}
+  .tk-sticky{position:sticky;top:12px}
 }
 .tk-sticky{display:grid;gap:12px;padding:2px}
+.tk-b>.tk-wa{margin-top:12px}
 .tk-card{background:var(--bubble);border-radius:1.4rem;box-shadow:0 0 0 .0625rem var(--line-strong);padding:12px 14px;display:grid;gap:10px;justify-items:start;min-width:0}
 #sd fieldset.tk-card{padding:12px 14px}
 .tk-card .disc,.tk-card .field{justify-self:start}

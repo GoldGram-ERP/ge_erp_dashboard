@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales desk: the prices and the total stay at the top while you scroll, without a scrollbar of their own; the WhatsApp message scrolls with the page.",
+    "ar": "مكتب المبيعات: الأسعار والإجمالي بيفضلوا ثابتين فوق وانت بتنزل بدون شريط تمرير جواهم، ورسالة الواتساب بتنزل مع الصفحة."
+   }
+  ]
+ },
+ {
   "version": "1.0.70",
   "date": "2026-11-09",
   "changes": [
