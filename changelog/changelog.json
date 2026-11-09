@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Labels: nothing can leave the label any more. The QR and the logo shrink to fit the label's height (or width), and a text too long for one line is printed smaller instead of being cut. The canvas highlight now covers the whole part.",
+    "ar": "الليبلز: مفيش حاجة تقدر تطلع برا الليبل تاني. الـ QR واللوجو بيصغروا على قد ارتفاع (أو عرض) الليبل، والنص الطويل اللي مش هيكفي في سطر بيتطبع أصغر بدل ما يتقص. والتحديد على اللوحة بقى بيغطي الجزء كله."
+   }
+  ]
+ },
+ {
   "version": "1.0.78",
   "date": "2026-11-09",
   "changes": [

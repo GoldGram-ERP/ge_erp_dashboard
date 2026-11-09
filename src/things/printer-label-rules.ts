@@ -240,30 +240,48 @@ export function frameCss(s: Settings): { outer: Css; inner: Css } {
   };
 }
 
-/** The row/column of the two layers: stacked = text above the QR, side = text and QR in a row; swap puts the QR first. */
-export function layoutCss(s: Settings): { box: Css; text: Css; qr: Css; group: Css } {
+// ───── Fit: nothing ever leaves the label (owner, 2026-11-09: "elements outer area, ensure this doesn't happen at all") ─────
+const PT_MM = 25.4 / 72, CHAR_EM = 0.6, LINE_H = 1.15;
+/** The sizes really drawn. The QR and the logo are squares no bigger than the label's free height (in a row) or width (in a column), and they leave room
+ *  for the text. Each text line keeps one line and its font is scaled down until its estimated width (0.6 em a character, on the safe side) fits. */
+export type Fit = { qrMm: number; logoMm: number; fontPt: number; linePts: number[] };
+export function fitLabel(s: Settings, item: LabelItem): Fit {
+  const r = rotation(pageSize(s), s.rotate), side = s.direction === "side";
+  const w = Math.max(0.5, r.w - 2 * s.paddingMm), h = Math.max(0.5, r.h - 2 * s.paddingMm);
+  const parts = partsShown(s).filter((p) => p !== "qr" || !!item.code), lines = buildLines(s, item);
+  const hasQr = parts.includes("qr"), hasLogo = parts.includes("logo"), hasText = !!item.text || lines.length > 0;
+  const gaps = Math.max(0, parts.length - 1) * s.gapMm, cross = side ? h : w;
+  let qr = hasQr ? Math.min(s.qrSizeMm > 0 ? s.qrSizeMm : cross, cross) : 0, logo = hasLogo ? Math.min(s.logoMm, cross) : 0;
+  // Along the row (or column) the squares may take what the text does not need.
+  const textAlong = !hasText ? 0 : side ? w * 0.4 : ((item.text ? s.fontPt : 0) + lines.reduce((a, l) => a + l.fontPt, 0)) * PT_MM * LINE_H;
+  const room = Math.max(0, (side ? w : h) - gaps - textAlong);
+  if (qr + logo > room) { const k = room / (qr + logo); qr *= k; logo *= k; }
+  const textRoom = side ? Math.max(0.5, w - gaps - qr - logo) : w;
+  const fit = (text: string, pt: number) => { const need = [...text].length * pt * PT_MM * CHAR_EM; return need > textRoom ? Math.max(1, Math.floor((pt * textRoom / need) * 4) / 4) : pt; };
+  const r3 = (n: number) => Math.round(n * 1000) / 1000;
+  return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt), linePts: lines.map((l) => fit(l.text, l.fontPt)) };
+}
+
+/** The row/column of the parts, with the fitted sizes (f): every part is exactly as big as it is drawn, so nothing leaves the label and a highlight covers the whole part. */
+export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css; group: Css } {
   const stacked = s.direction === "stacked";
-  const dir = stacked ? "column" : "row";
   const self = s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center";
-  const fixed = s.qrSizeMm > 0;
+  const q = f?.qrMm ?? s.qrSizeMm;
   return {
-    box: { display: "flex", flexDirection: dir, alignItems: "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
-    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${s.fontPt}pt`, lineHeight: 1.15, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%" },
-    qr: {
-      display: "block", minWidth: 0, minHeight: 0, marginTop: mm(s.qrTopMm),
-      ...(fixed ? { flex: "none", width: mm(s.qrSizeMm), height: mm(s.qrSizeMm), alignSelf: stacked ? self : "center" } : { flex: "1 1 0", width: "100%", height: "100%" }),
-    },
-    // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under, swap or not.
-    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: (s.linesPlacement === "afterText" ? stacked : fixed) ? "none" : "1 1 0" },
+    box: { display: "flex", flexDirection: stacked ? "column" : "row", alignItems: "center", justifyContent: "center", gap: mm(s.gapMm), padding: mm(s.paddingMm), width: "100%", height: "100%", boxSizing: "border-box", direction: "ltr", overflow: "hidden" },
+    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: stacked ? "none" : "1 1 0", maxWidth: "100%" },
+    qr: { display: "block", flex: "none", width: mm(q), height: mm(q), alignSelf: stacked ? self : "center" },
+    // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under.
+    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? "1 1 0" : "none" },
   };
 }
 
-/** The logo as a part of its own: a square it fits in, never shrunk by the other parts. */
-export const logoCss = (s: Pick<Settings, "logoMm">): Css => ({ display: "block", flex: "none", width: mm(s.logoMm), height: mm(s.logoMm), objectFit: "contain", alignSelf: "center" });
+/** The logo as a part of its own: the fitted square. */
+export const logoCss = (s: Pick<Settings, "logoMm">, f?: Fit): Css => { const n = f?.logoMm ?? s.logoMm; return { display: "block", flex: "none", width: mm(n), height: mm(n), objectFit: "contain", alignSelf: "center" }; };
 
-/** The style of one extra line: the text style with its own size, alignment (inherit = the label's) and weight. */
-export function lineCss(s: Settings, l: RenderLine): Css {
-  return { ...layoutCss(s).text, flex: "none", fontSize: `${l.fontPt}pt`, textAlign: l.align === "inherit" ? s.align : l.align, fontWeight: l.bold ? 700 : 400 };
+/** The style of one extra line: the text style with its own (fitted) size, alignment (inherit = the label's) and weight. */
+export function lineCss(s: Settings, l: RenderLine, pt: number = l.fontPt): Css {
+  return { ...layoutCss(s).text, flex: "none", fontSize: `${pt}pt`, textAlign: l.align === "inherit" ? s.align : l.align, fontWeight: l.bold ? 700 : 400 };
 }
 
 /** The stylesheet of the print window: the page size, no margin, one label per page. */

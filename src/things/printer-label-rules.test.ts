@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
 import { labelGramsText } from "@/lib/format";
-import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, fitLabel, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -108,13 +108,42 @@ describe("layout direction and order", () => {
     expect(placePart(s3, "qr", 0)).toEqual(["qr", "logo", "text"]);
     expect(placePart(s3, "text", 0)).toEqual(["text", "logo", "qr"]);
   });
-  it("the layout keeps left-to-right whatever the page language, and the gap, padding, font, align and top offset reach the css", () => {
-    const l = layoutCss(S({ gapMm: 2, paddingMm: 3, fontPt: 20, align: "right", qrTopMm: 4 }));
-    expect([l.box.direction, l.box.gap, l.box.padding, l.text.fontSize, l.text.textAlign, l.qr.marginTop]).toEqual(["ltr", "2mm", "3mm", "20pt", "right", "4mm"]);
+  it("the layout keeps left-to-right whatever the page language, and the gap, padding, font and align reach the css", () => {
+    const l = layoutCss(S({ gapMm: 2, paddingMm: 3, fontPt: 20, align: "right" }));
+    expect([l.box.direction, l.box.gap, l.box.padding, l.text.fontSize, l.text.textAlign]).toEqual(["ltr", "2mm", "3mm", "20pt", "right"]);
   });
-  it("QR size 0 fills the space, a size fixes it", () => {
-    expect(layoutCss(S({ qrSizeMm: 0 })).qr).toMatchObject({ flex: "1 1 0", width: "100%" });
-    expect(layoutCss(S({ qrSizeMm: 25 })).qr).toMatchObject({ flex: "none", width: "25mm", height: "25mm" });
+  it("the QR is always a fixed square: its fitted size", () => {
+    const s = S({ qrSizeMm: 25 });
+    expect(layoutCss(s, fitLabel(s, { text: "", code: "X" })).qr).toMatchObject({ flex: "none", width: "25mm", height: "25mm" });
+  });
+});
+
+describe("fit: nothing ever leaves the label", () => {
+  // The owner's case: a 38 x 12.5 roll label in a row, a 23 mm QR and a 10 mm logo.
+  const roll = S({ widthMm: 38, heightMm: 12.5, orientation: "landscape", direction: "side", qrSizeMm: 23, logo: PNG, logoPlacement: "beside", logoMm: 10, paddingMm: 1, gapMm: 0.5 });
+  const item = { text: "Ingot 5g BTC", code: "GE-000123" };
+  it("squares are no bigger than the free height of a row, and with the text they fit the width", () => {
+    const f = fitLabel(roll, item);
+    expect(f.qrMm).toBeLessThanOrEqual(10.5);
+    expect(f.logoMm).toBeLessThanOrEqual(10.5);
+    const textW = [...item.text].length * f.fontPt * (25.4 / 72) * 0.6;
+    expect(f.qrMm + f.logoMm + textW + 2 * 0.5).toBeLessThanOrEqual(36 + 1e-6);
+  });
+  it("a long text is made smaller to stay on one line; a short one keeps its size", () => {
+    const st = S({ widthMm: 50, heightMm: 30, orientation: "landscape", direction: "stacked", fontPt: 14, paddingMm: 1 });
+    expect(fitLabel(st, { text: "Hi", code: "" }).fontPt).toBe(14);
+    const long = "A very long product name that cannot fit";
+    const f = fitLabel(st, { text: long, code: "" });
+    expect(f.fontPt).toBeLessThan(14);
+    expect([...long].length * f.fontPt * (25.4 / 72) * 0.6).toBeLessThanOrEqual(48 + 1e-6);
+  });
+  it("in a column the squares leave the text's height free", () => {
+    const st = S({ widthMm: 30, heightMm: 20, orientation: "landscape", direction: "stacked", qrSizeMm: 50, fontPt: 10, paddingMm: 1, gapMm: 1 });
+    const f = fitLabel(st, { text: "Ring", code: "X" });
+    expect(f.qrMm + 10 * (25.4 / 72) * 1.15 + 1).toBeLessThanOrEqual(18 + 1e-6);
+  });
+  it("no QR content = no QR space taken", () => {
+    expect(fitLabel(roll, { text: "x", code: "" }).qrMm).toBe(0);
   });
 });
 
@@ -231,7 +260,6 @@ describe("extra lines", () => {
     expect(layoutCss(S({ direction: "stacked", linesPlacement: "afterText" })).group.flex).toBe("none");
     expect(layoutCss(S({ direction: "side", linesPlacement: "afterText" })).group.flex).toBe("1 1 0");
     expect(layoutCss(S({ qrSizeMm: 20, linesPlacement: "afterQr" })).group.flex).toBe("none");
-    expect(layoutCss(S({ qrSizeMm: 0, linesPlacement: "afterQr" })).group.flex).toBe("1 1 0");
     const s = S({ align: "right" });
     expect(lineCss(s, { text: "x", fontPt: 7.25, align: "inherit", bold: true })).toMatchObject({ fontSize: "7.25pt", fontWeight: 700, textAlign: "right" });
     expect(lineCss(s, { text: "x", fontPt: 7, align: "left", bold: false })).toMatchObject({ fontWeight: 400, textAlign: "left" });

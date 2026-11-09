@@ -7,7 +7,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { esc } from "@/lib/format";
 import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, effectiveLevel, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
+import { buildLines, effectiveLevel, fitLabel, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
 
 /** The preview's editing (never set for a printed label). px = one screen pixel in the label's own units (1 / zoom), so rings stay 2 px on screen.
  *  held = the part being dragged and how far (screen px); target = the place it will snap to. */
@@ -18,7 +18,7 @@ export type LabelPick = {
 
 /** One label at its real size in mm (the preview zooms it with CSS). */
 export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; pick?: LabelPick }) {
-  const { outer, inner } = frameCss(s), lay = layoutCss(s);
+  const { outer, inner } = frameCss(s), f = fitLabel(s, item), lay = layoutCss(s, f);
   const level = effectiveLevel(s), shape = useMemo(() => (item.code ? qrShape(item.code, level) : null), [item.code, level]);
   const inside = shape && logoInside(s) ? qrLogoBox(shape.size, QUIET, s.logoPct) : null;
   const lines = buildLines(s, item), underText = s.linesPlacement === "afterText";
@@ -37,7 +37,7 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
     };
   };
   const textEl = item.text && <p dir="auto" style={{ ...(grouped("text") ? { ...lay.text, flex: "none" } : { ...lay.text, ...ring("text") }) } as CSSProperties} {...(grouped("text") ? {} : tap("text"))}>{item.text}</p>;
-  const lineEls = lines.map((l, i) => <p key={i} dir="auto" style={lineCss(s, l) as CSSProperties}>{l.text}</p>);
+  const lineEls = lines.map((l, i) => <p key={i} dir="auto" style={lineCss(s, l, f.linePts[i]) as CSSProperties}>{l.text}</p>);
   const qrEl = shape && (
     <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={{ ...lay.qr, ...(grouped("qr") ? {} : ring("qr")) } as CSSProperties} {...(grouped("qr") ? {} : tap("qr"))}>
       <path d={shape.d} fill="#000" />
@@ -48,7 +48,7 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
   const blocks: Record<Part, ReactNode> = {
     text: grouped("text") ? <div style={{ ...lay.group, ...ring("text") } as CSSProperties} {...tap("text")}>{textEl}{lineEls}</div> : textEl,
     qr: grouped("qr") ? <div style={{ ...lay.group, ...ring("qr") } as CSSProperties} {...tap("qr")}>{qrEl}{lineEls}</div> : qrEl,
-    logo: <img src={s.logo} alt="" draggable={false} style={{ ...logoCss(s), ...ring("logo") } as CSSProperties} {...tap("logo")} />,
+    logo: <img src={s.logo} alt="" draggable={false} style={{ ...logoCss(s, f), ...ring("logo") } as CSSProperties} {...tap("logo")} />,
   };
   return (
     <div data-printer-label style={outer as CSSProperties}>
