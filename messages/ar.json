@@ -906,7 +906,9 @@
   "salesChannelNotAllowed": "قناة البيع هذه غير مسموحة لمسماك الوظيفي.",
   "positionNameTaken": "يوجد مسمى وظيفي آخر بنفس الاسم.",
   "salesChannelNameTaken": "توجد قناة بيع أخرى بنفس الاسم.",
-  "positionInUse": "لم يُحذف: يحمل هذا المسمى الوظيفي {count, plural, zero {لا أحد} one {مستخدم واحد} two {مستخدمان} few {# مستخدمين} other {# مستخدماً}}. انقلهم إلى مسمى آخر أولاً."
+  "positionInUse": "لم يُحذف: يحمل هذا المسمى الوظيفي {count, plural, zero {لا أحد} one {مستخدم واحد} two {مستخدمان} few {# مستخدمين} other {# مستخدماً}}. انقلهم إلى مسمى آخر أولاً.",
+  "positionNotFound": "هذا المسمى الوظيفي غير موجود.",
+  "salesChannelNotFound": "قناة البيع هذه غير موجودة."
  },
  "expenses": {
   "expenseTypes": {

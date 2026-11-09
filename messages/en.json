@@ -906,7 +906,9 @@
   "salesChannelNotAllowed": "This sales channel is not allowed for your Position.",
   "positionNameTaken": "Another Position already has this name.",
   "salesChannelNameTaken": "Another sales channel already has this name.",
-  "positionInUse": "Not deleted: {count, plural, =0 {no users hold} one {# user holds} other {# users hold}} this Position. Move them to another Position first."
+  "positionInUse": "Not deleted: {count, plural, =0 {no users hold} one {# user holds} other {# users hold}} this Position. Move them to another Position first.",
+  "positionNotFound": "This Position does not exist.",
+  "salesChannelNotFound": "This sales channel does not exist."
  },
  "expenses": {
   "expenseTypes": {
