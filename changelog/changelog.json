@@ -1,5 +1,15 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Test printer: arrange the label in the preview itself. Drag the text, the logo or the QR onto another part to swap their places (on a phone, tap one, then the other). The row or column choice and the spacing sit under the preview; the left side keeps only what you type and upload.",
+    "ar": "تست الطابعة: رتّب الليبل من المعاينة نفسها. اسحب النص أو اللوجو أو الـ QR فوق جزء تاني عشان يتبدلوا (على الموبايل دوس على واحد وبعدين التاني). اختيار صف أو عمود والمسافات بقوا تحت المعاينة، والجنب الشمال فيه بس اللي بتكتبه وبترفعه."
+   }
+  ]
+ },
+ {
   "version": "1.0.75",
   "date": "2026-11-09",
   "changes": [

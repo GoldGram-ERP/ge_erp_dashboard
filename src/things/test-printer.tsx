@@ -11,7 +11,7 @@ import { dateTimeText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { useAccess } from "./sales-access";
-import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, partsShown, placePart, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
+import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, effectiveLevel, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Settings } from "./printer-label-rules";
 import { readLogo } from "./printer-logo";
 import { fetchLabelSettings, resetLabelSettings, saveLabelSettings, type SavedLabelSettings } from "./label-settings";
 
@@ -142,9 +142,6 @@ export default function Page() {
     </div>
   );
   const numField = (key: NumKey, label: string, help = "") => numBox(key, label, s[key], (n) => set({ [key]: n }), key === "copies", help);
-  const shown = partsShown(s);
-  // The name of place k: left/middle/right when side by side, top/middle/bottom when stacked.
-  const slotName = (k: number) => k === 0 ? m(s.direction === "side" ? "left" : "slotTop") : k === shown.length - 1 ? m(s.direction === "side" ? "right" : "slotBottom") : m("slotMiddle");
   const setLines = (lines: ExtraLine[]) => { setDraft({}); set({ lines }); };
   const patchLine = (i: number, patch: Partial<ExtraLine>) => set({ lines: updateLine(s.lines, i, patch) });
 
@@ -250,23 +247,6 @@ export default function Page() {
           </div>
 
           <div className="card tp-block">
-            <h3>{m("layout")}</h3>
-            <div className="field"><span className="lbl">{m("direction")}</span>
-              <Seg label={m("direction")} value={s.direction} onChange={(v) => set({ direction: v })} items={[{ id: "stacked", label: m("stacked") }, { id: "side", label: m("side") }]} />
-              <div className="help">{m("directionHelp")}</div></div>
-            {shown.length > 1 && <div className="field"><span className="lbl">{m("places")}</span>
-              {shown.map((part, at) => (
-                <div className="tp-place" key={part}>
-                  <span id={`tp-place-${part}`}>{m(part === "text" ? "partText" : part === "logo" ? "partLogo" : "partQr")}</span>
-                  <Seg label={m(part === "text" ? "partText" : part === "logo" ? "partLogo" : "partQr")} value={String(at)} onChange={(v) => set({ order: placePart(s, part, Number(v)) })}
-                    items={shown.map((_, k) => ({ id: String(k), label: slotName(k) }))} />
-                </div>
-              ))}
-              <div className="help">{m("placesHelp")}</div></div>}
-            <div className="tp-fields">{numField("paddingMm", m("padding"), m("paddingHelp"))}{numField("gapMm", m("gap"), m("gapHelp"))}</div>
-          </div>
-
-          <div className="card tp-block">
             <h3>{m("printing")}</h3>
             <div className="field"><span className="lbl">{m("rotate")}</span>
               <Seg label={m("rotate")} value={String(s.rotate)} onChange={(v) => set({ rotate: Number(v) as Settings["rotate"] })} items={["0", "90", "180", "270"].map((d) => ({ id: d, label: `${d}°` }))} />
@@ -283,7 +263,13 @@ export default function Page() {
               {batch.map((item, i) => <figure key={i}><PrinterLabelPreview s={s} item={item} boxW={110} boxH={110} /><figcaption>{i + 1}</figcaption></figure>)}
             </div>
           ) : (
-            <div className="tp-stage"><PrinterLabelPreview s={s} item={single} boxW={360} boxH={300} /></div>
+            <>
+              <div className="tp-stage"><PrinterLabelPreview s={s} item={single} boxW={360} boxH={300} onOrder={(order) => set({ order })} /></div>
+              <div className="help">{m("dragHint")}</div>
+              <div className="field"><span className="lbl">{m("direction")}</span>
+                <Seg label={m("direction")} value={s.direction} onChange={(v) => set({ direction: v })} items={[{ id: "side", label: m("side") }, { id: "stacked", label: m("stacked") }]} /></div>
+              <div className="tp-fields">{numField("paddingMm", m("padding"), m("paddingHelp"))}{numField("gapMm", m("gap"), m("gapHelp"))}</div>
+            </>
           )}
           <div className="tp-actions">
             <Button variant="primary" disabled={!toPrint.length} onClick={print}>{batch.length ? m("printN", { count: toPrint.length }) : t("common", "print")}</Button>
