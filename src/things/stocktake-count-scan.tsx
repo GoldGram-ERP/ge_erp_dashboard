@@ -202,7 +202,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
           {board && <>
             <Summary live={board} updatedAt={live.dataUpdatedAt} paused={!online && !!open} />
             {open && details}
-            <Breakdown live={board} />
+            <Breakdown id={id} live={board} />
             <PieceLists id={id} live={board} />
           </>}
           {!board && live.isError && <FieldError>{t("common", "couldNotLoad")}</FieldError>}

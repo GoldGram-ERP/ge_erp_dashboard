@@ -2271,6 +2271,7 @@
    "listOutside": "No longer in stock ({count})",
    "searchPieces": "Piece code, item name or item code",
    "weight": "Weight (g)",
+   "status": "Status",
    "scannedAt": "Scanned at",
    "scannedBy": "By",
    "noPieces": "No pieces.",
