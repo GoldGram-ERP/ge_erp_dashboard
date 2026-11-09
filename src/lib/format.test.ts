@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latinNumber, milligramsText, piastresText, typedMilligrams, typedPiastres } from "./format";
+import { labelGramsText, latinNumber, milligramsText, piastresText, typedMilligrams, typedPiastres } from "./format";
 
 describe("money is whole piastres", () => {
   it("types to piastres", () => {
@@ -42,5 +42,17 @@ describe("12-hour time", () => {
     expect(tt("2026-11-03T10:09:00Z", "en")).toBe("12:09 PM");
     expect(tt("2026-11-03T22:05:00Z", "ar")).toBe("12:05 ص");
     expect(dtt("2026-11-02T11:51:00Z", "en")).toBe("2026-11-02 1:51 PM");
+  });
+});
+
+describe("the weight on a label", () => {
+  it("is grams to 2 decimals, the third digit rounded half up", () => {
+    expect(labelGramsText(3000)).toBe("3.00");
+    expect(labelGramsText(3005)).toBe("3.01");
+    expect(labelGramsText(3004)).toBe("3.00");
+    expect(labelGramsText(125)).toBe("0.13");
+    expect(labelGramsText(0)).toBe("0.00");
+    expect(labelGramsText(1234567)).toBe("1,234.57");
+    expect(labelGramsText(undefined)).toBe("—");
   });
 });

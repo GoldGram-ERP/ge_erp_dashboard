@@ -1,7 +1,7 @@
 // Pure rules of the Returned pieces screen: the form read, the price preview lines, the find box, and the label HTML.
 // The shop BUYS the returned piece (owner, 2026-11-05): the form sends branch, item, quantity, the payment (cash + bank rows) and the optional
 // description, customer name and phone. Karat, weight, code and price are never sent: the backend works them out (GET /customer-pieces/buy-price).
-import { esc, latinNumber, milligramsText, piastresText, typedPiastres } from "@/lib/format";
+import { esc, labelGramsText, latinNumber, piastresText, typedPiastres } from "@/lib/format";
 import type { Row } from "@/lib/engine-types";
 import type { Tr } from "@/lib/t";
 import { bankPaid, cashPaid, paymentErrors, sentBanks, type Bank } from "./sales-invoices-math";
@@ -87,6 +87,6 @@ export function customerLabelHtml(l: CustomerLabel, tr: Pick<Tr, "t">, layout: "
     + `<span style="display:flex;flex-direction:column;min-width:0;flex:1;padding-inline-end:1mm;line-height:1.3">`
     + `<span dir="ltr" data-label-code style="font-family:monospace;font-weight:700">${esc(l.pieceCode)}</span>`
     + (l.categoryName ? `<span data-label-category style="padding-block:0.15mm;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.categoryName)}</span>` : "")
-    + `<span dir="ltr" style="white-space:nowrap">${esc(pc("karatValue", { karat: l.karat }))} · ${esc(milligramsText(l.weight))} ${esc(pc("gram"))}</span>`
+    + `<span dir="ltr" style="white-space:nowrap">${esc(pc("karatShort", { karat: l.karat }))} · ${esc(labelGramsText(l.weight))} ${esc(pc("gram"))}</span>`
     + `</span></div>`;
 }
