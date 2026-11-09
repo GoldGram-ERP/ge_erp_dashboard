@@ -81,6 +81,7 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
         { key: "email", label: u("email"), render: (r) => (r.needsEmail ? "—" : <bdi dir="ltr">{r.email}</bdi>) },
         { key: "userType", label: u("userType"), get: (r) => typeName(tr, r.userType) },
         { key: "branchName", label: u("branchId"), render: (r) => r.branchName || "—" },
+        { key: "positionName", label: u("positionId"), render: (r) => r.positionName || "—" },
       ],
       rowClass: (r) => (r.deletedAt ? "deleted" : ""),
     }, {

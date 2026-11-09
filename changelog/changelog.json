@@ -6,6 +6,11 @@
     "kind": "better",
     "en": "Users: the Assign jobs button is hidden on a user page for now.",
     "ar": "المستخدمين: زرار «تحديد الوظائف» مخفي دلوقتي في صفحة المستخدم."
+   },
+   {
+    "kind": "better",
+    "en": "Users list: a new Position column shows each user's Position.",
+    "ar": "قايمة المستخدمين: عمود جديد بيبيّن المسمى الوظيفي لكل مستخدم."
    }
   ]
  },
