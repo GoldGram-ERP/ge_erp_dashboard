@@ -1,7 +1,7 @@
 // A report's Excel and print through the backend's export queue: GET <report>/excel|print makes a job, /exports/:id tells where it stands,
 // /exports/:id/file gives the .xlsx (excel) or the print data as JSON (print). Status shows as a toast; no queue panel (shortcut: add one if people wait long).
 import { api, ApiFailure } from "@/lib/api";
-import { esc } from "@/lib/format";
+import { esc, today } from "@/lib/format";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Query, Row, ViewAction, ViewConfig } from "@/lib/engine-types";
@@ -9,6 +9,7 @@ import type { Tr } from "@/lib/t";
 import { cellNode, toast } from "@/components/engine";
 import { LOOKUPS, rowsOf } from "@/lib/fields";
 import { loadLookup } from "@/components/fields/useLookup";
+import { excelQuery } from "./report-excel-query";
 
 type Status = { id: string; state: "waiting" | "preparing" | "ready" | "failed"; place: number; ahead: number; error?: string; errorValues?: Record<string, string | number> };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -38,7 +39,7 @@ async function finished(kind: "excel" | "print", path: string, query: Query, tr:
 }
 
 export async function downloadExcel(path: string, query: Query, tr: Tr) {
-  const r = await finished("excel", path, query, tr);
+  const r = await finished("excel", path, excelQuery(path, query, today()), tr);
   if (!r) return;
   const name = /filename="?([^";]+)"?/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? "report.xlsx";
   const a = document.createElement("a");

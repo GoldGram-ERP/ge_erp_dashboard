@@ -21,6 +21,11 @@
     "kind": "better",
     "en": "Report a bug: paste a screenshot with Ctrl+V the moment the panel opens, before choosing anything and wherever the cursor is.",
     "ar": "ابلّغ عن مشكلة: الصق الصورة بـ Ctrl+V أول ما اللوحة تفتح، قبل ما تختار أي حاجة ومن غير ما تدوس في أي خانة."
+   },
+   {
+    "kind": "fixed",
+    "en": "Reports: Excel now exports what the screen shows. With All it no longer asks for a date range.",
+    "ar": "التقارير: تصدير Excel بقى بيطلّع اللي ظاهر على الشاشة، ومع الكل مش محتاج تختار مدة."
    }
   ]
  },
