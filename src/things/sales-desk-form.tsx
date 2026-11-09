@@ -11,7 +11,7 @@ import { stockMapOf } from "@/lib/items";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Option, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
-import { latinNumber, milligramsText, piastresText, timeText, today, typedPiastres } from "@/lib/format";
+import { dateTimeText, latinNumber, milligramsText, piastresText, timeText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
@@ -23,7 +23,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, mayHandOverDraft, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
 
@@ -94,6 +94,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [completeMsg, setCompleteMsg] = useState("");
   const [completing, setCompleting] = useState(false);
   const completeKey = useRef(newSaveKey());
+  // Hand over (owner, 2026-11-09): a record only (time, person, frozen copy); it never completes the invoice.
+  const [handing, setHanding] = useState(false);
+  const [handMsg, setHandMsg] = useState("");
+  const handKey = useRef(newSaveKey());
 
   const fill = (x: Row) => {
     setDraft(x); setType(x.invoiceType ?? "sale"); setBranchId(x.branchId ?? ""); setChannelId(x.salesChannelId ?? "");
@@ -294,6 +298,24 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     } finally { setCompleting(false); }
   }
 
+  async function handOver() {
+    if (!draft || handing) return;
+    if (dirty) { setHandMsg(L("احفظ التعديلات الأول: التسليم بياخد المسودة المحفوظة.", "Save your changes first: Hand over freezes the saved draft.")); return; }
+    if (!(await confirm({ title: d("handOverTitle"), text: d("handOverAsk"), ok: d("handOver") }))) return;
+    setHanding(true); setHandMsg("");
+    try {
+      const done = await api(`/sales-drafts/${draft.id}/hand-over`, { method: "POST", saveKey: handKey.current });
+      handKey.current = newSaveKey();
+      fill(done);
+      toast(d("handedOver"));
+    } catch (err) {
+      if (!(err instanceof ApiFailure)) { setHandMsg(L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")); return; }
+      if (!(err.status === 0 || err.status >= 500 || err.error.message === "saveInProgress")) handKey.current = newSaveKey();
+      setHandMsg(tr.errorText(err.error));
+      if (err.error.message === "alreadyHandedOver") api(`/sales-drafts/${draft.id}`).then(fill).catch(() => {});   // show who handed it over
+    } finally { setHanding(false); }
+  }
+
   if (!loaded) return <p className="help" role="status">{t("common", "loading")}</p>;
   if (gone) return <div className="note warn" role="alert">{tr.errorText({ message: "salesDraftNotFound" })}</div>;
 
@@ -304,6 +326,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
+  const canHandOver = mayHandOverDraft(me, draft, buy);
   const canComplete = canCompleteDraft(me?.userType, draft?.status, buy);   // Admin / Super admin only; hidden until the user type is known; a Buy draft is a quote only
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
@@ -353,7 +376,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             <Seg label={d("desk.metal")} value={metal} onChange={(k) => pick(() => { setMetal(k); setLines([]); })}
               items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} />
             {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); setType(k); }}
-              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d(k === "sale" ? "typeSale" : "typeDelivery"), attrs: { "data-type": k } }))} />}
+              items={(["sale", "delivery", "handover"] as const).map((k) => ({ id: k, label: d({ sale: "typeSale", delivery: "typeDelivery", handover: "typeHandover" }[k]), attrs: { "data-type": k } }))} />}
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
           {!draft && <p className="tk-quiet tk-intro">{L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
@@ -464,6 +487,13 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {bar && <div className="tk-card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />
               {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
               {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
+
+            {draft?.handedOverAt && <div className="tk-card" id="sd-handedover" role="status"><b>{d("handedOverStamp", { at: dateTimeText(draft.handedOverAt, tr.locale), name: draft.handedOverByName ?? "" })}</b></div>}
+            {canHandOver && <Section wide title={d("typeHandover")} id="sec-handover">
+              <div className="help">{d("handOverAsk")}</div>
+              {handMsg && <div className="note warn" role="alert" id="sd-handmsg"><b>{handMsg}</b></div>}
+              <div><Button variant="primary" id="sd-handover" aria-busy={handing} onClick={() => void handOver()}><Icon name="check" size={15} />{handing ? d("handingOver") : d("handOver")}</Button></div>
+            </Section>}
 
             {canComplete && <div className="grp-block wide" id="sec-complete"><h3 className="grp-title">{L("إتمام الفاتورة · للأدمن والسوبر أدمن", "Complete invoice · Admin and Super admin")}</h3><div className="tk-card"><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
               <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>

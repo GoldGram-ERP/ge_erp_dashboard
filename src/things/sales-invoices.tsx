@@ -111,7 +111,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         search: { param: "search", placeholder: `${m("searchPlaceholder")} · ${t("gold-sales", "findInvoice.pieceCode")}` },
         chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],   // deleted=only answers a Super admin only
         // The branch filter is for an Admin and the Super admin; a User sells in their own branch.
-        filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), { name: "invoiceType", label: m("invoiceType"), type: "select", options: ["sale", "delivery"].map((k) => [k, m(`invoiceTypes.${k}`)] as [string, string]), placeholder: ALL }, { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
+        filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), { name: "invoiceType", label: m("invoiceType"), type: "select", options: ["sale", "delivery", "handover"].map((k) => [k, m(`invoiceTypes.${k}`)] as [string, string]), placeholder: ALL }, { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
         paging: { sizeParam: null, sizes: [20], size: 20 },
         // The backend (0.1.23) sorts this list on these ids: the column keys. More than one page: the server sorts across pages; one page: the browser.
         serverSort: { on: true, columns: Object.fromEntries(["invoiceNumber", "invoiceDate", "invoiceType", "customerName", "customerPhone", "sellerName", "lineCount", "cashTotal"].map((k) => [k, k])) },

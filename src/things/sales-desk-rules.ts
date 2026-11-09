@@ -67,6 +67,13 @@ export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" |
 export const canCompleteDraft = (userType: string | undefined, status: string | undefined, buy: boolean): boolean =>
   (userType === "admin" || userType === "super_admin") && status === "open" && !buy;
 
+/** Who sees Hand over (owner, 2026-11-09): a saved, open sell draft of type Hand-over that is not handed over yet; the Admin and the Super admin always,
+ *  a User only when their Position may (`/access/me` mayHandOver). Nobody while `me` is unknown. The backend refuses the rest (handOverNotAllowed, ...). */
+export const mayHandOverDraft = (me: { userType?: string; mayHandOver?: boolean } | undefined,
+  draft: { invoiceType?: string; status?: string; handedOverAt?: string | null } | null | undefined, buy: boolean): boolean =>
+  Boolean(me && draft && !buy && draft.invoiceType === "handover" && draft.status === "open" && !draft.handedOverAt
+    && (me.userType === "admin" || me.userType === "super_admin" || me.mayHandOver === true));
+
 /** One channel per payment line (owner, 2026-11-09): a line is Instapay, Visa or Bank transfer, never two at once, and the backend takes each method once per
  *  sale. The methods row `i` may offer: every one not already used by another line ("cash" never counts), plus the row's own value. */
 export function methodsLeftFor(i: number, rows: readonly { method: string }[], all: readonly string[]): string[] {

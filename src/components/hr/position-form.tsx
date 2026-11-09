@@ -1,6 +1,6 @@
 "use client";
 // The Position form and the channel-name cell used by the Positions screen (kept out of src/things: screens define no components of their own).
-import { Button, Checkbox, Input } from "@/components/ui";
+import { Button, Checkbox, Input, SwitchInput } from "@/components/ui";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
@@ -28,10 +28,11 @@ export function PositionForm({ row, close, reload, tr }: CustomFormProps) {
   const [full, setFull] = useState<Row | null | undefined>(row ? undefined : null);
   const [name, setName] = useState(row?.positionName ?? "");
   const [on, setOn] = useState<Set<string>>(new Set(row?.salesChannelIds ?? []));
+  const [hand, setHand] = useState<boolean>(row?.mayHandOver ?? false);
   const [err, setErr] = useState(""), [general, setGeneral] = useState(""), [saving, setSaving] = useState(false);
   const key = useRef(newSaveKey());
   useEffect(() => {
-    if (row) api(`/positions/${row.id}`).then((r: Row) => { setFull(r); setName(r.positionName); setOn(new Set(r.salesChannelIds ?? [])); }).catch(() => setFull(row));
+    if (row) api(`/positions/${row.id}`).then((r: Row) => { setFull(r); setName(r.positionName); setOn(new Set(r.salesChannelIds ?? [])); setHand(Boolean(r.mayHandOver)); }).catch(() => setFull(row));
   }, [row]);
   if (full === undefined) return <div className="skeleton" aria-busy="true"><i /><i /><i /></div>;
   const save = async () => {
@@ -42,7 +43,7 @@ export function PositionForm({ row, close, reload, tr }: CustomFormProps) {
     if (n.length > 100) { setErr(t("common", "fieldErrors.tooLong")); return; }
     setSaving(true);
     try {
-      const saved = await api(row ? `/positions/${row.id}` : "/positions", { method: row ? "PATCH" : "POST", body: { positionName: n }, saveKey: key.current });
+      const saved = await api(row ? `/positions/${row.id}` : "/positions", { method: row ? "PATCH" : "POST", body: { positionName: n, mayHandOver: hand }, saveKey: key.current });
       await api(`/positions/${saved.id}/sales-channels`, { method: "PUT", body: { salesChannelIds: [...on] } });
       key.current = newSaveKey();
       toast(p("saved")); reload();
@@ -62,6 +63,10 @@ export function PositionForm({ row, close, reload, tr }: CustomFormProps) {
           <Input id="f-positionName" name="positionName" value={name} maxLength={100} autoComplete="off" aria-invalid={!!err} aria-describedby={err ? "f-positionName-err" : undefined} onChange={(e) => setName(e.target.value)} />
           {err && <FieldError id="f-positionName-err">{err}</FieldError>}
         </div>
+        <label className="field check" data-k="mayHandOver">
+          <SwitchInput id="f-mayHandOver" checked={hand} onChange={(v) => { setHand(v); key.current = newSaveKey(); }} />
+          <span><b>{p("mayHandOver")}</b> <span className="help">{p("mayHandOverHint")}</span></span>
+        </label>
       </Section>
       <Section title={p("channels")}>
         <p className="help">{p("channelsHint")}</p>

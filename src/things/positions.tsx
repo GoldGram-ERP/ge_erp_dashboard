@@ -28,6 +28,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         { key: "positionCode", label: p("positionCode"), get: (r) => code6(r.positionCode), render: (r) => <><Ltr>{code6(r.positionCode)}</Ltr>{r.deletedAt && <> <Status tone="off">{p("deletedBadge")}</Status></>}</> },
         { key: "positionName", label: p("positionName") },
         { key: "salesChannelIds", label: p("channels"), sortable: false, render: (r) => <ChannelNames ids={r.salesChannelIds ?? []} none="—" /> },
+        { key: "mayHandOver", label: p("mayHandOver"), get: (r) => p(r.mayHandOver ? "yes" : "no") },
       ],
       rowClass: (r) => (r.deletedAt ? "deleted" : ""),
       onRow: (row, h) => h.open(row),
@@ -42,6 +43,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
             <Kv k={p("positionCode")}><Ltr>{code6(r.positionCode)}</Ltr></Kv>
             <Kv k={p("positionName")}>{r.positionName}</Kv>
             <Kv k={p("channels")}><ChannelNames ids={r.salesChannelIds ?? []} none={p("noChannelsGiven")} /></Kv>
+            <Kv k={p("mayHandOver")}>{p(r.mayHandOver ? "yes" : "no")}</Kv>
             <Kv k={L("تاريخ الإضافة", "Created")}>{stamp(r.createdAt)}</Kv>
             <Kv k={L("آخر تعديل", "Updated")}>{stamp(r.updatedAt)}</Kv>
             {r.deletedAt && <Kv k={p("deleted")}>{stamp(r.deletedAt)}</Kv>}
