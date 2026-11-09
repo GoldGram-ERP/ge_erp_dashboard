@@ -1,5 +1,32 @@
 [
  {
+  "version": "1.0.59",
+  "date": "2026-11-09",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Brands: the Items page has a Brands tab to keep the list of brands, the item form asks for a brand, and the items table and its filter show it.",
+    "ar": "الماركات: صفحة الأصناف فيها تبويب ماركات لإدارة قايمة الماركات، وفورم الصنف بيطلب الماركة، وجدول الأصناف والفلتر بيعرضوها."
+   },
+   {
+    "kind": "better",
+    "en": "Sales desk item picker: one dropdown for every item with a brand filter, and stock colours so you see what is in stock at a glance.",
+    "ar": "اختيار الصنف في مكتب المبيعات: قايمة واحدة لكل الأصناف مع فلتر بالماركة، وألوان للمخزون عشان تعرف الموجود من أول نظرة.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "Piece labels fit the 38 x 12.5 mm roll and print a real Code 128 barcode; the label shows no price, the weight to 2 decimals and a short karat.",
+    "ar": "ملصقات القطع بقت على رول 38 × 12.5 مم وبتطبع باركود Code 128 حقيقي، من غير سعر، والوزن برقمين عشريين، والعيار مختصر."
+   },
+   {
+    "kind": "better",
+    "en": "Stock count: the counted column is renamed, and the details table now looks like the pieces table, without the type, karat and category switch.",
+    "ar": "جرد المخزون: عمود الفعلي اتغير اسمه، وجدول التفاصيل بقى شبه جدول القطع، من غير مفتاح النوع والعيار والتصنيف."
+   }
+  ]
+ },
+ {
   "version": "1.0.58",
   "date": "2026-11-08",
   "changes": [
