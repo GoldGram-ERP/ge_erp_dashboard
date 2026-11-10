@@ -271,28 +271,6 @@ export const NAV: NavGroup[] = [
   ]
  },
  {
-  "id": "hr",
-  "icon": "users",
-  "items": [
-   {
-    "id": "positions",
-    "route": "/hr/positions",
-    "screens": [
-     "hr/positions",
-     "hr/positions-list"
-    ]
-   },
-   {
-    "id": "sales-channels",
-    "route": "/hr/sales-channels",
-    "screens": [
-     "hr/sales-channels",
-     "hr/sales-channels-list"
-    ]
-   }
-  ]
- },
- {
   "id": "control",
   "icon": "crown",
   "superOnly": true,
