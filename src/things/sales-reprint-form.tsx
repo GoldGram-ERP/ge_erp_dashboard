@@ -85,7 +85,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
         <div className="formgrid" id="grid">
           <div className="field" data-k="pieceCode" data-err={errs.pieceCode ? "" : undefined}><label htmlFor="pc">{rl("pieceCode")}</label>
             <Combobox id="pc" dir="ltr" mono maxLength={40} value={code} onChange={(v) => { touch(); setCode(v); }}
-              options={choices.map((p) => ({ text: p.pieceCode, hint: `${p.itemName ?? ""} · ${p.karat ?? ""}` }))} />{err("pieceCode")}</div>
+              options={choices.map((p) => ({ text: p.pieceCode, hint: `${p.itemNickname ?? p.itemName ?? ""} · ${p.karat ?? ""}` }))} />{err("pieceCode")}</div>
           <div className="field wide"><div className="help">{rl("orRange")}</div></div>
           <TextBox name="fromCode" label={rl("fromCode")} value={fromCode} maxLength={12} ltr error={errs.fromCode} onChange={(v) => { touch(); setFromCode(v); }} />
           <TextBox name="toCode" label={rl("toCode")} value={toCode} maxLength={12} ltr error={errs.toCode} onChange={(v) => { touch(); setToCode(v); }} />
