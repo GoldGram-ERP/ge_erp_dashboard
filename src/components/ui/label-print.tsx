@@ -14,7 +14,7 @@ import { A4Pages, FitWidth, PrinterLabel, writePrinterLabels } from "./PrinterLa
 
 const pc = (tr: Pick<Tr, "t">, k: string, v?: Record<string, string | number>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
 
-/** A piece row -> the label the saved profile draws (name, QR code, then code and karat/weight lines). */
+/** A piece row -> the label the saved profile draws (the name or nickname as the text, the piece code as the QR; no extra lines). */
 export const profileItem = (tr: Pick<Tr, "t">, l: Row) =>
   pieceLabelItem(l, { karat: (karat) => pc(tr, "karatShort", { karat: String(karat) }), weight: labelGramsText, gram: pc(tr, "gram") });
 

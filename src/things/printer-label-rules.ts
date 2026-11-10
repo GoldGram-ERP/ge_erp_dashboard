@@ -404,10 +404,12 @@ export function cleanProfile(raw: unknown): LabelProfile | null {
 export const sameProfile = (a: LabelProfile | null, b: LabelProfile | null): boolean =>
   a === b || (!!a && !!b && JSON.stringify(cleanProfile(a)) === JSON.stringify(cleanProfile(b)));
 
-/** The ERP label to draw: its name is the text line, its code is the QR, and the printed data follow as extra lines (code in words, then karat and weight). */
+/** The ERP label to draw (owner, 2026-11-10): the item name (its nickname when it has one) is the one text line and the piece code is the QR, whose code is printed under it
+ *  by the saved look. No extra lines: the code is not repeated in the middle and karat and weight are not printed. */
 export function pieceLabelItem(l: { pieceCode?: unknown; itemName?: unknown; categoryName?: unknown; karat?: unknown; weight?: unknown }, fmt: { karat: (karat: unknown) => string; weight: (mg: unknown) => string; gram: string }): LabelItem {
   const code = String(l.pieceCode ?? "").trim(), name = String(l.itemName ?? l.categoryName ?? "").trim();
-  return { text: name, code, extra: [code, `${fmt.karat(l.karat)} · ${fmt.weight(l.weight)} ${fmt.gram}`] };
+  void fmt;
+  return { text: name, code, extra: [] };
 }
 
 /** The saved look for a print, or null (= the old label: nothing saved, the server unreachable or too slow). Every label of the ERP takes the saved look, whatever its kind or layout (owner, 2026-11-10). */

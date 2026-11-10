@@ -477,22 +477,15 @@ describe("the saved label profile", () => {
   });
 
   const fmt = { karat: (k: unknown) => `${k}K`, weight: labelGramsText, gram: "g" };
-  it("maps a piece: name -> text line, code -> QR, then code and karat/weight as extra lines in order", () => {
+  it("maps a piece: the name (or nickname) is the one text line, the code is the QR, and nothing else is printed (owner, 2026-11-10)", () => {
     const item = pieceLabelItem({ pieceCode: "001190", itemName: "Ring", categoryName: "Rings", karat: "21", weight: 3005 }, fmt);
-    expect(item).toEqual({ text: "Ring", code: "001190", extra: ["001190", "21K · 3.01 g"] });
-    const drawn = buildLines(S({ lines: [] }), item).map((l) => l.text);
-    expect(drawn).toEqual(["001190", "21K · 3.01 g"]);
+    expect(item).toEqual({ text: "Ring", code: "001190", extra: [] });
+    expect(buildLines(S({ lines: [] }), item)).toEqual([]);   // no repeated code, no karat/weight line
   });
   it("a returned customer piece prints its category as the name; no name leaves the text empty", () => {
     expect(pieceLabelItem({ pieceCode: "7", itemName: null, categoryName: "Bracelets", karat: "18", weight: 1000 }, fmt).text).toBe("Bracelets");
     expect(pieceLabelItem({ pieceCode: "7", karat: "18", weight: 1000 }, fmt).text).toBe("");
   });
-  it("the extra lines take the saved style by position", () => {
-    const s = settingsFromProfile(profileFromSettings(S({ lines: [{ text: "", fontPt: 4, align: "left", bold: true, keepBlank: false }, { text: "", fontPt: 5, align: "right", bold: false, keepBlank: false }] })));
-    const lines = buildLines(s, pieceLabelItem({ pieceCode: "A1", itemName: "N", karat: "21", weight: 100 }, fmt));
-    expect(lines.map((l) => [l.fontPt, l.align, l.bold])).toEqual([[4, "left", true], [5, "right", false]]);
-  });
-
   it("every layout and kind takes the saved look; only a missing or invalid profile gives the old label", () => {
     const p = profileFromSettings(tuned);
     expect(profileForPrint(p)).toEqual(p);

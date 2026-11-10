@@ -6,6 +6,7 @@ import { amountInWords } from "@/lib/amount-in-words";
 import { esc, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
+import { arabicTr } from "@/lib/arabic-tr";
 
 export const LAYOUTS = ["a4", "thermal", "receipt", "gift", "star"];
 // shortcut: module-level translator set by openPrint (the print window is plain HTML, outside React)
@@ -140,7 +141,9 @@ function narrow(d: any) {
 // Must be called straight from the click (the window is opened before the answer, so no pop-up blocker objects).
 // `choices` (gift layout): the recipient of this print and whether the prices show.
 export type PrintChoices = { recipientName?: string; recipientPhone?: string; showPrices?: boolean };
-export async function openPrint(id: string, layout: string, tr: Tr, choices: PrintChoices = {}) {
+// An invoice is printed in Arabic ONLY, whatever the language of the page (owner, 2026-11-10): the translator is forced to Arabic here.
+export async function openPrint(id: string, layout: string, pageTr: Tr, choices: PrintChoices = {}) {
+  const tr = arabicTr(pageTr);
   const { t, L, isAr: ar } = tr;
   p = (k, v) => t("gold-sales", `prints.${k}`, v);
   inArabic = ar;
