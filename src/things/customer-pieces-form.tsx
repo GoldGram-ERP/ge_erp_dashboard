@@ -9,7 +9,7 @@ import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { ItemPicker } from "@/components/fields/ItemPicker";
 import { esc, milligramsText, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
-import { toast } from "@/components/engine";
+import { Icon, toast } from "@/components/engine";
 import { Button } from "@/components/ui";
 import { CopyButton } from "@/components/shell/copy-button";
 import { useMe } from "@/lib/session";
@@ -17,7 +17,7 @@ import { Choice, ErrBox, TextBox, allPages, code6, fe, sg } from "./sales-form-p
 import { itemProblem } from "./purchases-rules";
 import { PaymentBlock, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { paymentKeyOf } from "./sales-invoices-math";
-import { TEXT_MAX, customerLabelHtml, previewLines, readPiece, readQuantity, remainingToPay, type BuyPrice, type CustomerLabel, type PieceForm } from "./customer-pieces-rules";
+import { ITEMS_MAX, TEXT_MAX, blankItem, customerLabelHtml, previewLines, previewTotals, readItems, readPiece, remainingToPay, type BuyPrice, type CustomerLabel, type PieceForm } from "./customer-pieces-rules";
 import { revealFirstError } from "@/lib/submit-guard";
 import { profileItem } from "@/components/ui/label-print";
 import { writePrinterLabels } from "@/components/ui/PrinterLabel";
@@ -56,7 +56,7 @@ export async function openLabelPrint(tr: Tr, label: CustomerLabel | Promise<Cust
   }
 }
 
-const blank: PieceForm = { branchId: "", itemId: "", quantity: "1", description: "", customerName: "", customerPhone: "", cash: "", banks: [blankBank()] };
+const blank: PieceForm = { branchId: "", items: [blankItem()], description: "", customerName: "", customerPhone: "", cash: "", banks: [blankBank()] };
 const itemText = (it: Row) => `${code6(it.itemCode)} · ${it.itemName}`;
 type Preview = { state: "none" } | { state: "loading" } | { state: "ok"; price: BuyPrice } | { state: "refused"; text: string };
 type Answer = { key: string; result: Exclude<Preview, { state: "none" | "loading" }> };
@@ -94,18 +94,22 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   // Only the items switched on and complete are offered (the backend refuses the others with itemInactive).
   useEffect(() => { allPages("/items", { active: "true" }).then((r) => setItems(r.filter((it) => !itemProblem(it))), () => setItems([])); }, []);
 
-  // The price preview follows the item and the count (the same code as the save). A slower answer for an earlier choice must not overwrite the current one.
-  const quantity = readQuantity(v.quantity);
-  const askKey = v.itemId && quantity !== null ? `${v.itemId}|${quantity}` : "";
+  // The price preview follows the items and their counts (the same code as the save). A slower answer for an earlier choice must not overwrite the current one.
+  // It waits until every row has an item and a count; the same item twice waits too (the Save refuses it, and says which row).
+  const asked = readItems(v.items);
+  const twice = new Set(v.items.map((row) => row.itemId)).size !== v.items.length;
+  const askKey = asked && !twice ? JSON.stringify(asked) : "";
+  const setItem = (i: number, patch: Partial<PieceForm["items"][number]>) => set({ items: v.items.map((row, j) => (j === i ? { ...row, ...patch } : row)) });
+  const itemName = (id: string) => String(items?.find((it) => it.id === id)?.itemName ?? "");
   const preview: Preview = !askKey ? { state: "none" } : answer?.key === askKey ? answer.result : { state: "loading" };
   useEffect(() => {
     if (!askKey) return;
     let stale = false;
-    api("/customer-pieces/buy-price", { query: { itemId: v.itemId, quantity } }).then((price) => { if (!stale) setAnswer({ key: askKey, result: { state: "ok", price: price as BuyPrice } }); }, (err) => {
+    api("/customer-pieces/buy-price", { query: { items: askKey } }).then((price) => { if (!stale) setAnswer({ key: askKey, result: { state: "ok", price: price as BuyPrice } }); }, (err) => {
       if (stale) return;
       const e = err instanceof ApiFailure ? err.error : { message: "serverUnreachable" };
-      const field = (Array.isArray(e.fields) ? e.fields : []).find((f: { field: string }) => f.field === "itemId") as { message?: string } | undefined;
-      const name = String(e.values?.itemName ?? items?.find((it) => it.id === v.itemId)?.itemName ?? "");
+      const field = (Array.isArray(e.fields) ? e.fields : []).find((f: { field: string }) => /^items\.\d+\.itemId$/.test(f.field)) as { field: string; message?: string } | undefined;
+      const name = String(e.values?.itemName ?? itemName(asked?.[Number(field?.field.split(".")[1])]?.itemId ?? "") ?? "");
       const text = e.message === "noGoldPriceToday" ? cp(tr, "noGoldPrice") : e.message === "itemInactive" ? cp(tr, field?.message === "incomplete" ? "itemIncomplete" : "itemInactive", { item: name }) : tr.errorText(e);
       setAnswer({ key: askKey, result: { state: "refused", text } });
     });
@@ -116,16 +120,20 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   // A refusal goes under its field, in words; anything else is the banner.
   const refusal = (err: ApiFailure) => {
     const fields = (Array.isArray(err.error.fields) ? err.error.fields : []) as { field: string; message: string }[];
-    const itemName = String(err.error.values?.itemName ?? items?.find((it) => it.id === v.itemId)?.itemName ?? "");
     const out: Record<string, string> = {};
     if (err.error.message === "noGoldPriceToday") { setBanner(cp(tr, "noGoldPrice")); return; }
-    if (err.error.message === "itemInactive") out.itemId = cp(tr, fields.some((f) => f.message === "incomplete") ? "itemIncomplete" : "itemInactive", { item: itemName });
+    if (err.error.message === "itemInactive") {
+      const bad = fields.find((f) => /^items\.\d+\.itemId$/.test(f.field));
+      const row = Number(bad?.field.split(".")[1] ?? 0);
+      out[bad?.field ?? "items.0.itemId"] = cp(tr, bad?.message === "incomplete" ? "itemIncomplete" : "itemInactive", { item: String(err.error.values?.itemName ?? itemName(v.items[row]?.itemId ?? "")) });
+    }
     for (const f of fields) {
       const pay = paymentKeyOf(f.field, v.banks);
       if (pay && err.error.values?.total !== undefined) out.sum = cp(tr, "payMismatch", { total: piastresText(err.error.values.total), paid: piastresText(err.error.values.paid) });
       else if (pay) out[pay] = fe(tr, f.message === "duplicateAccount" ? "duplicateAccount" : f.message === "required" ? "required" : "invalid");
-      else if (f.field === "itemId") { if (!out.itemId) out.itemId = cp(tr, "itemInvalid"); }
-      else if (f.field === "quantity") out.quantity = cp(tr, "quantityInvalid");
+      else if (/^items\.\d+\.itemId$/.test(f.field)) { if (!out[f.field]) out[f.field] = cp(tr, "itemInvalid"); }
+      else if (/^items\.\d+\.quantity$/.test(f.field)) out[f.field] = cp(tr, "quantityInvalid");
+      else if (f.field === "items") out.items = L("اختر كل صنف مرة واحدة، ولا تزيد القطع كلها عن 100.", "Pick each item once, and keep all the pieces together to 100 or fewer.");
       else if (f.field === "customerPhone") out.customerPhone = cp(tr, "phoneInvalid");
       else if (f.field === "description" || f.field === "customerName") out[f.field] = fe(tr, "tooLong");
       else if (f.field === "branch") { if (needsBranch) out.branchId = cp(tr, "branchChooseAnother"); else setBanner(cp(tr, "branchInvalid")); }
@@ -142,7 +150,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
     // the payment block's own codes get its words; the sum says what is due and what was typed
     const payCodes = Object.fromEntries(Object.entries(r.errors).filter(([k, key]) => PAY_KEY.test(k) || (k === "sum" && key === "required")));
     const paid = total === null ? 0 : total - remainingToPay(total, v.cash, v.banks);
-    const words = (k: string, key: string) => (k === "sum" ? cp(tr, key === "noPrice" ? "payNoPrice" : "payMismatch", { total: piastresText(total), paid: piastresText(paid) }) : key === "phoneInvalid" ? cp(tr, "phoneInvalid") : key === "quantityInvalid" ? cp(tr, "quantityInvalid") : fe(tr, key));
+    const words = (k: string, key: string) => (key === "itemTwice" ? L("هذا الصنف مكرر: زد عدده بدل تكراره.", "This item is already in the list: raise its count instead.") : key === "tooManyPieces" ? L("اختر كل صنف مرة واحدة، ولا تزيد القطع كلها عن 100.", "Pick each item once, and keep all the pieces together to 100 or fewer.") : k === "sum" ? cp(tr, key === "noPrice" ? "payNoPrice" : "payMismatch", { total: piastresText(total), paid: piastresText(paid) }) : key === "phoneInvalid" ? cp(tr, "phoneInvalid") : key === "quantityInvalid" ? cp(tr, "quantityInvalid") : fe(tr, key));
     setErrs({ ...Object.fromEntries(Object.entries(r.errors).filter(([k]) => !(k in payCodes)).map(([k, key]) => [k, words(k, key)])), ...payErrorTexts(tr, payCodes, cp(tr, "amountsRequired")) });
     if (!r.payload) { revealFirstError(); return; }
     setSaving(true);
@@ -168,10 +176,15 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       <div className="card bpr" id="cp-saved" role="status">
         <h3>{cp(tr, "saved", { number: code6(saved.documentNumber) })}</h3>
         <div className="kv"><span>{cp(tr, "purchaseNumber")}</span><span dir="ltr" data-doc-number>{code6(saved.documentNumber)}</span></div>
-        <div className="kv"><span>{cp(tr, "item")}</span><span>{saved.itemName}</span></div>
-        <div className="kv"><span>{cp(tr, "karat")}</span><span dir="ltr">{saved.karat}</span></div>
-        <div className="kv"><span>{cp(tr, "weight")}</span><span dir="ltr">{milligramsText(saved.weight)}</span></div>
-        <div className="kv"><span>{cp(tr, "quantity")}</span><span dir="ltr">{saved.quantity}</span></div>
+        {((saved.lines ?? []) as Row[]).map((line, i) => (
+          <div key={line.itemId ?? i} data-saved-line={i} className="saved-line">
+            <div className="kv"><span>{cp(tr, "item")}</span><span>{line.itemName}</span></div>
+            <div className="kv"><span>{cp(tr, "karat")}</span><span dir="ltr">{line.karat}</span></div>
+            <div className="kv"><span>{cp(tr, "weight")}</span><span dir="ltr">{milligramsText(line.weight)}</span></div>
+            <div className="kv"><span>{cp(tr, "quantity")}</span><span dir="ltr">{line.quantity}</span></div>
+            <div className="kv"><span>{cp(tr, "total")}</span><span dir="ltr">{piastresText(line.total)}</span></div>
+          </div>
+        ))}
         <div className="kv"><span>{cp(tr, "total")}</span><span dir="ltr"><b data-saved-total>{piastresText(saved.total)}</b></span></div>
         <h4 style={{ marginBottom: 8 }}>{cp(tr, "piecesTitle")}</h4>
         <ul id="cp-pieces" style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
@@ -191,7 +204,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
     );
   }
   const left = total === null ? null : remainingToPay(total, v.cash, v.banks);
-  const pv = preview.state === "ok" ? previewLines(preview.price) : null;
+  const pv = preview.state === "ok" ? previewTotals(preview.price) : null;
   return (
     <form id="cp" className="bpr" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); save(); }}>
       {banner && <div className="note warn" role="alert" id="cp-alert" data-field-error>{banner}</div>}
@@ -200,22 +213,38 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
         <div className="formgrid">
           {needsBranch && <div className="field" data-k="branchId" data-err={errs.branchId ? "" : undefined}><label htmlFor="branchId">{cp(tr, "branch")} *</label>
             <Choice tr={tr} id="branchId" invalid={!!errs.branchId} options={branches} value={v.branchId ?? ""} onChange={(x) => set({ branchId: x })} />{err("branchId")}</div>}
-          <div className="field" data-k="itemId" data-err={errs.itemId ? "" : undefined}><label htmlFor="itemId">{cp(tr, "item")} *</label>
-            <ItemPicker id="itemId" name="itemId" invalid={!!errs.itemId} items={items ?? []} label={itemText} value={v.itemId} placeholder={sg(tr, "choose")} onChange={(x) => set({ itemId: x })} />
-            {items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
-            {err("itemId")}</div>
-          <TextBox name="quantity" label={`${cp(tr, "quantity")} *`} value={v.quantity} maxLength={3} ltr error={errs.quantity} onChange={(x) => set({ quantity: x })} />
         </div>
+        {v.items.map((row, i) => (
+          <div key={i} className="formgrid item-row" data-item-row={i}>
+            <div className="field" data-k={`items.${i}.itemId`} data-err={errs[`items.${i}.itemId`] ? "" : undefined}><label htmlFor={`itemId${i}`}>{cp(tr, "item")} {v.items.length > 1 ? i + 1 : ""} *</label>
+              <ItemPicker id={`itemId${i}`} name={`itemId${i}`} invalid={!!errs[`items.${i}.itemId`]} items={items ?? []} label={itemText} value={row.itemId} placeholder={sg(tr, "choose")} onChange={(x) => setItem(i, { itemId: x })} />
+              {i === 0 && items && !items.length && <div className="help" id="cp-no-items">{cp(tr, "noItems")}</div>}
+              {err(`items.${i}.itemId`)}</div>
+            <TextBox name={`quantity${i}`} label={`${cp(tr, "quantity")} *`} value={row.quantity} maxLength={3} ltr error={errs[`items.${i}.quantity`]} onChange={(x) => setItem(i, { quantity: x })} />
+            {v.items.length > 1 && <div className="field"><Button size="sm" danger data-rmitem={i} aria-label={L(`إزالة الصنف ${i + 1}`, `Remove item ${i + 1}`)} onClick={() => set({ items: v.items.filter((_, j) => j !== i) })}><Icon name="trash" size={15} />{sg(tr, "remove")}</Button></div>}
+          </div>
+        ))}
+        {err("items")}
+        {v.items.length < ITEMS_MAX && <div className="add-row"><Button size="sm" id="cp-add-item" data-additem onClick={() => set({ items: [...v.items, blankItem()] })}><Icon name="plus" size={15} />{L("إضافة صنف آخر", "Add another item")}</Button></div>}
       </div>
       <div className="card" id="cp-preview" data-state={preview.state} aria-live="polite">
         <h3>{cp(tr, "priceTitle")}</h3>
         {preview.state === "none" && <div className="help">{cp(tr, "pricePending")}</div>}
         {preview.state === "loading" && <div className="help">{L("جارٍ التحميل…", "Loading…")}</div>}
         {preview.state === "refused" && <div className="note warn" role="alert" id="cp-preview-error">{preview.text}</div>}
-        {pv && <>
-          <div className="kv"><span>{cp(tr, "buyPerGram")}</span><span dir="ltr" data-preview="buyPerGram">{pv.buyPerGram}</span></div>
-          <div className="kv"><span>{cp(tr, "cashbackPerGram")}</span><span dir="ltr" data-preview="cashbackPerGram">{pv.cashbackPerGram}</span></div>
-          <div className="kv"><span>{cp(tr, "onePiece")}</span><span dir="ltr" data-preview="onePiece">{pv.onePiece}</span></div>
+        {pv && preview.state === "ok" && <>
+          {preview.price.lines.map((line, i) => {
+            const pl = previewLines(line);
+            return (
+              <div key={line.itemId} data-preview-line={i} className="preview-line">
+                {preview.price.lines.length > 1 && <div><b>{itemName(line.itemId)}</b> <span className="help" dir="ltr">× {line.quantity}</span></div>}
+                <div className="kv"><span>{cp(tr, "buyPerGram")}</span><span dir="ltr" data-preview="buyPerGram">{pl.buyPerGram}</span></div>
+                <div className="kv"><span>{cp(tr, "cashbackPerGram")}</span><span dir="ltr" data-preview="cashbackPerGram">{pl.cashbackPerGram}</span></div>
+                <div className="kv"><span>{cp(tr, "onePiece")}</span><span dir="ltr" data-preview="onePiece">{pl.onePiece}</span></div>
+                {preview.price.lines.length > 1 && <div className="kv"><span>{L("إجمالي الصنف", "Item total")}</span><span dir="ltr" data-preview="lineTotal">{pl.total}</span></div>}
+              </div>
+            );
+          })}
           <div className="kv"><span>{cp(tr, "total")}</span><span dir="ltr"><b data-preview="total">{pv.total}</b></span></div>
           <div className="help">{cp(tr, "priceDate", { date: pv.priceDate })}</div>
         </>}

@@ -2,7 +2,7 @@
 // المرتجعات: sales/returns (returns, returns-list, find-return). Ported from docs/nav-preview/app/things/sales-returns.js.
 // The list takes only search, fromDate, toDate, deleted, page (20 a page). /find-return takes pieceCode, or branchId + returnNumber.
 import { api, ApiFailure } from "@/lib/api";
-import type { Column, MakeConfig, ThingConfig, ViewConfig } from "@/lib/engine-types";
+import type { Column, MakeConfig, Row, ThingConfig, ViewConfig } from "@/lib/engine-types";
 import { latinNumber, piastresText } from "@/lib/format";
 import { Kv, Ltr, Section, ThingPage } from "@/components/engine";
 import { ReturnForm } from "./sales-returns-form";
@@ -23,10 +23,12 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
   const rep = (k: string) => t("common", `report.${k}`);
   const ALL = rep("all");
 
+  // A return holds many pieces (owner, 2026-11-10): the list sends their codes, the one-return answers (record, find) send the lines.
+  const codesOf = (r: Row): string[] => (r.pieceCodes ?? (r.lines ?? []).map((l: Row) => l.pieceCode)) as string[];
   const columns = (): Column[] => [
     { key: "returnNumber", label: m("returnNumber"), render: (r) => <><Ltr>{code6(r.returnNumber)}</Ltr>{r.deletedAt && <> <span className="st off"><i />{si("deletedBadge")}</span></>}</> },
     { key: "date", label: m("date"), type: "date" },
-    { key: "pieceCode", label: m("pieceCode"), render: (r) => <Ltr>{r.pieceCode}</Ltr> },
+    { key: "pieceCode", label: m("pieceCode"), render: (r) => <Ltr>{codesOf(r).join("، ")}</Ltr> },
     { key: "refundTotal", label: m("refundTotal"), type: "money" },
   ];
   const history: ViewConfig = {
@@ -92,7 +94,10 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         {r.deletedAt && <div className="note warn">{si("deletedBadge")}</div>}
         <Section title={m("details")}>
           <Kv k={m("returnNumber")}><Ltr>{code6(r.returnNumber)}</Ltr></Kv><Kv k={si("branch")}>{r.branchName ?? ""}</Kv>
-          <Kv k={m("date")}><Ltr>{String(r.date).slice(0, 10)}</Ltr></Kv><Kv k={m("pieceCode")}><Ltr>{r.pieceCode}</Ltr></Kv>
+          <Kv k={m("date")}><Ltr>{String(r.date).slice(0, 10)}</Ltr></Kv>
+        </Section>
+        <Section title={L("القطع المرتجعة", "Returned pieces")}>
+          {codesOf(r).map((code, i) => <Kv key={code} k={`${m("pieceCode")} ${codesOf(r).length > 1 ? i + 1 : ""}`}><Ltr>{code}</Ltr>{r.lines?.[i] ? <> · <Ltr>{piastresText(r.lines[i].refundTotal)}</Ltr></> : null}</Kv>)}
         </Section>
         <Section title={m("refund")}>
           <Kv k={m("cashRefund")}><Ltr>{piastresText(r.cashRefund)}</Ltr></Kv>

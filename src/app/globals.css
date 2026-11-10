@@ -835,6 +835,13 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 /* ───── money: the payment block, the totals bar, the line price (issue #3) ───── */
 .bank-row{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;align-items:start;margin-bottom:10px}
 .bank-rm{padding-top:24px}
+/* many items / many pieces in one document (owner, 2026-11-10): a card title with its remove button, an item row, the add-another button, a saved line */
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:var(--gap)}
+.card-head h3{margin:0}
+.item-row{align-items:end;margin-top:var(--gap)}
+.add-row{margin-top:var(--gap)}
+.saved-line{display:grid;gap:var(--gap);margin-bottom:var(--gap)}
+.preview-line{margin-bottom:var(--gap)}
 .bank-row .bank-rm .btn{height:42px}
 @media (max-width:640px){.bank-row{grid-template-columns:minmax(0,1fr) auto}.bank-row .field:first-child{grid-column:1/-1}}
 .pay-sum{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-top:14px;padding:12px 16px;border-radius:14px;background:var(--side)}

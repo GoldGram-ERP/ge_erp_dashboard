@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { customerLabelHtml, narrow, previewLines, readFind, readPiece, readQuantity, remainingToPay } from "./customer-pieces-rules";
+import { customerLabelHtml, narrow, previewLines, previewTotals, readFind, readItems, readPiece, readQuantity, remainingToPay } from "./customer-pieces-rules";
 
 const tr = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (key === "purchaseCoding.karatShort" ? `${v?.karat}K` : key === "purchaseCoding.gram" ? "g" : key) };
-const base = { itemId: "i1", quantity: "3", description: " ring ", customerName: " Mona ", customerPhone: "٠١٠١٢٣٤٥٦٧٨", cash: "", banks: [] };
+const base = { items: [{ itemId: "i1", quantity: "3" }], description: " ring ", customerName: " Mona ", customerPhone: "٠١٠١٢٣٤٥٦٧٨", cash: "", banks: [] };
 const TOTAL = 5348439;   // 21K buy 4,050.00/g + cashback 25.00/g, 4.375 g, three pieces: 3 x 17,828.13 (one piece = 17,828.125 half up)
 
 describe("returned piece form (bought from the customer)", () => {
@@ -14,13 +14,13 @@ describe("returned piece form (bought from the customer)", () => {
   });
   it("sends item, quantity, the payment in piastres and the optional texts trimmed; never a category, karat, weight, code or price", () => {
     const r = readPiece({ ...base, cash: "10000", banks: [{ bankAccountId: "a1", amount: "43484.39" }] }, false, TOTAL);
-    expect(r.payload).toEqual({ itemId: "i1", quantity: 3, cash: 1000000, bankPayments: [{ bankAccountId: "a1", amount: 4348439 }], description: "ring", customerName: "Mona", customerPhone: "01012345678" });
+    expect(r.payload).toEqual({ items: [{ itemId: "i1", quantity: 3 }], cash: 1000000, bankPayments: [{ bankAccountId: "a1", amount: 4348439 }], description: "ring", customerName: "Mona", customerPhone: "01012345678" });
     for (const k of ["categoryId", "karat", "weight", "code", "price", "total"]) expect(r.payload).not.toHaveProperty(k);
   });
   it("bank only and cash only both pay the total; the optional texts may be empty", () => {
     const bare = { ...base, description: "", customerName: "", customerPhone: "" };
-    expect(readPiece({ ...bare, cash: "53484.39" }, false, TOTAL).payload).toEqual({ itemId: "i1", quantity: 3, cash: 5348439, bankPayments: [] });
-    expect(readPiece({ ...bare, banks: [{ bankAccountId: "a1", amount: "53484.39" }] }, false, TOTAL).payload).toEqual({ itemId: "i1", quantity: 3, bankPayments: [{ bankAccountId: "a1", amount: 5348439 }] });
+    expect(readPiece({ ...bare, cash: "53484.39" }, false, TOTAL).payload).toEqual({ items: [{ itemId: "i1", quantity: 3 }], cash: 5348439, bankPayments: [] });
+    expect(readPiece({ ...bare, banks: [{ bankAccountId: "a1", amount: "53484.39" }] }, false, TOTAL).payload).toEqual({ items: [{ itemId: "i1", quantity: 3 }], bankPayments: [{ bankAccountId: "a1", amount: 5348439 }] });
   });
   it("the payment must equal the total: short, over, nothing, and no price yet are each refused", () => {
     expect(readPiece({ ...base, cash: "53484.38" }, false, TOTAL).errors).toEqual({ sum: "mismatch" });
@@ -29,13 +29,29 @@ describe("returned piece form (bought from the customer)", () => {
     expect(readPiece({ ...base, cash: "53484.39" }, false, null).errors).toEqual({ sum: "noPrice" });
   });
   it("refuses each bad field by its own key", () => {
-    expect(readPiece({ ...base, itemId: "", quantity: "0", customerName: "x".repeat(101), customerPhone: "1234567", cash: "1" }, false, TOTAL).errors)
-      .toEqual({ itemId: "required", quantity: "quantityInvalid", customerName: "tooLong", customerPhone: "phoneInvalid", sum: "mismatch" });
-    expect(readPiece({ ...base, quantity: "101", cash: "1" }, false, TOTAL).errors.quantity).toBe("quantityInvalid");
-    expect(readPiece({ ...base, quantity: "2.5", cash: "1" }, false, TOTAL).errors.quantity).toBe("quantityInvalid");
-    expect(readPiece({ ...base, quantity: "١٠٠", cash: "53484.39" }, false, TOTAL).payload?.quantity).toBe(100);
+    const one = (itemId: string, quantity: string) => ({ ...base, items: [{ itemId, quantity }] });
+    expect(readPiece({ ...one("", "0"), customerName: "x".repeat(101), customerPhone: "1234567", cash: "1" }, false, TOTAL).errors)
+      .toEqual({ "items.0.itemId": "required", "items.0.quantity": "quantityInvalid", customerName: "tooLong", customerPhone: "phoneInvalid", sum: "mismatch" });
+    expect(readPiece({ ...one("i1", "101"), cash: "1" }, false, TOTAL).errors["items.0.quantity"]).toBe("quantityInvalid");
+    expect(readPiece({ ...one("i1", "2.5"), cash: "1" }, false, TOTAL).errors["items.0.quantity"]).toBe("quantityInvalid");
+    expect(readPiece({ ...one("i1", "١٠٠"), cash: "53484.39" }, false, TOTAL).payload?.items).toEqual([{ itemId: "i1", quantity: 100 }]);
     expect(readPiece({ ...base, banks: [{ bankAccountId: "", amount: "5" }] }, false, TOTAL).errors).toEqual({ bank0Account: "required" });
     expect(readPiece({ ...base, banks: [{ bankAccountId: "a1", amount: "1" }, { bankAccountId: "a1", amount: "1" }] }, false, TOTAL).errors).toEqual({ bank1Account: "duplicateAccount" });
+  });
+  it("takes many items in one save: each row is checked by its own key, an item once, all the pieces together at most 100", () => {
+    const two = { ...base, items: [{ itemId: "i1", quantity: "2" }, { itemId: "i2", quantity: "1" }], cash: "53484.39" };
+    expect(readPiece(two, false, TOTAL).payload?.items).toEqual([{ itemId: "i1", quantity: 2 }, { itemId: "i2", quantity: 1 }]);
+    expect(readPiece({ ...two, items: [{ itemId: "i1", quantity: "2" }, { itemId: "i1", quantity: "1" }] }, false, TOTAL).errors).toEqual({ "items.1.itemId": "itemTwice" });
+    expect(readPiece({ ...two, items: [{ itemId: "i1", quantity: "2" }, { itemId: "", quantity: "x" }] }, false, TOTAL).errors).toEqual({ "items.1.itemId": "required", "items.1.quantity": "quantityInvalid" });
+    expect(readPiece({ ...two, items: [{ itemId: "i1", quantity: "60" }, { itemId: "i2", quantity: "41" }] }, false, TOTAL).errors).toEqual({ items: "tooManyPieces" });
+    expect(readPiece({ ...two, items: [{ itemId: "i1", quantity: "60" }, { itemId: "i2", quantity: "40" }] }, false, TOTAL).errors).toEqual({});
+    expect(readPiece({ ...two, items: [] }, false, TOTAL).errors).toEqual({ items: "tooManyPieces" });
+  });
+  it("the preview asks only when every row has an item and a count", () => {
+    expect(readItems([{ itemId: "i1", quantity: "2" }, { itemId: "i2", quantity: "١" }])).toEqual([{ itemId: "i1", quantity: 2 }, { itemId: "i2", quantity: 1 }]);
+    expect(readItems([{ itemId: "i1", quantity: "2" }, { itemId: "", quantity: "1" }])).toBeNull();
+    expect(readItems([{ itemId: "i1", quantity: "0" }])).toBeNull();
+    expect(readItems([])).toBeNull();
   });
   it("the remaining is the total minus cash and every bank row, exact to the piastre", () => {
     expect(remainingToPay(TOTAL, "0.01", [{ bankAccountId: "a", amount: "100" }, { bankAccountId: "b", amount: "0.10" }])).toBe(TOTAL - 1 - 10000 - 10);
@@ -45,8 +61,11 @@ describe("returned piece form (bought from the customer)", () => {
 
 describe("price preview", () => {
   it("shows the buy price, cashback, one piece, the total and the date as exact money text (worked example)", () => {
-    expect(previewLines({ priceDate: "2026-11-05T00:00:00.000Z", buyPricePerGram: 405000, cashbackPerGram: 2500, onePiece: 1782813, total: 5348439 }))
-      .toEqual({ buyPerGram: "4,050.00", cashbackPerGram: "25.00", onePiece: "17,828.13", total: "53,484.39", priceDate: "2026-11-05" });
+    const line = { itemId: "i1", quantity: 3, buyPricePerGram: 405000, cashbackPerGram: 2500, onePiece: 1782813, total: 5348439 };
+    expect(previewLines(line)).toEqual({ buyPerGram: "4,050.00", cashbackPerGram: "25.00", onePiece: "17,828.13", total: "53,484.39" });
+    expect(previewTotals({ priceDate: "2026-11-05T00:00:00.000Z", lines: [line], total: 5348439 })).toEqual({ total: "53,484.39", priceDate: "2026-11-05" });
+    // many items: the total shown is the backend's (every line added up)
+    expect(previewTotals({ priceDate: "2026-11-05", lines: [line, { ...line, itemId: "i2", quantity: 1, total: 1782813 }], total: 7131252 }).total).toBe("71,312.52");
   });
   it("a count is a whole number 1 to 100 only", () => {
     expect([readQuantity("1"), readQuantity("100"), readQuantity(" 7 ")]).toEqual([1, 100, 7]);
