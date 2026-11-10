@@ -44,10 +44,10 @@ export async function openLabelPrint(tr: Tr, label: CustomerLabel | Promise<Cust
   page(`<p style="text-align:center;margin-top:40px">${esc(L("جارٍ التحميل…", "Loading…"))}</p>`);
   try {
     const [l, saved] = await Promise.all([label, loadPrintProfile()]);
-    // A returned piece is always a QR label: on the tag roll it takes the look saved from the Test printer (same renderer as that page).
-    const profile = profileForPrint(layout, saved, ["qr"]);
+    // Every label takes the look saved from the Test printer (same renderer as that page).
+    const profile = profileForPrint(saved);
     if (profile && w) {
-      try { writePrinterLabels(w, settingsFromProfile(profile), [profileItem(tr, l)], { title, print: t("common", "print"), rtl: isAr }); return; } catch { /* the old label below */ }
+      try { writePrinterLabels(w, settingsFromProfile(profile), [profileItem(tr, l)], { title, print: t("common", "print"), rtl: isAr }, layout); return; } catch { /* the old label below */ }
     }
     page(`<div class="bar"><b>${esc(title)} · <span dir="ltr">${esc(l.pieceCode)}</span></b><button onclick="print()">${esc(t("common", "print"))}</button></div><main>${customerLabelHtml(l, tr, layout)}</main>`);
   } catch (e) {

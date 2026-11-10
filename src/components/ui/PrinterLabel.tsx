@@ -7,7 +7,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { esc } from "@/lib/format";
 import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, contentAxes, crossCentres, effectiveLevel, fitLabel, placeCss, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestCross, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, resizeWidth, printCss, qrLogoBox, toContent, type Cross, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
+import { a4Grid, A4_MARGIN_MM, buildLines, contentAxes, crossCentres, effectiveLevel, fitLabel, placeCss, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestCross, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, resizeWidth, printCss, qrLogoBox, toContent, type Cross, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
 
 /** The preview's editing (never set for a printed label). px = one screen pixel in the label's own units (1 / zoom), so rings stay 2 px on screen.
  *  held = the part being dragged and how far (screen px); target = the place it will snap to. */
@@ -174,17 +174,47 @@ export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPi
 
 type PrintText = { title: string; print: string; popup: string; rtl: boolean };
 
-/** Writes only the labels (one per page) and a Print button into an open print window. The Test printer and every QR label of the ERP go through this one function. */
-export function writePrinterLabels(w: Window, s: Settings, labels: LabelItem[], text: Pick<PrintText, "title" | "print" | "rtl">): void {
-  const body = labels.map((item) => `<div class="sheet">${renderToStaticMarkup(<PrinterLabel s={s} item={item} />)}</div>`).join("");
+/** The A4 sheet of one saved label: a grid per page (no gap), as many as fit, in order (the maths: a4Grid). `preview` = on screen: a white page with the print margin. */
+export function A4Pages({ s, items, kinds, preview = false }: { s: Settings; items: LabelItem[]; kinds?: unknown[]; preview?: boolean }) {
+  const p = pageSize(s), g = a4Grid(p, items.length);
+  let at = 0;
+  return <>{g.pages.map((n, i) => {
+    const from = at; at += n;
+    return (
+      <div key={i} data-a4-page style={{ display: "grid", gridTemplateColumns: `repeat(${g.cols}, ${p.w}mm)`, gridAutoRows: `${p.h}mm`, width: "max-content", breakAfter: i < g.pages.length - 1 ? "page" : "auto", ...(preview ? { background: "#fff", padding: `${A4_MARGIN_MM}mm`, boxShadow: "0 0 0 1px #ccc", marginBottom: 10 } : {}) }}>
+        {items.slice(from, from + n).map((item, j) => <div key={j} data-label data-label-kind={kinds?.[from + j] as string | undefined} style={{ width: `${p.w}mm`, height: `${p.h}mm`, overflow: "hidden" }}><PrinterLabel s={s} item={item} /></div>)}
+      </div>
+    );
+  })}</>;
+}
+
+/** On screen at real size, scaled down only when the room is narrower than `widthMm`. */
+export function FitWidth({ widthMm, children }: { widthMm: number; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null), [z, setZ] = useState(1);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setZ(Math.min(1, e.contentRect.width / (widthMm * PX_PER_MM)) || 1));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [widthMm]);
+  return <div ref={ref} style={{ width: `${widthMm}mm`, maxWidth: "100%" }}><div style={{ zoom: z, width: "max-content" }}>{children}</div></div>;
+}
+
+/** Writes only the labels and a Print button into an open print window. Tag roll: one label per page. A4: the saved label tiled on A4 portrait with a 5 mm margin.
+ *  The Test printer and every label of the ERP go through this one function. */
+export function writePrinterLabels(w: Window, s: Settings, labels: LabelItem[], text: Pick<PrintText, "title" | "print" | "rtl">, layout: "tag" | "a4" = "tag"): void {
+  const a4 = layout === "a4";
+  const body = a4 ? renderToStaticMarkup(<A4Pages s={s} items={labels} />) : labels.map((item) => `<div class="sheet">${renderToStaticMarkup(<PrinterLabel s={s} item={item} />)}</div>`).join("");
   w.document.open();
   w.document.write(`<!doctype html><html dir="${text.rtl ? "rtl" : "ltr"}"><head><meta charset="utf-8"><title>${esc(text.title)}</title><style>`
     + `body{font-family:system-ui,"Segoe UI",Tahoma,sans-serif}`
     + `.bar{display:flex;gap:12px;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #ddd;padding:10px 16px}`
     + `.bar button{height:34px;padding:0 16px;border-radius:8px;border:0;background:#7a5710;color:#fff;font-weight:600;cursor:pointer}`
     + `.sheet{margin:12px;box-shadow:0 0 0 1px #ccc;width:max-content}`
-    + `@media print{.bar{display:none}.sheet{margin:0;box-shadow:none}}`
-    + printCss(s)
+    + `[data-a4-page]{margin:12px;box-shadow:0 0 0 1px #ccc}`
+    + `@media print{.bar{display:none}.sheet{margin:0;box-shadow:none}[data-a4-page]{margin:0;box-shadow:none}}`
+    + (a4 ? `@page{size:A4 portrait;margin:${A4_MARGIN_MM}mm}html,body{margin:0;padding:0;background:#fff}` : printCss(s))
     + `@media print{.sheet{margin:0}}`
     + `</style></head><body><div class="bar"><b>${esc(text.title)} · ${labels.length}</b><button onclick="print()">${esc(text.print)}</button></div>${body}</body></html>`);
   w.document.close();

@@ -8,9 +8,9 @@ import { esc, labelGramsText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
 import { loadPrintProfile } from "@/things/label-settings";
-import { pieceLabelItem, profileForPrint, settingsFromProfile, usesSavedLook, type LabelProfile } from "@/things/printer-label-rules";
+import { pieceLabelItem, profileForPrint, settingsFromProfile, pageSize as profilePage, type LabelProfile } from "@/things/printer-label-rules";
 import { Sheet, pageSize, type Layout } from "./LabelSheet";
-import { PrinterLabelPreview, writePrinterLabels } from "./PrinterLabel";
+import { A4Pages, FitWidth, PrinterLabel, writePrinterLabels } from "./PrinterLabel";
 
 const pc = (tr: Pick<Tr, "t">, k: string, v?: Record<string, string | number>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
 
@@ -39,29 +39,29 @@ export function printLabels(tr: Tr, labels: Row[], layout: Layout): void {
     w.document.close();
   };
   void (async () => {
-    const wants = usesSavedLook(layout, labels.map((l) => l.labelKind));
-    if (wants && w.document.body) w.document.body.textContent = L("جارٍ التحميل…", "Loading…");
-    const profile = wants ? profileForPrint(layout, await loadPrintProfile(), labels.map((l) => l.labelKind)) : null;
+    if (w.document.body) w.document.body.textContent = L("جارٍ التحميل…", "Loading…");
+    const profile = profileForPrint(await loadPrintProfile());
     if (w.closed) return;
     try {
-      if (profile) { writePrinterLabels(w, settingsFromProfile(profile), labels.map((l) => profileItem(tr, l)), { title, print: t("common", "print"), rtl: isAr }); return; }
+      if (profile) { writePrinterLabels(w, settingsFromProfile(profile), labels.map((l) => profileItem(tr, l)), { title, print: t("common", "print"), rtl: isAr }, layout); return; }
     } catch { /* drawing with the profile failed: the old label below */ }
     old();
   })();
 }
 
-/** The on-screen sheet of labels: the same look the print window will use (saved look for QR labels on the tag roll), else the old sheet.
+/** The on-screen sheet of labels: exactly what the print window draws (the saved look, every kind, either layout), at real size and scaled only to fit the width.
  *  The saved look is read once; until it arrives, or when none is saved or the server fails, the old sheet shows, as before. */
 export function LabelPreviewSheet({ labels, layout, tr }: { labels: Row[]; layout: Layout; tr: Tr }) {
   const [saved, setSaved] = useState<LabelProfile | null>(null);
-  const kinds = labels.map((l) => l.labelKind), wants = usesSavedLook(layout, kinds);
   useEffect(() => {
-    if (!wants) return;
     let live = true;
     void loadPrintProfile().then((p) => { if (live) setSaved(p); });
     return () => { live = false; };
-  }, [wants]);
-  const profile = profileForPrint(layout, saved, kinds);
+  }, []);
+  const profile = profileForPrint(saved);
   if (!profile) return <Sheet labels={labels} layout={layout} tr={tr} />;
-  return <>{labels.map((l, i) => <div key={i} data-label data-label-kind={l.labelKind} style={{ width: 240, height: 120, background: "#fff", border: "1px dashed #cfc8b4" }}><PrinterLabelPreview s={settingsFromProfile(profile)} item={profileItem(tr, l)} boxW={240} boxH={120} /></div>)}</>;
+  const s = settingsFromProfile(profile), items = labels.map((l) => profileItem(tr, l)), kinds = labels.map((l) => l.labelKind);
+  if (layout === "a4") return <FitWidth widthMm={210}><A4Pages s={s} items={items} kinds={kinds} preview /></FitWidth>;
+  const p = profilePage(s);
+  return <>{items.map((item, i) => <FitWidth key={i} widthMm={p.w}><div data-label data-label-kind={kinds[i] as string} style={{ width: `${p.w}mm`, height: `${p.h}mm`, boxShadow: "0 0 0 1px #ccc", background: "#fff" }}><PrinterLabel s={s} item={item} /></div></FitWidth>)}</>;
 }

@@ -410,16 +410,19 @@ export function pieceLabelItem(l: { pieceCode?: unknown; itemName?: unknown; cat
   return { text: name, code, extra: [code, `${fmt.karat(l.karat)} · ${fmt.weight(l.weight)} ${fmt.gram}`] };
 }
 
-/** THE decision point: which prints take the saved look. Add "a4" to `layouts` and/or "barcode" to `kinds` to widen it (open owner questions: the A4 sheet of many labels, and Code 128 labels). */
-export const SAVED_LOOK_FOR = { layouts: ["tag"], kinds: ["qr"] } as { layouts: unknown[]; kinds: unknown[] };
+/** The saved look for a print, or null (= the old label: nothing saved, the server unreachable or too slow). Every label of the ERP takes the saved look, whatever its kind or layout (owner, 2026-11-10). */
+export const profileForPrint = (profile: unknown): LabelProfile | null => cleanProfile(profile);
 
-/** Does this print (its layout and the kind of every label) take the saved look? Needs at least one label. */
-export const usesSavedLook = (layout: "tag" | "a4", kinds: unknown[]): boolean =>
-  SAVED_LOOK_FOR.layouts.includes(layout) && kinds.length > 0 && kinds.every((k) => SAVED_LOOK_FOR.kinds.includes(k));
-
-/** The saved look for a print, or null (= the old label): only when the print takes the saved look and a valid profile exists. */
-export function profileForPrint(layout: "tag" | "a4", profile: unknown, kinds: unknown[]): LabelProfile | null {
-  return usesSavedLook(layout, kinds) ? cleanProfile(profile) : null;
+export const A4_MM = { w: 210, h: 297 };
+export const A4_MARGIN_MM = 5;
+/** The A4 portrait sheet of the saved label: `cell` = the label's printed size (pageSize), no gap, a fixed margin; as many columns and rows as fit
+ *  (at least one: a label bigger than the page prints one per page, unshrunk). `pages` = how many labels each page holds, in order. A turn (rotate) happens
+ *  inside the label's own box, so the cell stays the page size. */
+export function a4Grid(cell: { w: number; h: number }, count: number, margin: number = A4_MARGIN_MM): { cols: number; rows: number; pages: number[] } {
+  const cols = Math.max(1, Math.floor((A4_MM.w - 2 * margin) / cell.w)), rows = Math.max(1, Math.floor((A4_MM.h - 2 * margin) / cell.h)), per = cols * rows;
+  const pages: number[] = [];
+  for (let left = Math.max(0, Math.floor(count)); left > 0; left -= per) pages.push(Math.min(per, left));
+  return { cols, rows, pages };
 }
 
 // ───── Keeping this page and the saved look in step (owner, 2026-11-10) ─────
