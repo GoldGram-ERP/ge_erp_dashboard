@@ -31,6 +31,8 @@ const nextConfig = {
   // A bug report carries up to 5 files of 25 MB: the proxy that forwards /api buffers a request body up to this size (the default is 10 MB).
   experimental: { proxyClientMaxBodySize: "140mb" },
   poweredByHeader: false,
+  // dev only: hosts that may load the dev scripts and the hot-reload socket (a tunnel such as *.trycloudflare.com), from DEV_ORIGINS (comma list). Empty = localhost only.
+  allowedDevOrigins: (process.env.DEV_ORIGINS ?? "").split(",").map((h) => h.trim()).filter(Boolean),
   // dev only: the e2e screenshots and traces are written inside the project; they must not make the dev server rebuild mid-test.
   webpack(config, { dev }) {
     if (dev) config.watchOptions = { ...config.watchOptions, ignored: ["**/node_modules/**", "**/.git/**", "**/e2e-tests/.shots/**", "**/e2e-tests/.e2e/**", "**/.shots/**"] };

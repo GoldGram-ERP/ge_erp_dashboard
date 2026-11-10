@@ -33,6 +33,16 @@ if (out("git", ["tag", "-l", next]) || out("git", ["ls-remote", "--tags", "origi
   process.exit(1);
 }
 
+// One build a day (owner, 2026-11-10): Hostinger gets a build only at the end of the day, once the work is mature. A second release on the same
+// calendar day (Cairo) is refused unless it is a hotfix the owner asked for: `npm run release -- --hotfix "why"`.
+const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date());
+const releasedToday = out("git", ["tag", "-l", "v*", "--format=%(creatordate:format-local:%Y-%m-%d) %(refname:short)"]).split("\n").filter((l) => l.startsWith(today));
+const hot = process.argv.indexOf("--hotfix");
+if (releasedToday.length > 0 && (hot < 0 || !process.argv[hot + 1] || process.argv[hot + 1].startsWith("--"))) {
+  console.error(`Not releasing: ${releasedToday.map((l) => l.split(" ")[1]).join(", ")} already went out today. One build a day: ship again tomorrow, or run \`npm run release -- --hotfix "reason"\` only when the owner asked for it.`);
+  process.exit(1);
+}
+
 const skipLog = process.argv.includes("--skip-changelog");
 if (!skipLog) stampNext(load(), "0.0.0", ""); // refuse before any bump when there are no lines
 runNpm(["version", "patch", "--no-git-tag-version"]);
