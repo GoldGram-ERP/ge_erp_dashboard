@@ -410,9 +410,16 @@ export function pieceLabelItem(l: { pieceCode?: unknown; itemName?: unknown; cat
   return { text: name, code, extra: [code, `${fmt.karat(l.karat)} · ${fmt.weight(l.weight)} ${fmt.gram}`] };
 }
 
-/** The one decision: the profile is used only for the tag roll (QR labels) and only when a valid profile exists and every label of the print is a QR label (a barcode label keeps the old sheet). */
+/** THE decision point: which prints take the saved look. Add "a4" to `layouts` and/or "barcode" to `kinds` to widen it (open owner questions: the A4 sheet of many labels, and Code 128 labels). */
+export const SAVED_LOOK_FOR = { layouts: ["tag"], kinds: ["qr"] } as { layouts: unknown[]; kinds: unknown[] };
+
+/** Does this print (its layout and the kind of every label) take the saved look? Needs at least one label. */
+export const usesSavedLook = (layout: "tag" | "a4", kinds: unknown[]): boolean =>
+  SAVED_LOOK_FOR.layouts.includes(layout) && kinds.length > 0 && kinds.every((k) => SAVED_LOOK_FOR.kinds.includes(k));
+
+/** The saved look for a print, or null (= the old label): only when the print takes the saved look and a valid profile exists. */
 export function profileForPrint(layout: "tag" | "a4", profile: unknown, kinds: unknown[]): LabelProfile | null {
-  return layout === "tag" && kinds.length > 0 && kinds.every((k) => k === "qr") ? cleanProfile(profile) : null;
+  return usesSavedLook(layout, kinds) ? cleanProfile(profile) : null;
 }
 
 // ───── Keeping this page and the saved look in step (owner, 2026-11-10) ─────

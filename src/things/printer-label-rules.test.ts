@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
 import { labelGramsText } from "@/lib/format";
 import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, resizeWidth, fitLabel, placeCss, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
-import { CROSSES, applyProfile, contentAxes, crossCentres, lookKey, nearestCross, syncChoice, toContent, type Cross } from "./printer-label-rules";
+import { CROSSES, applyProfile, contentAxes, crossCentres, lookKey, nearestCross, SAVED_LOOK_FOR, usesSavedLook, syncChoice, toContent, type Cross } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -501,6 +501,22 @@ describe("the saved label profile", () => {
     expect(profileForPrint("tag", p, [])).toBeNull();
     expect(profileForPrint("tag", null, ["qr"])).toBeNull();
     expect(profileForPrint("tag", { v: 9 }, ["qr"])).toBeNull();
+  });
+
+  it("usesSavedLook is the one decision the print and the on-screen sheet share", () => {
+    expect(usesSavedLook("tag", ["qr"])).toBe(true);
+    expect(usesSavedLook("tag", ["qr", "barcode"])).toBe(false);
+    expect(usesSavedLook("a4", ["qr"])).toBe(false);
+    expect(usesSavedLook("tag", [])).toBe(false);
+  });
+
+  it("widening SAVED_LOOK_FOR (the owner's open questions) is a one-line switch", () => {
+    const was = { layouts: [...SAVED_LOOK_FOR.layouts], kinds: [...SAVED_LOOK_FOR.kinds] };
+    try {
+      SAVED_LOOK_FOR.layouts.push("a4"); SAVED_LOOK_FOR.kinds.push("barcode");
+      expect(usesSavedLook("a4", ["qr", "barcode"])).toBe(true);
+    } finally { SAVED_LOOK_FOR.layouts = was.layouts; SAVED_LOOK_FOR.kinds = was.kinds; }
+    expect(usesSavedLook("a4", ["qr"])).toBe(false);
   });
 });
 

@@ -1,15 +1,16 @@
 "use client";
 // Prints piece labels in their OWN window that holds only the labels. It never prints the app page: hiding the app with
 // `visibility:hidden` keeps its layout, which at the label page size stretched into ~25 blank sheets. The drawing is in label-sheet.tsx.
+import { useEffect, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Row } from "@/lib/engine-types";
 import { esc, labelGramsText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
 import { loadPrintProfile } from "@/things/label-settings";
-import { pieceLabelItem, profileForPrint, settingsFromProfile } from "@/things/printer-label-rules";
+import { pieceLabelItem, profileForPrint, settingsFromProfile, usesSavedLook, type LabelProfile } from "@/things/printer-label-rules";
 import { Sheet, pageSize, type Layout } from "./LabelSheet";
-import { writePrinterLabels } from "./PrinterLabel";
+import { PrinterLabelPreview, writePrinterLabels } from "./PrinterLabel";
 
 const pc = (tr: Pick<Tr, "t">, k: string, v?: Record<string, string | number>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
 
@@ -38,7 +39,7 @@ export function printLabels(tr: Tr, labels: Row[], layout: Layout): void {
     w.document.close();
   };
   void (async () => {
-    const wants = layout === "tag" && labels.length > 0 && labels.every((l) => l.labelKind === "qr");
+    const wants = usesSavedLook(layout, labels.map((l) => l.labelKind));
     if (wants && w.document.body) w.document.body.textContent = L("جارٍ التحميل…", "Loading…");
     const profile = wants ? profileForPrint(layout, await loadPrintProfile(), labels.map((l) => l.labelKind)) : null;
     if (w.closed) return;
@@ -47,4 +48,20 @@ export function printLabels(tr: Tr, labels: Row[], layout: Layout): void {
     } catch { /* drawing with the profile failed: the old label below */ }
     old();
   })();
+}
+
+/** The on-screen sheet of labels: the same look the print window will use (saved look for QR labels on the tag roll), else the old sheet.
+ *  The saved look is read once; until it arrives, or when none is saved or the server fails, the old sheet shows, as before. */
+export function LabelPreviewSheet({ labels, layout, tr }: { labels: Row[]; layout: Layout; tr: Tr }) {
+  const [saved, setSaved] = useState<LabelProfile | null>(null);
+  const kinds = labels.map((l) => l.labelKind), wants = usesSavedLook(layout, kinds);
+  useEffect(() => {
+    if (!wants) return;
+    let live = true;
+    void loadPrintProfile().then((p) => { if (live) setSaved(p); });
+    return () => { live = false; };
+  }, [wants]);
+  const profile = profileForPrint(layout, saved, kinds);
+  if (!profile) return <Sheet labels={labels} layout={layout} tr={tr} />;
+  return <>{labels.map((l, i) => <div key={i} data-label data-label-kind={l.labelKind} style={{ width: 240, height: 120, background: "#fff", border: "1px dashed #cfc8b4" }}><PrinterLabelPreview s={settingsFromProfile(profile)} item={profileItem(tr, l)} boxW={240} boxH={120} /></div>)}</>;
 }

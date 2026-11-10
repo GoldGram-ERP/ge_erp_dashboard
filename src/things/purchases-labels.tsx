@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import type { Row } from "@/lib/engine-types";
 import type { Tr } from "@/lib/t";
 import { Icon } from "@/components/engine";
-import { LAYOUT_KEY as KEY, Sheet, type Layout } from "@/components/ui/LabelSheet";
-import { printLabels } from "@/components/ui/label-print";
+import { LAYOUT_KEY as KEY, type Layout } from "@/components/ui/LabelSheet";
+import { LabelPreviewSheet, printLabels } from "@/components/ui/label-print";
 
 const pc = (tr: Tr, k: string, v?: Record<string, string | number>) => tr.t("gold-accounts", `purchaseCoding.${k}`, v);
 
@@ -30,7 +30,7 @@ export function LabelsCard({ title, labels, tr }: { title: string; labels: Row[]
         </div>
       </div>
       <div data-labels data-print-labels style={{ display: "flex", flexWrap: "wrap", gap: 10, maxHeight: "60vh", overflow: "auto", background: "var(--bg)", padding: 12, borderRadius: 10 }}>
-        <Sheet labels={labels} layout={layout} tr={tr} />
+        <LabelPreviewSheet labels={labels} layout={layout} tr={tr} />
       </div>
     </div>
   );

@@ -11,8 +11,8 @@ import { latinNumber } from "@/lib/format";
 import { toast } from "@/components/engine";
 import { Button, Combobox, Input } from "@/components/ui";
 import { Choice, ErrBox, TextBox, fe, pieceChoices, readPieceCode } from "./sales-form-parts";
-import { LAYOUT_KEY, Sheet } from "@/components/ui/LabelSheet";
-import { printLabels } from "@/components/ui/label-print";
+import { LAYOUT_KEY } from "@/components/ui/LabelSheet";
+import { LabelPreviewSheet, printLabels } from "@/components/ui/label-print";
 import { revealFirstError } from "@/lib/submit-guard";
 
 export function ReprintForm({ tr }: CustomFormProps) {
@@ -104,7 +104,7 @@ export function ReprintForm({ tr }: CustomFormProps) {
               <Button variant="primary" data-print onClick={print}>{t("common", "print")}</Button>
             </div>
             <div data-labels data-print-labels style={{ display: "flex", flexWrap: "wrap", gap: 10, maxHeight: "60vh", overflow: "auto", background: "var(--bg)", padding: 12, borderRadius: 10 }}>
-              <Sheet labels={labels} layout={layout} tr={tr} />
+              <LabelPreviewSheet labels={labels} layout={layout} tr={tr} />
             </div>
           </div>
         </div>
