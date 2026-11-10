@@ -127,19 +127,19 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
       validate: (v) => (!/^[A-Za-z0-9_.]+$/.test(v) ? u("usernameInvalid") : v.length < 3 ? u("usernameTooShort") : v.length > 30 ? c("fieldErrors.tooLong") : null) },
     { name: "email", label: u("email"), type: "text", maxLength: 255, section: u("details"), help: !adding && !row.needsEmail ? u("emailKeepHint") : "",
       validate: (v) => (v === "" ? null : !EMAIL.test(v) ? u("emailInvalid") : v.length > 254 ? c("fieldErrors.tooLong") : null) },
-    { name: "userType", label: u("userType"), type: "select", required: true, section: u("details"), searchable: false, options: types.map((x) => [x, typeName(tr, x)]), default: onlyType },
+    { name: "userType", label: u("userType"), type: "select", required: true, section: u("details"), searchable: false, options: types.flatMap((x): [string, string][] => (x === "user" ? [["user", typeName(tr, "user")], ...BUSINESS_ROLES.map((k): [string, string] => [`user:${k}`, u(`roles.${k}`)])] : [[x, typeName(tr, x)]])), default: onlyType },   // the business roles sit in the type list, beside the plain user (owner, 2026-11-10); a role is a plain user underneath
     { name: "password", label: u("password"), type: "password", required: adding, maxLength: 129, autocomplete: "new-password", section: u("details"), help: !adding ? u("passwordKeepHint") : "",
       validate: (v) => (v === "" ? null : v.trim() === "" ? (adding ? c("fieldErrors.required") : c("fieldErrors.invalid")) : v.length < 8 ? u("passwordTooShort") : v.length > 128 ? c("fieldErrors.tooLong") : null) },
     { name: "confirmPassword", label: u("confirmPassword"), type: "password", required: adding, maxLength: 129, autocomplete: "new-password", section: u("details"),
       validate: (v, a) => (adding && v === "" ? c("fieldErrors.required") : v !== a.password ? u("passwordMismatch") : null) },
   ];
   const fields = useMemo(() => all.filter((f) => !f.only || (f.only === "user" ? ty === "user" : ty !== "super_admin")), [ty]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const values = useMemo(() => ({ userCode: row?.userCode, branchId: row?.branchId ?? "", username: row?.username ?? "", email: row && !row.needsEmail ? row.email : "", userType: row?.userType ?? onlyType, password: "", confirmPassword: "" }), [row, onlyType]);
+  const values = useMemo(() => ({ userCode: row?.userCode, branchId: row?.branchId ?? "", username: row?.username ?? "", email: row && !row.needsEmail ? row.email : "", userType: row?.userType === "user" && row?.businessRole ? `user:${row.businessRole}` : row?.userType ?? onlyType, password: "", confirmPassword: "" }), [row, onlyType]);
   const f = useFieldsForm(fields, values);
   const saveKey = useRef(newSaveKey());
   const [dirty, setDirty] = useState(false);
   const mark = () => { saveKey.current = newSaveKey(); setDirty(true); };
-  useEffect(() => { const s = f.watch((v, info) => { mark(); if (info.name === "userType") setTy(String(v.userType ?? "")); }); return () => s.unsubscribe(); }, [f]);
+  useEffect(() => { const s = f.watch((v, info) => { mark(); if (info.name === "userType") { const pick = String(v.userType ?? ""); setTy(pick.split(":")[0]); setRole(pick.includes(":") ? pick.split(":")[1] : ""); } }); return () => s.unsubscribe(); }, [f]);
   // a lone branch is the one (not an unsaved change)
   useEffect(() => { if (adding) api("/branches", { query: { limit: 20 } }).then((r) => { const rows = rowsOf(r); if (rows.length === 1 && !f.getValues("branchId")) f.setValue("branchId", rows[0].id); }).catch(() => {}); }, [adding, f]);
 
@@ -268,12 +268,6 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     <>
       {dialog}
       <div className="card"><FormFields form={f} fields={fields} values={values} /></div>
-      {ty === "user" && <Section title={u("role")} wide>
-        <div className="field">
-          <Select id="f-businessRole" name="businessRole" value={role} onChange={(v) => { setRole(v); mark(); }} searchable={false} placeholder={u("roleNone")} options={BUSINESS_ROLES.map((k) => [k, u(`roles.${k}`)])} />
-          <div className="help">{u("roleHint")}</div>
-        </div>
-      </Section>}
       <Section title={u("screens.heading")} wide>{perm}{permErr && <FieldError>{permErr}</FieldError>}</Section>
       {ty === "user" && <Section title={u("actionsHeading")} wide>
         <div className="help">{u("actionsHint")}</div>

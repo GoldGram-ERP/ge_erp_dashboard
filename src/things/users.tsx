@@ -79,9 +79,8 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
         { key: "userCode", label: u("userCode"), render: (r) => <><Ltr>{code6(r.userCode)}</Ltr>{r.deletedAt ? <> <Status tone="off">{u("deletedBadge")}</Status></> : r.locked ? <> <Status tone="warn">{u("lockedBadge")}</Status></> : null}</> },
         { key: "username", label: u("username"), render: (r) => <bdi dir="ltr">{r.username}</bdi> },
         { key: "email", label: u("email"), render: (r) => (r.needsEmail ? "—" : <bdi dir="ltr">{r.email}</bdi>) },
-        { key: "userType", label: u("userType"), get: (r) => typeName(tr, r.userType) },
+        { key: "userType", label: u("userType"), get: (r) => (r.userType === "user" && r.businessRole ? u(`roles.${r.businessRole}`) : typeName(tr, r.userType)) },
         { key: "branchName", label: u("branchId"), render: (r) => r.branchName || "—" },
-        { key: "businessRole", label: u("role"), render: (r) => (r.businessRole ? u(`roles.${r.businessRole}`) : "—") },
       ],
       rowClass: (r) => (r.deletedAt ? "deleted" : ""),
     }, {
