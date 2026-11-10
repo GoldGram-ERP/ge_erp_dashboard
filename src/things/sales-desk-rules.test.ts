@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, mayHandOverDraft, methodsLeftFor, othersDraft, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -64,65 +64,22 @@ describe("lock note", () => {
   });
 });
 
-describe("who completes a draft (issue #25)", () => {
+describe("who completes a draft (issue #25; per-person action since 2026-11-10)", () => {
   it("an Admin and the Super admin complete an open sell draft", () => {
-    expect(canCompleteDraft("admin", "open", false)).toBe(true);
-    expect(canCompleteDraft("super_admin", "open", false)).toBe(true);
+    expect(canCompleteDraft({ userType: "admin" }, "open", false)).toBe(true);
+    expect(canCompleteDraft({ userType: "super_admin" }, "open", false)).toBe(true);
   });
-  it("a plain User never does", () => {
-    expect(canCompleteDraft("user", "open", false)).toBe(false);
+  it("a plain User only with the action complete-sales-draft", () => {
+    expect(canCompleteDraft({ userType: "user" }, "open", false)).toBe(false);
+    expect(canCompleteDraft({ userType: "user", actions: ["give-cash-discount"] }, "open", false)).toBe(false);
+    expect(canCompleteDraft({ userType: "user", actions: ["complete-sales-draft"] }, "open", false)).toBe(true);
   });
-  it("nobody does while the user type is unknown (the page is still loading)", () => {
+  it("nobody does while the person is unknown (the page is still loading)", () => {
     expect(canCompleteDraft(undefined, "open", false)).toBe(false);
   });
   it("not a completed, deleted or missing draft, and not a Buy draft (a quote only)", () => {
-    for (const status of ["completed", "deleted", undefined]) expect(canCompleteDraft("admin", status, false)).toBe(false);
-    expect(canCompleteDraft("admin", "open", true)).toBe(false);
-  });
-});
-
-describe("who hands over a draft (owner, 2026-11-09)", () => {
-  const draft = { invoiceType: "handover", status: "open", handedOverAt: null };
-  it("the Admin and the Super admin always, even without the Position switch", () => {
-    expect(mayHandOverDraft({ userType: "admin" }, draft, false)).toBe(true);
-    expect(mayHandOverDraft({ userType: "super_admin", mayHandOver: false }, draft, false)).toBe(true);
-  });
-  it("a User only when their Position may", () => {
-    expect(mayHandOverDraft({ userType: "user", mayHandOver: true }, draft, false)).toBe(true);
-    expect(mayHandOverDraft({ userType: "user", mayHandOver: false }, draft, false)).toBe(false);
-    expect(mayHandOverDraft({ userType: "user" }, draft, false)).toBe(false);
-  });
-  it("nobody while the person is unknown, or on an unsaved draft", () => {
-    expect(mayHandOverDraft(undefined, draft, false)).toBe(false);
-    expect(mayHandOverDraft({ userType: "admin" }, null, false)).toBe(false);
-  });
-  it("not twice: an already handed over draft shows the stamp instead", () => {
-    expect(mayHandOverDraft({ userType: "admin" }, { ...draft, handedOverAt: "2026-11-09T10:00:00.000Z" }, false)).toBe(false);
-  });
-  it("only a Hand-over draft: not a Sale or a Delivery one", () => {
-    for (const invoiceType of ["sale", "delivery", undefined]) expect(mayHandOverDraft({ userType: "admin" }, { ...draft, invoiceType }, false)).toBe(false);
-  });
-  it("not a Buy draft, and not a completed or deleted one", () => {
-    expect(mayHandOverDraft({ userType: "admin" }, draft, true)).toBe(false);
-    for (const status of ["completed", "deleted"]) expect(mayHandOverDraft({ userType: "admin" }, { ...draft, status }, false)).toBe(false);
-  });
-});
-
-describe("a colleague's draft is read only for a plain User (owner, 2026-11-09)", () => {
-  const mine = { employeeId: "u1" }, theirs = { employeeId: "u2" };
-  it("my own draft stays editable", () => {
-    expect(othersDraft({ id: "u1", userType: "user" }, mine)).toBe(false);
-  });
-  it("another user's draft is read only for a plain User", () => {
-    expect(othersDraft({ id: "u1", userType: "user" }, theirs)).toBe(true);
-  });
-  it("the Admin and the Super admin edit it as today", () => {
-    expect(othersDraft({ id: "a1", userType: "admin" }, theirs)).toBe(false);
-    expect(othersDraft({ id: "s1", userType: "super_admin" }, theirs)).toBe(false);
-  });
-  it("an unsaved new draft, or an unknown person, stays editable", () => {
-    expect(othersDraft({ id: "u1", userType: "user" }, null)).toBe(false);
-    expect(othersDraft(undefined, theirs)).toBe(false);
+    for (const status of ["completed", "deleted", undefined]) expect(canCompleteDraft({ userType: "admin" }, status, false)).toBe(false);
+    expect(canCompleteDraft({ userType: "admin" }, "open", true)).toBe(false);
   });
 });
 

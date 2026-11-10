@@ -1,5 +1,6 @@
 // The Sales desk's pure rules (issue #6): customer fields, item + count lines, planned payment against the total, the lock note.
 // The phone and national ID rules are the ones of every sales form (customerRules); the payment rules are the payment block's.
+import { hasAction } from "@/lib/actions";
 import { latinNumber } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { customerRules } from "./sales-form-parts";
@@ -62,23 +63,10 @@ export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" |
   return d.locked ? { state: "locked", text: t("reason", { day: d.createdDay }) } : { state: "editable", text: t("editable") };
 }
 
-/** Who completes a draft into an invoice (issue #25): the Admin and the Super admin, on an open sell draft. A plain User never does (the backend
- *  refuses with 403 notAllowed too), and neither does anyone while the user type is still unknown (the page is loading). A Buy draft is a quote only. */
-export const canCompleteDraft = (userType: string | undefined, status: string | undefined, buy: boolean): boolean =>
-  (userType === "admin" || userType === "super_admin") && status === "open" && !buy;
-
-/** Who sees Hand over (owner, 2026-11-09): a saved, open sell draft of type Hand-over that is not handed over yet; the Admin and the Super admin always,
- *  a User only when their Position may (`/access/me` mayHandOver). Nobody while `me` is unknown. The backend refuses the rest (handOverNotAllowed, ...). */
-export const mayHandOverDraft = (me: { userType?: string; mayHandOver?: boolean } | undefined,
-  draft: { invoiceType?: string; status?: string; handedOverAt?: string | null } | null | undefined, buy: boolean): boolean =>
-  Boolean(me && draft && !buy && draft.invoiceType === "handover" && draft.status === "open" && !draft.handedOverAt
-    && (me.userType === "admin" || me.userType === "super_admin" || me.mayHandOver === true));
-
-/** A colleague's draft (owner, 2026-11-09): a plain User whose Position may hand over sees every Hand-over draft of their branch, but Edit, Complete and
- *  Delete of someone else's draft stay the creator's (the backend answers 404). True when the signed-in User did not make the saved draft (`employeeId`
- *  is the creator); then the desk shows it read only. Admin and Super admin, a new draft, and an unknown person: false (as before). */
-export const othersDraft = (me: { id?: string; userType?: string } | undefined, draft: { employeeId?: string } | null | undefined): boolean =>
-  Boolean(me && draft && me.userType === "user" && draft.employeeId && draft.employeeId !== me.id);
+/** Who completes a draft into an invoice: Admin and Super admin, or a plain user holding the action `complete-sales-draft`, on an open sell draft.
+ *  Nobody while the person is unknown (the page is loading). A Buy draft is a quote only. The backend refuses the rest (403 notAllowed). */
+export const canCompleteDraft = (me: { userType?: string; actions?: string[] } | undefined, status: string | undefined, buy: boolean): boolean =>
+  hasAction(me, "complete-sales-draft") && status === "open" && !buy;
 
 /** One channel per payment line (owner, 2026-11-09): a line is Instapay, Visa or Bank transfer, never two at once, and the backend takes each method once per
  *  sale. The methods row `i` may offer: every one not already used by another line ("cash" never counts), plus the row's own value. */

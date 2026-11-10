@@ -23,7 +23,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, mayHandOverDraft, othersDraft, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
 
@@ -94,10 +94,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const [completeMsg, setCompleteMsg] = useState("");
   const [completing, setCompleting] = useState(false);
   const completeKey = useRef(newSaveKey());
-  // Hand over (owner, 2026-11-09): a record only (time, person, frozen copy); it never completes the invoice.
-  const [handing, setHanding] = useState(false);
-  const [handMsg, setHandMsg] = useState("");
-  const handKey = useRef(newSaveKey());
 
   const fill = (x: Row) => {
     setDraft(x); setType(x.invoiceType ?? "sale"); setBranchId(x.branchId ?? ""); setChannelId(x.salesChannelId ?? "");
@@ -169,8 +165,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   }, [quoteKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const note = draft ? lockNote(draft as never, tr) : null;
-  const others = othersDraft(me, draft);   // a colleague's Hand-over draft: open and hand it over only (the backend refuses Edit, Complete and Delete)
-  const readonly = Boolean(draft && note && note.state !== "editable") || others;
+  const readonly = Boolean(draft && note && note.state !== "editable");
   const isNew = !draft;
   const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
@@ -299,24 +294,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     } finally { setCompleting(false); }
   }
 
-  async function handOver() {
-    if (!draft || handing) return;
-    if (dirty) { setHandMsg(L("احفظ التعديلات الأول: التسليم بياخد المسودة المحفوظة.", "Save your changes first: Hand over freezes the saved draft.")); return; }
-    if (!(await confirm({ title: d("handOverTitle"), text: d("handOverAsk"), ok: d("handOver") }))) return;
-    setHanding(true); setHandMsg("");
-    try {
-      const done = await api(`/sales-drafts/${draft.id}/hand-over`, { method: "POST", saveKey: handKey.current });
-      handKey.current = newSaveKey();
-      fill(done);
-      toast(d("handedOver"));
-    } catch (err) {
-      if (!(err instanceof ApiFailure)) { setHandMsg(L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")); return; }
-      if (!(err.status === 0 || err.status >= 500 || err.error.message === "saveInProgress")) handKey.current = newSaveKey();
-      setHandMsg(tr.errorText(err.error));
-      if (err.error.message === "alreadyHandedOver") api(`/sales-drafts/${draft.id}`).then(fill).catch(() => {});   // show who handed it over
-    } finally { setHanding(false); }
-  }
-
   if (!loaded) return <p className="help" role="status">{t("common", "loading")}</p>;
   if (gone) return <div className="note warn" role="alert">{tr.errorText({ message: "salesDraftNotFound" })}</div>;
 
@@ -327,8 +304,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
-  const canHandOver = mayHandOverDraft(me, draft, buy);
-  const canComplete = canCompleteDraft(me?.userType, draft?.status, buy);   // Admin / Super admin only; hidden until the user type is known; a Buy draft is a quote only
+  const canComplete = canCompleteDraft(me, draft?.status, buy);   // Admin / Super admin, or the action complete-sales-draft; hidden until the person is known; a Buy draft is a quote only
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 
@@ -377,12 +353,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             <Seg label={d("desk.metal")} value={metal} onChange={(k) => pick(() => { setMetal(k); setLines([]); })}
               items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} />
             {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); setType(k); }}
-              items={(["sale", "delivery", "handover"] as const).map((k) => ({ id: k, label: d({ sale: "typeSale", delivery: "typeDelivery", handover: "typeHandover" }[k]), attrs: { "data-type": k } }))} />}
+              items={(["sale", "delivery"] as const).map((k) => ({ id: k, label: d({ sale: "typeSale", delivery: "typeDelivery" }[k]), attrs: { "data-type": k } }))} />}
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
           {!draft && <p className="tk-quiet tk-intro">{L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
-          {others && <div className="note" id="sd-others">{L("المسودة دي بتاعة زميل: تقدر تسلّمها بس، مش تعدّلها.", "This draft is a colleague's: you may hand it over, not change it.")}</div>}
-          {note && !others && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
+          {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </header>
 
         <div className="tk-grid">
@@ -490,13 +465,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
               {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
 
-            {draft?.handedOverAt && <div className="tk-card" id="sd-handedover" role="status"><b>{d("handedOverStamp", { at: dateTimeText(draft.handedOverAt, tr.locale), name: draft.handedOverByName ?? "" })}</b></div>}
-            {canHandOver && <Section wide title={d("typeHandover")} id="sec-handover">
-              <div className="help">{d("handOverAsk")}</div>
-              {handMsg && <div className="note warn" role="alert" id="sd-handmsg"><b>{handMsg}</b></div>}
-              <div><Button variant="primary" id="sd-handover" aria-busy={handing} onClick={() => void handOver()}><Icon name="check" size={15} />{handing ? d("handingOver") : d("handOver")}</Button></div>
-            </Section>}
-
             {canComplete && <div className="grp-block wide" id="sec-complete"><h3 className="grp-title">{L("إتمام الفاتورة · للأدمن والسوبر أدمن", "Complete invoice · Admin and Super admin")}</h3><div className="tk-card"><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
               <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>
                 <div className="tk-codeRow">
@@ -538,7 +506,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
               {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
-              {draft && draft.status === "open" && !others && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
+              {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
               <Button id="sd-back" onClick={close}><Icon name="back" size={15} />{d("backToList")}</Button>
             </div>
           </div>
