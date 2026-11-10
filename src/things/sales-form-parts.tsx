@@ -1,4 +1,5 @@
 "use client";
+import { hasAction } from "@/lib/actions";
 import { Input, Seg } from "@/components/ui";
 import type { InputKind } from "@/components/ui/Input";
 // Pieces the sales forms share (invoice, reservation, return). Ported from docs/nav-preview/app/things/sales-form-parts.js.
@@ -23,7 +24,7 @@ export const ErrBox = FieldError;   // the old local helper: now the one shared 
 export const ltrStyle = { direction: "ltr", textAlign: "end" } as const;
 
 // Cash discount: Admin and Super admin always may, a User only with the flag. An older /access/me without the flag follows the user type.
-export const mayDiscount = (me: Pick<Me, "userType" | "canGiveCashDiscount">) => (me.canGiveCashDiscount === undefined ? me.userType !== "user" : Boolean(me.canGiveCashDiscount));
+export const mayDiscount = (me: Pick<Me, "userType" | "actions">) => hasAction(me, "give-cash-discount");
 
 // Every row of a paged list (the backend's lists page at 20). Capped at 25 pages.
 export async function allPages(path: string, query: Record<string, any> = {}): Promise<Row[]> {

@@ -5,8 +5,8 @@ import { persist } from "zustand/middleware";
 // Per-browser interface state. The head script in the locale layout reads this key before paint (collapsed, textStep): keep the shape.
 export type Me = {
   id: string; name: string; username: string; userType: "user" | "admin" | "super_admin"; branchId?: string | null;
-  screens: string[]; jobs?: string[]; mustChangePassword?: boolean; canGiveCashDiscount?: boolean; mayHandOver?: boolean; userCode?: number | null;
-  positionId?: string | null; positionName?: string | null; salesChannels?: { id: string; name: string }[];
+  screens: string[]; jobs?: string[]; mustChangePassword?: boolean; actions?: string[]; businessRole?: string | null; userCode?: number | null;
+  salesChannels?: { id: string; name: string }[];
 };
 type Recent = { id: string; at: number };
 type UiState = {
