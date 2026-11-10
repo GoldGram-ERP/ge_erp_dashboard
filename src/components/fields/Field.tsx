@@ -12,6 +12,7 @@ import { stepAmount } from "@/lib/price-step";
 import { useLookup } from "./useLookup";
 import { Select } from "./Select";
 import { ItemPicker } from "./ItemPicker";
+import { SwitchInput } from "@/components/ui";
 import { DatePicker } from "./DatePicker";
 import { FieldError } from "./FieldError";
 
@@ -78,7 +79,7 @@ function Controlled({ f, control, clearErrors }: { f: FieldConfig; control: any;
   const value = rhfValue ?? "";
 
   if (f.type === "checkbox") {
-    return wrap(<><input id={id} type="checkbox" checked={!!value} disabled={f.disabled} aria-describedby={describedBy} onBlur={onBlur} onChange={(e) => onChange(e.target.checked)} />{label}{help}</>);
+    return wrap(<><SwitchInput id={id} checked={!!value} disabled={f.disabled} aria-describedby={describedBy} onBlur={onBlur} onChange={(v) => onChange(v)} />{label}{help}</>);
   }
   if (f.type === "select" && f.picker === "item") {
     return wrap(<>

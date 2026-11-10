@@ -4,7 +4,7 @@
 // and GET /stock-counts/:id/pieces (counted, remaining, no longer in stock; paged, searched on the server).
 // Live: every few seconds while the page is visible and online (react-query pauses the interval when the tab is hidden and
 // when offline), and at once after each scan (the scan invalidates ["stock-count", id]). A closed count is frozen: no polling.
-import { Button, Checkbox, DataTable, Input, Seg, SortedTable, Td, Tr } from "@/components/ui";
+import { Button, DataTable, Input, Seg, SortedTable, Td, Toggle, Tr } from "@/components/ui";
 import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -106,7 +106,7 @@ export function Breakdown({ id, live }: { id: string; live: Live }) {
         <label className="search sc-search"><Icon name="search" size={16} />
           <Input id="sc-bd-search" type="search" value={typed} placeholder={m("searchPieces")} aria-label={m("searchPieces")} onChange={(e) => setTyped(e.target.value)} />
         </label>
-        <Checkbox id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={(v) => { setNotDoneFirst(v); setPage(1); }}>{m("notDoneFirst")}</Checkbox>
+        <Toggle id="sc-bd-notdone" className="sc-check" checked={notDoneFirst} onChange={(v) => { setNotDoneFirst(v); setPage(1); }}>{m("notDoneFirst")}</Toggle>
       </div>
       {/* fixedOrder: a server-paged list whose order is the list itself (the remaining first, or by code) and the backend takes no sort */}
       <DataTable fixedOrder className="sc-table" tableId="sc-bd-table" aria-busy={q.isFetching}

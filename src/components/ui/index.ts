@@ -2,7 +2,7 @@
 // Inheritance only: a variant is a prop on a component here, never a copy in a screen; a component that does not exist yet is added in this
 // folder (after checking none exists), never inside src/things or src/app. Edit a component here and the whole app changes.
 // The ratchet test (library-ratchet.test.ts) fails when a screen adds a raw control, an inline style or a local component.
-export { Checkbox, CheckInput, SwitchInput } from "./Checkbox";
+export { Checkbox, CheckInput, SwitchInput, Toggle } from "./Checkbox";
 export { Modal } from "./Modal";
 export { Button, TextButton, ChromeButton, type ButtonProps } from "./Button";
 export { Badge, Status, Bubble } from "./Badge";

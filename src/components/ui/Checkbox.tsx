@@ -20,7 +20,17 @@ export function Checkbox({ checked, onChange, children, className = "", style, i
   );
 }
 
-/** The bare switch (28 x 16, gold when on). Same rule as CheckInput: screens never write <input role="switch">. */
+/** The bare toggle (28 x 16, green when on, beige when off). Same rule as CheckInput: screens never write <input role="switch">. */
 export function SwitchInput({ checked, onChange, ...rest }: { checked: boolean; onChange: (checked: boolean) => void } & InputRest) {
   return <input type="checkbox" role="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} {...rest} />;
+}
+
+/** The one toggle with its label: every yes-no setting (never a checkbox for an on/off choice; a checkbox is only for picking rows or items out of a list). */
+export function Toggle({ checked, onChange, children, className = "", style, ...rest }: { checked: boolean; onChange: (checked: boolean) => void; children?: ReactNode; className?: string; style?: CSSProperties } & InputRest) {
+  return (
+    <label className={`chk${className ? ` ${className}` : ""}`} htmlFor={rest.id} style={style}>
+      <SwitchInput checked={checked} onChange={onChange} {...rest} />
+      {children !== undefined && <span>{children}</span>}
+    </label>
+  );
 }
