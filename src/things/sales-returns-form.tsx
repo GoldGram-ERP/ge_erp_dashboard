@@ -66,6 +66,8 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
   useEffect(() => { const h = setTimeout(() => setLookCode(pc.code ?? ""), 300); return () => clearTimeout(h); }, [pc.code]);
   const look = useQuery({ queryKey: ["piece-look-up", lookCode], enabled: Boolean(lookCode), retry: false, staleTime: 30_000, queryFn: () => api("/piece-look-up", { query: { pieceCode: lookCode } }) as Promise<Row> });
   const found = look.data?.kind === "piece" ? look.data : null;
+  // The sale this return would undo: the piece's newest live sales invoice. A piece never sold has none, so no invoice number or customer is shown.
+  const sale: Row | null = found?.sold ? ((found.sales ?? []) as Row[]).find((s) => s.kind === "sale" && !s.deleted) ?? null : null;
   const returnTotal: number | null = found && typeof found.returnTotal === "number" ? found.returnTotal : null;
   const paidNow = cashPaid(cash) + bankPaid(banks);
   // The refund is exactly the total (the owner, 2026-11-09): (today's buy price + cashback) x weight on a new return; an edit changes only how it is paid, so its total is what it refunded.
@@ -153,6 +155,8 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
           {look.isError && <p className="help" id="piece-unknown">{L("لا توجد قطعة بهذا الكود.", "No piece has this code.")}</p>}
           {found && <div id="pieceDetails">
             <div className="kv"><span>{L("الاسم", "Name")}</span><span dir="ltr">{found.itemName}</span></div>
+            {sale && <div className="kv"><span>{L("رقم فاتورة البيع", "Sales invoice number")}</span><span dir="ltr" id="piece-invoice">{code6(sale.documentNumber)}</span></div>}
+            {sale && <div className="kv"><span>{L("اسم العميل", "Customer name")}</span><span id="piece-customer">{sale.customerName || "—"}</span></div>}
             <div className="kv"><span>{L("العيار", "Karat")}</span><span dir="ltr">{found.karat}</span></div>
             <div className="kv"><span>{L("الوزن (جم)", "Weight (g)")}</span><span dir="ltr">{milligramsText(found.weight)}</span></div>
             <div className="kv"><span>{L("سعر الشراء للجرام", "Buy price per gram")}</span><span dir="ltr">{found.buyPricePerGram === null ? "—" : piastresText(found.buyPricePerGram)}</span></div>
