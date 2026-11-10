@@ -1,5 +1,22 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "fixed",
+    "en": "Test printer: the look saved for everyone now shows on every open page. A page with no changes of its own loads it by itself; a page with unsaved changes says who saved a newer look and offers to load it.",
+    "ar": "تجربة الطابعة: الشكل اللي اتحفظ لكل النظام بقى بيظهر في أي صفحة مفتوحة. الصفحة اللي مفيهاش تعديلات بتحمّله لوحدها، واللي فيها تعديلات ما اتحفظتش بتقولك مين حفظ شكل أحدث وتسيبك تحمّله.",
+    "route": "/setup/test-printer"
+   },
+   {
+    "kind": "new",
+    "en": "Test printer: each part (text, logo, QR) can sit at the top, middle or bottom when side by side, or at the start, middle or end when stacked, from the part's tab or by dragging it across the label.",
+    "ar": "تجربة الطابعة: كل جزء (النص واللوجو وال QR) تقدر تحطه فوق أو في النص أو تحت لما الأجزاء جنب بعض، أو في البداية أو النص أو النهاية لما تحت بعض، من تبويب الجزء أو بسحبه عرض الليبل.",
+    "route": "/setup/test-printer"
+   }
+  ]
+ },
+ {
   "version": "1.0.86",
   "date": "2026-11-09",
   "changes": [

@@ -7,7 +7,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { esc } from "@/lib/format";
 import { QUIET, qrShape } from "@/lib/qr";
 import { toast } from "@/components/engine";
-import { buildLines, effectiveLevel, fitLabel, placeCss, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, resizeWidth, printCss, qrLogoBox, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
+import { buildLines, contentAxes, crossCentres, effectiveLevel, fitLabel, placeCss, frameCss, layoutCss, lineCss, logoCss, logoInside, logoInside as logoIn, nearestCross, nearestPlace, pageSize, partsShown, placePart, previewZoom, PX_PER_MM, resizePatch, resizeWidth, printCss, qrLogoBox, toContent, type Cross, type Css, type LabelItem, type Part, type Settings } from "@/things/printer-label-rules";
 
 /** The preview's editing (never set for a printed label). px = one screen pixel in the label's own units (1 / zoom), so rings stay 2 px on screen.
  *  held = the part being dragged and how far (screen px); target = the place it will snap to. */
@@ -54,7 +54,7 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
   return (
     <div data-printer-label style={outer as CSSProperties}>
       <div style={inner as CSSProperties}>
-        <div style={lay.box as CSSProperties}>{shown.map((p, i) => { const pin = placeCss(s, f, i); return Object.keys(pin).length ? <div key={p} style={{ ...pin, display: "flex", minWidth: 0, maxWidth: "100%" } as CSSProperties}>{blocks[p]}</div> : <Fragment key={p}>{blocks[p]}</Fragment>; })}</div>
+        <div data-box style={lay.box as CSSProperties}>{shown.map((p, i) => { const pin = placeCss(s, f, i, p); return Object.keys(pin).length ? <div key={p} style={{ ...pin, display: "flex", minWidth: 0, maxWidth: "100%" } as CSSProperties}>{blocks[p]}</div> : <Fragment key={p}>{blocks[p]}</Fragment>; })}</div>
       </div>
     </div>
   );
@@ -62,8 +62,10 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
 
 /** A label on screen, zoomed to fit. With boxW/boxH it fits that fixed box (thumbnails); without, it fills its parent and follows its size.
  *  With onOrder: drag any part freely; on release it snaps to the nearest place and swaps with the part there. A tap (no drag) picks the part. */
-export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPick, onOrder, onResize }: {
+export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPick, onOrder, onPlace, onResize }: {
   s: Settings; item: LabelItem; boxW?: number; boxH?: number; selected?: Part | null; onPick?: (p: Part) => void; onOrder?: (order: Part[]) => void;
+  /** A drag mostly across the row: the part now sits at this across place (top / middle / bottom, or start / middle / end when stacked). */
+  onPlace?: (part: Part, cross: Cross) => void;
   onResize?: (patch: Partial<Settings>) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null), wrap = useRef<HTMLDivElement>(null);
@@ -72,7 +74,8 @@ export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPi
   const [sizing, setSizing] = useState<{ x: number; y: number; w: number; h: number; start: Parameters<typeof resizePatch>[1] } | null>(null);
   const [widening, setWidening] = useState<{ x: number; y: number; startMm: number; max: number } | null>(null);
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
-  const [drag, setDrag] = useState<{ part: Part; from: number; x: number; y: number; dx: number; dy: number; moved: boolean; centres: number[] } | null>(null);
+  // dx/dy = the move in the label's own axes (so a turned label follows the pointer); centres = the places along the row; slots + at = the three across places and where the part is now.
+  const [drag, setDrag] = useState<{ part: Part; from: number; x: number; y: number; dx: number; dy: number; moved: boolean; centres: number[]; slots: number[]; at: number } | null>(null);
   useEffect(() => {
     const host = wrap.current?.parentElement;
     if (boxW || !host) return;
@@ -82,21 +85,33 @@ export function PrinterLabelPreview({ s, item, boxW, boxH, selected = null, onPi
   }, [boxW]);
   const zoom = previewZoom(pageSize(s), boxW ?? box?.w ?? 0, boxH ?? box?.h ?? 0) || 1;
   const shown = partsShown(s), vertical = s.direction === "stacked";
-  const to = drag?.moved ? nearestPlace(drag.centres, drag.from, vertical ? drag.dy : drag.dx) : -1;
-  const pick: LabelPick | undefined = onPick || onOrder ? {
+  // One drag, one change: whichever way the pointer moved more decides it (along the row = swap places, across = top / middle / bottom).
+  const alongMove = drag ? (vertical ? drag.dy : drag.dx) : 0, acrossMove = drag ? (vertical ? drag.dx : drag.dy) : 0, acrossWins = Math.abs(acrossMove) > Math.abs(alongMove);
+  const to = drag?.moved && !acrossWins ? nearestPlace(drag.centres, drag.from, alongMove) : -1;
+  const pick: LabelPick | undefined = onPick || onOrder || onPlace ? {
     selected, px: 1 / zoom, held: drag?.moved ? { part: drag.part, dx: drag.dx, dy: drag.dy } : null, target: to >= 0 && to !== drag?.from ? shown[to] : null,
     down: (e, part) => {
       if (e.button !== 0) return;
-      // The places are where the parts are now, measured on screen once at pick-up.
+      // The places are where the parts are now, measured on screen once at pick-up and projected on the label's own axes (the label may be turned).
+      const ax = contentAxes(s.rotate), along = vertical ? ax.y : ax.x, across = vertical ? ax.x : ax.y;
+      const span = (r: DOMRect, v: [number, number]): [number, number] => (v[0] ? (v[0] > 0 ? [r.left, r.right] : [-r.right, -r.left]) : v[1] > 0 ? [r.top, r.bottom] : [-r.bottom, -r.top]);
       const els = [...(ref.current?.querySelectorAll<HTMLElement>("[data-part]") ?? [])];
-      const centres = shown.map((p) => { const r = els.find((el) => el.dataset.part === p)?.getBoundingClientRect(); return r ? (vertical ? r.top + r.height / 2 : r.left + r.width / 2) : 0; });
+      const rectOf = (p: Part) => els.find((el) => el.dataset.part === p)?.getBoundingClientRect();
+      const centres = shown.map((p) => { const r = rectOf(p); if (!r) return 0; const [a, b] = span(r, along); return (a + b) / 2; });
+      const box = ref.current?.querySelector<HTMLElement>("[data-box]")?.getBoundingClientRect(), mine = rectOf(part);
+      let slots: number[] = [], at = 0;
+      if (box && mine) {
+        const [bl, bh] = span(box, across), [pl, ph] = span(mine, across), pad = s.paddingMm * PX_PER_MM * zoom;
+        slots = crossCentres(bl + pad, bh - pad, ph - pl); at = (pl + ph) / 2;
+      }
       e.currentTarget.setPointerCapture(e.pointerId);
-      setDrag({ part, from: shown.indexOf(part), x: e.clientX, y: e.clientY, dx: 0, dy: 0, moved: false, centres });
+      setDrag({ part, from: shown.indexOf(part), x: e.clientX, y: e.clientY, dx: 0, dy: 0, moved: false, centres, slots, at });
     },
-    move: (e) => { if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; setDrag({ ...drag, dx, dy, moved: drag.moved || Math.hypot(dx, dy) > 6 }); } },
+    move: (e) => { if (drag) { const c = toContent(s.rotate, e.clientX - drag.x, e.clientY - drag.y); setDrag({ ...drag, dx: c.x, dy: c.y, moved: drag.moved || Math.hypot(c.x, c.y) > 6 }); } },
     up: () => {
       if (!drag) return;
       if (!drag.moved) onPick?.(drag.part);
+      else if (acrossWins) { if (drag.slots.length) { const c = nearestCross(drag.slots, drag.at + acrossMove); if (c !== s.cross[drag.part]) onPlace?.(drag.part, c); } }
       else if (to >= 0 && to !== drag.from) onOrder?.(placePart(s, drag.part, to));
       setDrag(null);
     },

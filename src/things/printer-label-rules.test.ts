@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NAV, canOpen, findLeaf } from "@/nav/tree";
 import { labelGramsText } from "@/lib/format";
 import { BATCH_MAX_JSON, DEFAULTS, STATE_KEY, addLine, buildLines, cleanLogo, clampSettings, defaultState, downscaleSize, effectiveLevel, frameCss, hasContent, labelList, layoutCss, lineCss, loadState, logoFileError, logoCss, partsShown, placePart, nearestPlace, resizePatch, resizeWidth, fitLabel, placeCss, logoTooBigForQr, qrLogoBox, saveState, moveLine, normaliseLines, pageSize, pageSizeCss, parseSettings, place, previewZoom, printCss, removeLine, rotation, rowToItem, updateLine, cleanProfile, pieceLabelItem, profileForPrint, profileFromSettings, sameProfile, settingsFromProfile, type ExtraLine, type Rotate } from "./printer-label-rules";
+import { CROSSES, applyProfile, contentAxes, crossCentres, lookKey, nearestCross, syncChoice, toContent, type Cross } from "./printer-label-rules";
 
 const S = (o: object = {}) => clampSettings({ ...DEFAULTS, ...o });
 
@@ -501,4 +502,107 @@ describe("the saved label profile", () => {
     expect(profileForPrint("tag", null, ["qr"])).toBeNull();
     expect(profileForPrint("tag", { v: 9 }, ["qr"])).toBeNull();
   });
+});
+
+describe("across places: each part sits at the start, middle or end of the row (owner, 2026-11-10)", () => {
+  const item = { text: "t", code: "X" };
+  const css = (o: object, part: "text" | "qr" | "logo") => { const s = S({ logo: PNG, ...o }), l = layoutCss(s, fitLabel(s, item)); return part === "text" ? l.text.alignSelf : part === "qr" ? l.qr.alignSelf : logoCss(s).alignSelf; };
+  it("a new label sits every part in the middle", () => {
+    for (const p of ["text", "qr", "logo"] as const) expect(css({}, p)).toBe("center");
+  });
+  it("each part has its own place, side by side (top / middle / bottom) and stacked (start / middle / end)", () => {
+    for (const direction of ["side", "stacked"]) {
+      expect(css({ direction, cross: { text: "start", qr: "end", logo: "center" } }, "text")).toBe("flex-start");
+      expect(css({ direction, cross: { text: "start", qr: "end", logo: "center" } }, "qr")).toBe("flex-end");
+      expect(css({ direction, cross: { text: "start", qr: "end", logo: "center" } }, "logo")).toBe("center");
+    }
+  });
+  it("the extra lines follow the part they sit under", () => {
+    const s = S({ lines: [{ text: "a", fontPt: 8, align: "inherit", bold: false, keepBlank: false }], cross: { text: "end", qr: "start", logo: "center" } });
+    expect(layoutCss(s).group.alignSelf).toBe("flex-end");
+    expect(layoutCss({ ...s, linesPlacement: "afterQr" }).group.alignSelf).toBe("flex-start");
+  });
+  it("a wrong place falls back to the middle; a part left out too", () => {
+    expect(S({ cross: { text: "left", qr: 3 } }).cross).toEqual({ text: "center", logo: "center", qr: "center" });
+  });
+  it("an old look (no places) prints as it did: the QR followed the alignment when stacked, the text only with a set width, side by side all middle", () => {
+    const old = (o: object) => clampSettings(o).cross;
+    expect(old({ direction: "stacked", align: "left" })).toEqual({ text: "center", logo: "center", qr: "start" });
+    expect(old({ direction: "stacked", align: "right", textWidthMm: 20 })).toEqual({ text: "end", logo: "center", qr: "end" });
+    expect(old({ direction: "stacked", align: "center", textWidthMm: 20 })).toEqual({ text: "center", logo: "center", qr: "center" });
+    expect(old({ direction: "side", align: "right", textWidthMm: 20 })).toEqual({ text: "center", logo: "center", qr: "center" });
+    expect(old({})).toEqual({ text: "center", logo: "center", qr: "center" });
+  });
+  it("a saved look keeps its places through the profile and back", () => {
+    const s = S({ cross: { text: "start", qr: "end", logo: "center" } });
+    expect(cleanProfile(profileFromSettings(s))?.cross).toEqual(s.cross);
+    expect(settingsFromProfile(profileFromSettings(s)).cross).toEqual(s.cross);
+  });
+  it("to the edges with three parts, the grid cell is placed across as well as along", () => {
+    const s = S({ spread: "edges", direction: "side", logo: PNG, cross: { text: "start", qr: "end", logo: "center" } }), f = fitLabel(s, item);
+    expect(placeCss(s, f, 0, "logo")).toEqual({ justifySelf: "start", alignSelf: "center" });
+    expect(placeCss(s, f, 2, "qr")).toEqual({ justifySelf: "end", alignSelf: "end" });
+    expect(placeCss({ ...s, direction: "stacked" }, f, 2, "qr")).toEqual({ alignSelf: "end", justifySelf: "end" });
+  });
+});
+
+describe("dragging across the row", () => {
+  it("the three places of a part in the free room: start, middle, end", () => {
+    expect(crossCentres(10, 110, 20)).toEqual([20, 60, 100]);
+  });
+  it("the nearest place wins; the part's own centre plus the move decides", () => {
+    const c = crossCentres(0, 100, 20);
+    expect(nearestCross(c, 12)).toBe("start");
+    expect(nearestCross(c, 49)).toBe("center");
+    expect(nearestCross(c, 95)).toBe("end");
+    expect(nearestCross(c, 30 + 40)).toBe("center");
+  });
+  it("a turned label: a screen move becomes a move along the label's own axes", () => {
+    expect(toContent(0, 5, 7)).toEqual({ x: 5, y: 7 });
+    expect(toContent(90, 5, 7)).toEqual({ x: 7, y: -5 });
+    expect(toContent(180, 5, 7)).toEqual({ x: -5, y: -7 });
+    expect(toContent(270, 5, 7)).toEqual({ x: -7, y: 5 });
+    expect(contentAxes(90)).toEqual({ x: [0, 1], y: [-1, 0] });
+  });
+});
+
+describe("keeping the page and the saved look in step", () => {
+  const A = S({ fontPt: 10 }), B = S({ fontPt: 22 }), C = S({ fontPt: 30 });
+  const key = (x: ReturnType<typeof S>) => lookKey(profileFromSettings(x));
+  const ask = (o: { serverKey: string; serverAt: string | null; styleKey: string; aligned: string | null; base: string | null }) => syncChoice(o);
+  it("nothing saved: the page keeps what it has", () => {
+    expect(ask({ serverKey: "", serverAt: null, styleKey: key(A), aligned: key(B), base: "t1" })).toBe("keep");
+  });
+  it("the page already shows the saved look", () => {
+    expect(ask({ serverKey: key(B), serverAt: "t2", styleKey: key(B), aligned: key(A), base: "t1" })).toBe("same");
+  });
+  it("another Admin saved and this page has no changes of its own: the new look is shown without asking", () => {
+    expect(ask({ serverKey: key(B), serverAt: "t2", styleKey: key(A), aligned: key(A), base: "t1" })).toBe("server");
+  });
+  it("an old copy kept by an earlier version (never matched a saved look): the saved look wins", () => {
+    expect(ask({ serverKey: key(B), serverAt: "t2", styleKey: key(A), aligned: null, base: null })).toBe("server");
+  });
+  it("this page has unsaved changes and the saved look is the one they started from: keep them", () => {
+    expect(ask({ serverKey: key(B), serverAt: "t2", styleKey: key(C), aligned: key(B), base: "t2" })).toBe("keep");
+  });
+  it("this page has unsaved changes and somebody saved a newer look: ask", () => {
+    expect(ask({ serverKey: key(B), serverAt: "t3", styleKey: key(C), aligned: key(A), base: "t1" })).toBe("ask");
+  });
+  it("a change that was changed back is not a change", () => {
+    expect(ask({ serverKey: key(B), serverAt: "t3", styleKey: key(A), aligned: key(A), base: "t1" })).toBe("server");
+  });
+  it("the key tells looks apart, logo included, and ignores nothing that prints", () => {
+    expect(key(A)).not.toBe(key(B));
+    expect(key(S({ logo: PNG }))).not.toBe(key(S({ logo: PNG.replace("iVBOR", "jVBOR") })));
+    expect(key(S({ cross: { text: "start", qr: "center", logo: "center" } }))).not.toBe(key(S({})));
+    expect(key(A)).toBe(key(S({ fontPt: 10, copies: 7 })));
+  });
+  it("showing the saved look keeps what was typed on the page (copies, the texts of the extra lines)", () => {
+    const mine = S({ copies: 5, lines: [{ text: "typed", fontPt: 9, align: "inherit", bold: false, keepBlank: false }] });
+    const saved = profileFromSettings(S({ fontPt: 33, lines: [{ text: "", fontPt: 12, align: "center", bold: true, keepBlank: false }] }));
+    const out = applyProfile(mine, saved);
+    expect([out.fontPt, out.copies, out.lines[0].text, out.lines[0].fontPt, out.lines[0].bold]).toEqual([33, 5, "typed", 12, true]);
+    expect(key(out)).toBe(lookKey(cleanProfile(saved)));
+  });
+  it("every across place is one of the three", () => { expect(CROSSES.length).toBe(3); const c: Cross = "end"; expect(CROSSES).toContain(c); });
 });

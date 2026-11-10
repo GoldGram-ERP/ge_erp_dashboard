@@ -3332,6 +3332,15 @@
   "labelErrOffline": "Could not reach the server. Check the connection and try again.",
   "labelErrForbidden": "Only an Admin can change this.",
   "labelErrTooBig": "The settings are too big to save. Use a smaller logo.",
-  "labelErrFail": "Could not save. Try again."
+  "labelErrFail": "Could not save. Try again.",
+  "crossPlace": "Place",
+  "placeTop": "Top",
+  "placeMiddle": "Middle",
+  "placeBottom": "Bottom",
+  "placeStart": "Start",
+  "placeEnd": "End",
+  "labelNewer": "{name} saved a newer look on {when}. This page still has your unsaved changes.",
+  "labelNewerAnon": "A newer look was saved on {when}. This page still has your unsaved changes.",
+  "labelLoadNewer": "Load the saved look"
  }
 }

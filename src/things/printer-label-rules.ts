@@ -33,8 +33,14 @@ export type Settings = {
   /** How the parts spread along the row (or column): together in the middle; to the edges (first at the start edge, the middle one exactly
    *  centred, the last at the end edge); or equal gaps everywhere, the ends included (owner, 2026-11-09). */
   spread: Spread;
+  /** The across place of each of the three parts. */
+  cross: Record<Part, Cross>;
 };
 export type Spread = "together" | "edges" | "even";
+/** Where a part sits ACROSS the row (or column), like flex align-self: start/centre/end of the free room. Side by side: top / middle / bottom.
+ *  Stacked: start (left) / middle / end (right), in the label's own left-to-right frame (owner, 2026-11-10). */
+export type Cross = "start" | "center" | "end";
+export const CROSSES: readonly Cross[] = ["start", "center", "end"];
 /** `extra` = the texts of Excel columns C, D, E... of this label; absent for the typed label (its lines come from Settings.lines). */
 export type LabelItem = { text: string; code: string; extra?: string[] };
 export type Css = Record<string, string | number>;
@@ -44,6 +50,7 @@ export const DEFAULTS: Settings = {
   fontPt: 14, align: "center", paddingMm: 1, gapMm: 0.5, qrTopMm: 6, qrSizeMm: 0, level: "M", copies: 1,
   lines: [], linesPlacement: "afterText",
   logo: "", logoPlacement: "beside", logoMm: 10, logoPct: 20, textWidthMm: 0, spread: "together",
+  cross: { text: "center", logo: "center", qr: "center" },
 };
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
@@ -76,8 +83,20 @@ export function clampSettings(raw: unknown): Settings {
     lines: normaliseLines(r.lines), linesPlacement: pick(r.linesPlacement, ["afterText", "afterQr"], DEFAULTS.linesPlacement),
     logo: cleanLogo(r.logo), logoPlacement: cleanLogoPlacement(r.logoPlacement),
     logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"), textWidthMm: num(r.textWidthMm, "textWidthMm"), spread: pick(r.spread, ["together", "edges", "even"], DEFAULTS.spread),
+    cross: cleanCross(r),
   };
 }
+
+/** The across places. Old data has none: it must print exactly as before, so the QR followed `align` when stacked, the text only when it had a set width,
+ *  the logo and everything side by side sat in the middle. */
+function cleanCross(r: Record<string, unknown>): Record<Part, Cross> {
+  const c = isObj(r.cross) ? r.cross : null;
+  if (c) return { text: pick(c.text, CROSSES, "center"), logo: pick(c.logo, CROSSES, "center"), qr: pick(c.qr, CROSSES, "center") };
+  const stacked = r.direction === "stacked", a: Cross = r.align === "left" ? "start" : r.align === "right" ? "end" : "center";
+  const wide = typeof r.textWidthMm === "number" && r.textWidthMm > 0;
+  return { text: stacked && wide ? a : "center", logo: "center", qr: stacked ? a : "center" };
+}
+const flexAt = (c: Cross): string => (c === "start" ? "flex-start" : c === "end" ? "flex-end" : "center");
 
 // ───── Logo ─────
 const cleanLogoPlacement = (v: unknown): LogoPlacement => (v === "inside" || v === "none" ? v : v === "beside" || v === "left" || v === "middle" || v === "right" ? "beside" : DEFAULTS.logoPlacement);
@@ -292,13 +311,13 @@ export function fitLabel(s: Settings, item: LabelItem): Fit {
   return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt, textRoom), linePts: lines.map((l) => fit(l.text, l.fontPt, lineRoom)), textMm: s.textWidthMm > 0 ? r3(textRoom) : 0, count: parts.length };
 }
 
-/** The row/column of the parts, with the fitted sizes (f): every part is exactly as big as it is drawn, so nothing leaves the label and a highlight covers the whole part. */
+/** The row/column of the parts, with the fitted sizes (f): every part is exactly as big as it is drawn, so nothing leaves the label and a highlight covers the whole part.
+ *  Each part also has its own across place (s.cross): flex align-self, so a part can sit at the top, middle or bottom of a row (start, middle, end of a column). */
 export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css; group: Css } {
   const stacked = s.direction === "stacked";
-  const self = s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center";
   const q = f?.qrMm ?? s.qrSizeMm;
-  // A set text width: a fixed box (placed by the label's alignment in a column), else the automatic width of today.
-  const fixed: Css = f?.textMm ? { width: mm(f.textMm), flex: "none", alignSelf: stacked ? self : "center" } : {};
+  // A set text width: a fixed box, else the automatic width of today.
+  const fixed: Css = f?.textMm ? { width: mm(f.textMm), flex: "none" } : {};
   // Spread: three parts to the edges is a grid of [1fr auto 1fr], so the middle part is exactly centred whatever the sizes of the others
   // (each part is pinned by placeCss); two parts to the edges, and equal gaps, are a flex row. Together keeps today's centred group.
   // Spread out, the text hugs its words instead of taking the free room, so the free room becomes the gaps.
@@ -311,22 +330,24 @@ export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css;
   const textFlex = stacked ? "none" : s.spread === "together" ? "1 1 0" : "0 1 auto";
   return {
     box,
-    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: textFlex, maxWidth: "100%", ...fixed },
-    qr: { display: "block", flex: "none", width: mm(q), height: mm(q), alignSelf: stacked ? self : "center" },
+    text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: textFlex, maxWidth: "100%", alignSelf: flexAt(s.cross.text), ...fixed },
+    qr: { display: "block", flex: "none", width: mm(q), height: mm(q), alignSelf: flexAt(s.cross.qr) },
     // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under.
-    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? textFlex : "none", ...(s.linesPlacement === "afterText" ? fixed : {}) },
+    group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? textFlex : "none", alignSelf: flexAt(s.linesPlacement === "afterText" ? s.cross.text : s.cross.qr), ...(s.linesPlacement === "afterText" ? fixed : {}) },
   };
 }
 
-/** Where part number i (of the drawn parts) is pinned when three parts spread to the edges: start, exact centre, end. Else nothing. */
-export function placeCss(s: Pick<Settings, "spread" | "direction">, f: Pick<Fit, "count">, i: number): Css {
+/** Where part number i (of the drawn parts) is pinned when three parts spread to the edges: start, exact centre, end. Else nothing.
+ *  With `part`, its across place is pinned too (the grid cell's other axis), because in the grid the cell, not the part, is placed. */
+export function placeCss(s: Pick<Settings, "spread" | "direction"> & Partial<Pick<Settings, "cross">>, f: Pick<Fit, "count">, i: number, part?: Part): Css {
   if (s.spread !== "edges" || f.count !== 3) return {};
   const at = i === 0 ? "start" : i === 1 ? "center" : "end";
-  return s.direction === "stacked" ? { alignSelf: at } : { justifySelf: at };
+  const stacked = s.direction === "stacked", across = part && s.cross ? s.cross[part] : null;
+  return stacked ? { alignSelf: at, ...(across ? { justifySelf: across } : {}) } : { justifySelf: at, ...(across ? { alignSelf: across } : {}) };
 }
 
 /** The logo as a part of its own: the fitted square. */
-export const logoCss = (s: Pick<Settings, "logoMm">, f?: Fit): Css => { const n = f?.logoMm ?? s.logoMm; return { display: "block", flex: "none", width: mm(n), height: mm(n), objectFit: "contain", alignSelf: "center" }; };
+export const logoCss = (s: Pick<Settings, "logoMm"> & Partial<Pick<Settings, "cross">>, f?: Fit): Css => { const n = f?.logoMm ?? s.logoMm; return { display: "block", flex: "none", width: mm(n), height: mm(n), objectFit: "contain", alignSelf: flexAt(s.cross?.logo ?? "center") }; };
 
 /** The style of one extra line: the text style with its own (fitted) size, alignment (inherit = the label's) and weight. */
 export function lineCss(s: Settings, l: RenderLine, pt: number = l.fontPt): Css {
@@ -381,4 +402,46 @@ export function pieceLabelItem(l: { pieceCode?: unknown; itemName?: unknown; cat
 /** The one decision: the profile is used only for the tag roll (QR labels) and only when a valid profile exists and every label of the print is a QR label (a barcode label keeps the old sheet). */
 export function profileForPrint(layout: "tag" | "a4", profile: unknown, kinds: unknown[]): LabelProfile | null {
   return layout === "tag" && kinds.length > 0 && kinds.every((k) => k === "qr") ? cleanProfile(profile) : null;
+}
+
+// ───── Keeping this page and the saved look in step (owner, 2026-11-10) ─────
+/** A short text that is the same for the same look: the logo (a long data URL) is replaced by its length and its last characters, so comparing two looks is cheap and needs no re-cleaning. */
+export const lookKey = (p: LabelProfile | null): string => (p ? JSON.stringify({ ...p, logo: p.logo ? `${p.logo.length}:${p.logo.slice(-40)}` : "" }) : "");
+
+/** The saved look laid over this page's settings: the look is the saved one; what is typed on the page (copies, the texts of the extra lines) stays. */
+export const applyProfile = (old: Settings, p: LabelProfile): Settings =>
+  clampSettings({ ...settingsFromProfile(p), copies: old.copies, lines: p.lines.map((l, i) => ({ ...l, text: old.lines[i]?.text ?? "" })) });
+
+/** What the page does when the look saved for the ERP is read (on opening, on coming back to the tab, every 30 s):
+ *  - "keep": nothing saved, or the person's own unsaved changes are on a look that is still the latest;
+ *  - "same": the page already shows it;
+ *  - "server": the person changed nothing since the page last matched the saved look (or never matched: an old browser copy) -> show the new one, no question;
+ *  - "ask": the person has unsaved changes and somebody saved a newer look -> say so and let them choose.
+ *  `aligned` = the look key the page last matched, `base` = the save time it matched (null = never, e.g. a copy kept by an older version). */
+export function syncChoice(a: { serverKey: string; serverAt: string | null; styleKey: string; aligned: string | null; base: string | null }): "keep" | "same" | "server" | "ask" {
+  if (!a.serverKey) return "keep";
+  if (a.styleKey === a.serverKey) return "same";
+  const changed = a.aligned !== null && a.aligned !== a.styleKey;
+  if (!changed) return "server";
+  return a.base !== a.serverAt ? "ask" : "keep";
+}
+
+// ───── Dragging a part across the row (owner, 2026-11-10) ─────
+/** Where the label's own x and y axes point on the screen after the turn (unit vectors; the turn is a multiple of 90). */
+export const contentAxes = (deg: Rotate): { x: [number, number]; y: [number, number] } => {
+  const t = (deg * Math.PI) / 180, c = Math.round(Math.cos(t)), s = Math.round(Math.sin(t));
+  return { x: [c, s], y: [-s, c] };
+};
+/** A screen move -> the same move in the label's own axes (what the turned label's CSS needs, and what the places are measured in). */
+export const toContent = (deg: Rotate, dx: number, dy: number): { x: number; y: number } => {
+  const a = contentAxes(deg);
+  return { x: dx * a.x[0] + dy * a.x[1], y: dx * a.y[0] + dy * a.y[1] };
+};
+/** The three across places (start, middle, end) as centres of a part of `size`, in the free room lo..hi. */
+export const crossCentres = (lo: number, hi: number, size: number): number[] => [lo + size / 2, (lo + hi) / 2, hi - size / 2];
+/** The across place whose centre is nearest to `at` (the part's centre plus how far the pointer moved across). */
+export function nearestCross(centres: number[], at: number): Cross {
+  let best = 0;
+  centres.forEach((c, i) => { if (Math.abs(c - at) < Math.abs(centres[best] - at)) best = i; });
+  return CROSSES[best];
 }

@@ -3332,6 +3332,15 @@
   "labelErrOffline": "مقدرتش أوصل للسيرفر. اتأكد من النت وجرّب تاني.",
   "labelErrForbidden": "الأدمن بس هو اللي يقدر يغيّر ده.",
   "labelErrTooBig": "الإعدادات كبيرة ومش هتتحفظ. استخدم لوجو أصغر.",
-  "labelErrFail": "مقدرتش أحفظ. جرّب تاني."
+  "labelErrFail": "مقدرتش أحفظ. جرّب تاني.",
+  "crossPlace": "المكان",
+  "placeTop": "فوق",
+  "placeMiddle": "النص",
+  "placeBottom": "تحت",
+  "placeStart": "البداية",
+  "placeEnd": "النهاية",
+  "labelNewer": "{name} حفظ شكل أحدث يوم {when}. الصفحة دي لسه فيها تعديلاتك اللي ما اتحفظتش.",
+  "labelNewerAnon": "اتحفظ شكل أحدث يوم {when}. الصفحة دي لسه فيها تعديلاتك اللي ما اتحفظتش.",
+  "labelLoadNewer": "حمّل الشكل المحفوظ"
  }
 }

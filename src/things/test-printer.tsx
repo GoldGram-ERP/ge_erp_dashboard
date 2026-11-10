@@ -2,7 +2,8 @@
 // Test printer: setup/test-printer. Prints test labels (free text + a QR code) on a label printer with a size, orientation, layout and rotation
 // the person can change until the printout is right. Admin and Super admin only (same gate as Settings); nothing is saved on the server,
 // the settings are remembered in this browser. The rules are in printer-label-rules.ts (tested there); the print window is in components/printer-label.tsx.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Checkbox, FileInput, Input, Seg, Textarea, useConfirm } from "@/components/ui";
 import { PrinterLabelPreview, printPrinterLabels } from "@/components/ui/PrinterLabel";
 import { toast } from "@/components/engine";
@@ -11,9 +12,11 @@ import { dateTimeText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { useAccess } from "./sales-access";
-import { PRESETS, STATE_KEY, STORAGE_KEY, addLine, clampSettings, defaultState, profileFromSettings, sameProfile, settingsFromProfile, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type ExtraLine, type LabelItem, type Part, type Settings } from "./printer-label-rules";
+import { CROSSES, PRESETS, STATE_KEY, STORAGE_KEY, addLine, applyProfile, clampSettings, defaultState, lookKey, profileFromSettings, syncChoice, hasContent, labelList, loadState, logoFileError, logoInside, logoTooBigForQr, moveLine, pageSize, removeLine, rowToItem, saveState, updateLine, type Cross, type ExtraLine, type LabelItem, type Part, type Settings } from "./printer-label-rules";
 import { readLogo } from "./printer-logo";
-import { fetchLabelSettings, resetLabelSettings, saveLabelSettings, type SavedLabelSettings } from "./label-settings";
+import { fetchLabelSettings, resetLabelSettings, saveLabelSettings } from "./label-settings";
+
+const SYNC_KEY = "test-printer-sync-v1", LOOK_QUERY = ["label-settings"];
 
 type Tab = "label" | Part;
 type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct" | "textWidthMm";
@@ -33,12 +36,17 @@ export default function Page() {
   const [message, setMessage] = useState("");
   const [saveNote, setSaveNote] = useState("");
   const [logoMsg, setLogoMsg] = useState("");
-  const [server, setServer] = useState<SavedLabelSettings | null | undefined>(undefined);   // undefined = still asking, null = could not ask
+  const qc = useQueryClient();
+  // The look saved for the whole ERP, read again whenever this tab is looked at and every 30 s, never from a cache: what another Admin saves shows here.
+  const look = useQuery({ queryKey: LOOK_QUERY, queryFn: ({ signal }) => fetchLabelSettings(signal), staleTime: 0, gcTime: 0, refetchOnMount: "always", refetchOnWindowFocus: "always", refetchInterval: 30_000, retry: 1 });
+  const server = look.data ?? (look.isError ? null : undefined);   // undefined = still asking, null = could not ask
+  const [newer, setNewer] = useState<{ name: string | null; at: string | null } | null>(null);   // somebody saved a newer look while this page has unsaved changes
+  const sync = useRef<{ aligned: string | null; base: string | null }>({ aligned: null, base: null });   // the look this page last matched, and when that look was saved
+  const sRef = useRef(s);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("label");
   const [at, setAt] = useState(0);   // which Excel label the canvas shows
   const [saveErr, setSaveErr] = useState("");
-  const hadLocal = useRef(true);
   const [confirm, dialog] = useConfirm();
   const fileRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
@@ -46,24 +54,40 @@ export default function Page() {
   // Read after mount (the server render has no localStorage), so the first paint is the defaults.
   useEffect(() => {
     try {
-      hadLocal.current = localStorage.getItem(STATE_KEY) !== null || localStorage.getItem(STORAGE_KEY) !== null;
+      try { const o = JSON.parse(localStorage.getItem(SYNC_KEY) ?? "null"); if (o && typeof o === "object") sync.current = { aligned: typeof o.aligned === "string" ? o.aligned : null, base: typeof o.base === "string" ? o.base : null }; } catch { /* nothing remembered */ }
       const st = loadState(localStorage.getItem(STATE_KEY), localStorage.getItem(STORAGE_KEY));
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setS(st.settings); setText(st.text); setCode(st.code); setBatch(st.batch); setBatchName(st.batchName);
     } catch { /* private mode: the defaults stay */ }
     setReady(true);
   }, []);
-  // The look saved for the whole ERP. With nothing of its own in this browser the page starts from it (and only while the person has not changed anything yet).
+  const profile = useMemo(() => profileFromSettings(s), [s]);
+  const styleKey = useMemo(() => lookKey(profile), [profile]);
+  const saved = server?.profile ?? null;
+  const savedKey = useMemo(() => lookKey(saved), [saved]);
+  useEffect(() => { sRef.current = s; });
+  // Remember which saved look this page matches (so later it can tell its own unsaved changes from an old copy) and write it down for the next visit.
+  const align = (key: string, at: string | null) => {
+    sync.current = { aligned: key, base: at };
+    try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync.current)); } catch { /* not remembered */ }
+  };
+  const showSaved = () => {
+    if (!saved) return;
+    const next = applyProfile(sRef.current, saved);
+    setS(next); setDraft({}); setNewer(null);
+    align(lookKey(profileFromSettings(next)), server?.updatedAt ?? null);
+  };
+  // When the saved look is read: show it (nothing of this person's own to lose), keep the person's own changes, or say a newer one exists (owner, 2026-11-10).
   useEffect(() => {
-    let live = true;
-    fetchLabelSettings().then((r) => {
-      if (!live) return;
-      setServer(r);
-      const p = r.profile;
-      if (p && !hadLocal.current) setS((old) => (sameProfile(profileFromSettings(old), profileFromSettings(defaultState().settings)) ? settingsFromProfile(p) : old));
-    }, () => { if (live) setServer(null); });
-    return () => { live = false; };
-  }, []);
+    if (!ready || !server) return;
+    const mine = lookKey(profileFromSettings(sRef.current));
+    if (!sync.current.aligned && !savedKey) { align(mine, null); return; }
+    const what = syncChoice({ serverKey: savedKey, serverAt: server.updatedAt, styleKey: mine, aligned: sync.current.aligned, base: sync.current.base });
+    if (what === "server") showSaved();
+    else if (what === "same") { align(mine, server.updatedAt); setNewer(null); }
+    else if (what === "ask") setNewer({ name: server.updatedByName, at: server.updatedAt });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, savedKey, server?.updatedAt]);
   // Everything is saved about 300 ms after the last change. A full or blocked storage never breaks the page: one plain line says so.
   useEffect(() => {
     if (!ready) return;
@@ -117,18 +141,17 @@ export default function Page() {
   const errText = (e: unknown) => !(e instanceof ApiFailure) ? m("labelErrFail") : e.unreachable ? m("labelErrOffline") : e.status === 403 ? m("labelErrForbidden") : e.status === 413 ? m("labelErrTooBig") : m("labelErrFail");
   async function saveForAll() {
     setBusy(true); setSaveErr("");
-    try { setServer(await saveLabelSettings(profileFromSettings(s))); toast(m("labelSavedToast")); } catch (e) { setSaveErr(errText(e)); }
+    try { const r = await saveLabelSettings(profile); qc.setQueryData(LOOK_QUERY, r); align(styleKey, r.updatedAt); setNewer(null); toast(m("labelSavedToast")); } catch (e) { setSaveErr(errText(e)); }
     setBusy(false);
   }
   async function backToFactory() {
     if (!(await confirm({ title: m("labelFactoryTitle"), text: m("labelFactoryText"), ok: m("labelFactory"), cancel: t("common", "cancel"), danger: true }))) return;
     setBusy(true); setSaveErr("");
-    try { await resetLabelSettings(); setServer({ profile: null, updatedAt: null, updatedByName: null }); toast(m("labelFactoryToast")); } catch (e) { setSaveErr(errText(e)); }
+    try { await resetLabelSettings(); qc.setQueryData(LOOK_QUERY, { profile: null, updatedAt: null, updatedByName: null }); setNewer(null); toast(m("labelFactoryToast")); } catch (e) { setSaveErr(errText(e)); }
     setBusy(false);
   }
-  const saved = server?.profile ?? null;
   const status = server === undefined ? "" : saveErr ? saveErr : server === null ? m("labelLoadFail") : !saved ? m("labelNothing")
-    : !sameProfile(saved, profileFromSettings(s)) ? m("labelChanged")
+    : savedKey !== styleKey ? m("labelChanged")
     : server?.updatedByName ? m("labelSavedBy", { name: server.updatedByName, when: dateTimeText(server.updatedAt, tr.locale) }) : m("labelSavedOn", { when: dateTimeText(server?.updatedAt, tr.locale) });
   const clearBatch = () => { setBatch([]); setBatchName(""); setMessage(""); setAt(0); };
   const print = () => printPrinterLabels(s, toPrint, { title: m("windowTitle"), print: t("common", "print"), popup: m("popup"), rtl: tr.isAr });
@@ -151,6 +174,12 @@ export default function Page() {
 
   const tabs: { id: Tab; label: string }[] = [{ id: "label", label: m("tabLabel") }, { id: "text", label: m("content") }, { id: "logo", label: m("logo") }, { id: "qr", label: m("qrSection") }];
   const pickPart = (p: Part) => setTab(p);
+  // Where one part sits across the row: top / middle / bottom side by side, start / middle / end stacked (like flex align-self).
+  const placeSeg = (part: Part) => {
+    const side = s.direction === "side", names: Record<Cross, string> = side ? { start: m("placeTop"), center: m("placeMiddle"), end: m("placeBottom") } : { start: m("placeStart"), center: m("placeMiddle"), end: m("placeEnd") };
+    return <div className="field"><span className="lbl">{m("crossPlace")}</span>
+      <Seg label={m("crossPlace")} value={s.cross[part]} onChange={(v) => set({ cross: { ...s.cross, [part]: v } })} items={CROSSES.map((c) => ({ id: c, label: names[c] }))} /></div>;
+  };
   const dir = (label: string, control: React.ReactNode) => <div className="tp-dir"><span className="lbl">{label}</span>{control}</div>;
   // With nothing typed yet the canvas shows sample content, so there is always something to see and drag; printing uses only what was typed.
   const shownItem = batch.length ? batch[Math.min(at, batch.length - 1)] : { text: single.text || m("sampleText"), code: single.code || "GE-SAMPLE-0001" };
@@ -161,7 +190,7 @@ export default function Page() {
       {dialog}
       <div className="tp-designer">
         <div className="card tp-canvas">
-          <div className="tp-stage"><PrinterLabelPreview s={s} item={shownItem} selected={tab === "label" ? null : tab} onPick={pickPart} onOrder={(order) => set({ order })} onResize={(patch) => { setDraft({}); set(patch); }} /></div>
+          <div className="tp-stage"><PrinterLabelPreview s={s} item={shownItem} selected={tab === "label" ? null : tab} onPick={pickPart} onOrder={(order) => set({ order })} onPlace={(part, c) => set({ cross: { ...s.cross, [part]: c } })} onResize={(patch) => { setDraft({}); set(patch); }} /></div>
           <div className="tp-bar">
             <span className="help" dir="ltr">{m("pageBox", { w: page.w, h: page.h })}</span>
             {batch.length > 0 && (
@@ -216,6 +245,7 @@ export default function Page() {
             <div className="field"><label htmlFor="tp-text">{m("text")}</label>
               <Textarea id="tp-text" rows={2} maxLength={200} dir="auto" disabled={batch.length > 0} placeholder={m("textPh")} value={text} onChange={(e) => setText(e.target.value)} /></div>
             <div className="tp-fields">{numField("fontPt", m("font"))}{numField("textWidthMm", m("textWidth"))}</div>
+            {placeSeg("text")}
             <div className="tp-lines">
               {s.lines.map((l, i) => (
                 <div className="tp-line" key={i} role="group" aria-label={m("lineN", { n: i + 1 })}>
@@ -243,6 +273,7 @@ export default function Page() {
               {s.logo && <Button variant="plain" danger onClick={() => set({ logo: "" })}>{m("logoRemove")}</Button>}
             </div>
             {s.logo && <div className="tp-thumb"><img src={s.logo} alt={m("logo")} /></div>}
+            {s.logo && s.logoPlacement === "beside" && placeSeg("logo")}
             <div className="help">{m("logoHint")}</div>
             {logoMsg && <div className="note warn" role="alert">{logoMsg}</div>}
             {s.logoPlacement === "inside"
@@ -255,6 +286,7 @@ export default function Page() {
             <div className="field"><label htmlFor="tp-code">{m("code")}</label>
               <Input id="tp-code" maxLength={500} dir="auto" autoComplete="off" disabled={batch.length > 0} placeholder={m("codePh")} value={code} onChange={(e) => setCode(e.target.value)} /></div>
             <div className="tp-fields">{numField("qrSizeMm", m("qrSize"))}</div>
+            {placeSeg("qr")}
           </>}
         </div>
       </div>
@@ -262,6 +294,10 @@ export default function Page() {
         <Button variant="primary" id="tp-save-all" disabled={busy || server === undefined} onClick={saveForAll}>{m("labelSave")}</Button>
         <Button danger disabled={busy || !saved} onClick={backToFactory}>{m("labelFactory")}</Button>
         {status && <span role="status" id="tp-save-status">{status}</span>}
+        {newer && <>
+          <span role="status" id="tp-newer">{newer.name ? m("labelNewer", { name: newer.name, when: dateTimeText(newer.at, tr.locale) }) : m("labelNewerAnon", { when: dateTimeText(newer.at, tr.locale) })}</span>
+          <Button id="tp-load-newer" onClick={showSaved}>{m("labelLoadNewer")}</Button>
+        </>}
       </div>
     </div>
   );
