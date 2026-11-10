@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { APP } from "./app-messages.mjs";
+import { APP, DROP } from "./app-messages.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "../../ge_erp_dashboard_deprecated/src/messages");
@@ -16,6 +16,12 @@ for (const [i, lang] of ["ar", "en"].entries()) {
     let o = out;
     parts.slice(0, -1).forEach((p) => (o = o[p] ??= {}));
     o[parts.at(-1)] = pair[i];
+  }
+  for (const dotted of DROP) {
+    const parts = dotted.split(".");
+    let o = out;
+    for (const p of parts.slice(0, -1)) o = o?.[p];
+    if (o) delete o[parts.at(-1)];
   }
   writeFileSync(path.join(here, `../messages/${lang}.json`), JSON.stringify(out, null, 1) + "\n");
 }

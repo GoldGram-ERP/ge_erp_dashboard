@@ -1,16 +1,17 @@
 "use client";
 // Shared by the Users and the Admin accounts pages: who may manage whom, the screen and job names, the record sheet body and the user form.
-// Ported from docs/nav-preview/app/things/admin-shared.js. Backend wins where it differs: canGiveCashDiscount is not in the backend DTO,
-// so it is sent only when the person changed it. Forced password change and the lock after 5 wrong passwords are backend behaviour only
+// Ported from docs/nav-preview/app/things/admin-shared.js. A plain user also has an optional role name, the allowed actions and the allowed sales channels
+// (2026-11-10; hidden by default, Admin and Super admin show none of them). Forced password change and the lock after 5 wrong passwords are backend behaviour only
 // (the form has no control for them; a locked account shows the locked badge and the Unlock action).
 // shortcut: the page's "back" button leaves without the unsaved-changes question (Cancel asks); upgrade when the engine exposes a leave guard.
 import { FieldError } from "@/components/fields/FieldError";
-import { Button, Checkbox, CheckInput, Input, Status } from "@/components/ui";
+import { Button, Checkbox, CheckInput, Input, Select, Status } from "@/components/ui";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, FieldConfig, LookupSpec, Row } from "@/lib/engine-types";
 import { rowsOf } from "@/lib/fields";
+import { ACTIONS, BUSINESS_ROLES } from "@/lib/actions";
 import { useMe } from "@/lib/session";
 import type { Tr } from "@/lib/t";
 import { Kv, Ltr, Section, toast, useConfirm } from "@/components/engine";
@@ -61,23 +62,32 @@ function refusedFields(tr: Tr, error: any): Record<string, string> {
 /** The record sheet body shared by Users (full) and Admin accounts. */
 export function UserRecord({ r, tr }: { r: Row; tr: Tr }) {
   const u = (k: string) => tr.t("administration", `users.${k}`);
+  const chans = useQuery({ enabled: r.userType === "user", queryKey: ["sales-channels", "all"], staleTime: 60_000, queryFn: () => api("/sales-channels").then(rowsOf) });
+  const chanNames = ((r.salesChannelIds ?? []) as string[]).map((id) => ((chans.data ?? []) as Row[]).find((c) => c.id === id)?.channelName).filter(Boolean) as string[];
   return (
     <>
       {r.deletedAt ? <div className="note warn">{u("deletedBadge")}</div> : r.locked ? <div className="note warn"><b>{u("lockedBadge")}</b> · {u("lockedNote")}</div> : null}
       <Section title={u("details")}>
         <Kv k={u("userCode")}><Ltr>{code6(r.userCode)}</Ltr></Kv>
         <Kv k={u("branchId")}>{r.branchName ?? ""}</Kv>
-        {r.userType !== "super_admin" && r.positionId !== undefined && <Kv k={u("positionId")}>{r.positionName ?? "—"}</Kv>}
+        {r.userType === "user" && <Kv k={u("role")}>{r.businessRole ? u(`roles.${r.businessRole}`) : "—"}</Kv>}
         <Kv k={u("username")}><bdi dir="ltr">{r.username}</bdi></Kv>
         <Kv k={u("email")}>{r.needsEmail ? "" : <bdi dir="ltr">{r.email}</bdi>}</Kv>
         <Kv k={u("userType")}>{typeName(tr, r.userType)}</Kv>
-        {r.userType === "user" && <Kv k={u("canUseTreasuries")}>{u(r.canUseTreasuries ? "yes" : "no")}</Kv>}
       </Section>
       <Section title={u("screens.heading")}>
         {r.userType === "user"
           ? (r.screens?.length ? <div className="chips">{r.screens.map((k: string) => <Status key={k} tone="off">{keyName(tr, k)}</Status>)}</div> : <p className="mute">{u("screens.none")}</p>)
           : <p className="mute">{u(`screens.fixed.${r.userType}`)}</p>}
       </Section>
+      {r.userType === "user" && <>
+        <Section title={u("actionsHeading")}>
+          {(r.actions?.length ? <div className="chips">{(r.actions as string[]).map((k) => <Status key={k} tone="off">{u(`actionLabel.${k}`)}</Status>)}</div> : <p className="mute">{u("actionsNone")}</p>)}
+        </Section>
+        <Section title={u("channelsHeading")}>
+          {(chanNames.length ? <div className="chips">{chanNames.map((n) => <Status key={n} tone="off">{n}</Status>)}</div> : <p className="mute">{u("channelsNone")}</p>)}
+        </Section>
+      </>}
     </>
   );
 }
@@ -106,17 +116,13 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   const adding = !row;
   const types = (onlyTypes ?? TYPES).filter((x) => mayManage(me?.userType, x));
   const onlyType = onlyTypes?.[0] ?? (types.length === 1 ? types[0] : "");
-  const initialDiscount = !!(row as Row | null)?.canGiveCashDiscount;
   const [ty, setTy] = useState<string>(row?.userType ?? onlyType);
   const [confirm, dialog] = useConfirm();
 
   const branchSpec: LookupSpec = useMemo(() => ({ path: "/branches", value: "id", label: (r: Row) => `${code6(r.branchCode)} · ${r.branchName}` }), []);
-  const positionSpec: LookupSpec = useMemo(() => ({ path: "/positions", value: "id", label: "positionName", query: { order: "newest" } }), []);
   const all: (FieldConfig & { only?: string })[] = [
     { name: "userCode", label: u("userCode"), type: "code", documentType: "user", hint: u("autoHint"), section: u("details") },
     { name: "branchId", label: u("branchId"), type: "select", optionsFrom: branchSpec, searchable: true, placeholder: u("branchSearchPlaceholder"), required: true, section: u("details"), only: "!super_admin" },
-    // Optional (empty allowed). The backend refuses a Position for a Super admin, and Admin accounts are not given one here.
-    ...(path === "/users" ? [{ name: "positionId", label: u("positionId"), type: "select" as const, optionsFrom: positionSpec, searchable: false, placeholder: u("positionNone"), help: u("positionHint"), section: u("details"), only: "!super_admin" }] : []),
     { name: "username", label: u("username"), type: "text", required: true, maxLength: 31, autocomplete: "off", section: u("details"),
       validate: (v) => (!/^[A-Za-z0-9_.]+$/.test(v) ? u("usernameInvalid") : v.length < 3 ? u("usernameTooShort") : v.length > 30 ? c("fieldErrors.tooLong") : null) },
     { name: "email", label: u("email"), type: "text", maxLength: 255, section: u("details"), help: !adding && !row.needsEmail ? u("emailKeepHint") : "",
@@ -126,12 +132,9 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
       validate: (v) => (v === "" ? null : v.trim() === "" ? (adding ? c("fieldErrors.required") : c("fieldErrors.invalid")) : v.length < 8 ? u("passwordTooShort") : v.length > 128 ? c("fieldErrors.tooLong") : null) },
     { name: "confirmPassword", label: u("confirmPassword"), type: "password", required: adding, maxLength: 129, autocomplete: "new-password", section: u("details"),
       validate: (v, a) => (adding && v === "" ? c("fieldErrors.required") : v !== a.password ? u("passwordMismatch") : null) },
-    { name: "canUseTreasuries", label: u("canUseTreasuries"), type: "checkbox", help: u("canUseTreasuriesHint"), wide: true, section: u("details"), only: "user" },
-    { name: "canGiveCashDiscount", label: u("canGiveCashDiscount"), type: "checkbox", help: u("canGiveCashDiscountHint"), wide: true, section: u("details"), only: "user" },
   ];
   const fields = useMemo(() => all.filter((f) => !f.only || (f.only === "user" ? ty === "user" : ty !== "super_admin")), [ty]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const values = useMemo(() => ({ userCode: row?.userCode, branchId: row?.branchId ?? "", positionId: row?.positionId ?? "", username: row?.username ?? "", email: row && !row.needsEmail ? row.email : "", userType: row?.userType ?? onlyType, password: "", confirmPassword: "",
-    canUseTreasuries: row?.canUseTreasuries ?? false, canGiveCashDiscount: row?.canGiveCashDiscount ?? false }), [row, onlyType]);
+  const values = useMemo(() => ({ userCode: row?.userCode, branchId: row?.branchId ?? "", username: row?.username ?? "", email: row && !row.needsEmail ? row.email : "", userType: row?.userType ?? onlyType, password: "", confirmPassword: "" }), [row, onlyType]);
   const f = useFieldsForm(fields, values);
   const saveKey = useRef(newSaveKey());
   const [dirty, setDirty] = useState(false);
@@ -141,6 +144,12 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   useEffect(() => { if (adding) api("/branches", { query: { limit: 20 } }).then((r) => { const rows = rowsOf(r); if (rows.length === 1 && !f.getValues("branchId")) f.setValue("branchId", rows[0].id); }).catch(() => {}); }, [adding, f]);
 
   const [screens, setScreens] = useState<Set<string>>(new Set(row?.screens ?? []));
+  // A plain user's role name, actions and sales channels (nothing ticked on a new user: hidden by default)
+  const [role, setRole] = useState<string>(row?.businessRole ?? "");
+  const [actions, setActions] = useState<Set<string>>(new Set(row?.actions ?? []));
+  const [channels, setChannels] = useState<Set<string>>(new Set(row?.salesChannelIds ?? []));
+  const channelsQ = useQuery({ enabled: ty === "user", queryKey: ["sales-channels", "all"], staleTime: 60_000, queryFn: () => api("/sales-channels").then(rowsOf) });
+  const flip = (set: Set<string>, put: (s: Set<string>) => void) => (k: string, on: boolean) => { const n = new Set(set); on ? n.add(k) : n.delete(k); put(n); mark(); };
   const [jobs, setJobs] = useState<Set<string>>(new Set());
   const [jobsInit, setJobsInit] = useState("[]");
   // "By task" is hidden for now (owner, 2026-11-09): screens are the only way to give access. The task code stays for when it returns.
@@ -189,9 +198,8 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     const v = await f.read();
     if (!v) { setAlert(c("couldNotSave", { count: Object.keys(f.formState.errors).length || 1 })); return; }
     if (ty === "user" && permQ.data && screens.size === 0 && !(await confirm({ title: u("screens.noneTitle"), text: u("screens.noneBody"), ok: c("save"), cancel: c("cancel") }))) return;
-    const discount = !!v.canGiveCashDiscount;
-    const body = { ...(ty === "super_admin" ? {} : { branchId: v.branchId }), ...(ty === "super_admin" || path !== "/users" ? {} : { positionId: v.positionId || null }), username: v.username, ...(v.email === "" ? {} : { email: v.email }), userType: ty,
-      ...(ty === "user" ? { screens: [...screens], canUseTreasuries: !!v.canUseTreasuries, ...(discount !== initialDiscount ? { canGiveCashDiscount: discount } : {}) } : {}),
+    const body = { ...(ty === "super_admin" ? {} : { branchId: v.branchId }), username: v.username, ...(v.email === "" ? {} : { email: v.email }), userType: ty,
+      ...(ty === "user" ? { screens: [...screens], actions: [...actions], salesChannelIds: [...channels], businessRole: role || null } : {}),
       ...(v.password === "" ? {} : { password: v.password }) };
     setSaving(true); setNote(c("savingNote"));
     try {
@@ -260,7 +268,22 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     <>
       {dialog}
       <div className="card"><FormFields form={f} fields={fields} values={values} /></div>
+      {ty === "user" && <Section title={u("role")} wide>
+        <div className="field">
+          <Select id="f-businessRole" name="businessRole" value={role} onChange={(v) => { setRole(v); mark(); }} searchable={false} placeholder={u("roleNone")} options={BUSINESS_ROLES.map((k) => [k, u(`roles.${k}`)])} />
+          <div className="help">{u("roleHint")}</div>
+        </div>
+      </Section>}
       <Section title={u("screens.heading")} wide>{perm}{permErr && <FieldError>{permErr}</FieldError>}</Section>
+      {ty === "user" && <Section title={u("actionsHeading")} wide>
+        <div className="help">{u("actionsHint")}</div>
+        {ACTIONS.map((k) => <Checkbox key={k} data-action={k} checked={actions.has(k)} onChange={(v) => flip(actions, setActions)(k, v)}><b>{u(`actionLabel.${k}`)}</b> <span className="help">{u(`actionHint.${k}`)}</span></Checkbox>)}
+      </Section>}
+      {ty === "user" && <Section title={u("channelsHeading")} wide>
+        <div className="help">{u("channelsHint")}</div>
+        {channelsQ.data?.length === 0 && <p className="mute">{u("channelsNone")}</p>}
+        {(channelsQ.data ?? []).map((c: Row) => <Checkbox key={c.id} data-channel={c.id} checked={channels.has(c.id)} onChange={(v) => flip(channels, setChannels)(c.id, v)}>{c.channelName ?? c.name}</Checkbox>)}
+      </Section>}
       {alert && <FieldError>{alert}</FieldError>}
       <div className="formbar">
         <Button variant="primary" id="save" disabled={saving} onClick={save}>{saving ? c("saving") : adding ? c("save") : c("saveChanges")}</Button>

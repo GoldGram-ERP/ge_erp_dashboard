@@ -194,15 +194,35 @@
     "partMissing": "Missing: {names}",
     "giveMissing": "Give the missing screens"
    },
-   "canUseTreasuries": "Can do treasury transactions",
-   "canUseTreasuriesHint": "Sends, accepts and refuses transfers, and adds and deletes cash and gold movements, of their branch's two treasuries.",
-   "canGiveCashDiscount": "Can give a cash discount",
-   "canGiveCashDiscountHint": "Types a cash discount on a sales invoice and a reservation, out of the making charge only, never the gold price. An Admin and a Super admin always may.",
    "yes": "Yes",
    "no": "No",
-   "positionId": "Position",
-   "positionNone": "No Position",
-   "positionHint": "Optional. Pick the chosen one again to clear it."
+   "role": "Role",
+   "roleNone": "No role",
+   "roleHint": "Optional. A role is only a name to tell people apart. It changes no permission.",
+   "roles": {
+    "accountant": "Accountant",
+    "call_center": "Call center",
+    "branch_sales": "Branch sales",
+    "pricing_specialist": "Pricing specialist"
+   },
+   "actionsHeading": "Allowed actions",
+   "actionsHint": "Every action stays hidden until you give it to the person. An Admin and a Super admin always have them all.",
+   "actionsNone": "No actions allowed.",
+   "actionLabel": {
+    "give-cash-discount": "Give a cash discount",
+    "use-treasuries": "Use treasuries",
+    "complete-sales-draft": "Complete a sales draft",
+    "confirm-taslem": "Confirm Taslem"
+   },
+   "actionHint": {
+    "give-cash-discount": "Types a cash discount on a sales invoice and a reservation, out of the making charge only, never the gold price.",
+    "use-treasuries": "Sends, accepts and refuses transfers, and adds and deletes cash and gold movements, of their branch's two treasuries.",
+    "complete-sales-draft": "Presses Complete on an open sell draft to make the invoice.",
+    "confirm-taslem": "Presses Taslem on a saved invoice; the system records who and when."
+   },
+   "channelsHeading": "Allowed sales channels",
+   "channelsHint": "The channels the person may pick on the sales desk.",
+   "channelsNone": "There are no sales channels yet."
   },
   "settings": {
    "title": "Settings",
@@ -914,7 +934,8 @@
   "positionNotFound": "This Position does not exist.",
   "salesChannelNotFound": "This sales channel does not exist.",
   "bugReportNotFound": "This report does not exist.",
-  "bugReportFileNotFound": "This file does not exist."
+  "bugReportFileNotFound": "This file does not exist.",
+  "alreadyTaslem": "This invoice was already taken through Taslem."
  },
  "expenses": {
   "expenseTypes": {
@@ -1646,7 +1667,12 @@
    "howPrice": "{price}, press to see how it is worked out",
    "howGold": "Gold of one piece: {perGram} a gram × {weight} g = {gold}",
    "howMaking": "Workmanship of one piece: {work} a gram × {weight} g = {making}",
-   "howLine": "({gold} + {making}) × {count} = {line}"
+   "howLine": "({gold} + {making}) × {count} = {line}",
+   "taslem": "Taslem",
+   "taslemTitle": "Confirm Taslem?",
+   "taslemAsk": "This records that you confirmed this invoice now. It is a record only: stock and cash do not move.",
+   "taslemDone": "Taslem recorded.",
+   "taslemStamp": "Taslem by {name} at {at}"
   },
   "prints": {
    "name": "Name",
@@ -2148,13 +2174,6 @@
    "type": "Type",
    "typeSale": "Sale",
    "typeDelivery": "Delivery",
-   "typeHandover": "Hand-over",
-   "handOver": "Hand over",
-   "handOverTitle": "Hand over this draft?",
-   "handOverAsk": "This records the time and you, and freezes a copy of the draft as it is now, prices included. It is a record only: it does not make the invoice.",
-   "handingOver": "Handing over…",
-   "handedOver": "Handed over.",
-   "handedOverStamp": "Handed over on {at} by {name}",
    "branch": "Branch",
    "branchHelp": "Your draft is saved on your branch.",
    "customerName": "Customer name",
@@ -2201,7 +2220,7 @@
     "title": "WhatsApp summary",
     "copy": "Copy the summary",
     "copied": "Copied",
-    "help": "Copies the order details for the customer, in Arabic, exactly like the reference calculator.",
+    "help": "Copies the order details for the customer. The seller's name is never in it.",
     "date": "Date",
     "branch": "Branch",
     "customer": "Customer",
@@ -3065,8 +3084,7 @@
    "money": "Treasuries and banks",
    "expenses": "Expenses",
    "setup": "Admin",
-   "control": "Full control",
-   "hr": "HR"
+   "control": "Full control"
   },
   "item": {
    "invoices": "Sales invoices",
@@ -3097,8 +3115,6 @@
    "returned-pieces": "Returned pieces (not from us)",
    "sales-desk": "Sales desk",
    "merchants": "Merchants",
-   "positions": "Positions",
-   "sales-channels": "Sales channels",
    "bug-reports": "Bug reports"
   }
  },
@@ -3184,55 +3200,10 @@
    "cashDiscount": "Cash discount on an invoice",
    "allowed": "Allowed",
    "notAllowed": "Not allowed",
-   "position": "Position"
+   "role": "Role"
   },
   "signIn": {
    "cookie": "Sign-in was accepted but the browser did not keep the session. Try again."
-  }
- },
- "hr": {
-  "positions": {
-   "title": "Positions",
-   "listTitle": "Positions",
-   "add": "New Position",
-   "new": "New Position",
-   "editTitle": "Edit Position {code}",
-   "recordNo": "Position no.",
-   "searchPlaceholder": "Search by name",
-   "deletedOnly": "Deleted only",
-   "deletedBadge": "Deleted",
-   "deleted": "Deleted",
-   "positionCode": "No.",
-   "positionName": "Position name",
-   "details": "Position details",
-   "channels": "Allowed sales channels",
-   "channelsHint": "Tick the channels a person with this Position may pick on the sales desk.",
-   "noChannels": "There are no sales channels yet. Add one under Sales channels first.",
-   "noChannelsGiven": "No channels",
-   "mayHandOver": "May hand over (Hand-over drafts)",
-   "mayHandOverHint": "A person with this Position may press Hand over on a Hand-over draft on the sales desk.",
-   "yes": "Yes",
-   "no": "No",
-   "saved": "Position saved",
-   "deleteTitle": "Delete Position {code}?",
-   "deleteBody": "A Position cannot be deleted while a user holds it. Move those users to another Position first."
-  },
-  "salesChannels": {
-   "title": "Sales channels",
-   "listTitle": "Sales channels",
-   "add": "New sales channel",
-   "new": "New sales channel",
-   "editTitle": "Edit sales channel {code}",
-   "recordNo": "Sales channel no.",
-   "searchPlaceholder": "Search by name",
-   "deletedOnly": "Deleted only",
-   "deletedBadge": "Deleted",
-   "deleted": "Deleted",
-   "channelCode": "No.",
-   "channelName": "Channel name",
-   "details": "Channel details",
-   "deleteTitle": "Delete sales channel {code}?",
-   "deleteBody": "The channel leaves the pick lists; drafts and invoices that used it keep it."
   }
  },
  "test-printer": {

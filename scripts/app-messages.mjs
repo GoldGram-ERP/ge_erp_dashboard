@@ -318,26 +318,44 @@ Object.assign(APP, {
   "bank-movements.bankStatement.net": ["صافي الحساب", "Net"], "bank-movements.bankStatement.balanceAfter": ["الرصيد الختامي", "Closing balance"],
 });
 
-// Positions and sales channels (HR): nav, the two record screens, the Users form picker, the desk's channel picker, the account line and the refusals.
+// Per-person roles and actions (2026-11-10): the optional role name, the action checkboxes, Taslem on the saved invoice. The HR section (Positions, Sales channels) is gone from the UI.
 Object.assign(APP, {
-  "nav.group.hr": ["الموارد البشرية", "HR"], "nav.item.positions": ["المسميات الوظيفية", "Positions"], "nav.item.sales-channels": ["قنوات البيع", "Sales channels"],
-  "app.account.position": ["المسمى الوظيفي", "Position"],
-  "administration.users.positionId": ["المسمى الوظيفي", "Position"], "administration.users.positionNone": ["بدون مسمى وظيفي", "No Position"],
-  "administration.users.positionHint": ["اختياري. اختر المسمى المحدد مرة أخرى لإلغائه.", "Optional. Pick the chosen one again to clear it."],
   "gold-sales.salesDesk.channel": ["قناة البيع", "Sales channel"],
-  "hr.positions.title": ["المسميات الوظيفية", "Positions"], "hr.positions.listTitle": ["سجل المسميات الوظيفية", "Positions"], "hr.positions.add": ["مسمى وظيفي جديد", "New Position"],
-  "hr.positions.new": ["مسمى وظيفي جديد", "New Position"], "hr.positions.editTitle": ["تعديل المسمى الوظيفي {code}", "Edit Position {code}"], "hr.positions.recordNo": ["مسمى وظيفي رقم", "Position no."],
-  "hr.positions.searchPlaceholder": ["ابحث بالاسم", "Search by name"], "hr.positions.deletedOnly": ["المحذوفة فقط", "Deleted only"], "hr.positions.deletedBadge": ["محذوف", "Deleted"], "hr.positions.deleted": ["تاريخ الحذف", "Deleted"],
-  "hr.positions.positionCode": ["الرقم", "No."], "hr.positions.positionName": ["اسم المسمى الوظيفي", "Position name"], "hr.positions.details": ["بيانات المسمى الوظيفي", "Position details"],
-  "hr.positions.channels": ["قنوات البيع المسموحة", "Allowed sales channels"], "hr.positions.channelsHint": ["حدد القنوات التي يستطيع صاحب هذا المسمى اختيارها في شاشة البيع.", "Tick the channels a person with this Position may pick on the sales desk."],
-  "hr.positions.noChannels": ["لا توجد قنوات بيع بعد. أضف قناة من قنوات البيع أولاً.", "There are no sales channels yet. Add one under Sales channels first."], "hr.positions.noChannelsGiven": ["لا توجد قنوات", "No channels"],
-  "hr.positions.saved": ["تم حفظ المسمى الوظيفي", "Position saved"], "hr.positions.deleteTitle": ["حذف المسمى الوظيفي {code}؟", "Delete Position {code}?"],
-  "hr.positions.deleteBody": ["لا يمكن حذف مسمى وظيفي ما دام مستخدم يحمله. انقل المستخدمين إلى مسمى آخر أولاً.", "A Position cannot be deleted while a user holds it. Move those users to another Position first."],
-  "hr.salesChannels.title": ["قنوات البيع", "Sales channels"], "hr.salesChannels.listTitle": ["سجل قنوات البيع", "Sales channels"], "hr.salesChannels.add": ["قناة بيع جديدة", "New sales channel"],
-  "hr.salesChannels.new": ["قناة بيع جديدة", "New sales channel"], "hr.salesChannels.editTitle": ["تعديل قناة البيع {code}", "Edit sales channel {code}"], "hr.salesChannels.recordNo": ["قناة بيع رقم", "Sales channel no."],
-  "hr.salesChannels.searchPlaceholder": ["ابحث بالاسم", "Search by name"], "hr.salesChannels.deletedOnly": ["المحذوفة فقط", "Deleted only"], "hr.salesChannels.deletedBadge": ["محذوفة", "Deleted"], "hr.salesChannels.deleted": ["تاريخ الحذف", "Deleted"],
-  "hr.salesChannels.channelCode": ["الرقم", "No."], "hr.salesChannels.channelName": ["اسم القناة", "Channel name"], "hr.salesChannels.details": ["بيانات القناة", "Channel details"],
-  "hr.salesChannels.deleteTitle": ["حذف قناة البيع {code}؟", "Delete sales channel {code}?"], "hr.salesChannels.deleteBody": ["تختفي القناة من قوائم الاختيار، وتبقى على المسودات والفواتير المسجلة بها.", "The channel leaves the pick lists; drafts and invoices that used it keep it."],
+  "app.account.role": ["الدور", "Role"],
+  "administration.users.role": ["الدور", "Role"], "administration.users.roleNone": ["بدون دور", "No role"],
+  "administration.users.roleHint": ["اختياري. الدور اسم بس عشان نفرّق بين الناس، ومبيغيّرش أي صلاحية.", "Optional. A role is only a name to tell people apart. It changes no permission."],
+  "administration.users.roles.accountant": ["محاسب", "Accountant"], "administration.users.roles.call_center": ["كول سنتر", "Call center"],
+  "administration.users.roles.branch_sales": ["مبيعات فرع", "Branch sales"], "administration.users.roles.pricing_specialist": ["أخصائي تسعير", "Pricing specialist"],
+  "administration.users.actionsHeading": ["الإجراءات المسموحة", "Allowed actions"],
+  "administration.users.actionsHint": ["كل إجراء مخفي لحد ما تديه للشخص. الأدمن والسوبر أدمن معاهم كل الإجراءات.", "Every action stays hidden until you give it to the person. An Admin and a Super admin always have them all."],
+  "administration.users.actionsNone": ["مفيش إجراءات مسموحة.", "No actions allowed."],
+  "administration.users.actionLabel.give-cash-discount": ["يدّي خصم نقدي", "Give a cash discount"],
+  "administration.users.actionHint.give-cash-discount": ["يكتب خصم نقدي على فاتورة البيع والحجز، من المصنعية بس، مش من سعر الدهب.", "Types a cash discount on a sales invoice and a reservation, out of the making charge only, never the gold price."],
+  "administration.users.actionLabel.use-treasuries": ["يتعامل مع الخزن", "Use treasuries"],
+  "administration.users.actionHint.use-treasuries": ["يبعت ويقبل ويرفض التحويلات، ويضيف ويمسح حركات النقدية والدهب، في خزنتين فرعه.", "Sends, accepts and refuses transfers, and adds and deletes cash and gold movements, of their branch's two treasuries."],
+  "administration.users.actionLabel.complete-sales-draft": ["يكمّل مسودة البيع", "Complete a sales draft"],
+  "administration.users.actionHint.complete-sales-draft": ["يدوس إتمام الفاتورة على مسودة بيع مفتوحة فتبقى فاتورة.", "Presses Complete on an open sell draft to make the invoice."],
+  "administration.users.actionLabel.confirm-taslem": ["يأكّد التسليم", "Confirm Taslem"],
+  "administration.users.actionHint.confirm-taslem": ["يدوس تسليم على الفاتورة المحفوظة، والنظام يسجّل مين وإمتى.", "Presses Taslem on a saved invoice; the system records who and when."],
+  "administration.users.channelsHeading": ["قنوات البيع المسموحة", "Allowed sales channels"],
+  "administration.users.channelsHint": ["القنوات اللي يقدر يختارها في شاشة البيع.", "The channels the person may pick on the sales desk."],
+  "administration.users.channelsNone": ["مفيش قنوات بيع لسه.", "There are no sales channels yet."],
+  "gold-sales.salesInvoices.taslem": ["تسليم", "Taslem"], "gold-sales.salesInvoices.taslemTitle": ["تأكيد التسليم؟", "Confirm Taslem?"],
+  "gold-sales.salesInvoices.taslemAsk": ["هيتسجّل إنك سلّمت الفاتورة دي دلوقتي. ده تسجيل بس: المخزون والفلوس مبيتحركوش.", "This records that you confirmed this invoice now. It is a record only: stock and cash do not move."],
+  "gold-sales.salesInvoices.taslemDone": ["اتسجّل التسليم.", "Taslem recorded."],
+  "gold-sales.salesInvoices.taslemStamp": ["تسليم بواسطة {name} يوم {at}", "Taslem by {name} at {at}"],
+  "errors.alreadyTaslem": ["الفاتورة دي اتسلّمت قبل كده.", "This invoice was already taken through Taslem."],
+});
+
+// Keys the generated base (the old dashboard's messages) still carries but nothing uses any more: gen-messages.mjs deletes them (a dotted key, or a whole namespace).
+export const DROP = ["hr", "nav.group.hr", "nav.item.positions", "nav.item.sales-channels", "app.account.position",
+  "administration.users.positionId", "administration.users.positionNone", "administration.users.positionHint",
+  "administration.users.canUseTreasuries", "administration.users.canUseTreasuriesHint", "administration.users.canGiveCashDiscount", "administration.users.canGiveCashDiscountHint",
+  "gold-sales.salesDesk.typeHandover", "gold-sales.salesDesk.handOver", "gold-sales.salesDesk.handOverTitle", "gold-sales.salesDesk.handOverAsk",
+  "gold-sales.salesDesk.handingOver", "gold-sales.salesDesk.handedOver", "gold-sales.salesDesk.handedOverStamp"];
+
+// Refusals the backend still sends until the Position routes are removed (a later release).
+Object.assign(APP, {
   "errors.positionRequired": ["لا يمكنك الحفظ لأنه لم يُحدد لك مسمى وظيفي. اطلب من المدير تحديده.", "You cannot save: no Position is set for you. Ask an Admin to set one."],
   "errors.salesChannelNotAllowed": ["قناة البيع هذه غير مسموحة لمسماك الوظيفي.", "This sales channel is not allowed for your Position."],
   "errors.positionNameTaken": ["يوجد مسمى وظيفي آخر بنفس الاسم.", "Another Position already has this name."],
