@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Script from "next/script";
+import { ServerScript } from "@/components/server-script";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing, dirOf } from "@/i18n/routing";
@@ -26,10 +26,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   return (
     <html lang={locale} dir={dirOf(locale)} suppressHydrationWarning>
       <head>
-        {/* next/script, not a bare <script>: React 19 flags a <script> rendered by a component ("Scripts inside React components are never executed when rendering on the client"),
-            which showed as a red Issues badge on every dev server. beforeInteractive puts it in the first HTML, run before hydration and the first paint. */}
-        <Script id="before-paint" strategy="beforeInteractive">{BEFORE_PAINT}</Script>
-        {rumTag ? <Script id="rum-tag" strategy="beforeInteractive">{rumTag}</Script> : null}
+        {/* Inline scripts through ServerScript (server HTML only): a <script> or <Script> that the client renders makes React 19 warn in development. */}
+        <ServerScript id="before-paint" code={BEFORE_PAINT} />
+        {rumTag ? <ServerScript id="rum-tag" code={rumTag} /> : null}
       </head>
       <body>
         <NextIntlClientProvider>
