@@ -505,6 +505,7 @@ describe("the A4 sheet of the saved label", () => {
   it("fits as many columns and rows as the page minus 5 mm margins holds", () => {
     expect(a4Grid({ w: 38, h: 12.5 }, 1)).toMatchObject({ cols: 5, rows: 22 });   // 200 / 38 = 5, 287 / 12.5 = 22.96 (floor)
     expect(a4Grid({ w: 50, h: 50 }, 1)).toMatchObject({ cols: 4, rows: 5 });
+    expect(a4Grid({ w: 105, h: 148.5 }, 1)).toMatchObject({ cols: 1, rows: 1 });     // the margin leaves 200 x 287, not 210 x 297
   });
   it("the last page is partial and the order is kept page by page", () => {
     expect(a4Grid({ w: 100, h: 100 }, 5).pages).toEqual([4, 1]);                   // 2 x 2 per page
