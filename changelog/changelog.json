@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Test printer: the words of the QR (its content) can print above or below the code, with a size and bold, from the QR tab.",
+    "ar": "تجربة الطابعة: كلام الـ QR (محتواه) تقدر تطبعه فوق الكود أو تحته، بحجم وبخط عريض لو عايز، من تبويب الـ QR.",
+    "route": "/setup/test-printer"
+   }
+  ]
+ },
+ {
   "version": "1.0.87",
   "date": "2026-11-10",
   "changes": [
