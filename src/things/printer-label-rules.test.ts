@@ -606,3 +606,47 @@ describe("keeping the page and the saved look in step", () => {
   });
   it("every across place is one of the three", () => { expect(CROSSES.length).toBe(3); const c: Cross = "end"; expect(CROSSES).toContain(c); });
 });
+
+describe("the QR's words (its content) above or below the code", () => {
+  const side = { direction: "side", orientation: "landscape", widthMm: 50, heightMm: 20, paddingMm: 1, qrSizeMm: 0 };
+  const item = { text: "", code: "GE-0001" };
+  const fit = (o: object, it = item) => { const s = S({ ...side, ...o }); return fitLabel(s, it); };
+  it("a new label and an old look show no words", () => {
+    expect(S({}).qrCaption).toBe("none");
+    expect(clampSettings({ v: 1, widthMm: 40 }).qrCaption).toBe("none");
+    expect(clampSettings({ qrCaption: "left", qrCaptionPt: "x", qrCaptionBold: 1 })).toMatchObject({ qrCaption: "none", qrCaptionPt: 6, qrCaptionBold: false });
+    expect(S({ qrCaptionPt: 0 }).qrCaptionPt).toBe(1);
+  });
+  it("without words the QR is as big as it was; with them the code gives up one line of room so nothing leaves the label", () => {
+    const none = fit({}), below = fit({ qrCaption: "below", qrCaptionPt: 6 }), above = fit({ qrCaption: "above", qrCaptionPt: 6 });
+    const line = 6 * (25.4 / 72) * 1.15;
+    expect(none.qrMm).toBe(18);
+    expect(below.qrMm).toBeCloseTo(18 - line, 2);
+    expect(above.qrMm).toBeCloseTo(18 - line, 2);
+    expect(below.qrMm + line).toBeLessThanOrEqual(18.001);
+  });
+  it("stacked, the words take their line out of the height the parts share", () => {
+    const st = { direction: "stacked", orientation: "portrait", widthMm: 30, heightMm: 30, paddingMm: 1, qrSizeMm: 0 };
+    const a = fitLabel(S({ ...st }), item), b = fitLabel(S({ ...st, qrCaption: "below", qrCaptionPt: 8 }), item);
+    expect(b.qrMm).toBeLessThan(a.qrMm);
+    expect(b.qrMm + 8 * (25.4 / 72) * 1.15).toBeLessThanOrEqual(28.001);
+  });
+  it("no code, no words: nothing is taken from the QR", () => {
+    expect(fit({ qrCaption: "below" }, { text: "t", code: "" }).qrMm).toBe(fit({}, { text: "t", code: "" }).qrMm);
+  });
+  it("a long text shrinks to the QR width and the size the person set is kept when it fits", () => {
+    expect(fit({ qrCaption: "below", qrCaptionPt: 6 }).capPt).toBe(6);
+    expect(fit({ qrCaption: "below", qrCaptionPt: 6 }, { text: "", code: "https://example.com/a/very/long/address/that/does/not/fit" }).capPt).toBeLessThan(6);
+  });
+  it("the css: centred under the code, as wide as the code, bold only when asked", () => {
+    const s = S({ ...side, qrCaption: "below", qrCaptionPt: 7, qrCaptionBold: true }), f = fitLabel(s, item), l = layoutCss(s, f);
+    expect(l.caption).toMatchObject({ width: `${f.qrMm}mm`, fontSize: "7pt", fontWeight: 700, textAlign: "center" });
+    expect(layoutCss(S({ ...side, qrCaption: "below" })).caption.fontWeight).toBe(400);
+    expect(l.qrGroup).toMatchObject({ flexDirection: "column", flex: "none" });
+  });
+  it("it is a part of the saved look", () => {
+    const s = S({ qrCaption: "above", qrCaptionPt: 9, qrCaptionBold: true });
+    expect(cleanProfile(profileFromSettings(s))).toMatchObject({ qrCaption: "above", qrCaptionPt: 9, qrCaptionBold: true });
+    expect(lookKey(profileFromSettings(s))).not.toBe(lookKey(profileFromSettings(S({}))));
+  });
+});

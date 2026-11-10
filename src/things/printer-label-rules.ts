@@ -6,6 +6,8 @@ export type Direction = "stacked" | "side";
 export type Rotate = 0 | 90 | 180 | 270;
 export type Align = "left" | "center" | "right";
 export type QrLevel = "L" | "M" | "Q" | "H";
+/** The words of the QR (its content), printed with the code: not at all, above it or below it (owner, 2026-11-10). */
+export type QrCaption = "none" | "above" | "below";
 
 /** The logo: "beside" = a part of its own (its place is set in `order`), "inside" = in the middle of the QR, "none" = hidden. */
 export type LogoPlacement = "beside" | "inside" | "none";
@@ -35,6 +37,8 @@ export type Settings = {
   spread: Spread;
   /** The across place of each of the three parts. */
   cross: Record<Part, Cross>;
+  /** The QR content as text next to the code: where, how big (pt) and bold or not. */
+  qrCaption: QrCaption; qrCaptionPt: number; qrCaptionBold: boolean;
 };
 export type Spread = "together" | "edges" | "even";
 /** Where a part sits ACROSS the row (or column), like flex align-self: start/centre/end of the free room. Side by side: top / middle / bottom.
@@ -51,12 +55,13 @@ export const DEFAULTS: Settings = {
   lines: [], linesPlacement: "afterText",
   logo: "", logoPlacement: "beside", logoMm: 10, logoPct: 20, textWidthMm: 0, spread: "together",
   cross: { text: "center", logo: "center", qr: "center" },
+  qrCaption: "none", qrCaptionPt: 6, qrCaptionBold: false,
 };
 export const PRESETS: [number, number][] = [[66, 61], [50, 30], [40, 30], [38, 12.5], [100, 50]];
 export const STORAGE_KEY = "test-printer-settings";
 
 // Wide on purpose (owner, 2026-11-09): the test page must take any size, 1 mm up; a smaller box used to snap back to 10.
-const RANGES = { widthMm: [1, 1000], heightMm: [1, 1000], fontPt: [1, 200], paddingMm: [0, 100], gapMm: [0, 100], qrTopMm: [0, 500], qrSizeMm: [0, 1000], copies: [1, 100], logoMm: [0.5, 500], logoPct: [1, 100], textWidthMm: [0, 1000] } as const;
+const RANGES = { widthMm: [1, 1000], heightMm: [1, 1000], fontPt: [1, 200], paddingMm: [0, 100], gapMm: [0, 100], qrTopMm: [0, 500], qrSizeMm: [0, 1000], copies: [1, 100], logoMm: [0.5, 500], logoPct: [1, 100], textWidthMm: [0, 1000], qrCaptionPt: [1, 200] } as const;
 type NumKey = keyof typeof RANGES;
 
 const num = (v: unknown, key: NumKey): number => {
@@ -84,6 +89,7 @@ export function clampSettings(raw: unknown): Settings {
     logo: cleanLogo(r.logo), logoPlacement: cleanLogoPlacement(r.logoPlacement),
     logoMm: num(r.logoMm, "logoMm"), logoPct: num(r.logoPct, "logoPct"), textWidthMm: num(r.textWidthMm, "textWidthMm"), spread: pick(r.spread, ["together", "edges", "even"], DEFAULTS.spread),
     cross: cleanCross(r),
+    qrCaption: pick(r.qrCaption, ["none", "above", "below"], DEFAULTS.qrCaption), qrCaptionPt: num(r.qrCaptionPt, "qrCaptionPt"), qrCaptionBold: typeof r.qrCaptionBold === "boolean" ? r.qrCaptionBold : DEFAULTS.qrCaptionBold,
   };
 }
 
@@ -276,17 +282,19 @@ const PT_MM = 25.4 / 72, CHAR_EM = 0.6, LINE_H = 1.15;
 /** The sizes really drawn. The QR and the logo are squares no bigger than the label's free height (in a row) or width (in a column), and they leave room
  *  for the text. Each text line keeps one line and its font is scaled down until its estimated width (0.6 em a character, on the safe side) fits. */
 /** textMm = the text box's drawn width when the person set one (0 = automatic). */
-export type Fit = { qrMm: number; logoMm: number; fontPt: number; linePts: number[]; textMm: number; count: number };
+export type Fit = { qrMm: number; logoMm: number; fontPt: number; linePts: number[]; textMm: number; count: number; capPt: number };
 export function fitLabel(s: Settings, item: LabelItem): Fit {
   const r = rotation(pageSize(s), s.rotate), side = s.direction === "side";
   const w = Math.max(0.5, r.w - 2 * s.paddingMm), h = Math.max(0.5, r.h - 2 * s.paddingMm);
   const parts = partsShown(s).filter((p) => p !== "qr" || !!item.code), lines = buildLines(s, item);
   const hasQr = parts.includes("qr"), hasLogo = parts.includes("logo"), hasText = !!item.text || lines.length > 0;
   const gaps = Math.max(0, parts.length - 1) * s.gapMm, cross = side ? h : w;
-  let qr = hasQr ? Math.min(s.qrSizeMm > 0 ? s.qrSizeMm : cross, cross) : 0, logo = hasLogo ? Math.min(s.logoMm, cross) : 0;
+  // The QR's words take one line above or below the code: that height is not the code's.
+  const cap = hasQr && !!item.code && s.qrCaption !== "none" ? s.qrCaptionPt * PT_MM * LINE_H : 0, qrCross = Math.max(0.5, cross - (side ? cap : 0));
+  let qr = hasQr ? Math.min(s.qrSizeMm > 0 ? s.qrSizeMm : qrCross, qrCross) : 0, logo = hasLogo ? Math.min(s.logoMm, cross) : 0;
   // Along the row (or column) the squares may take what the text does not need.
   const textAlong = !hasText ? 0 : side ? w * 0.4 : ((item.text ? s.fontPt : 0) + lines.reduce((a, l) => a + l.fontPt, 0)) * PT_MM * LINE_H;
-  const room = Math.max(0, (side ? w : h) - gaps - textAlong);
+  const room = Math.max(0, (side ? w : h) - gaps - textAlong - (side ? 0 : cap));
   if (qr + logo > room) { const k = room / (qr + logo); qr *= k; logo *= k; }
   let autoRoom = side ? Math.max(0.5, w - gaps - qr - logo) : w;
   // To the edges with three parts in a row: the middle one is exactly centred, so each side column is (w - middle - 2 gaps) / 2.
@@ -308,12 +316,12 @@ export function fitLabel(s: Settings, item: LabelItem): Fit {
   const textRoom = s.textWidthMm > 0 ? Math.min(s.textWidthMm, autoRoom) : autoRoom, lineRoom = s.linesPlacement === "afterText" ? textRoom : autoRoom;
   const fit = (text: string, pt: number, roomMm: number) => { const need = [...text].length * pt * PT_MM * CHAR_EM; return need > roomMm ? Math.max(1, Math.floor((pt * roomMm / need) * 4) / 4) : pt; };
   const r3 = (n: number) => Math.round(n * 1000) / 1000;
-  return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt, textRoom), linePts: lines.map((l) => fit(l.text, l.fontPt, lineRoom)), textMm: s.textWidthMm > 0 ? r3(textRoom) : 0, count: parts.length };
+  return { qrMm: r3(qr), logoMm: r3(logo), fontPt: fit(item.text, s.fontPt, textRoom), linePts: lines.map((l) => fit(l.text, l.fontPt, lineRoom)), textMm: s.textWidthMm > 0 ? r3(textRoom) : 0, count: parts.length, capPt: cap > 0 ? fit(item.code, s.qrCaptionPt, r3(qr)) : s.qrCaptionPt };
 }
 
 /** The row/column of the parts, with the fitted sizes (f): every part is exactly as big as it is drawn, so nothing leaves the label and a highlight covers the whole part.
  *  Each part also has its own across place (s.cross): flex align-self, so a part can sit at the top, middle or bottom of a row (start, middle, end of a column). */
-export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css; group: Css } {
+export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css; group: Css; qrGroup: Css; caption: Css } {
   const stacked = s.direction === "stacked";
   const q = f?.qrMm ?? s.qrSizeMm;
   // A set text width: a fixed box, else the automatic width of today.
@@ -333,6 +341,9 @@ export function layoutCss(s: Settings, f?: Fit): { box: Css; text: Css; qr: Css;
     text: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.fontPt ?? s.fontPt}pt`, lineHeight: LINE_H, textAlign: s.align, whiteSpace: "pre", minWidth: 0, flex: textFlex, maxWidth: "100%", alignSelf: flexAt(s.cross.text), ...fixed },
     qr: { display: "block", flex: "none", width: mm(q), height: mm(q), alignSelf: flexAt(s.cross.qr) },
     // Used only when extra lines exist: text+lines (afterText) or QR+lines (afterQr) share one column so the lines stay glued to what they go under.
+    // The QR with its words (and no extra lines under it): a column that keeps the code and its caption together.
+    qrGroup: { display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: "none", alignSelf: flexAt(s.cross.qr) },
+    caption: { margin: 0, fontFamily: "Arial, Helvetica, sans-serif", fontSize: `${f?.capPt ?? s.qrCaptionPt}pt`, lineHeight: LINE_H, textAlign: "center", whiteSpace: "pre", fontWeight: s.qrCaptionBold ? 700 : 400, width: mm(q), maxWidth: "100%", overflow: "hidden", flex: "none", alignSelf: "center" },
     group: { display: "flex", flexDirection: "column", alignItems: "stretch", minWidth: 0, minHeight: 0, maxWidth: "100%", flex: s.linesPlacement === "afterText" && !stacked ? textFlex : "none", alignSelf: flexAt(s.linesPlacement === "afterText" ? s.cross.text : s.cross.qr), ...(s.linesPlacement === "afterText" ? fixed : {}) },
   };
 }

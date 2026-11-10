@@ -19,7 +19,7 @@ import { fetchLabelSettings, resetLabelSettings, saveLabelSettings } from "./lab
 const SYNC_KEY = "test-printer-sync-v1", LOOK_QUERY = ["label-settings"];
 
 type Tab = "label" | Part;
-type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct" | "textWidthMm";
+type NumKey = "widthMm" | "heightMm" | "fontPt" | "paddingMm" | "gapMm" | "qrSizeMm" | "copies" | "logoMm" | "logoPct" | "textWidthMm" | "qrCaptionPt";
 
 export default function Page() {
   const tr = useT(), { t, L } = tr;
@@ -287,6 +287,13 @@ export default function Page() {
               <Input id="tp-code" maxLength={500} dir="auto" autoComplete="off" disabled={batch.length > 0} placeholder={m("codePh")} value={code} onChange={(e) => setCode(e.target.value)} /></div>
             <div className="tp-fields">{numField("qrSizeMm", m("qrSize"))}</div>
             {placeSeg("qr")}
+            <div className="field"><span className="lbl">{m("qrCaption")}</span>
+              <Seg label={m("qrCaption")} value={s.qrCaption} onChange={(v) => set({ qrCaption: v })} items={[{ id: "none", label: m("capNone") }, { id: "above", label: m("capAbove") }, { id: "below", label: m("capBelow") }]} /></div>
+            {s.qrCaption !== "none" && <>
+              <div className="tp-fields">{numField("qrCaptionPt", m("capSize"))}</div>
+              <div className="tp-actions"><Checkbox checked={s.qrCaptionBold} onChange={(v) => set({ qrCaptionBold: v })}>{m("bold")}</Checkbox></div>
+              <div className="help">{m("capHint")}</div>
+            </>}
           </>}
         </div>
       </div>

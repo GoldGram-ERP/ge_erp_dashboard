@@ -23,6 +23,9 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
   const inside = shape && logoInside(s) ? qrLogoBox(shape.size, QUIET, s.logoPct) : null;
   const lines = buildLines(s, item), underText = s.linesPlacement === "afterText";
   const grouped = (part: Part) => lines.length > 0 && (part === "text" ? underText : !underText);
+  // The QR's words (its content) above or below the code; the QR and its words then travel together as one block.
+  const captioned = !!shape && !!item.code && s.qrCaption !== "none", qrBlock = grouped("qr") || captioned;
+  const caption = captioned && <p dir="auto" style={lay.caption as CSSProperties}>{item.code}</p>;
   // Editing: each part can be grabbed (touch-action none so a finger drags instead of scrolling). The held part follows the pointer 1:1;
   // the place it will snap to gets a dashed ring, the picked part a solid one (both 2 screen px).
   const tap = (part: Part) => pick ? { "data-part": part, onPointerDown: (e: ReactPointerEvent<Element>) => pick.down(e, part), onPointerMove: pick.move, onPointerUp: pick.up, onPointerCancel: pick.cancel } : {};
@@ -39,7 +42,7 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
   const textEl = item.text && <p dir="auto" style={{ ...(grouped("text") ? { ...lay.text, flex: "none" } : { ...lay.text, ...ring("text") }) } as CSSProperties} {...(grouped("text") ? {} : tap("text"))}>{item.text}</p>;
   const lineEls = lines.map((l, i) => <p key={i} dir="auto" style={lineCss(s, l, f.linePts[i]) as CSSProperties}>{l.text}</p>);
   const qrEl = shape && (
-    <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={{ ...lay.qr, ...(grouped("qr") ? {} : ring("qr")) } as CSSProperties} {...(grouped("qr") ? {} : tap("qr"))}>
+    <svg role="img" aria-label={item.code} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${shape.size} ${shape.size}`} preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" style={{ ...lay.qr, ...(qrBlock ? { alignSelf: "center" } : ring("qr")) } as CSSProperties} {...(qrBlock ? {} : tap("qr"))}>
       <path d={shape.d} fill="#000" />
       {inside && <><rect x={inside.backX} y={inside.backX} width={inside.backSide} height={inside.backSide} fill="#fff" /><image href={s.logo} x={inside.x} y={inside.y} width={inside.side} height={inside.side} preserveAspectRatio="xMidYMid meet" /></>}
     </svg>
@@ -48,7 +51,7 @@ export function PrinterLabel({ s, item, pick }: { s: Settings; item: LabelItem; 
   // Every part sits where `order` puts it; the extra lines stay glued to the text or to the QR.
   const blocks: Record<Part, ReactNode> = {
     text: grouped("text") ? <div style={{ ...lay.group, ...ring("text") } as CSSProperties} {...tap("text")}>{textEl}{lineEls}</div> : textEl,
-    qr: grouped("qr") ? <div style={{ ...lay.group, ...ring("qr") } as CSSProperties} {...tap("qr")}>{qrEl}{lineEls}</div> : qrEl,
+    qr: qrBlock ? <div style={{ ...(grouped("qr") ? lay.group : lay.qrGroup), ...ring("qr") } as CSSProperties} {...tap("qr")}>{s.qrCaption === "above" && caption}{qrEl}{s.qrCaption === "below" && caption}{grouped("qr") ? lineEls : null}</div> : qrEl,
     logo: <img src={s.logo} alt="" draggable={false} style={{ ...logoCss(s, f), ...ring("logo") } as CSSProperties} {...tap("logo")} />,
   };
   return (

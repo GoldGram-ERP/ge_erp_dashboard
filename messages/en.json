@@ -3341,6 +3341,12 @@
   "placeEnd": "End",
   "labelNewer": "{name} saved a newer look on {when}. This page still has your unsaved changes.",
   "labelNewerAnon": "A newer look was saved on {when}. This page still has your unsaved changes.",
-  "labelLoadNewer": "Load the saved look"
+  "labelLoadNewer": "Load the saved look",
+  "qrCaption": "Words of the QR",
+  "capNone": "Hidden",
+  "capAbove": "Above the QR",
+  "capBelow": "Below the QR",
+  "capSize": "Words size (pt)",
+  "capHint": "The words are the QR content. A long text shrinks to the QR width."
  }
 }
