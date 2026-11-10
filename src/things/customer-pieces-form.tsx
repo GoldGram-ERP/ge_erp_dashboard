@@ -101,6 +101,8 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
   const askKey = asked && !twice ? JSON.stringify(asked) : "";
   const setItem = (i: number, patch: Partial<PieceForm["items"][number]>) => set({ items: v.items.map((row, j) => (j === i ? { ...row, ...patch } : row)) });
   const itemName = (id: string) => String(items?.find((it) => it.id === id)?.itemName ?? "");
+  // The item's weight in whole milligrams (one piece), from the items list; null while unknown.
+  const itemWeight = (id: string): number | null => { const w = items?.find((it) => it.id === id)?.weight; return w === undefined || w === null || w === "" ? null : Number(w); };
   const preview: Preview = !askKey ? { state: "none" } : answer?.key === askKey ? answer.result : { state: "loading" };
   useEffect(() => {
     if (!askKey) return;
@@ -238,6 +240,8 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
             return (
               <div key={line.itemId} data-preview-line={i} className="preview-line">
                 {preview.price.lines.length > 1 && <div><b>{itemName(line.itemId)}</b> <span className="help" dir="ltr">× {line.quantity}</span></div>}
+                {itemWeight(line.itemId) !== null && <div className="kv"><span>{L("وزن القطعة (جم)", "Weight per piece (g)")}</span><span dir="ltr" data-preview="weight">{milligramsText(itemWeight(line.itemId))}</span></div>}
+                {itemWeight(line.itemId) !== null && line.quantity > 1 && <div className="kv"><span>{L("الوزن الإجمالي (جم)", "Total weight (g)")}</span><span dir="ltr" data-preview="totalWeight">{milligramsText(itemWeight(line.itemId)! * line.quantity)}</span></div>}
                 <div className="kv"><span>{cp(tr, "buyPerGram")}</span><span dir="ltr" data-preview="buyPerGram">{pl.buyPerGram}</span></div>
                 <div className="kv"><span>{cp(tr, "cashbackPerGram")}</span><span dir="ltr" data-preview="cashbackPerGram">{pl.cashbackPerGram}</span></div>
                 <div className="kv"><span>{cp(tr, "onePiece")}</span><span dir="ltr" data-preview="onePiece">{pl.onePiece}</span></div>
