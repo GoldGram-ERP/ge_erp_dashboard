@@ -1,5 +1,27 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "new",
+    "en": "Users: each person can have a role name (accountant, call center, branch sales, pricing specialist) and a list of allowed actions. Everything is hidden until you tick it.",
+    "ar": "المستخدمين: كل شخص ممكن يبقى له دور (محاسب، كول سنتر، مبيعات فرع، أخصائي تسعير) وإجراءات مسموحة. كل حاجة مخفية لحد ما تتأشر.",
+    "route": "/setup/users"
+   },
+   {
+    "kind": "new",
+    "en": "Sales invoice: a Taslem button on the saved invoice records who confirmed it and when.",
+    "ar": "فاتورة البيع: زرار تسليم على الفاتورة المحفوظة بيسجّل مين أكّد التسليم وإمتى.",
+    "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "The HR section (Positions and Sales channels) and the Hand-over draft are gone. Sales channels are now ticked on each person.",
+    "ar": "اتشال قسم الموارد البشرية (المسميات الوظيفية وقنوات البيع) ومسودة التسليم. قنوات البيع دلوقتي بتتأشر على كل شخص."
+   }
+  ]
+ },
+ {
   "version": "1.0.88",
   "date": "2026-11-10",
   "changes": [
@@ -357,8 +379,7 @@
    {
     "kind": "new",
     "en": "Positions and sales channels under HR: an Admin adds Positions, gives each its sales channels, and sets a user's Position on the Users form.",
-    "ar": "الموارد البشرية: المسميات الوظيفية وقنوات البيع. الأدمن بيضيف المسمى، ويحدد له قنوات البيع المسموحة، ويختار مسمى كل موظف من شاشة المستخدمين.",
-    "route": "/hr/positions"
+    "ar": "الموارد البشرية: المسميات الوظيفية وقنوات البيع. الأدمن بيضيف المسمى، ويحدد له قنوات البيع المسموحة، ويختار مسمى كل موظف من شاشة المستخدمين."
    },
    {
     "kind": "better",
