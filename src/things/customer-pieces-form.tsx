@@ -239,7 +239,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
             const pl = previewLines(line);
             return (
               <div key={line.itemId} data-preview-line={i} className="preview-line">
-                {preview.price.lines.length > 1 && <div><b>{itemName(line.itemId)}</b> <span className="help" dir="ltr">× {line.quantity}</span></div>}
+                {preview.price.lines.length > 1 && <div><b>{itemName(line.itemId)}</b> <span className="help">×</span> <span className="help" dir="ltr">{line.quantity}</span></div>}
                 {itemWeight(line.itemId) !== null && <div className="kv"><span>{L("وزن القطعة (جم)", "Weight per piece (g)")}</span><span dir="ltr" data-preview="weight">{milligramsText(itemWeight(line.itemId))}</span></div>}
                 {itemWeight(line.itemId) !== null && line.quantity > 1 && <div className="kv"><span>{L("الوزن الإجمالي (جم)", "Total weight (g)")}</span><span dir="ltr" data-preview="totalWeight">{milligramsText(itemWeight(line.itemId)! * line.quantity)}</span></div>}
                 <div className="kv"><span>{cp(tr, "buyPerGram")}</span><span dir="ltr" data-preview="buyPerGram">{pl.buyPerGram}</span></div>
