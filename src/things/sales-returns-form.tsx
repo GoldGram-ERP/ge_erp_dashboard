@@ -5,7 +5,7 @@
 // number: 409 refundNotReturnTotal). Ported from sales-returns-form.js.
 // With a `row` (issue #175) it is the EDIT of that return: the branch, date and pieces are shown and stay; only how the refund is paid changes (PUT).
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { milligramsText, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
@@ -39,7 +39,9 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
   const [date, setDate] = useState<string>(edit ? String(edit.date).slice(0, 10) : today());
   const [piece, setPiece] = useState<string>("");                                   // what is typed in the code box (nothing is looked up until it is added)
   const [pieces, setPieces] = useState<string[]>(editLines.map((l) => String(l.pieceCode)));   // the codes added, in the order added
+  const qc = useQueryClient();
   const [scanning, setScanning] = useState(false);
+  const [adding, setAdding] = useState(false);   // a code is being looked up
   const [cash, setCash] = useState<string>(edit && edit.cashRefund > 0 ? piastresInput(edit.cashRefund) : "");
   const [banks, setBanks] = useState<Bank[]>(edit?.bankPayments?.length ? edit.bankPayments.map((p: Row) => ({ bankAccountId: p.bankAccountId, amount: piastresInput(p.amount) })) : [blankBank()]);
   const [next, setNext] = useState<number | undefined>();
@@ -64,7 +66,8 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
 
   // Each ADDED piece is read once (the piece look-up): its name, karat, weight, today's buy price and cashback, what the shop pays back for it, whether it was sold,
   // and the sale it came from. The server works the number out: (buy price + cashback) x weight.
-  const looks = useQueries({ queries: pieces.map((code) => ({ queryKey: ["piece-look-up", code], retry: false, staleTime: 30_000, queryFn: () => api("/piece-look-up", { query: { pieceCode: code } }) as Promise<Row> })) });
+  const lookUp = (code: string) => api("/piece-look-up", { query: { pieceCode: code } }) as Promise<Row>;
+  const looks = useQueries({ queries: pieces.map((code) => ({ queryKey: ["piece-look-up", code], retry: false, staleTime: 30_000, queryFn: () => lookUp(code) })) });
   const infos: Info[] = pieces.map((code, i) => {
     const q = looks[i], d = q?.data;
     const found = d?.kind === "piece" ? d : null;
@@ -87,14 +90,27 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
   const may = refundShown && !blocked && !Object.keys(payCodes).length && !notEqual && !saving;
 
   // A piece is added only by the user's own act: Enter in the code box, the add button, or a scan. Never while typing.
-  const addPiece = (scanned?: string) => {
+  // The piece is looked up as it is added (never while typing). One that does not exist or was not sold is not added: its message shows under the code box
+  // and the box keeps what was typed. The look-up is kept, so the piece's card reads it again at once.
+  const addPiece = async (scanned?: string) => {
+    if (adding) return;
     const r = readPieceCode(tr, scanned ?? piece);
     const fail = (text: string) => setErrs((o) => ({ ...o, pieceCode: text }));
     if (!r.code) { fail(r.error ?? fe(tr, "required")); return; }
     if (pieces.some((p) => p.toLowerCase() === r.code.toLowerCase())) { fail(L("هذه القطعة مضافة بالفعل.", "This piece is already added.")); return; }
     if (pieces.length >= PIECES_MAX) { fail(L(`لا يزيد المرتجع عن ${PIECES_MAX} قطعة.`, `A return holds at most ${PIECES_MAX} pieces.`)); return; }
+    setAdding(true);
+    let found: Row | null = null, failed = false;
+    try {
+      const data = await qc.fetchQuery({ queryKey: ["piece-look-up", r.code], queryFn: () => lookUp(r.code), staleTime: 30_000, retry: false });
+      found = data?.kind === "piece" ? data : null;
+    } catch (e) { failed = !(e instanceof ApiFailure && e.status === 404); }
+    setAdding(false);
+    if (failed) { fail(L("تعذّر البحث عن القطعة. حاول من جديد.", "Could not look the piece up. Try again.")); return; }
+    if (!found) { fail(L("لا توجد قطعة بهذا الكود.", "No piece has this code.")); return; }
+    if (!found.sold) { fail(L("هذه القطعة لم تُبع، فلا يمكن إرجاعها.", "This piece was not sold, so it cannot be returned.")); return; }
     edited();
-    setPieces((o) => [...o, r.code]);
+    setPieces((o) => (o.includes(r.code) ? o : [...o, r.code]));
     setPiece("");
     setErrs((o) => { const n = { ...o }; delete n.pieceCode; delete n.pieces; delete n.sum; return n; });
   };
@@ -170,7 +186,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
               <Input id="pc" kind="code" dir="ltr" maxLength={20} autoComplete="off" value={piece} placeholder={L("اكتب الكود ثم Enter، أو امسحه", "Type the code then press Enter, or scan it")}
                 onChange={(e) => { setPiece(e.target.value); setErrs((o) => { if (!o.pieceCode) return o; const n = { ...o }; delete n.pieceCode; return n; }); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPiece(); } }} />
-              <Button id="add-piece" title={L("إضافة القطعة", "Add the piece")} aria-label={L("إضافة القطعة", "Add the piece")} onClick={() => addPiece()}><Icon name="plus" size={18} /></Button>
+              <Button id="add-piece" title={L("إضافة القطعة", "Add the piece")} aria-label={L("إضافة القطعة", "Add the piece")} disabled={adding} onClick={() => addPiece()}><Icon name="plus" size={18} /></Button>
               <Button id="scan-piece" style={{ width: 42, padding: 0, flex: "none" }} title={t("gold-sales", "pieceLookUp.scanWithCamera")} aria-label={t("gold-sales", "pieceLookUp.scanWithCamera")} onClick={() => setScanning(true)}><Icon name="camera" size={18} /></Button>
             </div>
             {scanning && <PieceScanner label={rt("pieceCode")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); addPiece(c); }} />}
@@ -189,7 +205,7 @@ export function ReturnForm({ close, reload, tr, row }: CustomFormProps) {
           {info.found && <div id={n === 0 ? "pieceDetails" : undefined}>
             <div className="kv"><span>{L("الاسم", "Name")}</span><span dir="ltr">{info.found.itemName}</span></div>
             {info.sale && <div className="kv"><span>{L("رقم فاتورة البيع", "Sales invoice number")}</span><span dir="ltr" id={n === 0 ? "piece-invoice" : undefined}>{code6(info.sale.documentNumber)}</span></div>}
-            {info.sale && <div className="kv"><span>{L("اسم العميل", "Customer name")}</span><span id={n === 0 ? "piece-customer" : undefined}>{info.sale.customerName || "—"}</span></div>}
+            {info.sale && <div className="kv"><span>{L("اسم العميل", "Customer name")}</span><span dir="ltr" id={n === 0 ? "piece-customer" : undefined}>{info.sale.customerName || "—"}</span></div>}
             <div className="kv"><span>{L("العيار", "Karat")}</span><span dir="ltr">{info.found.karat}</span></div>
             <div className="kv"><span>{L("الوزن (جم)", "Weight (g)")}</span><span dir="ltr">{milligramsText(info.found.weight)}</span></div>
             <div className="kv"><span>{L("سعر الشراء للجرام", "Buy price per gram")}</span><span dir="ltr">{info.found.buyPricePerGram === null ? "—" : piastresText(info.found.buyPricePerGram)}</span></div>
