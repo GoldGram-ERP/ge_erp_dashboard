@@ -1215,3 +1215,12 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .cb-item[data-highlighted]{background:var(--gold-wash)}
 .cb-text{flex:none;font-weight:600;font-variant-numeric:tabular-nums}
 .cb-hint{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute)}
+/* Items Excel import page: two steps with room between them */
+.imp{display:grid;gap:18px}
+.imp-lead{margin:0;line-height:1.7;color:var(--ink-2)}
+.imp-step{display:grid;gap:12px;padding:16px 18px;border-radius:12px;background:var(--bg);box-shadow:0 0 0 1px var(--line)}
+.imp-step h4{margin:0;font-size:var(--fs-base);font-weight:700}
+.imp-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.imp-file{font-size:13px;color:var(--mute);overflow-wrap:anywhere}
+.imp-errors ul{margin:8px 0 0;padding-inline-start:20px;display:grid;gap:4px}
+.imp+.formbar{margin-top:6px}
