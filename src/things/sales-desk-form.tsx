@@ -172,7 +172,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const onDraft: Option[] = (draft?.lines ?? []).map((l: Row) => [l.itemId, `${l.itemName} · ${l.karat}`]);
   const channels = channelOptions(me?.salesChannels, draft?.salesChannelId ? { id: draft.salesChannelId, name: draft.salesChannelName ?? "" } : null);
   const channelName = channels.find(([id]) => id === channelId)?.[1] ?? "";
-  const total = draft?.totals?.total ?? 0;
+  // the live quote wins over the saved totals, so adding or removing a piece re-prices the totals and the remaining amount
+  const total = quote?.q.totalPiastres ?? draft?.totals?.total ?? 0;
   const against = plannedAgainst(total, cash, banks);
 
   async function save() {
@@ -302,7 +303,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
   const typedManual = manualPrice(operation === "sell" ? manual.sell : manual.buy);
   const pick = (patch: () => void) => { touch(); patch(); };
-  const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned; return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
+  const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned;
+    if (quote) { const q = quote.q, c = quote.cash ?? q, disc = Math.max(0, c.beforeDiscountPiastres - c.totalPiastres); return { gold: q.beforeDiscountPiastres - q.feeTotalPiastres, making: q.feeTotalPiastres, gross: q.beforeDiscountPiastres, discount: disc, makingLeft: q.feeTotalPiastres - disc, paid, left: q.totalPiastres - paid }; }
+    return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
   const canComplete = canCompleteDraft(me, draft?.status, buy);   // Admin / Super admin, or the action complete-sales-draft; hidden until the person is known; a Buy draft is a quote only
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
@@ -395,7 +398,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   })}
                 </ul>}
             </section></Section>}
-            {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Section id="sd-customer" collapsible title={L("بيانات العميل", "Customer")} defaultOpen={custErr || Boolean(cust.customerName || cust.customerPhone || cust.nationalId)} hasError={custErr}>
+            {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Section id="sd-customer" collapsible title={L("بيانات العميل", "Customer")} defaultOpen hasError={custErr}>
               <div className="tk-cgrid">
                 <TextBox kind="text" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
                 <TextBox kind="code" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
