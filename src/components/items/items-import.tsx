@@ -37,7 +37,7 @@ export function ItemsImport({ close, reload, tr }: CustomFormProps) {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [general, setGeneral] = useState("");
 
-  const fieldName = (f: string) => ({ itemName: L("البيان", "Item name"), category: L("المجموعة", "Category"), brand: L("الماركة", "Brand"), itemType: L("نوع الصنف", "Item type"), karat: L("العيار", "Karat"), isCoded: L("تكود", "Coded"), weight: L("الوزن (جم)", "Weight (g)"), workmanship: L("المصنعية", "Workmanship"), cashback: L("الكاش باك", "Cashback"), nickname: L("اسم الشهرة", "Nickname") } as Record<string, string>)[f] ?? f;
+  const fieldName = (f: string) => ({ itemName: L("البيان", "Item name"), category: L("المجموعة", "Category"), brand: L("الماركة", "Brand"), itemType: L("نوع الصنف", "Item type"), karat: L("العيار", "Karat"), weight: L("الوزن (جم)", "Weight (g)"), workmanship: L("المصنعية", "Workmanship"), cashback: L("الكاش باك", "Cashback"), nickname: L("اسم الشهرة", "Nickname") } as Record<string, string>)[f] ?? f;
   const reason = (m: string) => ({
     required: L("مطلوب", "Required"), invalid: L("قيمة غير صحيحة", "Not a valid value"), notFound: L("غير موجود في النظام", "Not found in the system"),
     duplicate: L("مكرر في الملف", "Repeated in the file"), taken: L("لهذا الاسم صنف بالفعل في المجموعة", "This name already has an item in the category"), tooLong: L("طويل جدًا", "Too long"),
@@ -63,16 +63,22 @@ export function ItemsImport({ close, reload, tr }: CustomFormProps) {
   };
 
   return <>
-    <div className="card">
-      <p>{L("نزّل القالب، املأ الأصناف فيه، ثم ارفعه هنا. تُراجع كل الصفوف أولًا: لو في صف فيه خطأ لا يُحفظ شيء.", "Download the template, fill in the items, then upload it here. Every row is checked first: if one row has an error, nothing is saved.")}</p>
-      <div><Button id="items-template" onClick={() => void downloadItemsTemplate(tr)}>{L("تنزيل قالب Excel", "Download Excel template")}</Button></div>
-      <div>
-        <FileInput ref={fileRef} accept=".xlsx" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setProblems([]); setGeneral(""); setSaveKey(newSaveKey()); }} />
-        <Button id="items-pick" onClick={() => fileRef.current?.click()}>{L("اختيار ملف", "Choose file")}</Button>
-        {file && <span dir="auto"> {file.name}</span>}
-      </div>
+    <div className="card imp">
+      <p className="imp-lead">{L("استورد عدة أصناف دفعة واحدة من ملف Excel. تُراجع كل الصفوف أولًا: لو في صف فيه خطأ لا يُحفظ شيء. الأصناف المستوردة تُحفظ مُكوَّدة ونشطة.", "Add many items at once from an Excel file. Every row is checked first: if one row has an error, nothing is saved. Imported items are saved as coded and active.")}</p>
+      <section className="imp-step">
+        <h4>{L("١. نزّل القالب واملأه", "1. Download the template and fill it in")}</h4>
+        <div className="imp-row"><Button id="items-template" onClick={() => void downloadItemsTemplate(tr)}>{L("تنزيل قالب Excel", "Download Excel template")}</Button></div>
+      </section>
+      <section className="imp-step">
+        <h4>{L("٢. ارفع الملف بعد ما تملأه", "2. Upload the filled file")}</h4>
+        <div className="imp-row">
+          <FileInput ref={fileRef} accept=".xlsx" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setProblems([]); setGeneral(""); setSaveKey(newSaveKey()); }} />
+          <Button id="items-pick" onClick={() => fileRef.current?.click()}>{L("اختيار ملف", "Choose file")}</Button>
+          <span className="imp-file" dir="auto">{file ? file.name : L("لم يُختر ملف بعد", "No file chosen yet")}</span>
+        </div>
+      </section>
       {general && <div className="note warn" role="alert"><b>{general}</b></div>}
-      {problems.length > 0 && <div className="note warn" role="alert" id="items-import-errors">
+      {problems.length > 0 && <div className="note warn imp-errors" role="alert" id="items-import-errors">
         <b>{L(`لم يُحفظ شيء. ${problems.length} خطأ في الملف:`, `Nothing was saved. ${problems.length} problems in the file:`)}</b>
         <ul>{problems.map((p, i) => <li key={i}>{L(`صف ${p.row} · ${fieldName(p.field)}: ${reason(p.message)}`, `Row ${p.row} · ${fieldName(p.field)}: ${reason(p.message)}`)}</li>)}</ul>
       </div>}
