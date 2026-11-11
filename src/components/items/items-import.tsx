@@ -12,7 +12,7 @@ const forget = (qc: ReturnType<typeof useQueryClient>) => qc.invalidateQueries({
 
 // The Excel template of the Items import and the import page (the owner, 2026-11-11). The template follows the
 // language of the screen; an import checks every row first, and one bad row saves nothing.
-type Problem = { row: number; field: string; message: string };
+type Problem = { row: number; field: string; message: string; value?: string };
 
 export async function downloadItemsTemplate(tr: Tr) {
   try {
@@ -38,10 +38,27 @@ export function ItemsImport({ close, reload, tr }: CustomFormProps) {
   const [general, setGeneral] = useState("");
 
   const fieldName = (f: string) => ({ itemName: L("البيان", "Item name"), category: L("المجموعة", "Category"), brand: L("الماركة", "Brand"), itemType: L("نوع الصنف", "Item type"), karat: L("العيار", "Karat"), weight: L("الوزن (جم)", "Weight (g)"), workmanship: L("المصنعية", "Workmanship"), cashback: L("الكاش باك", "Cashback"), nickname: L("اسم الشهرة", "Nickname") } as Record<string, string>)[f] ?? f;
-  const reason = (m: string) => ({
-    required: L("مطلوب", "Required"), invalid: L("قيمة غير صحيحة", "Not a valid value"), notFound: L("غير موجود في النظام", "Not found in the system"),
-    duplicate: L("مكرر في الملف", "Repeated in the file"), taken: L("لهذا الاسم صنف بالفعل في المجموعة", "This name already has an item in the category"), tooLong: L("طويل جدًا", "Too long"),
-  } as Record<string, string>)[m] ?? m;
+  // The cause of a bad cell, in words: what is wrong and what to put instead.
+  const reason = (p: Problem) => {
+    const v = p.value ?? "";
+    switch (p.message) {
+      case "required": return L("الخلية فارغة وهي مطلوبة", "This cell is empty and it is required");
+      case "notFound": return L(`"${v}" غير موجود في النظام. اختر من القائمة المنسدلة`, `"${v}" is not in the system. Choose it from the dropdown list`);
+      case "karatChoice": return L(`"${v}" ليس عيارًا مقبولًا. اختر 18 أو 21 أو 24 أو 999`, `"${v}" is not an allowed karat. Choose 18, 21, 24 or 999`);
+      case "karatType": return L(`العيار ونوع الصنف لا يتوافقان (${v}). الذهب يقبل 18 أو 21 أو 24، وأخرى أو فضة تقبل 999 فقط`, `The karat and the item type do not fit (${v}). Gold takes 18, 21 or 24; other or silver takes 999 only`);
+      case "duplicate": return L(`"${v}" مكرر في الملف في نفس المجموعة`, `"${v}" is repeated in the file in the same category`);
+      case "taken": return L(`"${v}" له صنف بالفعل في هذه المجموعة`, `"${v}" already has an item in this category`);
+      case "tooLong": return L("النص أطول من 100 حرف", "The text is longer than 100 characters");
+      case "invalid":
+        if (p.field === "itemType") return L(`"${v}" ليس نوعًا صحيحًا. اختر ذهب أو أخرى أو فضة`, `"${v}" is not a valid type. Choose Gold or Other or silver`);
+        if (p.field === "weight") return L(`"${v}" ليس وزنًا صحيحًا. اكتب رقمًا أكبر من 0 بحد أقصى 3 أرقام عشرية`, `"${v}" is not a valid weight. Use a number above 0 with up to 3 decimals`);
+        if (p.field === "workmanship" || p.field === "cashback") return L(`"${v}" ليس مبلغًا صحيحًا. اكتب رقمًا بحد أقصى رقمين عشريين`, `"${v}" is not a valid amount. Use a number with up to 2 decimals`);
+        return L("قيمة غير صحيحة", "Not a valid value");
+      default: return p.message;
+    }
+  };
+  // A refusal of the whole file (no rows, too many, not an .xlsx).
+  const fileReason = (m?: string) => m === "required" ? L("الملف لا يحتوي على أي صفوف أصناف.", "The file has no item rows.") : m === "tooLong" ? L("الملف فيه أكثر من 500 صف. قسّمه إلى ملفات أصغر.", "The file has more than 500 rows. Split it into smaller files.") : L("الملف غير صالح: اختر ملف Excel (.xlsx) من القالب.", "Invalid file: choose the Excel (.xlsx) template.");
 
   const send = async () => {
     if (!file) return;
@@ -55,7 +72,7 @@ export function ItemsImport({ close, reload, tr }: CustomFormProps) {
       reload();
     } catch (e) {
       if (e instanceof ApiFailure && Array.isArray((e.error as { rows?: Problem[] }).rows)) setProblems((e.error as unknown as { rows: Problem[] }).rows);
-      else if (e instanceof ApiFailure && e.error.message === "invalidFields") setGeneral(L("الملف غير صالح: اختر ملف Excel (.xlsx) من القالب، فيه من 1 إلى 500 صف.", "Invalid file: choose the Excel (.xlsx) template with 1 to 500 rows."));
+      else if (e instanceof ApiFailure && e.error.message === "invalidFields") setGeneral(fileReason((e.error as unknown as { fields?: { message?: string }[] }).fields?.[0]?.message));
       else setGeneral(e instanceof ApiFailure ? tr.errorText(e.error) : L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again."));
       setSaveKey(newSaveKey());   // a refused file is a new attempt
       setBusy(false);
@@ -80,7 +97,7 @@ export function ItemsImport({ close, reload, tr }: CustomFormProps) {
       {general && <div className="note warn" role="alert"><b>{general}</b></div>}
       {problems.length > 0 && <div className="note warn imp-errors" role="alert" id="items-import-errors">
         <b>{L(`لم يُحفظ شيء. ${problems.length} خطأ في الملف:`, `Nothing was saved. ${problems.length} problems in the file:`)}</b>
-        <ul>{problems.map((p, i) => <li key={i}>{L(`صف ${p.row} · ${fieldName(p.field)}: ${reason(p.message)}`, `Row ${p.row} · ${fieldName(p.field)}: ${reason(p.message)}`)}</li>)}</ul>
+        <ul>{problems.map((p, i) => <li key={i}>{L(`صف ${p.row} · ${fieldName(p.field)}: ${reason(p)}`, `Row ${p.row} · ${fieldName(p.field)}: ${reason(p)}`)}</li>)}</ul>
       </div>}
     </div>
     <div className="formbar">
