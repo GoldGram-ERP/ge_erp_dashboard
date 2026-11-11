@@ -17,6 +17,7 @@ import { useMe } from "@/lib/session";
 import type { Tr } from "@/lib/t";
 import { Kv, Ltr, Section, ThingPage, toast } from "@/components/engine";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
+import { ItemsImport, downloadItemsTemplate } from "@/components/items/items-import";
 import { useAccess } from "./sales-access";
 import { useJobIntent } from "./job-intent";
 import { exampleOf, pricePerGram, valueText, type PriceSet } from "./item-math";
@@ -72,7 +73,11 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
     return {
       id: k.view, label, keys,
       // categories and items add their own kind; a name is added only by typing it on the item form
-      create: kind === "name" ? undefined : [{ form: `create${kind[0].toUpperCase()}${kind.slice(1)}`, label: m(`${k.ns}.add`), keys: keys.filter((s) => !s.endsWith("-list")) }],
+      create: kind === "name" ? undefined : [
+        { form: `create${kind[0].toUpperCase()}${kind.slice(1)}`, label: m(`${k.ns}.add`), keys: keys.filter((s) => !s.endsWith("-list")) },
+        ...(kind === "item" ? [{ form: "importItems", label: L("استيراد من Excel", "Import from Excel"), keys: keys.filter((s) => !s.endsWith("-list")) }] : []),
+      ],
+      actions: kind === "item" ? [{ label: L("تنزيل قالب Excel", "Excel template"), icon: "download", keys: keys.filter((s) => !s.endsWith("-list")), run: () => downloadItemsTemplate(tr) }] : undefined,
       endpoint: k.path,
       query: { order: "newest" },
       search: { param: "search", placeholder: m(`${k.ns}.searchPlaceholder`) },
@@ -207,6 +212,7 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
       ...editSheet("brand", brandFields),
       ...editSheet("name", nameFields),   // a name is renamed or moved here; it is created only from the item form
       createItem: { title: m("items.new"), display: "page", fields: [], path: () => "/items", custom: ItemForm },
+      importItems: { title: L("استيراد أصناف من Excel", "Import items from Excel"), display: "page", fields: [], path: () => "/items/import", method: "POST", custom: ItemsImport },
       editItem: { title: (r) => m("items.editTitle", { code: code6(r!.itemCode) }), display: "page", fields: [], path: (r) => `/items/${r!.id}`, custom: ItemForm },
     },
   };
