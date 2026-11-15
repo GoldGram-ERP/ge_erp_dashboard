@@ -18,6 +18,11 @@
     "kind": "better",
     "en": "The HR section (Positions and Sales channels) and the Hand-over draft are gone. Sales channels are now ticked on each person.",
     "ar": "اتشال قسم الموارد البشرية (المسميات الوظيفية وقنوات البيع) ومسودة التسليم. قنوات البيع دلوقتي بتتأشر على كل شخص."
+   },
+   {
+    "kind": "fixed",
+    "en": "The Super admin account is never locked after wrong passwords, so the system can always be opened.",
+    "ar": "حساب المدير العام مبقاش بيتقفل بعد كلمات السر الغلط، عشان السيستم يفضل يتفتح دايماً."
    }
   ]
  },
