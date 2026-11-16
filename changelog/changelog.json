@@ -1,5 +1,16 @@
 [
  {
+  "version": "next",
+  "changes": [
+   {
+    "kind": "better",
+    "en": "Sales desk: on a saved draft the sales channel and the sell/buy, gold/silver and sale/delivery choices are read only; they are picked once on the new draft.",
+    "ar": "مكتب المبيعات: في المسودة المحفوظة قناة البيع واختيارات بيع/شراء وذهب/فضة وبيع/توصيل بقت للعرض بس، بتتحدد مرة واحدة في المسودة الجديدة.",
+    "route": "/sales/desk"
+   }
+  ]
+ },
+ {
   "version": "1.0.89",
   "date": "2026-11-15",
   "changes": [
