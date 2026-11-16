@@ -346,10 +346,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               <span className="tk-chip" data-seller><i>{d("desk.seller")}</i>{sellerName}</span>
             </>}
             <div className="field" data-k="salesChannelId"><label htmlFor="salesChannelId">{d("channel")}</label>
-              <Choice tr={tr} id="salesChannelId" searchable={false} options={channels} value={channelId} disabled={readonly || saving} invalid={!!errs.salesChannelId} onChange={(v) => { touch(); setChannelId(v); }} />{err("salesChannelId")}</div>
+              <Choice tr={tr} id="salesChannelId" searchable={false} options={channels} value={channelId} disabled={!isNew || saving} invalid={!!errs.salesChannelId} onChange={(v) => { touch(); setChannelId(v); }} />{err("salesChannelId")}</div>
             <span className="tk-chip"><i>{L("التاريخ", "Date")}</i><Ltr>{draft?.createdDay ?? today()}</Ltr></span>
           </div>
-          <fieldset disabled={readonly || saving} className="tk-segs">
+          {/* Owner, 2026-11-16: the sales channel and these three choices are picked once, on the new draft; a saved draft shows them read only. */}
+          <fieldset disabled={!isNew || saving} className="tk-segs">
             <Seg label={d("desk.operation")} value={operation}
               onChange={(k) => pick(() => { setOperation(k); setBanks((bs) => bs.map((b) => (bankMethodChoices(k).includes(b.method) ? b : { ...b, method: "bank_transfer" }))); if (k === "buy") { setKind("amount"); setDisc(""); } setType("sale"); })}
               items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} />
@@ -468,7 +469,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
               {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
 
-            {canComplete && <div className="grp-block wide" id="sec-complete"><h3 className="grp-title">{L("إتمام الفاتورة · للأدمن والسوبر أدمن", "Complete invoice · Admin and Super admin")}</h3><div className="tk-card"><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
+            {canComplete && <div className="grp-block wide" id="sec-complete"><h3 className="grp-title">{L("إتمام الفاتورة", "Complete invoice")}</h3><div className="tk-card"><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
               <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>
                 <div className="tk-codeRow">
                   <div className="field"><Input kind="code" id="sd-code" dir="ltr" maxLength={20} autoComplete="off" placeholder={d("scanHelp")} value={pc}
