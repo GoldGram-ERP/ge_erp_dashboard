@@ -74,7 +74,7 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
         // and falls back to plain "User"; upgrade if the engine gets a per-filter URL round-trip for combined values.
         { name: "type", label: u("userType"), type: "select", searchable: false,
           options: TYPES.flatMap((x): [string, string][] => (x === "user" ? [["user", typeName(tr, "user")], ...BUSINESS_ROLES.map((k): [string, string] => [`user:${k}`, u(`roles.${k}`)])] : [[x, typeName(tr, x)]])),
-          toQuery: (v: string) => (v?.includes(":") ? { type: v.split(":")[0], businessRole: v.split(":")[1] } : { type: v }) },
+          toQuery: (v: string) => (v?.includes(":") ? { type: v.split(":")[0], businessRole: v.split(":")[1] } : { type: v, businessRole: v === "user" ? "none" : undefined }) },
         { name: "lockedOnly", label: u("lockedOnly"), type: "checkbox", toQuery: (v) => (v ? { locked: "only" } : {}) },
         ...(viewer === "super_admin" ? [{ name: "deletedOnly", label: u("deletedOnly"), type: "checkbox" as const, toQuery: (v: unknown) => (v ? { deleted: "only" } : {}) }] : []),
       ],
