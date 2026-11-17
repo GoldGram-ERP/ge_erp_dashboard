@@ -24,6 +24,7 @@ export function Popover({ trigger, onClose, className, children, role, id, label
     const left = Math.max(8, Math.min(rtl ? r.right - w : r.left, vw - w - 8));
     // apple-design s7: the popup grows out of its trigger (the trigger's centre, on the edge it touches), not out of its own middle
     const origin = `${Math.round(Math.min(w, Math.max(0, r.left + r.width / 2 - left)))}px ${up ? "100%" : "0"}`;
+    p.style.maxHeight = `${room}px`;   // put the cap back ourselves: React skips the style when `room` is unchanged, which left the list uncapped and unscrollable
     setPos({ minWidth: r.width, maxHeight: room, left, top: Math.max(8, Math.min(up ? r.top - 4 - hh : r.bottom + 4, vh - hh - 8)), side: up ? "up" : "down", origin });
   };
   useLayoutEffect(place, [watch]);
