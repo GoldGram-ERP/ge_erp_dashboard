@@ -1033,7 +1033,7 @@ html[dir=ltr] .table th[dir=ltr],html[dir=ltr] .table td[dir=ltr]{text-align:lef
 /* THE toggle (the library SwitchInput / Toggle, also every yes-no form field): 28 x 16 track, 12 px knob. GREEN when on, BEIGE when off, so on and off can never be mistaken for each other (owner, 2026-11-10). */
 input[role=switch],.field.check input[role=switch]{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:28px;height:16px;margin:0;border-radius:999px;background:var(--line-strong);cursor:pointer;transition:background .15s}
 input[role=switch]::before{content:"";position:absolute;top:2px;inset-inline-start:2px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(60,45,10,.3);transition:inset-inline-start .15s var(--calm)}
-input[role=switch]:checked{background:var(--good)}
+input[role=switch]:checked,.field.check input[role=switch]:checked{background:var(--good)}
 input[role=switch]:checked::before{inset-inline-start:14px}
 input[role=switch]:focus-visible{outline:2px solid color-mix(in srgb,var(--good) 45%,transparent);outline-offset:2px}
 input[role=switch]:disabled{opacity:.5;cursor:not-allowed}

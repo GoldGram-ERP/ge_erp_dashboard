@@ -9,7 +9,6 @@ import type { CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine
 import { useMe } from "@/lib/session";
 import type { Tr } from "@/lib/t";
 import { ThingPage, Ltr, toast } from "@/components/engine";
-import { JOBS } from "./admin-names";
 import { TYPES, UserForm, UserRecord, code6, jobName, manageable, typeName } from "./admin-shared";
 import { useAccess } from "./sales-access";
 
@@ -83,7 +82,10 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
         { key: "branchName", label: u("branchId"), render: (r) => r.branchName || "—" },
       ],
       rowClass: (r) => (r.deletedAt ? "deleted" : ""),
-    }, {
+    }
+    // Hidden (owner, 2026-11-09): the "Assign jobs" tab, same as the By task picker it fed. To bring it back,
+    // remove the // below and the comma after "list" above; nothing else was removed.
+    /* , {
       id: "jobs", label: a("title"), keys: ["administration/users"],
       load: async () => ({ items: ((await api("/users/jobs")).jobs ?? []).map((j: Row) => ({ id: j.id, screens: j.screens })) }),
       paging: false,
@@ -93,7 +95,7 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
         { key: "group", label: L("المجموعة", "Group"), get: (r) => { const j = JOBS.find((x) => x[0] === r.id); return j ? t("jobs", `groups.${j[1]}`) : ""; } },
         { key: "screens", label: u("screens.heading"), type: "int", get: (r) => r.screens.length },
       ],
-    }],
+    } */],
     record: {
       title: (r) => `${u("recordNo")} ${code6(r.userCode)}`,
       endpoint: (r) => `/users/${r.id}`,
