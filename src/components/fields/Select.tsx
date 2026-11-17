@@ -1,12 +1,15 @@
 "use client";
-// Select: a trigger button + a popover listbox (no native <select>). The value lives in <input type="hidden" id name>,
-// so #f-<name> still holds the value; picking the selected option again clears it. Keyboard: arrows, Home/End, Enter/Space, Esc, type-ahead.
-import { useEffect, useId, useRef, useState } from "react";
+// Select: the app's one dropdown, built on Animate UI's Base UI primitives (positioning, scroll, keyboard, type-ahead, touch and motion are theirs).
+// A list long enough to need it (or `searchable`) is Animate UI's Combobox with the search inside the popup; a short list is Animate UI's Select.
+// Same look for both (globals.css `.sel-*`). The value lives in <input type="hidden" id name>, so #f-<name> still holds it; the trigger is #<id>-btn.
+// Picking the selected option again clears it.
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Combobox as Cb } from "@animate-ui/react/primitives/base-ui/combobox";
+import { Select as Sl } from "@animate-ui/react/primitives/base-ui/select";
 import type { Option } from "@/lib/engine-types";
 import { useLocale } from "next-intl";
-import { filterOptions, norm, type AddNew } from "@/lib/fields";
+import { filterOptions, type AddNew } from "@/lib/fields";
 import { useT } from "@/lib/t";
-import { Popover } from "./Popover";
 
 type Props = {
   id: string; name: string; value: string; onChange: (v: string) => void; onBlur?: () => void;
@@ -15,6 +18,7 @@ type Props = {
   /** Above the list, under the search (the item picker's brand filter). */
   header?: React.ReactNode;
 };
+type Item = { value: string; label: string; disabled: boolean; tone?: string; sub?: string };
 
 /** A trigger button whose caller wrote a plain <label for=id> (not our Field) still gets its name: point aria-labelledby at that label. */
 export function useLabelFallback(btn: React.RefObject<HTMLButtonElement | null>, id: string, labelledBy?: string, also?: string) {
@@ -28,90 +32,72 @@ export function useLabelFallback(btn: React.RefObject<HTMLButtonElement | null>,
   });
 }
 
+const Tick = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>;
+const Chev = () => <svg className="chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
+const Row = ({ it }: { it: Item }) => <><span className={it.sub ? "lbl two" : "lbl"} title={it.label}>{it.label}{it.sub && <small className="sub">{it.sub}</small>}</span><span className="tick"><Tick /></span></>;
+
 export function Select({ id, name, value, onChange, onBlur, options, placeholder, disabled, searchable, className = "", labelledBy, describedBy, invalid, addNew, header }: Props) {
   const { L } = useT();
   const locale = useLocale();
-  const real = options.filter((o) => String(o[0]) !== "");
+  const btn = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [active, setActive] = useState(0);
-  const btn = useRef<HTMLButtonElement>(null), searchEl = useRef<HTMLInputElement>(null), list = useRef<HTMLUListElement>(null);
-  const buf = useRef({ s: "", at: 0 });
-  const pid = useId();
   useLabelFallback(btn, id, labelledBy);
+  const real = useMemo(() => options.filter((o) => String(o[0]) !== ""), [options]);
+  const items = useMemo(() => real.map(([v, l, dis, meta]): Item => ({ value: String(v), label: l, disabled: !!dis, tone: meta?.tone, sub: meta?.sub })), [real]);
+  const byValue = useMemo(() => new Map(items.map((it) => [it.value, it])), [items]);
+  const shown = useMemo(() => filterOptions(real, q).map((o) => byValue.get(String(o[0]))!), [real, q, byValue]);
   const hasSearch = searchable === undefined ? real.length > 8 : searchable;
-  const shown = filterOptions(real, q);
-  const current = real.find(([v]) => String(v) === value);
+  const current = byValue.get(value) ?? null;
+  const pick = (v: string) => onChange(v === value ? "" : v);   // the same option again clears it
+  const changeOpen = (o: boolean) => { setOpen(o); if (!o) setQ(""); };
 
-  const show = () => {
-    if (open || disabled) return;
-    setQ(""); setActive(Math.max(0, real.findIndex(([v]) => String(v) === value))); setOpen(true);
-    setTimeout(() => searchEl.current?.focus());
+  const trigger = {
+    ref: btn, id: `${id}-btn`, className: `sel-btn${current ? "" : " unset"}`, "aria-labelledby": labelledBy, "aria-describedby": describedBy,
+    "aria-invalid": invalid || undefined, onBlur: () => { if (!open) onBlur?.(); },
   };
-  const shut = (back = true) => { setOpen(false); if (back) btn.current?.focus(); };
-  const pick = (k: number) => {
-    const o = shown[k]; if (!o || o[2]) return;
-    onChange(value === String(o[0]) ? "" : String(o[0]));   // the same option again clears it
-    shut();
-  };
-  const ahead = (ch: string) => {
-    const now = Date.now(); buf.current = { s: now - buf.current.at > 700 ? ch : buf.current.s + ch, at: now };
-    const k = shown.findIndex(([, l]) => norm(l).startsWith(norm(buf.current.s)));
-    if (k >= 0) setActive(k);
-  };
-  const keys = (e: React.KeyboardEvent) => {
-    const k = e.key;
-    if (!open) {
-      if (["ArrowDown", "ArrowUp", "Enter", " "].includes(k)) { e.preventDefault(); show(); }
-      else if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { show(); ahead(k); }
-      return;
-    }
-    const n = shown.length;
-    if (k === "ArrowDown") setActive((a) => Math.min(n - 1, a + 1));
-    else if (k === "ArrowUp") setActive((a) => Math.max(0, a - 1));
-    else if ((k === "Home" || k === "End") && !hasSearch) setActive(k === "Home" ? 0 : n - 1);
-    else if (k === "Enter" || (k === " " && !hasSearch)) pick(active);
-    else if (k === "Escape") shut();
-    else if (k === "Tab") { shut(false); return; }
-    else if (!hasSearch && k.length === 1 && !e.ctrlKey && !e.metaKey) { ahead(k); e.preventDefault(); return; }
-    else return;
-    e.preventDefault();
-    setTimeout(() => list.current?.children[Math.min(active, n - 1)]?.scrollIntoView?.({ block: "nearest" }));
-  };
-  const focusId = shown[active] ? `${pid}-${active}` : undefined;
+  const face = <><span className="sel-val">{current ? current.label : (placeholder ?? L("اختر", "Choose"))}</span><Chev /></>;
+  const add = addNew && <a className="sel-add" href={`/${locale}${addNew.route}`} target="_blank" rel="noopener" onClick={() => changeOpen(false)}>+ {locale === "ar" ? addNew.ar : addNew.en}</a>;
 
   return (
     <div className={`sel ${className}`} data-select>
       <input type="hidden" id={id} name={name} value={value} readOnly />
-      <button
-        ref={btn} type="button" id={`${id}-btn`} className={`sel-btn${current ? "" : " unset"}`} role="combobox" aria-haspopup="listbox" aria-expanded={open}
-        aria-controls={open ? pid : undefined} aria-activedescendant={open && !hasSearch ? focusId : undefined}
-        aria-labelledby={labelledBy} aria-describedby={describedBy} aria-invalid={invalid || undefined} disabled={disabled}
-        onClick={() => (open ? shut() : show())} onKeyDown={keys} onKeyUp={(e) => { if (e.key === " ") e.preventDefault(); }} onBlur={() => { if (!open) onBlur?.(); }}
-      >
-        <span className="sel-val">{current ? current[1] : (placeholder ?? L("اختر", "Choose"))}</span>
-        <svg className="chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-      </button>
-      {open && (
-        <Popover trigger={btn} onClose={() => shut(false)} className="sel-pop" watch={shown.length}>
-          {hasSearch && (
-            <div className="sel-search">
-              <input ref={searchEl} type="text" role="searchbox" autoComplete="off" placeholder={L("بحث…", "Search…")} aria-label={L("بحث", "Search")} aria-activedescendant={focusId}
-                value={q} onChange={(e) => { setQ(e.target.value); setActive(0); }} onKeyDown={keys} />
-            </div>
-          )}
-          {header}
-          <ul ref={list} role="listbox" id={pid}>
-            {shown.length ? shown.map(([v, l, dis, meta], k) => (
-              <li key={String(v)} role="option" id={`${pid}-${k}`} className={k === active ? "active" : undefined} data-tone={meta?.tone} aria-disabled={dis || undefined} aria-selected={String(v) === value}
-                onPointerUp={() => pick(k)}>
-                <span className={meta?.sub ? "lbl two" : "lbl"} title={l}>{l}{meta?.sub && <small className="sub">{meta.sub}</small>}</span>
-                <span className="tick"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span>
-              </li>
-            )) : <li className="sel-empty" role="presentation">{L("لا توجد نتائج", "No results")}</li>}
-          </ul>
-          {addNew && <a className="sel-add" role="option" aria-selected={false} href={`/${locale}${addNew.route}`} target="_blank" rel="noopener" onClick={() => shut(false)}>+ {locale === "ar" ? addNew.ar : addNew.en}</a>}
-        </Popover>
+      {hasSearch ? (
+        <Cb.Root<Item>
+          items={items} filteredItems={shown} value={current} open={open} onOpenChange={changeOpen} inputValue={q} onInputValueChange={setQ}
+          onValueChange={(it) => pick(it?.value ?? "")} itemToStringLabel={(it) => it.label} isItemEqualToValue={(a, b) => a.value === b.value} disabled={disabled}
+        >
+          <Cb.Trigger {...trigger}>{face}</Cb.Trigger>
+          <Cb.Portal>
+            <Cb.Positioner className="sel-pos" sideOffset={4} align="start">
+              <Cb.Popup className="pop sel-pop">
+                <div className="sel-search"><Cb.Input placeholder={L("بحث…", "Search…")} aria-label={L("بحث", "Search")} /></div>
+                {header}
+                <Cb.Empty className="sel-empty">{L("لا توجد نتائج", "No results")}</Cb.Empty>
+                <Cb.List className="sel-list">
+                  {(it: Item) => <Cb.Item key={it.value} value={it} disabled={it.disabled} data-tone={it.tone} className="sel-item"><Row it={it} /></Cb.Item>}
+                </Cb.List>
+                {add}
+              </Cb.Popup>
+            </Cb.Positioner>
+          </Cb.Portal>
+        </Cb.Root>
+      ) : (
+        <Sl.Root<string> items={items} value={current ? value : null} open={open} onOpenChange={changeOpen} onValueChange={(v) => pick(v ?? "")} disabled={disabled}>
+          <Sl.Trigger {...trigger}>{face}</Sl.Trigger>
+          <Sl.Portal>
+            <Sl.Positioner className="sel-pos" sideOffset={4} align="start" alignItemWithTrigger={false}>
+              <Sl.Popup className="pop sel-pop">
+                {header}
+                <Sl.List className="sel-list">
+                  {items.length ? items.map((it) => <Sl.Item key={it.value} value={it.value} disabled={it.disabled} data-tone={it.tone} className="sel-item"><Row it={it} /></Sl.Item>)
+                    : <div className="sel-empty">{L("لا توجد نتائج", "No results")}</div>}
+                </Sl.List>
+                {add}
+              </Sl.Popup>
+            </Sl.Positioner>
+          </Sl.Portal>
+        </Sl.Root>
       )}
     </div>
   );

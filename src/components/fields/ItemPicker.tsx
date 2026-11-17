@@ -34,7 +34,7 @@ export function ItemPicker({ items, stock, label, extra, ...select }: Props) {
     return out;
   }, [base, extra]);
   const header = brands.length >= 2 ? (
-    <div className="sel-brands" role="group" aria-label={L("الماركة", "Brand")}>
+    <div className="sel-brands" role="group" aria-label={L("الماركة", "Brand")} onMouseDown={(e) => e.preventDefault()}>{/* a tab click keeps the typing in the search box */}
       <Button size="sm" variant={brand === "" ? "primary" : "quiet"} aria-pressed={brand === ""} onClick={() => setBrand("")}>{L("كل الماركات", "All brands")}</Button>
       {brands.map((b) => (
         <Button size="sm" key={b.id} variant={brand === b.id ? "primary" : "quiet"} aria-pressed={brand === b.id} onClick={() => setBrand(brand === b.id ? "" : b.id)}>{b.name}</Button>

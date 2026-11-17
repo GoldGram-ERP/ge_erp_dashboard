@@ -343,17 +343,24 @@ ody.sb-collapsed .status{justify-content:center;padding:10px 0;margin-inline:12p
 .sel-search{padding:2px 2px 6px}
 .sel-search input{width:100%;height:34px;padding:0 10px;border:0;border-radius:8px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);outline:0}
 .sel-search input:focus{box-shadow:inset 0 0 0 2px var(--gold)}
-.sel-pop ul{list-style:none;margin:0;padding:0;overflow:auto;min-height:0;overscroll-behavior:contain}   /* a fast flick that hits the end stops there instead of scrolling the page under the popup */
-.sel-pop li[role=option]{position:relative;display:flex;align-items:center;white-space:nowrap;padding:7px 32px 7px 8px;padding-inline:8px 32px;border-radius:8px;cursor:default;user-select:none}
-.sel-pop li .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.sel-pop li.active{background:var(--gold-wash)}
+.sel-pop .sel-list{list-style:none;margin:0;padding:0;overflow:auto;min-height:0;overscroll-behavior:contain}   /* a fast flick that hits the end stops there instead of scrolling the page under the popup */
+.sel-pop .sel-item{position:relative;display:flex;align-items:center;white-space:nowrap;padding:7px 32px 7px 8px;padding-inline:8px 32px;border-radius:8px;cursor:default;user-select:none}
+.sel-pop .sel-item .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sel-pop .sel-item[data-highlighted]{background:var(--gold-wash)}
 /* Hover is pure CSS, not JS state (owner: fast touch-scroll through a long list fired a setState per row crossed under the
    finger, stuttering the scroll). Keyboard nav still drives .active above; a pointer only ever drives :hover now. */
-.sel-pop li[role=option]:hover:not([aria-disabled=true]){background:var(--gold-wash)}
-.sel-pop li .tick{position:absolute;inset-inline-end:8px;display:none;color:var(--gold)}
-.sel-pop li[aria-selected=true] .tick{display:flex}
-.sel-pop li[aria-selected=true]{font-weight:600}
+.sel-pop .sel-item:hover:not([data-disabled]){background:var(--gold-wash)}
+.sel-pop .sel-item .tick{position:absolute;inset-inline-end:8px;display:none;color:var(--gold)}
+.sel-pop .sel-item[data-selected] .tick{display:flex}
+.sel-pop .sel-item[data-selected]{font-weight:600}
 .sel-empty{padding:12px 8px;text-align:center;color:var(--mute)}
+/* Animate UI positions and animates the popup (Base UI Positioner + motion): .pop is only its surface here, not its placement or entrance. */
+.sel-pos{z-index:60;outline:0}
+.sel-empty:empty{display:none}
+.sel-pos>.pop{position:static;animation:none;min-width:max(var(--anchor-width),160px);max-height:min(26rem,var(--available-height));transform-origin:var(--transform-origin)}
+.sel-pop .sel-list{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;outline:0}
+.sel-pop .sel-item{outline:0}
+.sel-pop .sel-search input{width:100%}
 .dp-pop{width:272px;padding:10px}
 .dp-head{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:8px}
 .dp-nav,.dp-title,.dp-foot button,.dp-pick button,.dp-day{border:0;background:none;cursor:pointer;border-radius:8px;outline:0;transition:background .12s var(--calm),color .12s var(--calm)}
@@ -502,7 +509,7 @@ a.btn.primary{color:var(--gold-ink)}
 .table tr.foot td{background:transparent}
 .table .empty{padding:1.25rem 1.5rem}
 
-.sel-pop li[aria-disabled=true],.sel li[aria-disabled=true]{opacity:.45;cursor:not-allowed}
+.sel-pop .sel-item[data-disabled]{opacity:.45;cursor:not-allowed}
 
 /* bubbles are as wide as their content (longest label + its value), not stretched over the row.
    Sections flow side by side and wrap; form sections and wide blocks (tables) take their row. */
@@ -1015,7 +1022,7 @@ html[dir=ltr] .bpr.card .kv span:last-child{text-align:left}
 .sel-search{padding:2px 2px 4px}
 .sel-search input{height:30px;font-size:13px}
 .sel-search input:focus{box-shadow:inset 0 0 0 1px var(--gold),0 0 0 3px color-mix(in srgb,var(--gold) 16%,transparent)}
-.sel-pop li[role=option]{min-height:30px;padding-block:5px;font-size:13px}
+.sel-pop .sel-item{min-height:30px;padding-block:5px;font-size:13px}
 /* Width: a dropdown is as wide as its value needs, never the whole card (apple-design section 18, max-width slop). */
 
 /* Checkboxes, one calm look everywhere (apple-design section 18: library components, small, no browser default): 16 px box, gold check, soft focus ring. */
@@ -1167,19 +1174,19 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 #sd .grp-block .grp-panel,#sd .grp-block.kv-block .grp-panel{width:100%;max-width:none;min-width:0}
 
 /* The item picker (issue #34): a second line under each row, the brand filter on top, and the Sales desk's stock colours (green: in stock, red: none, not pickable). */
-.sel-pop li .lbl.two{display:flex;flex-direction:column;gap:1px;line-height:1.25}
-.sel-pop li .lbl .sub{display:block;font-size:.85em;font-weight:400;color:var(--mute);overflow:hidden;text-overflow:ellipsis}
+.sel-pop .sel-item .lbl.two{display:flex;flex-direction:column;gap:1px;line-height:1.25}
+.sel-pop .sel-item .lbl .sub{display:block;font-size:.85em;font-weight:400;color:var(--mute);overflow:hidden;text-overflow:ellipsis}
 .sel-brands{display:flex;flex-wrap:wrap;gap:4px;padding:0 2px 6px}
-.sel-pop li[data-tone=good]{box-shadow:inset 3px 0 0 var(--good);background:color-mix(in srgb,var(--good) 8%,transparent)}
-.sel-pop li[data-tone=good] .lbl{color:var(--good)}
-.sel-pop li[data-tone=bad]{box-shadow:inset 3px 0 0 var(--warn);background:color-mix(in srgb,var(--warn) 7%,transparent)}
-.sel-pop li[data-tone=bad] .lbl{color:var(--warn)}
-.sel-pop li[data-tone=bad][aria-disabled=true]{opacity:1;cursor:not-allowed}
-.sel-pop li[data-tone=bad] .lbl .sub{color:inherit;opacity:.75}
-[dir=rtl] .sel-pop li[data-tone=good]{box-shadow:inset -3px 0 0 var(--good)}
-[dir=rtl] .sel-pop li[data-tone=bad]{box-shadow:inset -3px 0 0 var(--warn)}
-.sel-pop li.active[data-tone]{background:var(--gold-wash)}
-.sel-pop li[data-tone]:hover:not([aria-disabled=true]){background:var(--gold-wash)}
+.sel-pop .sel-item[data-tone=good]{box-shadow:inset 3px 0 0 var(--good);background:color-mix(in srgb,var(--good) 8%,transparent)}
+.sel-pop .sel-item[data-tone=good] .lbl{color:var(--good)}
+.sel-pop .sel-item[data-tone=bad]{box-shadow:inset 3px 0 0 var(--warn);background:color-mix(in srgb,var(--warn) 7%,transparent)}
+.sel-pop .sel-item[data-tone=bad] .lbl{color:var(--warn)}
+.sel-pop .sel-item[data-tone=bad][data-disabled]{opacity:1;cursor:not-allowed}
+.sel-pop .sel-item[data-tone=bad] .lbl .sub{color:inherit;opacity:.75}
+[dir=rtl] .sel-pop .sel-item[data-tone=good]{box-shadow:inset -3px 0 0 var(--good)}
+[dir=rtl] .sel-pop .sel-item[data-tone=bad]{box-shadow:inset -3px 0 0 var(--warn)}
+.sel-pop .sel-item[data-highlighted][data-tone]{background:var(--gold-wash)}
+.sel-pop .sel-item[data-tone]:hover:not([data-disabled]){background:var(--gold-wash)}
 
 /* Test printer (setup/test-printer): settings on one side, the live label and Print on the other; one column on a narrow window. */
 .tp-designer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,22rem);gap:1rem;align-items:start}
@@ -1212,7 +1219,12 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 
 /* Combobox (components/ui/Combobox.tsx): search-as-you-type field. The popup lines up with the field, rows are small like the Select's. Sizes in rem follow the text size. */
 .cb-mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-.sel-pop .cb-row{display:flex;align-items:baseline;gap:.625rem}
+.cb-pos{z-index:60}
+.cb-pop{--cb-shadow:0 0 0 1px rgba(43,37,25,.1),0 12px 32px rgba(43,37,25,.16);min-width:var(--anchor-width);width:max-content;max-width:min(27.5rem,calc(100vw - 1rem));box-sizing:border-box;padding:.25rem;background:var(--surface);color:var(--ink);border-radius:.75rem;box-shadow:var(--cb-shadow);outline:0}
+.cb-list{max-height:min(15rem,var(--available-height,15rem));overflow:auto;overscroll-behavior:contain;scrollbar-width:none}   /* no visible scrollbar: the rows still scroll by wheel, touch and arrow keys */
+.cb-list::-webkit-scrollbar{display:none}
+.cb-item{display:flex;align-items:baseline;gap:.625rem;min-height:1.875rem;padding:.3125rem .5rem;border-radius:.5rem;font-size:.8125rem;line-height:1.5;cursor:default;user-select:none}
+.cb-item[data-highlighted]{background:var(--gold-wash)}
 .cb-text{flex:none;font-weight:600;font-variant-numeric:tabular-nums}
 .cb-hint{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute)}
 /* Items Excel import page: two steps with room between them */
