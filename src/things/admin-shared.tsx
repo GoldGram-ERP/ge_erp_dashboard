@@ -256,11 +256,12 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
           <Button size="sm" disabled={open === offered.length} onClick={() => toggleScreens(offered, true)}>{u("screens.selectAll")}</Button>
           <Button size="sm" disabled={open === 0} onClick={() => toggleScreens(offered, false)}>{u("screens.unselectAll")}</Button></div>
         <Input id="screen-q" placeholder={L("ابحث عن شاشة", "Search screens")} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" aria-label={L("ابحث عن شاشة", "Search screens")} />
-        {navGroups.map((g0) => { const g = { ...g0, items: g0.items.filter((x) => !ql || `${x.name} ${g0.name}`.toLowerCase().includes(ql)) }; if (!g.items.length) return null; const keys = g.items.flatMap((x) => x.keys), on = keys.filter((k) => screens.has(k)).length;
+        {navGroups.map((g0) => { const allKeys = [...new Set(g0.items.flatMap((x) => x.keys))], g = { ...g0, keys: allKeys.filter((k) => !ql || `${keyName(tr, k)} ${g0.name}`.toLowerCase().includes(ql)) }; if (!g.keys.length) return null; const on = g.keys.filter((k) => screens.has(k)).length;
           return <div key={g.id} style={{ marginTop: 12 }}>
-            <Check checked={on === keys.length} ind={on > 0 && on < keys.length} onChange={(v) => toggleScreens(keys, v)} aria-label={u("screens.module", { name: g.name })} label={<><b>{g.name}</b> <span dir="ltr" className="mute">{on}/{keys.length}</span> <span className="mute">· {u("screens.selectAll")}</span></>} />
-            <div style={grid}>{g.items.map((x) => { const all = x.keys.every((k) => screens.has(k)), some = x.keys.some((k) => screens.has(k));
-              return <label key={x.id} style={box(all)}><CheckInput data-screen={x.keys[0]} checked={all} indeterminate={some && !all} onChange={(v) => toggleScreens(x.keys, v)} style={{ marginTop: 3 }} /><span>{x.name}</span></label>; })}</div></div>; })}
+            <Check checked={on === g.keys.length} ind={on > 0 && on < g.keys.length} onChange={(v) => toggleScreens(g.keys, v)} aria-label={u("screens.module", { name: g.name })} label={<><b>{g.name}</b> <span dir="ltr" className="mute">{on}/{g.keys.length}</span> <span className="mute">· {u("screens.selectAll")}</span></>} />
+            {/* One checkbox per backend screen (not per sidebar tab): a tab can bundle several reports and lists, each with its own access. */}
+            <div style={grid}>{g.keys.map((k) => { const checked = screens.has(k);
+              return <label key={k} style={box(checked)}><CheckInput data-screen={k} checked={checked} onChange={(v) => toggleScreens([k], v)} style={{ marginTop: 3 }} /><span>{keyName(tr, k)}</span></label>; })}</div></div>; })}
       </>; })() : jobCards(false)}
     </>;
 
