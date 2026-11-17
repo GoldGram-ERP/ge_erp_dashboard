@@ -155,7 +155,7 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   // "By task" is hidden for now (owner, 2026-11-09): screens are the only way to give access. The task code stays for when it returns.
   const [, setTab] = useState<"job" | "screen">("screen");
   const [q, setQ] = useState("");
-  const [permErr, setPermErr] = useState(""), [alert, setAlert] = useState(""), [note, setNote] = useState(""), [saving, setSaving] = useState(false);
+  const [permErr, setPermErr] = useState(""), [chanErr, setChanErr] = useState(""), [alert, setAlert] = useState(""), [note, setNote] = useState(""), [saving, setSaving] = useState(false);
   const permQ = useQuery({ queryKey: ["users", "screens-jobs"], staleTime: Infinity, queryFn: async () => { const [s, j] = await Promise.all([api("/users/screens"), api("/users/jobs")]); return { screens: s, jobScreens: Object.fromEntries((j.jobs ?? []).map((x: any) => [x.id, x.screens as string[]])) as Record<string, string[]> }; } });
   const savedJobs = useQuery({ enabled: row?.userType === "user", queryKey: ["users", "jobs", row?.id], gcTime: 0, queryFn: () => api(`/users/${row!.id}/jobs`).catch(() => ({ jobIds: [] })) });
   useEffect(() => { if (savedJobs.data) { setJobs(new Set<string>(savedJobs.data.jobIds)); setJobsInit(JSON.stringify([...savedJobs.data.jobIds].sort())); } }, [savedJobs.data]);
@@ -193,11 +193,14 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
 
   const leave = async () => { if (!dirty || await confirm({ title: c("unsaved.title"), text: c("unsaved.body"), ok: c("unsaved.leave"), cancel: c("unsaved.keepEditing"), danger: true })) close(); };
   const save = async () => {
-    setAlert(""); setPermErr("");
+    setAlert(""); setPermErr(""); setChanErr("");
     if (!navigator.onLine) { toast(c("offline"), { error: true }); return; }
     const v = await f.read();
     if (!v) { setAlert(c("couldNotSave", { count: Object.keys(f.formState.errors).length || 1 })); return; }
     if (ty === "user" && permQ.data && screens.size === 0 && !(await confirm({ title: u("screens.noneTitle"), text: u("screens.noneBody"), ok: c("save"), cancel: c("cancel") }))) return;
+    // The Sales desk is pointless without a channel to sell on: the backend hides it anyway (screensFor,
+    // screen-map.ts), but this catches it on the spot instead of a silent no-op after save.
+    if (ty === "user" && screens.has("gold-sales/sales-desk") && channels.size === 0) { setChanErr(u("channelsRequiredForDesk")); setAlert(c("couldNotSave", { count: 1 })); return; }
     const body = { ...(ty === "super_admin" ? {} : { branchId: v.branchId }), username: v.username, ...(v.email === "" ? {} : { email: v.email }), userType: ty,
       ...(ty === "user" ? { screens: [...screens], actions: [...actions], salesChannelIds: [...channels], businessRole: role || null } : {}),
       ...(v.password === "" ? {} : { password: v.password }) };
@@ -277,7 +280,8 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
       {ty === "user" && <Section title={u("channelsHeading")} wide>
         <div className="help">{u("channelsHint")}</div>
         {channelsQ.data?.length === 0 && <p className="mute">{u("channelsNone")}</p>}
-        {(channelsQ.data ?? []).map((c: Row) => <Checkbox key={c.id} data-channel={c.id} checked={channels.has(c.id)} onChange={(v) => flip(channels, setChannels)(c.id, v)}>{c.channelName ?? c.name}</Checkbox>)}
+        {(channelsQ.data ?? []).map((c: Row) => <Checkbox key={c.id} data-channel={c.id} checked={channels.has(c.id)} onChange={(v) => { flip(channels, setChannels)(c.id, v); setChanErr(""); }}>{c.channelName ?? c.name}</Checkbox>)}
+        {chanErr && <FieldError>{chanErr}</FieldError>}
       </Section>}
       {alert && <FieldError>{alert}</FieldError>}
       <div className="formbar">

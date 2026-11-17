@@ -222,7 +222,8 @@
    },
    "channelsHeading": "Allowed sales channels",
    "channelsHint": "The channels the person may pick on the sales desk.",
-   "channelsNone": "There are no sales channels yet."
+   "channelsNone": "There are no sales channels yet.",
+   "channelsRequiredForDesk": "The Sales desk needs at least one sales channel: tick one below."
   },
   "settings": {
    "title": "Settings",

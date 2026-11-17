@@ -340,6 +340,7 @@ Object.assign(APP, {
   "administration.users.channelsHeading": ["قنوات البيع المسموحة", "Allowed sales channels"],
   "administration.users.channelsHint": ["القنوات اللي يقدر يختارها في شاشة البيع.", "The channels the person may pick on the sales desk."],
   "administration.users.channelsNone": ["مفيش قنوات بيع لسه.", "There are no sales channels yet."],
+  "administration.users.channelsRequiredForDesk": ["مكتب المبيعات محتاج قناة بيع واحدة على الأقل: حدد قناة تحت.", "The Sales desk needs at least one sales channel: tick one below."],
   "gold-sales.salesInvoices.taslem": ["تسليم", "Taslem"], "gold-sales.salesInvoices.taslemTitle": ["تأكيد التسليم؟", "Confirm Taslem?"],
   "gold-sales.salesInvoices.taslemAsk": ["هيتسجّل إنك سلّمت الفاتورة دي دلوقتي. ده تسجيل بس: المخزون والفلوس مبيتحركوش.", "This records that you confirmed this invoice now. It is a record only: stock and cash do not move."],
   "gold-sales.salesInvoices.taslemDone": ["اتسجّل التسليم.", "Taslem recorded."],
