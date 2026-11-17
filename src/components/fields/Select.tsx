@@ -104,7 +104,7 @@ export function Select({ id, name, value, onChange, onBlur, options, placeholder
           <ul ref={list} role="listbox" id={pid}>
             {shown.length ? shown.map(([v, l, dis, meta], k) => (
               <li key={String(v)} role="option" id={`${pid}-${k}`} className={k === active ? "active" : undefined} data-tone={meta?.tone} aria-disabled={dis || undefined} aria-selected={String(v) === value}
-                onPointerUp={() => pick(k)} onPointerMove={() => k !== active && setActive(k)}>
+                onPointerUp={() => pick(k)}>
                 <span className={meta?.sub ? "lbl two" : "lbl"} title={l}>{l}{meta?.sub && <small className="sub">{meta.sub}</small>}</span>
                 <span className="tick"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span>
               </li>

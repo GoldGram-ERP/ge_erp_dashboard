@@ -347,6 +347,9 @@ ody.sb-collapsed .status{justify-content:center;padding:10px 0;margin-inline:12p
 .sel-pop li[role=option]{position:relative;display:flex;align-items:center;white-space:nowrap;padding:7px 32px 7px 8px;padding-inline:8px 32px;border-radius:8px;cursor:default;user-select:none}
 .sel-pop li .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sel-pop li.active{background:var(--gold-wash)}
+/* Hover is pure CSS, not JS state (owner: fast touch-scroll through a long list fired a setState per row crossed under the
+   finger, stuttering the scroll). Keyboard nav still drives .active above; a pointer only ever drives :hover now. */
+.sel-pop li[role=option]:hover:not([aria-disabled=true]){background:var(--gold-wash)}
 .sel-pop li .tick{position:absolute;inset-inline-end:8px;display:none;color:var(--gold)}
 .sel-pop li[aria-selected=true] .tick{display:flex}
 .sel-pop li[aria-selected=true]{font-weight:600}
@@ -1175,6 +1178,7 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 [dir=rtl] .sel-pop li[data-tone=good]{box-shadow:inset -3px 0 0 var(--good)}
 [dir=rtl] .sel-pop li[data-tone=bad]{box-shadow:inset -3px 0 0 var(--warn)}
 .sel-pop li.active[data-tone]{background:var(--gold-wash)}
+.sel-pop li[data-tone]:hover:not([aria-disabled=true]){background:var(--gold-wash)}
 
 /* Test printer (setup/test-printer): settings on one side, the live label and Print on the other; one column on a narrow window. */
 .tp-designer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,22rem);gap:1rem;align-items:start}
