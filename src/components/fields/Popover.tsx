@@ -7,7 +7,7 @@ type Props = { trigger: RefObject<HTMLElement | null>; onClose: () => void; clas
 
 export function Popover({ trigger, onClose, className, children, role, id, label, watch }: Props) {
   const pop = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number; minWidth: number; maxHeight: number; side: string } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; minWidth: number; maxHeight: number; side: string; origin: string } | null>(null);
 
   const place = () => {
     const t = trigger.current, p = pop.current;
@@ -21,7 +21,10 @@ export function Popover({ trigger, onClose, className, children, role, id, label
     const below = vh - r.bottom - 12, above = r.top - 12, h = p.offsetHeight, w = p.offsetWidth;
     const up = h > below && above > below, room = Math.max(140, (up ? above : below) - 4), hh = Math.min(h, room);
     const rtl = getComputedStyle(t).direction === "rtl";
-    setPos({ minWidth: r.width, maxHeight: room, left: Math.max(8, Math.min(rtl ? r.right - w : r.left, vw - w - 8)), top: Math.max(8, Math.min(up ? r.top - 4 - hh : r.bottom + 4, vh - hh - 8)), side: up ? "up" : "down" });
+    const left = Math.max(8, Math.min(rtl ? r.right - w : r.left, vw - w - 8));
+    // apple-design s7: the popup grows out of its trigger (the trigger's centre, on the edge it touches), not out of its own middle
+    const origin = `${Math.round(Math.min(w, Math.max(0, r.left + r.width / 2 - left)))}px ${up ? "100%" : "0"}`;
+    setPos({ minWidth: r.width, maxHeight: room, left, top: Math.max(8, Math.min(up ? r.top - 4 - hh : r.bottom + 4, vh - hh - 8)), side: up ? "up" : "down", origin });
   };
   useLayoutEffect(place, [watch]);
 
@@ -36,7 +39,7 @@ export function Popover({ trigger, onClose, className, children, role, id, label
   return createPortal(
     <div
       ref={pop} id={id} role={role} aria-label={label} className={`pop ${className}`} data-side={pos?.side}
-      style={{ position: "fixed", left: pos?.left ?? 0, top: pos?.top ?? 0, minWidth: pos?.minWidth, maxHeight: pos?.maxHeight, visibility: pos ? "visible" : "hidden" }}
+      style={{ position: "fixed", left: pos?.left ?? 0, top: pos?.top ?? 0, minWidth: pos?.minWidth, maxHeight: pos?.maxHeight, transformOrigin: pos?.origin, visibility: pos ? "visible" : "hidden" }}
       onPointerDown={(e) => { if (!(e.target as HTMLElement).closest("input")) e.preventDefault(); }}   // clicking inside keeps the focus where it is
     >{children}</div>,
     document.body,
