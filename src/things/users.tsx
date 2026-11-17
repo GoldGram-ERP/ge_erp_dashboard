@@ -9,6 +9,7 @@ import type { CustomFormProps, MakeConfig, Row, ThingConfig } from "@/lib/engine
 import { useMe } from "@/lib/session";
 import type { Tr } from "@/lib/t";
 import { ThingPage, Ltr, toast } from "@/components/engine";
+import { BUSINESS_ROLES } from "@/lib/actions";
 import { TYPES, UserForm, UserRecord, code6, jobName, manageable, typeName } from "./admin-shared";
 import { useAccess } from "./sales-access";
 
@@ -67,7 +68,13 @@ const build = (tr: Tr, viewer: string | undefined): ThingConfig => {
       endpoint: "/users", query: { order: "newest" },
       search: { param: "search", placeholder: u("searchPlaceholder") },
       filters: [
-        { name: "type", label: u("userType"), type: "select", searchable: false, options: TYPES.map((x) => [x, typeName(tr, x)]) },
+        // A plain User's business role is a separate backend filter (businessRole), but shown here as one dropdown with
+        // the type, matching the Add/Edit form's own "user:<role>" options (admin-shared.tsx). shortcut: picking a role
+        // filters the list correctly, but a page reload forgets the role half (only "type" is a declared filter name)
+        // and falls back to plain "User"; upgrade if the engine gets a per-filter URL round-trip for combined values.
+        { name: "type", label: u("userType"), type: "select", searchable: false,
+          options: TYPES.flatMap((x): [string, string][] => (x === "user" ? [["user", typeName(tr, "user")], ...BUSINESS_ROLES.map((k): [string, string] => [`user:${k}`, u(`roles.${k}`)])] : [[x, typeName(tr, x)]])),
+          toQuery: (v: string) => (v?.includes(":") ? { type: v.split(":")[0], businessRole: v.split(":")[1] } : { type: v }) },
         { name: "lockedOnly", label: u("lockedOnly"), type: "checkbox", toQuery: (v) => (v ? { locked: "only" } : {}) },
         ...(viewer === "super_admin" ? [{ name: "deletedOnly", label: u("deletedOnly"), type: "checkbox" as const, toQuery: (v: unknown) => (v ? { deleted: "only" } : {}) }] : []),
       ],
