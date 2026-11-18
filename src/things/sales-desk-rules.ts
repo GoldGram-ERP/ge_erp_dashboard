@@ -53,14 +53,19 @@ export function readLines(lines: DeskLine[]): { errors: Record<string, string>; 
 }
 
 export type ChannelOption = { id: string; name: string };
+/** The desk does not sell wholesale (owner, 2026-11-18): the channel named جملة is never offered here, whoever is allowed it. */
+const offered = (allowed: ChannelOption[] | undefined): ChannelOption[] => (allowed ?? []).filter((c) => c.name.trim() !== "جملة");
+/** The lines a Sale or a Hand over keeps when the type leaves Reservation: only the items in stock (a reservation may hold any item). Stock not heard: all stay. */
+export const linesInStock = <T extends { itemId: string }>(lines: T[], stock: ReadonlyMap<string, number> | undefined): T[] =>
+  (stock ? lines.filter((l) => (stock.get(l.itemId) ?? 0) > 0) : lines);
 /** The channels the picker offers: the ones /access/me allows, plus the draft's own stored channel (shown even when it is no longer allowed or was deleted). */
 export function channelOptions(allowed: ChannelOption[] | undefined, stored?: ChannelOption | null): [string, string][] {
-  const out: [string, string][] = (allowed ?? []).map((c) => [c.id, c.name]);
+  const out: [string, string][] = offered(allowed).map((c) => [c.id, c.name]);
   if (stored && !out.some(([id]) => id === stored.id)) out.push([stored.id, stored.name]);
   return out;
 }
 /** A new draft starts on the only channel the person may use; with several or none it starts empty (the person must choose). */
-export const defaultChannel = (allowed: ChannelOption[] | undefined): string => (allowed?.length === 1 ? allowed[0].id : "");
+export const defaultChannel = (allowed: ChannelOption[] | undefined): string => (offered(allowed).length === 1 ? offered(allowed)[0].id : "");
 /** The picker's error code (fieldErrors): a channel is required and must be one of the offered ones. */
 export const channelError = (id: string, options: [string, string][]): "required" | "invalid" | null => (id === "" ? "required" : options.some(([o]) => o === id) ? null : "invalid");
 

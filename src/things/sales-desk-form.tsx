@@ -23,7 +23,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
 import { canOpen } from "@/nav/tree";
 import { code6 } from "@/lib/code6";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
@@ -389,7 +389,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} />
             <Seg label={d("desk.metal")} value={metal} onChange={(k) => pick(() => { setMetal(k); setLines([]); })}
               items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} />
-            {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); setType(k); setErrs({}); if (k === "reservation") setTyping(false); }}
+            {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); if (type === "reservation" && k !== "reservation") setLines((ls) => linesInStock(ls, stock)); setType(k); setErrs({}); if (k === "reservation") setTyping(false); }}
               items={deskTypes(type, isNew, mayReserve).map((k) => ({ id: k, label: typeLabels[k], attrs: { "data-type": k } }))} />}
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}

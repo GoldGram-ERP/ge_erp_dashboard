@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -159,5 +159,18 @@ describe("the type choice and the reservation the desk saves", () => {
       .toEqual({ branchId: "b1", date: "2026-11-18", employeeId: "u1", customerName: "Mona", customerPhone: "01012345678", lines: [{ itemId: "i1", quantity: 2 }], cash: 10000, bankPayments: [{ bankAccountId: "a1", amount: 5050 }] });
     expect(reservationBody({ ...base, cash: "", banks: [{ bankAccountId: "a2", amount: "300" }], discount: { kind: "percent", value: 5 }, visa: true }))
       .toEqual({ ...base, customer: undefined, customerName: "Mona", customerPhone: "01012345678", bankPayments: [{ bankAccountId: "a2", amount: 30000 }], cashDiscount: { kind: "percent", value: 5 }, payByVisa: true });
+  });
+});
+describe("wholesale is not a desk channel, and leaving Reservation drops what is not in stock", () => {
+  it("never offers the channel named جملة, and a person left with one other channel starts on it", () => {
+    const retail = { id: "r", name: "قطاعي" }, whole = { id: "g", name: " جملة " };
+    expect(channelOptions([retail, whole])).toEqual([["r", "قطاعي"]]);
+    expect(defaultChannel([retail, whole])).toBe("r");
+    expect(channelOptions([retail], whole)).toEqual([["r", "قطاعي"], ["g", " جملة "]]);   // a saved draft still shows its own channel
+  });
+  it("keeps only the lines whose item has pieces; with no stock answer every line stays", () => {
+    const lines = [{ itemId: "a", count: "1" }, { itemId: "b", count: "2" }, { itemId: "c", count: "1" }];
+    expect(linesInStock(lines, new Map([["a", 3], ["b", 0]]))).toEqual([lines[0]]);
+    expect(linesInStock(lines, undefined)).toEqual(lines);
   });
 });
