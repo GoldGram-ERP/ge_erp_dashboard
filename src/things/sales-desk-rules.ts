@@ -4,9 +4,25 @@ import { hasAction } from "@/lib/actions";
 import { latinNumber } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { customerRules } from "./sales-form-parts";
-import { LINES_MAX, bankPaid, cashPaid, paymentErrors, type Bank } from "./sales-invoices-math";
+import { LINES_MAX, bankPaid, cashPaid, paymentErrors, sentBanks, type Bank } from "./sales-invoices-math";
 
 export { LINES_MAX };
+
+/** The types the desk's type choice offers (owner, 2026-11-18): Sale, Hand over, and Reservation on a new draft for a person who has the reservations
+ *  screen. A draft saved as "delivery" before Hand over replaced it still shows its own type. */
+export const deskTypes = (current: string, isNew: boolean, mayReserve: boolean): string[] =>
+  ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", ...(isNew && mayReserve ? ["reservation"] : [])];
+
+/** What POST /reservations takes when the desk saves a reservation: today's date, paid in full, every bank line with its account.
+ *  No channel, no typed price and no wrapping: a reservation has none (the backend prices it, silver as wrapped). */
+export function reservationBody(x: { branchId: string; date: string; employeeId: string; customer: { customerName: string; customerPhone: string; nationalId?: string };
+  lines: { itemId: string; quantity: number }[]; cash: string; banks: Bank[]; discount?: { kind: string; value: number }; visa: boolean }) {
+  return {
+    branchId: x.branchId, date: x.date, employeeId: x.employeeId, ...x.customer, lines: x.lines,
+    ...(cashPaid(x.cash) > 0 ? { cash: cashPaid(x.cash) } : {}), bankPayments: sentBanks(x.banks),
+    ...(x.discount && x.discount.value > 0 ? { cashDiscount: x.discount } : {}), ...(x.visa ? { payByVisa: true } : {}),
+  };
+}
 
 export type DeskCustomer = { customerName: string; customerPhone: string; nationalId: string };
 /** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin, nationalId left out when empty. */

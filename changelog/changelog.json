@@ -3,6 +3,12 @@
   "version": "next",
   "changes": [
    {
+    "kind": "new",
+    "en": "Sales desk: the type choice is now Sale, Hand over or Reservation. Reservation saves a real reservation from the desk, paid in full, and lets you pick any piece even when it is not in stock.",
+    "ar": "مكتب المبيعات: اختيار النوع بقى بيع أو تسليم أو حجز. الحجز بيسجّل حجز فعلي من المكتب مدفوع بالكامل، وتقدر تختار أي قطعة حتى لو مش موجودة في المخزون.",
+    "route": "/sales/desk"
+   },
+   {
     "kind": "better",
     "en": "Sales desk: on a saved draft the sales channel and the sell/buy, gold/silver and sale/delivery choices are read only; they are picked once on the new draft.",
     "ar": "مكتب المبيعات: في المسودة المحفوظة قناة البيع واختيارات بيع/شراء وذهب/فضة وبيع/توصيل بقت للعرض بس، بتتحدد مرة واحدة في المسودة الجديدة.",
