@@ -4,6 +4,12 @@
   "changes": [
    {
     "kind": "new",
+    "en": "Sales desk: the price box now shows the karat 24 sell and buy prices beside karat 21.",
+    "ar": "مكتب المبيعات: مربع الأسعار بقى بيعرض سعر بيع وشراء عيار 24 جنب عيار 21.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "new",
     "en": "Sales desk: the type choice is now Sale, Hand over or Reservation. Reservation saves a real reservation from the desk, paid in full, and lets you pick any piece even when it is not in stock.",
     "ar": "مكتب المبيعات: اختيار النوع بقى بيع أو تسليم أو حجز. الحجز بيسجّل حجز فعلي من المكتب مدفوع بالكامل، وتقدر تختار أي قطعة حتى لو مش موجودة في المخزون.",
     "route": "/sales/desk"
