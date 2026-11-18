@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, forMath, lineTakesAccount, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines } from "./sales-desk-rules";
+import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -143,5 +143,21 @@ describe("one channel per payment line (owner, 2026-11-09)", () => {
   it("forMath gives an accountless Instapay line its own stand-in account and leaves every other line alone", () => {
     const rows = [{ bankAccountId: "", amount: "1", method: "instapay" }, { bankAccountId: "x", amount: "2", method: "bank_transfer" }, { bankAccountId: "", amount: "3", method: "bank_transfer" }];
     expect(forMath(rows).map((b) => b.bankAccountId)).toEqual(["none-0", "x", ""]);
+  });
+});
+
+describe("the type choice and the reservation the desk saves", () => {
+  it("offers Sale and Hand over; Reservation only on a new draft for a person with the reservations screen; an old delivery draft keeps its type", () => {
+    expect(deskTypes("sale", true, true)).toEqual(["sale", "handover", "reservation"]);
+    expect(deskTypes("sale", true, false)).toEqual(["sale", "handover"]);
+    expect(deskTypes("handover", false, true)).toEqual(["sale", "handover"]);
+    expect(deskTypes("delivery", false, true)).toEqual(["sale", "delivery", "handover"]);
+  });
+  it("sends a reservation paid by cash and bank lines, the discount and Visa only when they are there", () => {
+    const base = { branchId: "b1", date: "2026-11-18", employeeId: "u1", customer: { customerName: "Mona", customerPhone: "01012345678" }, lines: [{ itemId: "i1", quantity: 2 }] };
+    expect(reservationBody({ ...base, cash: "100", banks: [{ bankAccountId: "a1", amount: "50.5" }, { bankAccountId: "", amount: "" }], discount: { kind: "amount", value: 0 }, visa: false }))
+      .toEqual({ branchId: "b1", date: "2026-11-18", employeeId: "u1", customerName: "Mona", customerPhone: "01012345678", lines: [{ itemId: "i1", quantity: 2 }], cash: 10000, bankPayments: [{ bankAccountId: "a1", amount: 5050 }] });
+    expect(reservationBody({ ...base, cash: "", banks: [{ bankAccountId: "a2", amount: "300" }], discount: { kind: "percent", value: 5 }, visa: true }))
+      .toEqual({ ...base, customer: undefined, customerName: "Mona", customerPhone: "01012345678", bankPayments: [{ bankAccountId: "a2", amount: 30000 }], cashDiscount: { kind: "percent", value: 5 }, payByVisa: true });
   });
 });
