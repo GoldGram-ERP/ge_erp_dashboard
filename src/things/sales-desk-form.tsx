@@ -25,6 +25,7 @@ import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
 import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
 import { canOpen } from "@/nav/tree";
+import { pricePerGram } from "./item-math";
 import { code6 } from "@/lib/code6";
 import { buildDeskMessage } from "./sales-desk-whatsapp";
 import { VISA_PERCENT, bankMethodChoices, blankDeskBank, deskChoices, karatFits, manualPrice, messageInput, payRows, quoteBody, quotePayment, restoreChoices, visaChosen, type DeskBank, type Metal, type Operation, type Quote, type Wrapping } from "./sales-desk-quote";
@@ -351,6 +352,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const side = buy ? "buy" : "sell";
   const manualOpen = typing || manual[side] !== "";
   const shownPrice = (s: "sell" | "buy") => (price ? piastresText(metal === "silver" ? (s === "sell" ? price.silverSellPrice : price.silverBuyPrice) : s === "sell" ? price.sellPrice : price.buyPrice) : "—");
+  // Karat 24 beside karat 21 (owner, 2026-11-18): the 21 price x 24 / 21, half up, the same rule every price uses (pricePerGram).
+  const shown24 = (s: "sell" | "buy") => { const p21 = price ? (s === "sell" ? price.sellPrice : price.buyPrice) : null; const p = p21 == null ? null : pricePerGram({ sellPrice: p21, silverSellPrice: null }, "24"); return p === null ? "—" : piastresText(Number(p)); };
   const totalText = quote ? piastresText(quote.q.totalPiastres) : "—";
   const statusText = price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading");
   const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone);
@@ -446,6 +449,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               <div className="tk-prices">
                 {(["sell", "buy"] as const).map((s) => (
                   <div className="tk-pcell" key={s}><span className="tk-quiet">{d(metal === "silver" ? `desk.${s}Silver` : `desk.${s}Price`)}</span><b id={`sd-${s}price`} dir="ltr">{shownPrice(s)}</b></div>
+                ))}
+                {metal === "gold" && (["sell", "buy"] as const).map((s) => (
+                  <div className="tk-pcell" key={`${s}24`}><span className="tk-quiet">{s === "sell" ? L("بيع، عيار 24", "Sell, karat 24") : L("شراء، عيار 24", "Buy, karat 24")}</span><b id={`sd-${s}price24`} dir="ltr">{shown24(s)}</b></div>
                 ))}
               </div>
               <div className="tk-meta">
