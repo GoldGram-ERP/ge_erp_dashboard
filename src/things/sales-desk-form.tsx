@@ -419,7 +419,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                           <div className="tk-in" data-k={`line${i}Item`}>
                             <div className="tk-item"><b className="tk-name">{info.name}</b>
                               {info.karat && <span className="tk-chip"><Ltr>{info.karat}</Ltr></span>}
-                              {priced && <span className="tk-w"><Ltr>{trimZeros(milligramsText(priced.weightMg))}</Ltr> {d("desk.gram")}</span>}</div>
+                              {priced && <span className="tk-w"><Ltr>{trimZeros(milligramsText(priced.weightMg))}</Ltr> {d("desk.gram")}</span>}
+                              {/* Each piece's own workmanship (a buy: cashback) per gram, as the quote read it from the item (owner, 2026-11-18). */}
+                              {priced && <span className="tk-w" data-fee={priced.feePerGram}>{d(buy ? "desk.cashback" : "desk.workmanship")} <Ltr>{piastresText(priced.feePerGram)}</Ltr> / {d("desk.gram")}</span>}</div>
                             <div className="tk-qty" role="group" aria-label={d("count")}>
                               <Button size="sm" aria-label={L("أنقص", "Less")} disabled={l.count === "1"} onClick={() => step(i, -1)}>−</Button>
                               <Input id={`iq${i}`} data-q={i} dir="ltr" inputMode="numeric" maxLength={3} autoComplete="off" aria-label={d("count")} aria-invalid={!!errs[`line${i}Count`]} value={l.count} onChange={(e) => { touch(); setLines((ls) => ls.map((x, j) => (j === i ? { ...x, count: e.target.value } : x))); }} />
