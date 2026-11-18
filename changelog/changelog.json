@@ -3,6 +3,12 @@
   "version": "next",
   "changes": [
    {
+    "kind": "better",
+    "en": "Branches: adding or editing a branch no longer asks for a branch Admin.",
+    "ar": "الفروع: إضافة أو تعديل فرع مبقاش بيطلب اختيار مدير للفرع.",
+    "route": "/setup/branches"
+   },
+   {
     "kind": "new",
     "en": "Sales desk: each piece line now shows its workmanship per gram (cashback per gram on a buy).",
     "ar": "مكتب المبيعات: كل سطر قطعة بقى بيعرض مصنعية الجرام بتاعته (والكاش باك للجرام في الشراء).",

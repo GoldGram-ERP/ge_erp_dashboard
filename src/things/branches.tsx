@@ -1,7 +1,6 @@
 "use client";
 // الفروع: system-codes/branches + branches-list. Ported from docs/nav-preview/app/things/branches.js.
-// The backend's branch list takes only `page`; create/edit send {branchName, adminUserId} (branchCode is the system's).
-import { api } from "@/lib/api";
+// The backend's branch list takes only `page`; create/edit send {branchName} (branchCode is the system's). No branch Admin (owner, 2026-11-18).
 import type { FieldConfig, MakeConfig, ThingConfig } from "@/lib/engine-types";
 import { ThingPage, Kv, Ltr, Section } from "@/components/engine";
 import { useAccess } from "./sales-access";
@@ -14,9 +13,8 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
   const fields = (): FieldConfig[] => [
     { name: "branchCode", label: m("branchCode"), type: "code", documentType: "branch", hint: m("autoHint") },
     { name: "branchName", label: m("branchName"), type: "text", required: true, maxLength: 100 },
-    { name: "adminUserId", label: m("adminUserId"), type: "select", required: true, optionsFrom: { path: "/users", query: { type: "admin" }, value: "id", label: "username" }, help: m("adminHint") },
   ];
-  const payload = (v: Record<string, any>) => ({ branchName: v.branchName, adminUserId: v.adminUserId });
+  const payload = (v: Record<string, any>) => ({ branchName: v.branchName });
   const stamp = (x: unknown) => (x ? <Ltr>{String(x).slice(0, 19).replace("T", " ")}</Ltr> : "");
   return {
     id: "branches",
@@ -43,16 +41,10 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     record: {
       title: (r) => `${m("title")} · ${code(r.branchCode)}`,
       endpoint: (r) => `/branches/${r.id}`,
-      // the admin's name comes from the user record (a dash when it can't be read)
-      enrich: async (r) => {
-        if (!r.adminUserId) return { adminName: "—" };
-        try { return { adminName: (await api(`/users/${r.adminUserId}`)).username }; } catch { return { adminName: "—" }; }
-      },
       render: (r) => (
         <Section title={m("title")}>
           <Kv k={m("branchCode")}><Ltr>{code(r.branchCode)}</Ltr></Kv>
           <Kv k={m("branchName")}>{r.branchName}</Kv>
-          <Kv k={m("adminUserId")}>{r.adminName}</Kv>
           <Kv k={L("تاريخ الإضافة", "Created")}>{stamp(r.createdAt)}</Kv>
           <Kv k={L("آخر تعديل", "Updated")}>{stamp(r.updatedAt)}</Kv>
         </Section>
@@ -68,7 +60,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       create: { title: m("new"), note: m("twoTreasuries"), path: () => "/branches", method: "POST", toPayload: payload, fields: fields() },
       edit: {
         title: (r) => m("editTitle", { code: code(r!.branchCode) }), path: (r) => `/branches/${r!.id}`, method: "PATCH", toPayload: payload,
-        load: (r) => ({ branchCode: r!.branchCode, branchName: r!.branchName, adminUserId: r!.adminUserId }), fields: fields(),
+        load: (r) => ({ branchCode: r!.branchCode, branchName: r!.branchName }), fields: fields(),
       },
     },
   };
