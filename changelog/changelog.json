@@ -4,6 +4,12 @@
   "changes": [
    {
     "kind": "new",
+    "en": "Sales desk: each piece line now shows its workmanship per gram (cashback per gram on a buy).",
+    "ar": "مكتب المبيعات: كل سطر قطعة بقى بيعرض مصنعية الجرام بتاعته (والكاش باك للجرام في الشراء).",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "new",
     "en": "Sales desk: the price box now shows the karat 24 sell and buy prices beside karat 21.",
     "ar": "مكتب المبيعات: مربع الأسعار بقى بيعرض سعر بيع وشراء عيار 24 جنب عيار 21.",
     "route": "/sales/desk"
