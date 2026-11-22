@@ -16,6 +16,13 @@ export const NAV: NavGroup[] = [
     ]
    },
    {
+    "id": "price-board",
+    "route": "/sales/price-board",
+    "screens": [
+     "gold-sales/price-board"
+    ]
+   },
+   {
     "id": "invoices",
     "route": "/sales/invoices",
     "screens": [

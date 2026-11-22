@@ -8,6 +8,7 @@ export const things: Record<string, ThingEntry> = {};
 // Engine pages (builder B). Add one line per ported page.
 things["money/banks"] = { load: () => import("./banks") };
 things["setup/gold-prices"] = { load: () => import("./gold-prices") };
+things["sales/price-board"] = { load: () => import("./price-board") };
 things["sales/invoices"] = { load: () => import("./sales-invoices") };
 things["sales/desk"] = { load: () => import("./sales-desk") };
 things["sales/returns"] = { load: () => import("./sales-returns") };

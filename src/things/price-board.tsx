@@ -1,0 +1,161 @@
+"use client";
+// لوحة الأسعار / Price board (owner, 2026-11-22): sales/price-board, read only.
+// 1. Today's prices (gold 21, gold 24, silver: sell and buy). 2. The brands as cards side by side, each with its items one under the other:
+// name, price, workmanship, cashback; green when the item can be sold now (pieces in the branch and the hand switch on), red when not.
+// 3. A comparison of two items of different brands with the same karat and weight.
+// One request: GET /price-board?branchId=, priced by the backend as the Sales desk prices a cash sale, so the numbers here are the desk's.
+import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import type { Option } from "@/lib/engine-types";
+import { milligramsText, piastresText } from "@/lib/format";
+import { useMe } from "@/lib/session";
+import { useT } from "@/lib/t";
+import { Select } from "@/components/fields/Select";
+import { DataTable, Td, Th, Tr } from "@/components/ui";
+import { allPages } from "./sales-form-parts";
+import { LOW_STOCK_MAX } from "@/lib/items";
+import { compareCandidates, differenceOf, entriesOf, netOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
+
+const money = (p: number | null | undefined) => (p === null || p === undefined ? "—" : piastresText(p));
+const grams = (mg: number) => `${milligramsText(mg)} g`;
+
+export default function Page() {
+  const { L } = useT();
+  const title = useTranslations("nav.item")("price-board");
+  const { data: me } = useMe();
+  const isUser = me?.userType === "user";
+  const [picked, setPicked] = useState("");
+  const branches = useQuery({ queryKey: ["price-board-branches"], enabled: !!me && !isUser, staleTime: 60_000, queryFn: () => allPages("/branches") });
+  // A User always reads their own branch; an Admin picks one (their own, or the first, until they do).
+  const branchId = picked || (isUser ? me?.branchId ?? "" : String(me?.branchId ?? branches.data?.[0]?.id ?? ""));
+  const board = useQuery<Board>({
+    queryKey: ["price-board", branchId], enabled: Boolean(branchId), staleTime: 10_000,
+    refetchInterval: 15_000, refetchIntervalInBackground: false,
+    queryFn: () => api("/price-board", { query: { branchId } }),
+  });
+
+  const entries = useMemo(() => entriesOf(board.data?.brands ?? []), [board.data]);
+  const [aId, setAId] = useState("");
+  const [bId, setBId] = useState("");
+  const a = entries.find((e) => e.id === aId);
+  const candidates = useMemo(() => compareCandidates(entries, a), [entries, a]);
+  const b = candidates.find((e) => e.id === bId);
+
+  const optionOf = (e: Entry): Option => [e.id, `${e.itemName} · ${e.karat} · ${grams(e.weightMg)}`, false, { sub: e.brandName, search: `${e.itemName} ${e.nickname ?? ""} ${e.brandName} ${e.karat}`, tone: e.sellable ? "good" : "bad" }];
+  const optionsA = useMemo(() => entries.map(optionOf), [entries]);
+  const optionsB = useMemo(() => candidates.map(optionOf), [candidates]);
+
+  const stockText = (e: BoardItem) =>
+    !e.sellable ? L("غير متوفر", "Out of stock")
+      : e.stockCount <= LOW_STOCK_MAX ? L(`متوفر (متبقي ${e.stockCount})`, `In stock (${e.stockCount} left)`)
+      : L("متوفر", "In stock");
+
+  const price = board.data?.price;
+  const priceCard = (label: string, sell: number | null | undefined, buy: number | null | undefined) => (
+    <section className="bubble pb-price" aria-label={label}>
+      <span className="pill">{label}</span>
+      <div className="pb-sides">
+        <div><small>{L("بيع", "Sell")}</small><b dir="ltr">{money(sell)}</b></div>
+        <div><small>{L("شراء", "Buy")}</small><b dir="ltr">{money(buy)}</b></div>
+      </div>
+    </section>
+  );
+
+  return (
+    <>
+      <div className="head">
+        <div><h1>{title}</h1><div className="sub">{price ? L(`أسعار الجرام بتاريخ ${price.date.slice(0, 10)}`, `Per-gram prices dated ${price.date.slice(0, 10)}`) : ""}</div></div>
+        {!isUser && (
+          <div className="field pb-branch">
+            <label htmlFor="pb-branch">{L("الفرع", "Branch")}</label>
+            <Select id="pb-branch" name="branch" value={branchId} onChange={(v) => v && setPicked(v)} options={(branches.data ?? []).map((x) => [String(x.id), String(x.branchName)] as Option)} />
+          </div>
+        )}
+      </div>
+
+      {board.isError && <p className="quiet-note" role="alert">{L("تعذّر تحميل الأسعار. حاول مرة أخرى.", "Could not load the prices. Try again.")}</p>}
+      {board.isPending && branchId && <div className="skeleton" aria-busy="true"><i /><i /></div>}
+
+      {board.data && (<>
+        {/* 1. Today's prices */}
+        {price ? (
+          <div className="pb-prices">
+            {priceCard(L("ذهب عيار 21", "Gold 21"), price.sell21, price.buy21)}
+            {priceCard(L("ذهب عيار 24", "Gold 24"), price.sell24, price.buy24)}
+            {priceCard(L("الفضة", "Silver"), price.silverSell, price.silverBuy)}
+          </div>
+        ) : <p className="quiet-note">{L("لم يتم تسجيل سعر الذهب بعد.", "No gold price has been saved yet.")}</p>}
+
+        {/* 2. The brands, side by side */}
+        <h2 className="pb-h">{L("الماركات", "Brands")}</h2>
+        {board.data.brands.length === 0 ? <p className="quiet-note">{L("لا توجد أصناف.", "There are no items.")}</p> : (
+          <div className="pb-brands">
+            {board.data.brands.map((brand) => (
+              <section className="card pb-brand" key={brand.id} aria-label={brand.name}>
+                <h3>{brand.name}</h3>
+                <ul>
+                  {brand.items.map((it) => (
+                    <li key={it.id} data-tone={it.sellable ? "good" : "bad"}>
+                      <div className="pb-top"><b>{it.itemName}</b><span className="pb-total" dir="ltr">{money(it.total)}</span></div>
+                      <div className="pb-meta"><span>{it.karat} · {grams(it.weightMg)}</span><span>{stockText(it)}</span></div>
+                      <dl>
+                        <div><dt>{L("المصنعية", "Workmanship")}</dt><dd dir="ltr">{money(it.workmanship)}</dd></div>
+                        <div><dt>{L("الكاش باك", "Cashback")}</dt><dd dir="ltr">{money(it.cashback)}</dd></div>
+                      </dl>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+
+        {/* 3. The comparison */}
+        <h2 className="pb-h">{L("مقارنة بين صنفين", "Compare two items")}</h2>
+        <div className="card pb-compare">
+          <div className="pb-pick">
+            <div className="field"><label htmlFor="pb-a">{L("الصنف الأول", "First item")}</label>
+              <Select id="pb-a" name="a" value={aId} onChange={(v) => { setAId(v); setBId(""); }} options={optionsA} searchable placeholder={L("اختر صنفًا", "Pick an item")} /></div>
+            <div className="field"><label htmlFor="pb-b">{L("الصنف الثاني (ماركة أخرى، نفس العيار والوزن)", "Second item (another brand, same karat and weight)")}</label>
+              <Select id="pb-b" name="b" value={b ? bId : ""} onChange={setBId} options={optionsB} searchable disabled={!a} placeholder={a ? L("اختر صنفًا", "Pick an item") : L("اختر الصنف الأول أولًا", "Pick the first item first")} /></div>
+          </div>
+          {a && candidates.length === 0 && <p className="quiet-note" role="status">{L("لا يوجد صنف من ماركة أخرى بنفس العيار والوزن.", "No item of another brand has the same karat and weight.")}</p>}
+          {a && b && compareTable(a, b, L, stockText)}
+        </div>
+      </>)}
+    </>
+  );
+}
+
+// The comparison table: the two items side by side, and the second less the first. The cell that wins a row is marked.
+function compareTable(a: Entry, b: Entry, L: (ar: string, en: string) => string, stockText: (e: BoardItem) => string) {
+  const row = (label: string, va: number | null, vb: number | null, better?: "lower" | "higher", sub?: [string, string]) => {
+    const w = better ? winner(va, vb, better) : null;
+    const d = differenceOf(va, vb);
+    return (
+      <Tr key={label}>
+        <Th scope="row">{label}</Th>
+        <Td data-win={w === "a" || undefined} dir="ltr">{money(va)}{sub && <small>{sub[0]}</small>}</Td>
+        <Td data-win={w === "b" || undefined} dir="ltr">{money(vb)}{sub && <small>{sub[1]}</small>}</Td>
+        <Td dir="ltr">{d === null ? "—" : `${d > 0 ? "+" : ""}${piastresText(d)}`}</Td>
+      </Tr>
+    );
+  };
+  const text = (label: string, va: string, vb: string) => <Tr key={label}><Th scope="row">{label}</Th><Td>{va}</Td><Td>{vb}</Td><Td /></Tr>;
+  const perGram = (p: number) => `${piastresText(p)} / g`;
+  return (
+    <DataTable className="pb-table" fixedOrder head={["", a.brandName, b.brandName, L("الفرق (الثاني − الأول)", "Difference (second − first)")]}>
+      {text(L("الصنف", "Item"), a.itemName, b.itemName)}
+      {text(L("العيار", "Karat"), a.karat, b.karat)}
+      {text(L("الوزن", "Weight"), grams(a.weightMg), grams(b.weightMg))}
+      {row(L("قيمة الذهب", "Gold value"), a.goldValue, b.goldValue, "lower")}
+      {row(L("المصنعية", "Workmanship"), a.workmanship, b.workmanship, "lower", [perGram(a.workmanshipPerGram), perGram(b.workmanshipPerGram)])}
+      {row(L("الكاش باك", "Cashback"), a.cashback, b.cashback, "higher", [perGram(a.cashbackPerGram), perGram(b.cashbackPerGram)])}
+      {row(L("السعر الإجمالي", "Total price"), a.total, b.total, "lower")}
+      {row(L("الصافي بعد الكاش باك", "Net after cashback"), netOf(a), netOf(b), "lower")}
+      {text(L("المخزون", "Stock"), stockText(a), stockText(b))}
+    </DataTable>
+  );
+}

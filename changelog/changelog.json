@@ -37,6 +37,24 @@
     "en": "Sales desk: on a saved draft the sales channel and the sell/buy, gold/silver and sale/delivery choices are read only; they are picked once on the new draft.",
     "ar": "مكتب المبيعات: في المسودة المحفوظة قناة البيع واختيارات بيع/شراء وذهب/فضة وبيع/توصيل بقت للعرض بس، بتتحدد مرة واحدة في المسودة الجديدة.",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "new",
+    "en": "New Price board page: today's gold and silver prices, every brand's items with price, workmanship, cashback and stock, and a side-by-side comparison of two items of different brands.",
+    "ar": "صفحة جديدة لوحة الأسعار: أسعار الدهب والفضة النهارده، وأصناف كل ماركة بسعرها والمصنعية والكاش باك والمخزون، ومقارنة بين صنفين من ماركتين مختلفتين.",
+    "route": "/sales/price-board"
+   },
+   {
+    "kind": "better",
+    "en": "On the Sales desk, a buy can now pick any item even without stock, and an item with only 1 to 3 pieces shows how many are left.",
+    "ar": "في مكتب المبيعات، الشراء بقى يقدر يختار أي صنف حتى لو مفيش منه مخزون، والصنف اللي باقي منه من 1 لـ 3 قطع بيظهر عدده.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "new",
+    "en": "The item form has a Has stock switch: when it is off, the Sales desk will not sell that item even if pieces are in stock.",
+    "ar": "في شاشة الصنف زرار متوفر بالمخزون: لو اتقفل مكتب المبيعات مش هيبيع الصنف ده حتى لو فيه مخزون.",
+    "route": "/buy/items"
    }
   ]
  },

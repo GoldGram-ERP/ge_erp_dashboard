@@ -174,3 +174,10 @@ describe("wholesale is not a desk channel, and leaving Reservation drops what is
     expect(linesInStock(lines, undefined)).toEqual(lines);
   });
 });
+
+describe("linesInStock and the hand switch", () => {
+  it("also drops the items switched off by hand", () => {
+    const lines = [{ itemId: "a", count: "1" }, { itemId: "b", count: "1" }];
+    expect(linesInStock(lines, new Map([["a", 2], ["b", 2]]), new Set(["b"]))).toEqual([lines[0]]);
+  });
+});

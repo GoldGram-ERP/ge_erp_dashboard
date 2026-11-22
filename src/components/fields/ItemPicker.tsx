@@ -16,6 +16,8 @@ type Props = {
   items: Row[];
   /** Pieces in stock per item, for the Sales desk only. Left out: nothing is coloured or blocked. */
   stock?: StockMap;
+  /** A buy picks any item, in stock or not (they stay red); a sale cannot pick a red one. Default: sell. */
+  mode?: "sell" | "buy";
   /** The option's first line. Default: the name and the karat. */
   label?: (it: Row) => string;
   /** Options that stay offered whatever the list says (an item already on a draft that was switched off since). */
@@ -23,10 +25,14 @@ type Props = {
   placeholder?: string; disabled?: boolean; invalid?: boolean; labelledBy?: string; describedBy?: string; className?: string;
 };
 
-export function ItemPicker({ items, stock, label, extra, ...select }: Props) {
+export function ItemPicker({ items, stock, mode, label, extra, ...select }: Props) {
   const { L } = useT();
   const [brand, setBrand] = useState("");
-  const base = useMemo(() => items.map((it) => itemOption(it, { stock, label })), [items, stock, label]);
+  const base = useMemo(
+    () => items.map((it) => itemOption(it, { stock, label, mode, left: (n) => L(`متبقي ${n}`, `${n} left`) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- L only changes with the language, which remounts the page
+    [items, stock, label, mode],
+  );
   const brands = useMemo(() => brandsOf(items), [items]);
   const all = useMemo(() => {
     const out = [...base];

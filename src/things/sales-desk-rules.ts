@@ -55,9 +55,9 @@ export function readLines(lines: DeskLine[]): { errors: Record<string, string>; 
 export type ChannelOption = { id: string; name: string };
 /** The desk does not sell wholesale (owner, 2026-11-18): the channel named جملة is never offered here, whoever is allowed it. */
 const offered = (allowed: ChannelOption[] | undefined): ChannelOption[] => (allowed ?? []).filter((c) => c.name.trim() !== "جملة");
-/** The lines a Sale or a Hand over keeps when the type leaves Reservation: only the items in stock (a reservation may hold any item). Stock not heard: all stay. */
-export const linesInStock = <T extends { itemId: string }>(lines: T[], stock: ReadonlyMap<string, number> | undefined): T[] =>
-  (stock ? lines.filter((l) => (stock.get(l.itemId) ?? 0) > 0) : lines);
+/** The lines a Sale or a Hand over keeps when the type leaves Reservation: only the items in stock and not switched off by hand (a reservation may hold any item). Stock not heard: all stay. */
+export const linesInStock = <T extends { itemId: string }>(lines: T[], stock: ReadonlyMap<string, number> | undefined, switchedOff?: ReadonlySet<string>): T[] =>
+  (stock ? lines.filter((l) => (stock.get(l.itemId) ?? 0) > 0 && !switchedOff?.has(l.itemId)) : lines);
 /** The channels the picker offers: the ones /access/me allows, plus the draft's own stored channel (shown even when it is no longer allowed or was deleted). */
 export function channelOptions(allowed: ChannelOption[] | undefined, stored?: ChannelOption | null): [string, string][] {
   const out: [string, string][] = offered(allowed).map((c) => [c.id, c.name]);

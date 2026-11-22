@@ -1236,3 +1236,32 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .imp-file{font-size:13px;color:var(--mute);overflow-wrap:anywhere}
 .imp-errors ul{margin:8px 0 0;padding-inline-start:20px;display:grid;gap:4px}
 .imp+.formbar{margin-top:6px}
+
+/* The Price board (owner, 2026-11-22): prices strip, brand cards side by side, and the comparison table. Direction-neutral (logical properties); sizes in rem so the px ratchet is untouched. */
+.pb-branch{min-width:14rem}
+.pb-h{font-size:var(--fs-base);margin:1.4rem 0 .6rem}
+.pb-prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.9rem}
+.pb-prices .bubble{width:auto;min-width:0}
+.pb-sides{display:flex;gap:1.75rem}
+.pb-sides small{display:block;color:var(--mute)}
+.pb-sides b{font-size:1.6rem;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums}
+.pb-brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18.75rem),1fr));gap:.9rem;align-items:start}
+.pb-brand{margin-bottom:0}
+.pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.pb-brand li{border-radius:.75rem;padding:.6rem .75rem;background:var(--surface);border:thin solid var(--line-soft)}
+.pb-brand li[data-tone=good]{box-shadow:inset .25rem 0 0 var(--good);background:color-mix(in srgb,var(--good) 8%,var(--surface))}
+.pb-brand li[data-tone=bad]{box-shadow:inset .25rem 0 0 var(--warn);background:color-mix(in srgb,var(--warn) 7%,var(--surface))}
+[dir=rtl] .pb-brand li[data-tone=good]{box-shadow:inset -.25rem 0 0 var(--good)}
+[dir=rtl] .pb-brand li[data-tone=bad]{box-shadow:inset -.25rem 0 0 var(--warn)}
+.pb-brand li[data-tone=good] .pb-meta span:last-child{color:var(--good);font-weight:600}
+.pb-brand li[data-tone=bad] .pb-meta span:last-child{color:var(--warn);font-weight:600}
+.pb-top{display:flex;justify-content:space-between;gap:.6rem;align-items:baseline}
+.pb-total{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pb-meta{display:flex;justify-content:space-between;gap:.6rem;color:var(--mute);font-size:.9em;margin-top:.15rem}
+.pb-brand dl{display:flex;gap:1.1rem;margin:.5rem 0 0}
+.pb-brand dt{color:var(--mute);font-size:.85em}
+.pb-brand dd{margin:0;font-variant-numeric:tabular-nums}
+.pb-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17.5rem),1fr));gap:.9rem;margin-bottom:.75rem}
+.pb-table th[scope=row]{font-weight:600;color:var(--ink-2);white-space:nowrap}
+.pb-table td small{display:block;color:var(--mute);font-size:.85em}
+.pb-table td[data-win]{background:color-mix(in srgb,var(--good) 12%,transparent);font-weight:700;color:var(--good)}
