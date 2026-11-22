@@ -72,6 +72,7 @@ for (const lang of LANGS) {
     await go('e2euser', '', lang);
     await menu(browser);
     await expect(browser.locator('span#app-version')).toBeVisible();
+    expect(await browser.locator('span#app-version').textContent()).not.toContain('+');   // the build commit is for Admin and Super admin only
     await expect(browser.locator('a#app-version')).toHaveCount(0);
     await expect(browser.locator('a#nav-whats-new')).toHaveCount(0);
     await go('e2euser', '/whats-new', lang);

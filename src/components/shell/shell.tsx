@@ -19,6 +19,9 @@ import { SearchPalette, SidebarSearch } from "./search-palette";
 import { DASHBOARD_VERSION } from "@/version";
 import { identifyForRum } from "@/lib/rum";
 
+/** Everyone sees the release number; the build commit after the "+" (and its -dirty mark) is for Admin and Super admin only. */
+const RELEASE_VERSION = DASHBOARD_VERSION.split("+")[0];
+
 const JOBS_ITEMS = [["", "jobsHome"], ["questions", "jobsQuestions"], ["todo", "jobsTodo"]] as const;
 const narrow = () => matchMedia("(max-width:900px)").matches;
 
@@ -188,7 +191,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           <div className="me" id="me">
             <div className="who"><b>{me.name}</b><small>{t(`app.userType.${me.userType}`)}</small>{showLog
               ? <Link className="ver" id="app-version" dir="ltr" href="/whats-new" title={t("app.whatsNew.link")} aria-label={`${t("app.whatsNew.link")} v${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}{unseenLog ? <i className="wn-dot" aria-hidden="true" /> : null}</Link>
-              : <span className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${DASHBOARD_VERSION}`}>v{DASHBOARD_VERSION}</span>}</div>
+              : <span className="ver" id="app-version" dir="ltr" title={`GoldGram dashboard ${RELEASE_VERSION}`}>v{RELEASE_VERSION}</span>}</div>
             <span className="actions">
               <ReportBug />
               <Link className="ic-btn" href="/account" title={t("app.myAccount")} aria-label={t("app.myAccount")}><Icon name="profile" /></Link>
