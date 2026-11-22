@@ -13,9 +13,9 @@ import { milligramsText, piastresText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { Select } from "@/components/fields/Select";
-import { DataTable, Td, Th, Tr } from "@/components/ui";
+import { Button, DataTable, Td, Th, Tr } from "@/components/ui";
 import { allPages } from "./sales-form-parts";
-import { LOW_STOCK_MAX } from "@/lib/items";
+import { LOW_STOCK_MAX, brandsOf, inBrand } from "@/lib/items";
 import { compareCandidates, differenceOf, entriesOf, netOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
 
 const money = (p: number | null | undefined) => (p === null || p === undefined ? "—" : piastresText(p));
@@ -43,9 +43,22 @@ export default function Page() {
   const candidates = useMemo(() => compareCandidates(entries, a), [entries, a]);
   const b = candidates.find((e) => e.id === bId);
 
-  const optionOf = (e: Entry): Option => [e.id, `${e.itemName} · ${e.karat} · ${grams(e.weightMg)}`, false, { sub: e.brandName, search: `${e.itemName} ${e.nickname ?? ""} ${e.brandName} ${e.karat}`, tone: e.sellable ? "good" : "bad" }];
+  const optionOf = (e: Entry): Option => [e.id, `${e.itemName} · ${e.karat} · ${grams(e.weightMg)}`, false, { sub: e.brandName, search: `${e.itemName} ${e.nickname ?? ""} ${e.brandName} ${e.karat}`, tone: e.sellable ? "good" : "bad", group: e.brandId }];
+  // Each select can be narrowed to one brand with the same tabs as the item picker (the brand filter row on top of the list).
+  const [brandA, setBrandA] = useState("");
+  const [brandB, setBrandB] = useState("");
   const optionsA = useMemo(() => entries.map(optionOf), [entries]);
   const optionsB = useMemo(() => candidates.map(optionOf), [candidates]);
+  const tabs = (items: Entry[], brand: string, setBrand: (id: string) => void) => {
+    const brands = brandsOf(items);
+    if (brands.length < 2) return undefined;
+    return (
+      <div className="sel-brands" role="group" aria-label={L("الماركة", "Brand")} onMouseDown={(e) => e.preventDefault()}>{/* a tab click keeps the typing in the search box */}
+        <Button size="sm" variant={brand === "" ? "primary" : "quiet"} aria-pressed={brand === ""} onClick={() => setBrand("")}>{L("كل الماركات", "All brands")}</Button>
+        {brands.map((x) => <Button size="sm" key={x.id} variant={brand === x.id ? "primary" : "quiet"} aria-pressed={brand === x.id} onClick={() => setBrand(brand === x.id ? "" : x.id)}>{x.name}</Button>)}
+      </div>
+    );
+  };
 
   const stockText = (e: BoardItem) =>
     !e.sellable ? L("غير متوفر", "Out of stock")
@@ -117,9 +130,9 @@ export default function Page() {
         <div className="card pb-compare">
           <div className="pb-pick">
             <div className="field"><label htmlFor="pb-a">{L("الصنف الأول", "First item")}</label>
-              <Select id="pb-a" name="a" value={aId} onChange={(v) => { setAId(v); setBId(""); }} options={optionsA} searchable placeholder={L("اختر صنفًا", "Pick an item")} /></div>
+              <Select id="pb-a" name="a" value={aId} onChange={(v) => { setAId(v); setBId(""); }} options={inBrand(optionsA, brandA, aId)} header={tabs(entries, brandA, setBrandA)} searchable placeholder={L("اختر صنفًا", "Pick an item")} /></div>
             <div className="field"><label htmlFor="pb-b">{L("الصنف الثاني (ماركة أخرى، نفس العيار والوزن)", "Second item (another brand, same karat and weight)")}</label>
-              <Select id="pb-b" name="b" value={b ? bId : ""} onChange={setBId} options={optionsB} searchable disabled={!a} placeholder={a ? L("اختر صنفًا", "Pick an item") : L("اختر الصنف الأول أولًا", "Pick the first item first")} /></div>
+              <Select id="pb-b" name="b" value={b ? bId : ""} onChange={setBId} options={inBrand(optionsB, brandB, bId)} header={tabs(candidates, brandB, setBrandB)} searchable disabled={!a} placeholder={a ? L("اختر صنفًا", "Pick an item") : L("اختر الصنف الأول أولًا", "Pick the first item first")} /></div>
           </div>
           {a && candidates.length === 0 && <p className="quiet-note" role="status">{L("لا يوجد صنف من ماركة أخرى بنفس العيار والوزن.", "No item of another brand has the same karat and weight.")}</p>}
           {a && b && compareTable(a, b, L, stockText)}

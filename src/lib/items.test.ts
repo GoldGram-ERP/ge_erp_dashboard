@@ -67,11 +67,11 @@ describe("the desk picker on a buy, the few left, and the hand switch (owner, 20
   const stock = stockMapOf({ items: [{ itemId: "i1", count: 2 }, { itemId: "i2", count: 3 }, { itemId: "i3", count: 4 }] });
   const left = (n: number) => `${n} left`;
 
-  it("a sale blocks an item without stock; a buy picks it, and it stays red", () => {
+  it("a sale blocks an item without stock; a buy picks it and shows no colour", () => {
     expect(itemOption(chain, { stock: stockMapOf({ items: [{ itemId: "i1", count: 1 }] }), mode: "sell" })[2]).toBe(true);
     const buy = itemOption(chain, { stock: stockMapOf({ items: [{ itemId: "i1", count: 1 }] }), mode: "buy" });
     expect(buy[2]).toBe(false);
-    expect(buy[3]?.tone).toBe("bad");
+    expect(buy[3]?.tone).toBeUndefined();
   });
 
   it("names the pieces left only when they are 1 to 3", () => {
