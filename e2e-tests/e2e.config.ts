@@ -21,7 +21,7 @@ export default {
   tests: ['tests/**/*.e2e.ts'],
   output: '.shots', // screenshots and traces land here (git-ignored)
   timeout: 120_000,
-  workers: 1, // tests share the seeded accounts (password change, sign-in attempts)
+  workers: 6, // owner's rule: 6 in parallel. Tests that change a shared account (password, sign-in attempts) must make their own user
   targets: [
     { name: 'desktop', engine: web({ viewport: { width: 1440, height: 900 } }), app },
     { name: 'phone', engine: web({ viewport: { width: 390, height: 844 } }), app },
