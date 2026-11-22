@@ -1528,7 +1528,7 @@
    "invoiceType": "نوع الفاتورة",
    "invoiceTypes": {
     "sale": "بيع",
-    "delivery": "توصيل",
+    "delivery": "تسليم",
     "handover": "تسليم"
    },
    "customer": "العميل",

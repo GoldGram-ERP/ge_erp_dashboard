@@ -4,6 +4,12 @@
   "changes": [
    {
     "kind": "better",
+    "en": "Sales invoice: the \"Delivery\" invoice type is now called \"تسليم\" in Arabic.",
+    "ar": "فاتورة المبيعات: نوع الفاتورة \"توصيل\" بقى اسمه \"تسليم\".",
+    "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
     "en": "Branches: adding or editing a branch no longer asks for a branch Admin.",
     "ar": "الفروع: إضافة أو تعديل فرع مبقاش بيطلب اختيار مدير للفرع.",
     "route": "/setup/branches"
