@@ -61,6 +61,12 @@
     "en": "On the Sales desk, a buy no longer colours items green or red, and the Price board comparison lists can be narrowed to one brand with the brand tabs.",
     "ar": "في مكتب المبيعات، الشراء مبقاش بيلوّن الأصناف أخضر وأحمر، وقوائم المقارنة في لوحة الأسعار تقدر تفلترها بماركة واحدة من أزرار الماركات.",
     "route": "/sales/price-board"
+   },
+   {
+    "kind": "new",
+    "en": "Price board: a plus and minus on each item to quote several pieces (the prices multiply by the count), and the page can now be given to a User in the Users screens list.",
+    "ar": "لوحة الأسعار: زرار زائد وناقص على كل صنف عشان تحسب كذا قطعة (الأسعار بتتضرب في العدد)، وبقى ينفع تدّي الصفحة لمستخدم من قايمة الشاشات.",
+    "route": "/sales/price-board"
    }
   ]
  },

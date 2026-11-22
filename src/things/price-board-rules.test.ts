@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareCandidates, differenceOf, entriesOf, netOf, winner, type BoardBrand, type BoardItem } from "./price-board-rules";
+import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, times, winner, type BoardBrand, type BoardItem } from "./price-board-rules";
 
 const item = (id: string, karat: string, weightMg: number, extra: Partial<BoardItem> = {}): BoardItem => ({
   id, itemCode: 1, itemName: id, nickname: null, karat, weightMg, workmanshipPerGram: 0, cashbackPerGram: 0,
@@ -44,5 +44,20 @@ describe("the numbers of the table", () => {
     expect(winner(100, 90, "higher")).toBe("a");
     expect(winner(5, 5, "lower")).toBeNull();
     expect(winner(null, 5, "lower")).toBeNull();
+  });
+});
+
+describe("the pieces of one item", () => {
+  it("multiplies a price by the count, and no price stays no price", () => {
+    expect(times(110, 1)).toBe(110);
+    expect(times(110, 3)).toBe(330);
+    expect(times(null, 3)).toBeNull();
+  });
+  it("keeps the count between 1 and 99", () => {
+    expect(clampCount(0)).toBe(1);
+    expect(clampCount(-4)).toBe(1);
+    expect(clampCount(5.9)).toBe(5);
+    expect(clampCount(100)).toBe(99);
+    expect(clampCount(Number.NaN)).toBe(1);
   });
 });
