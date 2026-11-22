@@ -55,6 +55,12 @@
     "en": "The item form has a Has stock switch: when it is off, the Sales desk will not sell that item even if pieces are in stock.",
     "ar": "في شاشة الصنف زرار متوفر بالمخزون: لو اتقفل مكتب المبيعات مش هيبيع الصنف ده حتى لو فيه مخزون.",
     "route": "/buy/items"
+   },
+   {
+    "kind": "better",
+    "en": "On the Sales desk, a buy no longer colours items green or red, and the Price board comparison lists can be narrowed to one brand with the brand tabs.",
+    "ar": "في مكتب المبيعات، الشراء مبقاش بيلوّن الأصناف أخضر وأحمر، وقوائم المقارنة في لوحة الأسعار تقدر تفلترها بماركة واحدة من أزرار الماركات.",
+    "route": "/sales/price-board"
    }
   ]
  },

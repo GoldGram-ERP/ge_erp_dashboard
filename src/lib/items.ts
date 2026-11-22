@@ -50,12 +50,12 @@ export const lowStockOf = (count: number): number | null => (count >= 1 && count
 
 /**
  * One option of the picker. With a stock map (the Sales desk) an item that has pieces and is switched on is green; any other is red.
- * A sale cannot pick a red one; a buy can pick any item (owner, 2026-11-22), red or not. Few pieces left (1 to 3) are named under the item.
+ * A sale cannot pick a red one; a buy can pick any item and shows no colour at all (owner, 2026-11-22). Few pieces left (1 to 3) are named under the item.
  */
 export function itemOption(it: Row, o: { stock?: StockMap; label?: (it: Row) => string; mode?: "sell" | "buy"; left?: (count: number) => string } = {}): Option {
   const id = String(it.id);
   const count = o.stock?.get(id) ?? 0;
-  const tone = o.stock === undefined ? undefined : count > 0 && !switchedOff(it) ? "good" : "bad";
+  const tone = o.stock === undefined || o.mode === "buy" ? undefined : count > 0 && !switchedOff(it) ? "good" : "bad";
   const few = o.stock !== undefined && !switchedOff(it) ? lowStockOf(count) : null;
   const sub = [itemSubText(it), few !== null && o.left ? o.left(few) : ""].filter(Boolean).join(" · ");
   const meta: OptionMeta = { sub, search: itemSearchText(it), group: it.brandId ?? "", ...(tone ? { tone } : {}) };
