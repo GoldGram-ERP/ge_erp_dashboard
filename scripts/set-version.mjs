@@ -21,7 +21,9 @@ function git(args) {
 
 const release = process.env.APP_VERSION || JSON.parse(readFileSync("package.json", "utf8")).version;
 const sha = git(["rev-parse", "--short", "HEAD"]);
-const dirty = sha && git(["status", "--porcelain"]) !== "";
+// On Vercel the install step leaves untracked files in the checkout, so the tree always looks
+// dirty there although the build is exactly the commit; trust the commit it was cloned at.
+const dirty = sha && !process.env.VERCEL && git(["status", "--porcelain"]) !== "";
 
 // The host builds an archive with no git history. scripts/pack-hostinger.mjs writes which commit
 // it packed into build-info.json, so the build that lands there still names its commit.
