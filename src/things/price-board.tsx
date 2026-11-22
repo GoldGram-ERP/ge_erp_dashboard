@@ -16,7 +16,7 @@ import { Select } from "@/components/fields/Select";
 import { Button, DataTable, Td, Th, Tr } from "@/components/ui";
 import { allPages } from "./sales-form-parts";
 import { LOW_STOCK_MAX, brandsOf, inBrand } from "@/lib/items";
-import { compareCandidates, differenceOf, entriesOf, netOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
+import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, times, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
 
 const money = (p: number | null | undefined) => (p === null || p === undefined ? "—" : piastresText(p));
 const grams = (mg: number) => `${milligramsText(mg)} g`;
@@ -35,6 +35,11 @@ export default function Page() {
     refetchInterval: 15_000, refetchIntervalInBackground: false,
     queryFn: () => api("/price-board", { query: { branchId } }),
   });
+
+  // The pieces of each item (page state, by item id: it survives the refresh). 1 until a person presses +.
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const countOf = (id: string) => counts[id] ?? 1;
+  const bump = (id: string, by: number) => setCounts((c) => ({ ...c, [id]: clampCount((c[id] ?? 1) + by) }));
 
   const entries = useMemo(() => entriesOf(board.data?.brands ?? []), [board.data]);
   const [aId, setAId] = useState("");
@@ -107,18 +112,31 @@ export default function Page() {
           <div className="pb-brands">
             {board.data.brands.map((brand) => (
               <section className="card pb-brand" key={brand.id} aria-label={brand.name}>
-                <h3>{brand.name}</h3>
+                <h3>{brand.name}<span className="pb-count">{brand.items.length}</span></h3>
                 <ul>
-                  {brand.items.map((it) => (
-                    <li key={it.id} data-tone={it.sellable ? "good" : "bad"}>
-                      <div className="pb-top"><b>{it.itemName}</b><span className="pb-total" dir="ltr">{money(it.total)}</span></div>
-                      <div className="pb-meta"><span>{it.karat} · {grams(it.weightMg)}</span><span>{stockText(it)}</span></div>
-                      <dl>
-                        <div><dt>{L("المصنعية", "Workmanship")}</dt><dd dir="ltr">{money(it.workmanship)}</dd></div>
-                        <div><dt>{L("الكاش باك", "Cashback")}</dt><dd dir="ltr">{money(it.cashback)}</dd></div>
-                      </dl>
-                    </li>
-                  ))}
+                  {brand.items.map((it) => {
+                    const n = countOf(it.id);
+                    return (
+                      <li key={it.id} data-tone={it.sellable ? "good" : "bad"}>
+                        <div className="pb-top">
+                          <div className="pb-name"><b>{it.itemName}</b><small>{it.karat} · {grams(it.weightMg)}</small></div>
+                          <div className="pb-price"><span className="pb-total" dir="ltr">{money(times(it.total, n))}</span>{n > 1 && <small dir="ltr">{n} × {money(it.total)}</small>}</div>
+                        </div>
+                        <div className="pb-chips">
+                          <span><small>{L("المصنعية", "Workmanship")}</small><b dir="ltr">{money(times(it.workmanship, n))}</b></span>
+                          <span><small>{L("الكاش باك", "Cashback")}</small><b dir="ltr">{money(times(it.cashback, n))}</b></span>
+                        </div>
+                        <div className="pb-foot">
+                          <span className="pb-pill">{stockText(it)}</span>
+                          <div className="pb-step" role="group" aria-label={L("الكمية", "Quantity")}>
+                            <Button size="sm" aria-label={L("تقليل الكمية", "Decrease quantity")} disabled={n <= 1} onClick={() => bump(it.id, -1)}>−</Button>
+                            <output aria-live="polite" dir="ltr">{n}</output>
+                            <Button size="sm" aria-label={L("زيادة الكمية", "Increase quantity")} disabled={n >= 99} onClick={() => bump(it.id, 1)}>+</Button>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             ))}

@@ -30,3 +30,10 @@ export function winner(a: number | null, b: number | null, better: "lower" | "hi
   if (a === null || b === null || a === b) return null;
   return (better === "lower" ? a < b : a > b) ? "a" : "b";
 }
+
+/** The pieces of one item on the board: 1 to 99. */
+export const COUNT_MAX = 99;
+export const clampCount = (n: number): number => (Number.isFinite(n) ? Math.min(COUNT_MAX, Math.max(1, Math.trunc(n))) : 1);
+
+/** A price for n pieces; no price stays no price. */
+export const times = (value: number | null, n: number): number | null => (value === null ? null : value * clampCount(n));
