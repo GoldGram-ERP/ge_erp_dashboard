@@ -1,0 +1,48 @@
+import { describe, expect, it } from "vitest";
+import { compareCandidates, differenceOf, entriesOf, netOf, winner, type BoardBrand, type BoardItem } from "./price-board-rules";
+
+const item = (id: string, karat: string, weightMg: number, extra: Partial<BoardItem> = {}): BoardItem => ({
+  id, itemCode: 1, itemName: id, nickname: null, karat, weightMg, workmanshipPerGram: 0, cashbackPerGram: 0,
+  goldValue: 100, workmanship: 10, cashback: 4, total: 110, stockCount: 1, stockAvailable: true, sellable: true, ...extra,
+});
+const brands: BoardBrand[] = [
+  { id: "b1", name: "Gold Era", items: [item("a", "21", 4000), item("a2", "21", 8000)] },
+  { id: "b2", name: "BTC", items: [item("b", "21", 4000), item("c", "24", 4000), item("d", "21", 8000)] },
+  { id: "b3", name: "SAM", items: [item("e", "21", 4000), item("f", "21", 4001)] },
+];
+const all = entriesOf(brands);
+const first = (id: string) => all.find((e) => e.id === id);
+
+describe("the second item of the comparison", () => {
+  it("is of another brand, with the same karat and the same weight", () => {
+    expect(compareCandidates(all, first("a")).map((e) => e.id)).toEqual(["b", "e"]);
+    expect(compareCandidates(all, first("a2")).map((e) => e.id)).toEqual(["d"]);
+  });
+  it("never offers an item of the first one's own brand, nor another karat or weight", () => {
+    const ids = compareCandidates(all, first("b")).map((e) => e.id);
+    expect(ids).toEqual(["a", "e"]);
+    expect(ids).not.toContain("c");
+    expect(ids).not.toContain("f");
+  });
+  it("offers nothing before the first item is chosen, nor when nothing matches", () => {
+    expect(compareCandidates(all, undefined)).toEqual([]);
+    expect(compareCandidates(all, first("c"))).toEqual([]);
+  });
+});
+
+describe("the numbers of the table", () => {
+  it("net is the total less the cashback, null without a price", () => {
+    expect(netOf({ total: 110, cashback: 4 })).toBe(106);
+    expect(netOf({ total: null, cashback: null })).toBeNull();
+  });
+  it("the difference is the second less the first", () => {
+    expect(differenceOf(100, 90)).toBe(-10);
+    expect(differenceOf(null, 90)).toBeNull();
+  });
+  it("the winner of a row is the lower price or the higher cashback, none on a tie", () => {
+    expect(winner(100, 90, "lower")).toBe("b");
+    expect(winner(100, 90, "higher")).toBe("a");
+    expect(winner(5, 5, "lower")).toBeNull();
+    expect(winner(null, 5, "lower")).toBeNull();
+  });
+});

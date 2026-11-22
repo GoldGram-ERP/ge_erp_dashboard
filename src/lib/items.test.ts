@@ -62,3 +62,32 @@ describe("the brand filter", () => {
     expect(inBrand(options, "b1", "i3").map((o) => o[0])).toEqual(["i1", "i3"]);
   });
 });
+
+describe("the desk picker on a buy, the few left, and the hand switch (owner, 2026-11-22)", () => {
+  const stock = stockMapOf({ items: [{ itemId: "i1", count: 2 }, { itemId: "i2", count: 3 }, { itemId: "i3", count: 4 }] });
+  const left = (n: number) => `${n} left`;
+
+  it("a sale blocks an item without stock; a buy picks it, and it stays red", () => {
+    expect(itemOption(chain, { stock: stockMapOf({ items: [{ itemId: "i1", count: 1 }] }), mode: "sell" })[2]).toBe(true);
+    const buy = itemOption(chain, { stock: stockMapOf({ items: [{ itemId: "i1", count: 1 }] }), mode: "buy" });
+    expect(buy[2]).toBe(false);
+    expect(buy[3]?.tone).toBe("bad");
+  });
+
+  it("names the pieces left only when they are 1 to 3", () => {
+    expect(itemOption(ring, { stock, left })[3]?.sub).toContain("2 left");
+    expect(itemOption(chain, { stock, left })[3]?.sub).toContain("3 left");
+    expect(itemOption(old, { stock, left })[3]?.sub).not.toContain("left"); // 4 pieces: no number
+    expect(itemOption({ ...ring, id: "none" }, { stock, left })[3]?.sub).not.toContain("left"); // none: red, no number
+    expect(itemOption(ring)[3]?.sub).not.toContain("left"); // no stock map: nothing
+  });
+
+  it("an item with pieces but switched off by hand is red and cannot be picked on a sale, yet can on a buy", () => {
+    const off = { ...ring, stockAvailable: false };
+    expect(itemOption(off, { stock, mode: "sell" })[2]).toBe(true);
+    expect(itemOption(off, { stock, mode: "sell" })[3]?.tone).toBe("bad");
+    expect(itemOption(off, { stock, mode: "buy" })[2]).toBe(false);
+    expect(itemOption(off, { stock, left })[3]?.sub).not.toContain("left");
+    expect(itemOption({ ...ring, stockAvailable: true }, { stock })[3]?.tone).toBe("good");
+  });
+});

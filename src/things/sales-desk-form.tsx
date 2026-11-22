@@ -7,7 +7,7 @@ import { Button, Disclosure, Input, Seg, TextButton } from "@/components/ui";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ItemPicker } from "@/components/fields/ItemPicker";
-import { stockMapOf } from "@/lib/items";
+import { stockMapOf, switchedOff } from "@/lib/items";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Option, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
@@ -392,7 +392,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
               items={(["sell", "buy"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-op": k } }))} />
             <Seg label={d("desk.metal")} value={metal} onChange={(k) => pick(() => { setMetal(k); setLines([]); })}
               items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} />
-            {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); if (type === "reservation" && k !== "reservation") setLines((ls) => linesInStock(ls, stock)); setType(k); setErrs({}); if (k === "reservation") setTyping(false); }}
+            {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); if (type === "reservation" && k !== "reservation") setLines((ls) => linesInStock(ls, stock, new Set(items.filter(switchedOff).map((x) => String(x.id))))); setType(k); setErrs({}); if (k === "reservation") setTyping(false); }}
               items={deskTypes(type, isNew, mayReserve).map((k) => ({ id: k, label: typeLabels[k], attrs: { "data-type": k } }))} />}
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
@@ -404,7 +404,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           <fieldset disabled={readonly || saving} className="tk-a">
             {!stepBranch ? <p className="tk-step-hint" id="sd-step-branch">{L("اختار الفرع الأول عشان تضيف قطع.", "Choose the branch first to add pieces.")}</p> : <Section title={L("القطع", "Pieces")}><section id="sec-items" className="tk-ticket tk-reveal">
               <div className="field tk-add"><label htmlFor="itadd">{L("إضافة قطعة", "Add a piece")}</label>
-                <ItemPicker id="itadd" name="itadd" items={pickable} stock={rsv ? undefined : stock} extra={onDraft} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
+                <ItemPicker id="itadd" name="itadd" items={pickable} stock={rsv ? undefined : stock} mode={buy ? "buy" : "sell"} extra={onDraft} value="" placeholder={L("ابحث عن قطعة ثم Enter", "Search a piece, then Enter")} onChange={addItem} /></div>
               {errs.lines && <ErrBox>{errs.lines}</ErrBox>}
               {metal === "silver" && !rsv && lines.length > 0 && <div className="tk-wrap"><span className="tk-quiet">{d("desk.wrapping")}</span>
                 <Seg label={d("desk.wrapping")} value={wrapping} onChange={(k) => pick(() => setWrapping(k))}

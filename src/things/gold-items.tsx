@@ -286,12 +286,14 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
       { name: "cashbackValue", label: m("items.cashbackValue"), type: "money", required: true, help: m("items.valueHelp.per_gram"), section: back, validate: tooBig },
       example("cashback", back),
       { name: "isActive", label: m("items.isActive"), type: "checkbox", disabled: !canSwitch, help: canSwitch ? undefined : m("items.activeAdminOnly"), section: m("items.status") },
+      // The hand switch (owner, 2026-11-22): off, the Sales desk will not sell the item even when pieces are in stock. Anyone who may edit items sets it.
+      { name: "stockAvailable", label: L("متوفر بالمخزون", "Has stock"), type: "checkbox", help: L("لو اتقفل، مكتب المبيعات مش هيسمح ببيع القطعة دي حتى لو فيها مخزون.", "When off, the Sales desk will not sell this item even if pieces are in stock."), section: m("items.status") },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cats.data, brands.data, karats.data, price.data, price.isPending, itemType, canSwitch, tr]);
   const values = useMemo<Row>(() => (row
-    ? { ...row, brandId: row.brandId ?? "", nickname: row.nickname ?? "", isCoded: String(row.isCoded), weight: row.weight ?? "", workmanshipValue: hundredthsOf(row.workmanshipValue), cashbackValue: hundredthsOf(row.cashbackValue), isActive: row.isActive !== false }
-    : { isCoded: "true", itemType: "gold", isActive: true }), [row]);
+    ? { ...row, brandId: row.brandId ?? "", nickname: row.nickname ?? "", isCoded: String(row.isCoded), weight: row.weight ?? "", workmanshipValue: hundredthsOf(row.workmanshipValue), cashbackValue: hundredthsOf(row.cashbackValue), isActive: row.isActive !== false, stockAvailable: row.stockAvailable !== false }
+    : { isCoded: "true", itemType: "gold", isActive: true, stockAvailable: true }), [row]);
   const f = useFieldsForm(fields, values);
   useEffect(() => {
     const s = f.watch((v, info) => {
@@ -312,6 +314,7 @@ function ItemForm({ row, close, reload, tr }: CustomFormProps) {
       const body = {
         itemName: v.itemName, nickname: String(v.nickname ?? "").trim() || null, isCoded: v.isCoded === "true", itemType: v.itemType, categoryId: v.categoryId, brandId: v.brandId, karat: v.karat, weight: v.weight,
         workmanshipMode: "per_gram", workmanshipValue: valueText(BigInt(v.workmanshipValue)), cashbackMode: "per_gram", cashbackValue: valueText(BigInt(v.cashbackValue)),
+        stockAvailable: v.stockAvailable !== false,
         ...(canSwitch ? { isActive: v.isActive } : {}),   // a normal user never sends it: the item keeps its state
       };
       const a = await api(row ? `/items/${row.id}` : "/items", { method: row ? "PATCH" : "POST", body, saveKey });
