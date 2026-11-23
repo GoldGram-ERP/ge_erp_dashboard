@@ -188,7 +188,7 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
         { id: "edit", label: c("edit"), icon: "edit", when: (r) => !r.deletedAt, run: (r, h) => { h.close(); h.openForm(K[kindOf(r)].editForm, r); } },
         // Items: the backend answers itemInUse, which the messages have no text for, so the refusal is worded here.
         {
-          id: "delete-item", label: c("delete"), icon: "trash", danger: true, when: (r) => !r.deletedAt && kindOf(r) === "item",
+          id: "delete-item", deletes: true, label: c("delete"), icon: "trash", danger: true, when: (r) => !r.deletedAt && kindOf(r) === "item",
           confirm: { title: L("حذف هذا الصنف؟", "Delete this item?"), text: m("items.deleteBody") },
           run: async (r, h) => {
             try { await api(`/items/${r.id}`, { method: "DELETE" }); } catch (e) {

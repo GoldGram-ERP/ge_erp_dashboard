@@ -102,6 +102,8 @@ export type ViewConfig = {
 
 export type RecordAction = {
   id: string; label: string; icon?: string; danger?: boolean;
+  /** A delete or a cancel: shown only to someone who may delete (an Admin, a Super admin, or a user given "delete-records"). */
+  deletes?: boolean;
   when?: (row: Row) => boolean;
   confirm?: { title: string; text?: string };
   run: (row: Row, h: RecordHelpers) => void | Promise<void>;

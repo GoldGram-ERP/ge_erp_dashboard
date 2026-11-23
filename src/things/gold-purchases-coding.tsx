@@ -14,6 +14,8 @@ import { dateText, milligramsText, piastresText, typedPiastres } from "@/lib/for
 import { comparePieceCodes, unitsBefore } from "@/lib/piece-code";
 import { Icon, toast, useConfirm } from "@/components/engine";
 import { revealFirstError } from "@/lib/submit-guard";
+import { hasAction } from "@/lib/actions";
+import { useSession } from "@/stores/session";
 import { LabelsCard, labelOf } from "./purchases-labels";
 import { itemsById } from "./gold-purchases-invoice";
 import { itemProblem } from "./purchases-rules";
@@ -147,7 +149,7 @@ export function CodingForm({ row, tr }: CustomFormProps) {
                     <Td num>{p.totalWage == null ? "—" : piastresText(p.totalWage)}</Td>
                     <Td>
                       <Button size="sm" data-print-piece={p.id} aria-label={m("printPiece", { code: p.pieceCode })} onClick={() => { setShown([allPieces.find((x) => x.id === p.id)!]); setMade([]); }}><Icon name="print" size={15} />{c("print")}</Button>{" "}
-                      <Button size="sm" danger data-del-piece={p.id} aria-label={m("deletePiece", { code: p.pieceCode })} onClick={() => removePiece(p)}><Icon name="trash" size={15} />{c("delete")}</Button>
+                      {hasAction(useSession.getState().me, "delete-records") && <Button size="sm" danger data-del-piece={p.id} aria-label={m("deletePiece", { code: p.pieceCode })} onClick={() => removePiece(p)}><Icon name="trash" size={15} />{c("delete")}</Button>}
                     </Td>
                   </Tr>))}
               </DataTable>

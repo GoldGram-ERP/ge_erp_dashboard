@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -179,5 +179,22 @@ describe("linesInStock and the hand switch", () => {
   it("also drops the items switched off by hand", () => {
     const lines = [{ itemId: "a", count: "1" }, { itemId: "b", count: "1" }];
     expect(linesInStock(lines, new Map([["a", 2], ["b", 2]]), new Set(["b"]))).toEqual([lines[0]]);
+  });
+});
+
+describe("another person's draft (owner, 2026-11-24)", () => {
+  const draft = { employeeId: "seller" };
+  it("is foreign only for a plain user who did not make it", () => {
+    expect(isForeignDraft({ id: "me", userType: "user" }, draft)).toBe(true);
+    expect(isForeignDraft({ id: "seller", userType: "user" }, draft)).toBe(false);
+    expect(isForeignDraft({ id: "boss", userType: "admin" }, draft)).toBe(false);
+    expect(isForeignDraft({ id: "me", userType: "user" }, null)).toBe(false);
+    expect(isForeignDraft(undefined, draft)).toBe(false);
+  });
+  it("an accountant may edit it, no other plain user may", () => {
+    expect(mayEditForeignDraft({ userType: "user", businessRole: "accountant" })).toBe(true);
+    for (const role of ["call_center", "branch_sales", "pricing_specialist", null, undefined]) expect(mayEditForeignDraft({ userType: "user", businessRole: role })).toBe(false);
+    expect(mayEditForeignDraft({ userType: "admin", businessRole: "accountant" })).toBe(false);   // an Admin edits anyway: never a "foreign" draft
+    expect(mayEditForeignDraft(undefined)).toBe(false);
   });
 });

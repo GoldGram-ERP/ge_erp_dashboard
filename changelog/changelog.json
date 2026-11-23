@@ -151,6 +151,18 @@
     "en": "Price board: each brand card now has a name search and a weight from/to filter (both ends and fractions included), and its list scrolls inside the card.",
     "ar": "لوحة الأسعار: كل كارت ماركة فيه بحث بالاسم وفلتر وزن من وإلى (بيشمل الطرفين والكسور)، والقايمة بتعمل سكرول جوه الكارت.",
     "route": "/sales/price-board"
+   },
+   {
+    "kind": "new",
+    "en": "New per-user switch \"Delete records\" on the create and edit user forms (plain users only): without it the user has no Delete buttons and the server refuses every delete; Admins and Super admins always can.",
+    "ar": "خيار جديد لكل مستخدم \"يحذف السجلات\" في شاشة إضافة وتعديل المستخدم (للمستخدم العادي بس): من غيره مفيش أزرار حذف والسيرفر بيرفض أي حذف، والأدمن والسوبر أدمن دايمًا يقدروا.",
+    "route": "/setup/users"
+   },
+   {
+    "kind": "new",
+    "en": "An accountant can now edit any Sales desk draft of their branch (Complete and Delete stay with the creator and Admins).",
+    "ar": "المحاسب بقى يقدر يعدّل أي مسودة في مكتب المبيعات في فرعه (الإتمام والحذف لسه للي عملها وللأدمن).",
+    "route": "/sales/desk"
    }
   ]
  },

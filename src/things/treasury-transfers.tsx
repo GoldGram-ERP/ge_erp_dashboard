@@ -176,7 +176,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         { id: "accept", label: m("accept"), when: canAnswer, run: (r, h) => settle(r, "accept", h) },
         // Refuse asks for the reason first (1..500 characters) in its own form.
         { id: "refuse", label: m("refuse"), danger: true, when: canAnswer, run: (r, h) => { h.close(); h.openForm("refuse", r); } },
-        { id: "cancel", label: m("cancel"), danger: true, when: (r) => r.status === "sent" && r.canCancel && lastBox !== "incoming", run: (r, h) => settle(r, "cancel", h) },
+        { id: "cancel", deletes: true, label: m("cancel"), danger: true, when: (r) => r.status === "sent" && r.canCancel && lastBox !== "incoming", run: (r, h) => settle(r, "cancel", h) },
       ],
     },
     forms: {

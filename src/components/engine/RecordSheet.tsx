@@ -6,6 +6,8 @@ import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { RecordConfig, Row } from "@/lib/engine-types";
 import { useT } from "@/lib/t";
+import { hasAction } from "@/lib/actions";
+import { useMe } from "@/lib/session";
 import { cellNode } from "./Table";
 import { Button } from "@/components/ui";
 import { Icon, Kv, Section, Sheet, toast, useConfirm } from "./ui";
@@ -19,8 +21,11 @@ export function RecordSheet({ rec, full, row, onClose, reload, openForm }: Props
   const tr = useT();
   const { L } = tr;
   const [confirm, dialog] = useConfirm();
-  const acts = (rec.actions ?? []).filter((a) => !a.when || a.when(full));
-  const remove = rec.remove && (!rec.remove.when || rec.remove.when(full)) ? rec.remove : null;
+  // Deleting is a permission (owner, 2026-11-24): the Delete button and every record action that deletes show only to someone who may delete.
+  const { data: me } = useMe();
+  const mayDelete = hasAction(me, "delete-records");
+  const acts = (rec.actions ?? []).filter((a) => (!a.when || a.when(full)) && (!a.deletes || mayDelete));
+  const remove = mayDelete && rec.remove && (!rec.remove.when || rec.remove.when(full)) ? rec.remove : null;
   const [busy, setBusy] = useState(false);   // one record action at a time: a second click while one runs does nothing
   const del = useMutation({
     mutationFn: () => api(remove!.path(full), { method: "DELETE" }),
