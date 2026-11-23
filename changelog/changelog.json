@@ -109,6 +109,12 @@
     "en": "Price board selected list: one Price column (piece price times quantity) with the total under it, a summary card (gold value, workmanship, total with workmanship), and the odd notch between cells is fixed.",
     "ar": "قايمة الأصناف المختارة في لوحة الأسعار: عمود سعر واحد (سعر القطعة في الكمية) والإجمالي تحته، وكارت ملخص (قيمة الذهب والمصنعية والإجمالي شامل المصنعية)، وصلحنا الحتة الغريبة بين الخلايا.",
     "route": "/sales/price-board"
+   },
+   {
+    "kind": "better",
+    "en": "Price board: larger, bolder text on the item and price cards, and the stock pill in the selected list no longer touches the bottom of its row.",
+    "ar": "لوحة الأسعار: خط أكبر وأعرض في كروت الأصناف والأسعار، وزرار حالة المخزون في قايمة المختار مبقاش لازق في آخر الصف.",
+    "route": "/sales/price-board"
    }
   ]
  },
