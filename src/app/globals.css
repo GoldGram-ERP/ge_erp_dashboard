@@ -1304,23 +1304,22 @@ dialog.wide{width:min(56rem,94vw);max-width:none}
 .pb-summary{margin-top:.75rem}
 .pb-summary span:last-child{background:var(--gold-tint)}
 .pb-summary span:last-child b{font-size:1.15rem}
-/* The Price board typography (owner, 2026-11-24): a clearer hierarchy, price first, then the name, then the labels; Segoe UI weights 400/600/700. rem only. */
+/* The Price board typography (owner, 2026-11-24): smaller and lighter than the first draft; price first, then the name, then the labels. rem only. */
 .pb-picked td,.pb-picked th,.pb-table td,.pb-table th{height:auto;padding-block:.8rem}
 .pb-picked .pb-pill{margin-top:.35rem}
-.pb-brand h3{font-size:1.15rem;font-weight:700}
-.pb-brand li{padding:.85rem 1rem}
-.pb-name b{font-size:1.1rem;font-weight:700;line-height:1.35}
-.pb-name small{font-size:.95rem;font-weight:500;color:var(--ink-2)}
-.pb-price small{font-size:.9rem;font-weight:500;color:var(--ink-2)}
-.pb-total{font-size:1.7rem;font-weight:700}
-.pb-chips{gap:.6rem}
-.pb-chips span{padding:.5rem .75rem}
-.pb-chips small{font-size:.9rem;font-weight:500;color:var(--ink-2)}
-.pb-chips b{font-size:1.15rem;font-weight:700}
-.pb-pill{font-size:.9rem;font-weight:700;padding:.2rem .8rem}
-.pb-step output{font-size:1.1rem;font-weight:700}
-.pb-prices .pill{font-size:1.05rem;font-weight:700}
-.pb-prices .bubble{gap:1rem}
-.pb-sides small{font-size:1rem;font-weight:600;color:var(--ink-2)}
-.pb-sides b{font-size:2rem;font-weight:700}
-.pb-name small{white-space:nowrap}
+.pb-brand h3{font-size:1.05rem;font-weight:600}
+.pb-brand li{padding:.8rem .95rem}
+.pb-name b{font-size:1rem;font-weight:600;line-height:1.35}
+.pb-name small{font-size:.85rem;font-weight:400;color:var(--mute);white-space:nowrap}
+.pb-price small{font-size:.8rem;font-weight:400;color:var(--mute)}
+.pb-total{font-size:1.2rem;font-weight:600}
+.pb-chips{gap:.5rem}
+.pb-chips span{padding:.4rem .65rem}
+.pb-chips small{font-size:.8rem;font-weight:400;color:var(--mute)}
+.pb-chips b{font-size:1rem;font-weight:600}
+.pb-pill{font-size:.8rem;font-weight:600;padding:.15rem .7rem}
+.pb-step output{font-size:1rem;font-weight:600}
+.pb-prices .pill{font-size:1rem;font-weight:600}
+.pb-prices .bubble{gap:.9rem}
+.pb-sides small{font-size:.9rem;font-weight:400;color:var(--mute)}
+.pb-sides b{font-size:1.6rem;font-weight:600}

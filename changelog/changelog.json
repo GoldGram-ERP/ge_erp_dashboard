@@ -115,6 +115,12 @@
     "en": "Price board: larger, bolder text on the item and price cards, and the stock pill in the selected list no longer touches the bottom of its row.",
     "ar": "لوحة الأسعار: خط أكبر وأعرض في كروت الأصناف والأسعار، وزرار حالة المخزون في قايمة المختار مبقاش لازق في آخر الصف.",
     "route": "/sales/price-board"
+   },
+   {
+    "kind": "fixed",
+    "en": "Price board: the text on the item and price cards is now smaller and lighter (replacing the larger, bolder text of the previous update).",
+    "ar": "لوحة الأسعار: خط كروت الأصناف والأسعار بقى أصغر وأخف (بدل الخط الأكبر والأعرض في التحديث اللي فات).",
+    "route": "/sales/price-board"
    }
   ]
  },
