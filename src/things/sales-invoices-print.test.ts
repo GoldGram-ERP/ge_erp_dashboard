@@ -35,33 +35,31 @@ const invoice = (over: Record<string, any> = {}) => ({
 describe("the preprinted invoice", () => {
   it("fills the customer block from the invoice and writes the total in words", () => {
     const html = renderInvoice(invoice(), tFor("ar"), true);
-    for (const must of ["INV/2026/000142", "18:03 · 21 / 10 / 2026", "أحمد محمد علي", "01012345678", "29001011234567", "كايرو بيزنس بلازا", "الرقم القومي"]) expect(html, must).toContain(must);
-    expect(html).toContain("فقط وقدره سبعة وثلاثون ألفاً ومائتان وخمسة وستون جنيهاً وثمانية وثمانون قرشاً لا غير");
+    for (const must of ["INV/2026/000142", "21 / 10 / 2026 · 18:03", "أحمد محمد علي", "01012345678", "29001011234567", "كايرو بيزنس بلازا", "الرقم القومي"]) expect(html, must).toContain(must);
     expect(html).toContain("LE 37,265.88");
-    expect(html).toContain("☑ نقدي");
-    expect(html).toContain("774-088-346");
+    // the look of the owner's screenshot: no total in words, no payment line, no signatures
+    for (const gone of ["فقط وقدره", "طريقة الدفع", "☑", "المستلم", "ختم الشركة"]) expect(html, gone).not.toContain(gone);
     mkdirSync("e2e-tests/.shots", { recursive: true });
     writeFileSync("e2e-tests/.shots/invoice-preprinted-ar.html", html);
     writeFileSync("e2e-tests/.shots/invoice-preprinted-en.html", renderInvoice(invoice(), tFor("en"), false));
   });
 
-  it("always prints the shop's fixed foot, and a footer saved in Settings replaces it", () => {
-    const fixed = ["295852", "774-088-346", "17937", "السعر شامل الضريبة والمصنعية", "برجاء الاحتفاظ بهذه الفاتورة", "الذهب المباع لا يُرد ولا يُستبدل"];
+  it("prints the foot of the screenshot (two lines, in the language of the invoice), and a footer saved in Settings replaces it", () => {
+    const fixed = ["برجاء الاحتفاظ بهذه الفاتورة", "الذهب المباع لا يُرد ولا يُستبدل"];
     for (const layout of ["a4", "gift", "star"]) {
       const html = renderInvoice(invoice({ layout, footer: null }), tFor("ar"), true);
       for (const part of fixed) expect(html, `${layout}: ${part}`).toContain(part);
     }
-    // English invoice: the foot in English, left to right; Arabic invoice: in Arabic, right to left
     const english = renderInvoice(invoice({ footer: null }), tFor("en"), false);
-    for (const part of ["C.R.", "295852", "Tax file no.", "774-088-346", "Short no.", "The price includes tax", "Please keep this invoice", "Sold gold cannot be returned or exchanged"]) expect(english, part).toContain(part);
+    for (const part of ["Please keep this invoice", "Sold gold cannot be returned or exchanged"]) expect(english, part).toContain(part);
     expect(english).toContain('<footer class="pfoot" dir="ltr" lang="en">');
-    expect(english).not.toContain("السعر شامل الضريبة");
+    expect(english).not.toContain("برجاء الاحتفاظ");
     const arabic = renderInvoice(invoice({ footer: null }), tFor("ar"), true);
     expect(arabic).toContain('<footer class="pfoot" dir="rtl" lang="ar">');
     expect(arabic).not.toContain("Sold gold cannot");
     const own = renderInvoice(invoice({ footer: "ملف ضريبي 111-222-333" }), tFor("ar"), true);
     expect(own).toContain("111-222-333");
-    expect(own).not.toContain("295852");
+    expect(own).not.toContain("برجاء الاحتفاظ");
   });
 
   it("prints its colours even when the print window has Background graphics off", () => {
@@ -81,7 +79,7 @@ describe("the preprinted invoice", () => {
   it("draws the table of the owner's sample: count, one piece's weight, workmanship and price, the amount, and cashback per gram", () => {
     const html = renderInvoice(invoice(), tFor("ar"), true);
     const head = html.slice(html.indexOf("<thead>"), html.indexOf("</thead>"));
-    const order = ["الصنف", "العدد", "الوزن (جم)", "العيار", "مصنعية القطعة", "سعر القطعة", "إجمالي المبلغ", "كاش باك / جرام"].map((x) => head.indexOf(x));
+    const order = ["الصنف", "العدد", "الوزن", "العيار", "مصنعية القطعة", "سعر القطعة", "إجمالي المبلغ", "كاش باك / جرام"].map((x) => head.indexOf(x));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(head).not.toContain("سعر الجرام");
@@ -130,7 +128,7 @@ describe("the preprinted invoice", () => {
     expect(html).toContain("منى");
     expect(html).not.toContain("الرقم القومي");
     expect(html).not.toContain("29001011234567");
-    for (const gone of ["LE ", "سعر عيار", "فقط وقدره", "طريقة الدفع", "سعر الجرام", "قيمة الذهب"]) expect(html, gone).not.toContain(gone);
+    for (const gone of ["LE ", "سعر عيار", "سعر الجرام", "قيمة الذهب"]) expect(html, gone).not.toContain(gone);
     writeFileSync("e2e-tests/.shots/invoice-preprinted-gift-ar.html", html);
   });
 
@@ -148,7 +146,6 @@ describe("the preprinted invoice", () => {
 
   it("English labels exist for every new message", () => {
     const html = renderInvoice(invoice(), tFor("en"), false);
-    expect(html).toContain("Total in words");
-    expect(html).toContain("Only thirty-seven thousand two hundred sixty-five pounds and eighty-eight piastres");
+    for (const label of ["Count", "Piece workmanship", "Piece price", "Amount", "Cashback / gram", "Total weight 24K:", "Total weight 21K:"]) expect(html, label).toContain(label);
   });
 });

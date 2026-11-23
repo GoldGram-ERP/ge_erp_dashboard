@@ -79,6 +79,12 @@
     "en": "On a sales invoice with more than one piece, a Custom print button lets you pick which pieces to print, as a normal or a gift invoice.",
     "ar": "في فاتورة المبيعات اللي فيها أكتر من قطعة، زرار طباعة مخصّصة تختار منه القطع اللي تتطبع، كفاتورة عادية أو كهدية.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "The A5 invoice print now looks like the approved design: a large invoice title, gold labels, a clean table, the karat price and weight boxes, and a two-line foot; the total in words, payment line and signatures are gone.",
+    "ar": "طباعة الفاتورة A5 بقت زي التصميم المعتمد: عنوان فاتورة كبير وعناوين دهبي وجدول نضيف ومربعات سعر العيار والوزن وتذييل من سطرين، وشلنا الإجمالي كتابة وطريقة الدفع والتوقيعات.",
+    "route": "/sales/invoices"
    }
   ]
  },

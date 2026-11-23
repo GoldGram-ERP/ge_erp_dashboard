@@ -2,7 +2,6 @@
 // Layouts: a4, gift (no amounts unless asked), star (amounts as stars) on A4; thermal and receipt on 80 mm paper. A backend refusal is shown in its own words.
 // A gift prints the recipient where the customer goes, never the real buyer; no layout prints the seller (backend #169).
 import { api, ApiFailure } from "@/lib/api";
-import { amountInWords } from "@/lib/amount-in-words";
 import { esc, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { toast } from "@/components/engine";
@@ -34,22 +33,21 @@ ol{margin:10px 0 0;padding:0;border-top:1px solid #1c1912}ol li{display:block;bo
 .err{max-width:420px;margin:30px auto;background:#fdf1f0;border:1px solid #b3261e;color:#7a1a14;padding:14px 18px;border-radius:8px;font-weight:600}
 article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8mm;font-size:10.5px;line-height:1.45;color:#1c1912}
 .pre .top{height:38mm}
-.pre .phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:8px;border-bottom:2px solid #1b2a5a}
-.pre .doc b{display:block;font-size:19px;color:#1b2a5a}.pre .doc span{display:block;font-size:8.5px;letter-spacing:.2em;color:#b08d3c}
-.pre .meta{display:grid;grid-template-columns:auto auto;gap:1px 8px;margin:0;font-size:10px}.pre .meta dt{font-weight:700;color:#1b2a5a}.pre .meta dd{margin:0}
-.pre .cust{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:14px 0 12px}
-.pre .fld{display:flex;gap:6px;align-items:flex-end;min-height:16px}.pre .fld span{color:#777;white-space:nowrap}.pre .fld b{font-weight:500}
+.pre .phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:9px;border-bottom:2px solid #1b2a5a}
+.pre .doc b{display:block;font-size:30px;line-height:1.1;color:#1b2a5a}.pre .doc span{display:block;font-size:8px;letter-spacing:.3em;color:#b08d3c;margin-top:3px}
+.pre .meta{display:grid;grid-template-columns:auto auto;gap:3px 10px;margin:0;font-size:10.5px}.pre .meta dt{font-weight:700;color:#a67c34}.pre .meta dd{margin:0;color:#1b2a5a}
+.pre .cust{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:16px 0 18px}
+.pre .fld{display:flex;gap:10px;align-items:baseline;min-height:16px;font-size:11.5px;color:#1b2a5a}.pre .fld span{color:#a67c34;font-weight:700;white-space:nowrap}.pre .fld b{font-weight:700}
 .pre .blank{flex:1;min-width:30px;border-bottom:1px dotted #999;height:12px}
-.pre table{margin-top:6px}.pre th{background:#1b2a5a;color:#fff;border:0;padding:6px 5px;font-weight:600}.pre td{padding:6px 5px;border-bottom:1px solid #e3dccb}
-.pre td.it small{display:block;color:#888;font-size:9px}.pre td.pr{font-weight:700;color:#1b2a5a}.pre tfoot td{border:0;color:#777;font-weight:400}
-.pre .tot{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-top:12px}
-.pre .gbox{border:1px solid #c9b27c;border-inline-end:3px solid #b08d3c;padding:6px 10px;font-size:10.5px}.pre .gbox div{white-space:nowrap}.pre .gbox span{color:#444}.pre .gbox b{color:#1b2a5a}
-.pre .boxes{display:flex;flex-direction:column;gap:6px}.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:2px 14px;margin:0 0 4px;padding-bottom:6px;border-bottom:2px solid #1b2a5a}.pre .sums dd{margin:0;text-align:end}
-.pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:15px;color:#1b2a5a}.pre .grand b{font-size:16px}
-.pre .words{margin:10px 0 0;font-size:11px}.pre .words span{color:#777}
-.pre .pay{margin:8px 0 0;color:#555}.pre .pay .tick{margin-inline-start:12px;white-space:nowrap}
-.pre .sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}.pre .sigs i{display:block;border-top:1.5px solid #1b2a5a;margin-bottom:4px}.pre .sigs span{color:#777;font-size:9.5px}
-.pre .pfoot{margin-top:18px;padding-top:6px;border-top:1px solid #c9b27c;font-size:8.5px;color:#777}.pre .pfoot b{display:block;color:#1b2a5a;font-size:9.5px}.pre .pfoot span{display:block}
+.pre table{margin-top:4px;border-collapse:collapse}.pre th{background:#1b2a5a;color:#fff;border:0;padding:9px 4px;font-weight:700;font-size:10px;white-space:nowrap}.pre td{padding:9px 4px;border:0;color:#1b2a5a;font-size:11px}.pre td.it{width:34%}
+.pre tbody tr:last-child td{border-bottom:1px solid #d9d6cf}
+.pre td.it small{display:block;color:#8a93a8;font-size:8.5px}.pre td.pr{font-weight:700}
+.pre .tot{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-top:18px}
+.pre .boxes{display:flex;flex-direction:column;gap:10px}
+.pre .gbox{border:1px solid #b08d3c;padding:9px 14px;font-size:11.5px;color:#1b2a5a}.pre .gbox div{white-space:nowrap}.pre .gbox b{font-weight:700}
+.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:8px 14px;margin:0 0 8px;padding-bottom:10px;border-bottom:2px solid #1b2a5a;font-size:11.5px;color:#1b2a5a}.pre .sums dd{margin:0;text-align:end}
+.pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:16px;color:#1b2a5a;font-weight:700}.pre .grand b{font-size:17px}
+.pre .pfoot{margin-top:48px;padding-top:10px;border-top:1.5px solid #b08d3c;font-size:9.5px;color:#5d6b8a;line-height:1.7}.pre .pfoot span{display:block}
 /* Print the colours as drawn (the blue table head has white text: without its background the head reads blank), whatever the "Background graphics" option of the print window says. */
 article.pre,article.pre *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media print{article.pre{width:auto;min-height:0;padding:0 12mm}.bar{display:none}body{background:#fff}main{padding:0;overflow:visible}article{box-shadow:none}article.a4{width:auto;padding:0}article.narrow{width:100%;padding:0}}`;
@@ -68,24 +66,18 @@ function header(d: any) {
 
 // The invoice on A5 preprinted paper (the shop's letterhead is already on the sheet, so the top stays empty): number, date and time; the
 // customer block filled from the invoice (a dotted line where there is nothing to fill); the lines; the price of each karat the invoice
-// holds; gold, making and the total, and the total in words; how it was paid; signatures; the shop's foot note. The a4, gift and star
+// holds; gold, making and the total; the shop's foot note (the look of the owner's screenshot of 2026-11-23: no words, payments or signatures). The a4, gift and star
 // layouts all use it. A gift prints the recipient in the buyer's place with no National ID, and no prices unless asked at the print.
-// The fixed foot of the shop's invoice (owner, 2026-11-05): always printed, in the language of the invoice. The first line is the shop's
-// numbers; the rest are its terms. The Arabic text is always right to left and the English left to right, whatever the language of the
-// screen it was opened from. A footer saved in Settings (invoiceFooter) replaces it, line for line, in whatever language it was written.
-const EM = "\u2003\u2003";
+// The foot of the invoice (owner's screenshot, 2026-11-23): two lines, in the language of the invoice. The Arabic text is always right to left and the
+// English left to right, whatever the language of the screen it was opened from. A footer saved in Settings (invoiceFooter) replaces it, line for line.
 export const DEFAULT_FOOTER = {
   ar: [
-    ["س.ت 295852", "ملف ضريبي 774-088-346", "الرقم المختصر 17937"].join(EM),
-    "السعر شامل الضريبة والمصنعية والتغليف ومصاريف هيئة الدمغة والموازين المصرية.",
-    "برجاء الاحتفاظ بهذه الفاتورة وتقديمها في حالة الاسترداد والرغبة في بيع المنتجات المذكورة أعلاه، أو صورة إلكترونية منها.",
-    "الهدايا في العروض لا يوجد لها قيمة استرداد. · الذهب المباع لا يُرد ولا يُستبدل.",
+    "برجاء الاحتفاظ بهذه الفاتورة وتقديمها في حالة الاسترداد والرغبة في بيع المنتجات المذكورة أعلاه.",
+    "الذهب المباع لا يُرد ولا يُستبدل.",
   ],
   en: [
-    ["C.R. 295852", "Tax file no. 774-088-346", "Short no. 17937"].join(EM),
-    "The price includes tax, making charge, packaging, and the fees of the Egyptian Hallmarks and Scales Authority.",
-    "Please keep this invoice and present it, or an electronic copy of it, for a refund or when you wish to sell back the items listed above.",
-    "Gifts in offers have no refund value. · Sold gold cannot be returned or exchanged.",
+    "Please keep this invoice and present it for a refund or when you wish to sell back the items listed above.",
+    "Sold gold cannot be returned or exchanged.",
   ],
 };
 // Numbers keep their own direction inside Arabic text (346-088-774 must not read backwards).
@@ -95,7 +87,6 @@ const blankLine = '<span class="blank"></span>';
 const fld = (label: string, html: string) => `<div class="fld"><span>${esc(label)}</span>${html || blankLine}</div>`;
 const karatLabel = (k: string) => (k === "999" ? p("silverPrice") : p("karatPrice", { karat: k }));
 const dmy = (iso: string) => { const [y, m, dd] = String(iso).slice(0, 10).split("-"); return `${dd} / ${m} / ${y}`; };
-const methodLabel = (x: any) => (x.kind === "reservation" ? p("reservation", { number: x.label ?? "" }) : x.kind === "cash" ? p("cash") : x.label ?? p("bank"));
 
 // The rows of the A5 table: the backend's merged groups; an older answer without them is one row per piece (count 1).
 const groupsOf = (d: any): any[] =>
@@ -125,21 +116,16 @@ function a4(d: any) {
   const box = `<div class="boxes">${priceBox}${weightBox}</div>`;
   const discount = typeof d.totals.discount === "number" && d.totals.discount > 0 ? `<dt>${esc(p("cashDiscount"))}</dt><dd>${money1(-d.totals.discount)}</dd>` : "";
   const sums = withPrice ? `<div class="sums"><dl><dt>${esc(p("goldValue"))}</dt><dd>${money1(d.totals.goldTotal)}</dd><dt>${esc(p("makingCharge"))}</dt><dd>${money1(d.totals.makingTotal)}</dd>${discount}</dl><div class="grand"><span>${esc(p("total"))}</span><b>${money1(d.totals.total)}</b></div></div>` : "";
-  const words = withPrice && typeof d.totals.total === "number" ? `<p class="words"><span>${esc(p("totalInWords"))}</span> ${esc([p("onlyPrefix"), amountInWords(d.totals.total, inArabic ? "ar" : "en"), p("onlySuffix")].filter(Boolean).join(" "))}</p>` : "";
-  const paid = d.payments.filter((x: any) => amountText(x.amount) !== null);
-  const how = withPrice && paid.length ? `<p class="pay"><span>${esc(p("paymentMethod"))}:</span>${paid.map((x: any) => `<span class="tick">☑ ${esc(methodLabel(x))} ${ltr(money(x.amount))}</span>`).join("")}</p>` : "";
   const saved = String(d.footer ?? "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
   const foot = saved.length ? saved : inArabic ? DEFAULT_FOOTER.ar : DEFAULT_FOOTER.en;
   const footDir = saved.length ? "auto" : inArabic ? "rtl" : "ltr";
   return `<article class="pre" data-layout="${esc(d.layout)}"><div class="top"></div>
     <div class="phead"><div class="doc"><b>${esc(p("title"))}</b><span>${esc(p("titleSub"))}</span></div>
-      <dl class="meta"><dt>${esc(p("invoiceNumber"))}</dt><dd>${ltr(`INV/${year}/${String(d.invoiceNumber).padStart(6, "0")}`)}</dd><dt>${esc(p("date"))}</dt><dd>${ltr(`${d.invoiceTime ? d.invoiceTime + " · " : ""}${dmy(d.invoiceDate)}`)}</dd></dl></div>
+      <dl class="meta"><dt>${esc(p("invoiceNumber"))}</dt><dd>${ltr(`INV/${year}/${String(d.invoiceNumber).padStart(6, "0")}`)}</dd><dt>${esc(p("date"))}</dt><dd>${ltr(`${dmy(d.invoiceDate)}${d.invoiceTime ? " · " + d.invoiceTime : ""}`)}</dd></dl></div>
     <div class="cust">${customer}</div>
-    <table><thead><tr>${th("item")}${th("count")}${th("weight")}${th("karat")}${withPrice ? th("pieceMaking") + th("piecePrice") + th("rowTotal") + th("cashbackPerGram") : ""}</tr></thead><tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="${withPrice ? 8 : 4}">${esc(p("total"))} · ${esc(p("lines"))}: ${ltr(d.totals.lineCount)}</td></tr></tfoot></table>
-    <div class="tot">${box}${sums}</div>${words}${how}
-    <div class="sigs"><div><i></i><span>${esc(p("receiver"))}</span></div><div><i></i><span>${esc(p("sellerCode"))}</span></div><div><i></i><span>${esc(p("stamp"))}</span></div></div>
-    <footer class="pfoot" dir="${footDir}" lang="${inArabic ? "ar" : "en"}"><b>${footLine(foot[0])}</b>${foot.slice(1).map((x) => `<span>${footLine(x)}</span>`).join("")}</footer></article>`;
+    <table><thead><tr>${th("item")}${th("count")}${th("weightColumn")}${th("karat")}${withPrice ? th("pieceMaking") + th("piecePrice") + th("rowTotal") + th("cashbackPerGram") : ""}</tr></thead><tbody>${rows}</tbody></table>
+    <div class="tot">${box}${sums}</div>
+        <footer class="pfoot" dir="${footDir}" lang="${inArabic ? "ar" : "en"}">${foot.map((x) => `<span>${footLine(x)}</span>`).join("")}</footer></article>`;
 }
 
 // 80 mm paper: every line a small block that wraps; the receipt keeps the header, the total and the payments.
