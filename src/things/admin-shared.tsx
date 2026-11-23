@@ -21,6 +21,7 @@ import { NAV_LABELS } from "@/nav/labels.generated";
 import { JOBS, SECTIONS, type ScreenName, type Section as Sec } from "./admin-names";
 
 import { code6 } from "@/lib/code6";
+import { screensOnTypeChange } from "./user-screens";
 export { code6 };   // userCodeText: six digits
 export const TYPES = ["user", "admin", "super_admin"] as const;
 const GROUPS = ["sell", "stock", "finance", "people", "control"];
@@ -201,8 +202,11 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
     // The Sales desk is pointless without a channel to sell on: the backend hides it anyway (screensFor,
     // screen-map.ts), but this catches it on the spot instead of a silent no-op after save.
     if (ty === "user" && screens.has("gold-sales/sales-desk") && channels.size === 0) { setChanErr(u("channelsRequiredForDesk")); setAlert(c("couldNotSave", { count: 1 })); return; }
+    // A plain user who becomes an Admin: say "no screens" (every screen again), or the old ticks (the Sales desk alone) make a desk-only Admin.
+    const promoted = screensOnTypeChange(adding ? undefined : row?.userType, ty);
     const body = { ...(ty === "super_admin" ? {} : { branchId: v.branchId }), username: v.username, ...(v.email === "" ? {} : { email: v.email }), userType: ty,
       ...(ty === "user" ? { screens: [...screens], actions: [...actions], salesChannelIds: [...channels], businessRole: role || null } : {}),
+      ...(promoted ? { screens: promoted } : {}),
       ...(v.password === "" ? {} : { password: v.password }) };
     setSaving(true); setNote(c("savingNote"));
     try {

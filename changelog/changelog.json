@@ -139,6 +139,12 @@
     "en": "Admins can now open the Activity log (Admin menu, below Test printer); it never shows what a Super admin did, can be filtered by action, and now records every change request and export.",
     "ar": "المدير بقى يقدر يفتح سجل النشاط (في قايمة الإدارة تحت تجربة الطابعة)، ومبيظهرلوش اللي عمله السوبر أدمن، وفيه فلتر بالإجراء، والسجل بقى بيسجّل كل طلب تغيير وكل تصدير.",
     "route": "/setup/activity-log"
+   },
+   {
+    "kind": "fixed",
+    "en": "Changing a user to Admin now gives every admin page: the leftover screens of the old role are cleared, so a user who had only the Sales desk no longer becomes a desk-only Admin.",
+    "ar": "لما تحوّل مستخدم لأدمن بقى بياخد كل صفحات الأدمن: شاشات الدور القديم بتتمسح، فاللي كان معاه مكتب المبيعات بس مبقاش يطلع أدمن بمكتب المبيعات بس.",
+    "route": "/setup/users"
    }
   ]
  },
