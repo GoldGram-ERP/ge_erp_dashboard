@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { api, SESSION_ENDED } from "@/lib/api";
 import { isSuper, useForgetMe, useMe } from "@/lib/session";
-import { NAV, allLeaves, canOpen } from "@/nav/tree";
+import { NAV, allLeaves, leafShown } from "@/nav/tree";
 import { useUi, type Me } from "@/stores/ui";
 import { useTodo } from "@/components/jobs/todo";
 import { JobBar } from "@/components/jobs/job-bar";
@@ -104,7 +104,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
     return () => { clearInterval(timer); window.removeEventListener("online", ping); window.removeEventListener("offline", off); };
   }, []);
 
-  const groups = NAV.filter((g) => !g.superOnly || isSuper(me)).map((g) => ({ ...g, items: g.items.filter((i) => canOpen(me, i.screens)) })).filter((g) => g.items.length);
+  const groups = NAV.filter((g) => !g.superOnly || isSuper(me)).map((g) => ({ ...g, items: g.items.filter((i) => leafShown(me, i)) })).filter((g) => g.items.length);
   const pins = (ui.pins[me.id] ?? []).map((r) => groups.flatMap((g) => g.items).find((i) => i.route === r)).filter((x) => !!x);
   const todo = useTodo(me);
   const isActive = (route: string) => pathname === route || pathname.startsWith(route + "/");

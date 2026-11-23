@@ -2795,7 +2795,11 @@
     "unlock": "Unlock",
     "reprint": "Reprint",
     "signIn": "Sign-in",
-    "signInFailed": "Failed sign-in"
+    "signInFailed": "Failed sign-in",
+    "print": "Print",
+    "refused": "Refused",
+    "request": "Request (change)",
+    "export": "Export"
    },
    "screens": {
     "access": "Access",
@@ -3125,6 +3129,7 @@
    "returned-pieces": "Returned pieces (not from us)",
    "sales-desk": "Sales desk",
    "price-board": "Price board",
+   "activity-log": "Activity log",
    "merchants": "Merchants",
    "bug-reports": "Bug reports"
   }

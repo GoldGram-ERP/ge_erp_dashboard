@@ -1,6 +1,7 @@
 // The sidebar tree (ported from docs/nav-preview/app/things/index.js). Labels come from messages: nav.group.<id>, nav.item.<id>.
 // route = /<group>/<item> without the locale; screens = permission keys (section/screen): a leaf shows when the person may open ANY of them.
-export type NavLeaf = { id: string; route: string; screens: string[] };
+// adminOnly: shown to an Admin, not to a Super admin (who has the same page elsewhere).
+export type NavLeaf = { id: string; route: string; screens: string[]; adminOnly?: boolean };
 export type NavGroup = { id: string; icon: string; superOnly?: boolean; items: NavLeaf[] };
 
 export const NAV: NavGroup[] = [
@@ -264,6 +265,15 @@ export const NAV: NavGroup[] = [
      "administration/settings"
     ]
    },
+   // The activity log for an Admin (owner, 2026-11-24): the Super admin reads it in "الأمان والبيانات", so only an Admin gets this item.
+   {
+    "id": "activity-log",
+    "route": "/setup/activity-log",
+    "screens": [
+     "administration/activity-log"
+    ],
+    "adminOnly": true
+   },
    // The Settings page is commented out of the sidebar, the search and its address (owner, 2026-11-05) until further notice.
    // To bring it back, remove the comment markers around this entry; nothing else was removed.
    /*
@@ -311,6 +321,8 @@ export const NAV: NavGroup[] = [
  }
 ];
 
+/** Whether a leaf is in this person's menu: they may open it, and an admin-only leaf is not for a Super admin. */
+export const leafShown = (me: { screens: string[]; userType?: string } | null | undefined, leaf: NavLeaf) => canOpen(me, leaf.screens) && !(leaf.adminOnly && me?.userType === "super_admin");
 export const allLeaves = () => NAV.flatMap((g) => g.items.map((i) => ({ ...i, group: g })));
 export const findLeaf = (route: string) => allLeaves().find((l) => l.route === route);
 export const canOpen = (me: { screens: string[] } | null | undefined, screens: string[]) => !!me && screens.some((k) => me.screens.includes(k));

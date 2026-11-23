@@ -3,7 +3,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { NAV, canOpen } from "@/nav/tree";
+import { NAV, canOpen, leafShown } from "@/nav/tree";
 import { JOBS_ENABLED } from "@/lib/jobs/enabled";
 import { JOBS, QUESTIONS, canAsk, isVisible, jobName, matches, normalise, runHref } from "@/nav/jobs";
 import { isSuper } from "@/lib/session";
@@ -24,7 +24,7 @@ export function useSearchHits(me: Me, q: string): Hit[] {
     const word = q.trim();
     const out: Hit[] = [];
     const screens = me.screens;
-    const pages = NAV.filter((g) => !g.superOnly || isSuper(me)).flatMap((g) => g.items.filter((i) => canOpen(me, i.screens)).map((i) => ({ g, i })));
+    const pages = NAV.filter((g) => !g.superOnly || isSuper(me)).flatMap((g) => g.items.filter((i) => leafShown(me, i)).map((i) => ({ g, i })));
     for (const { g, i } of pages) {
       const label = t(`nav.item.${i.id}`), group = t(`nav.group.${g.id}`);
       if (matchesText(word, label, group, NAV_LABELS.item[i.id], NAV_LABELS.group[g.id])) out.push({ key: `p:${i.route}`, group: "pages", label, hint: group, icon: g.icon, href: i.route });

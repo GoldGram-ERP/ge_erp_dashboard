@@ -7,7 +7,7 @@ import { dateText, piastresText, timeText, today } from "@/lib/format";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Icon } from "@/components/shell/icon";
 import { useMe, isSuper } from "@/lib/session";
-import { allLeaves, canOpen } from "@/nav/tree";
+import { allLeaves, leafShown } from "@/nav/tree";
 import { useUi } from "@/stores/ui";
 
 type Price = { sellPrice: number; date: string } | null;
@@ -27,7 +27,7 @@ export function HomeView() {
   const staff = me?.userType !== "user";
   const locked = useQuery({ queryKey: ["locked-count"], enabled: !!me && staff, queryFn: () => api("/users", { query: { locked: "only", limit: 1 } }).then((r) => Number(r?.total) || 0) });
   if (!me) return null;
-  const leaves = allLeaves().filter((l) => (!l.group.superOnly || isSuper(me)) && canOpen(me, l.screens));
+  const leaves = allLeaves().filter((l) => (!l.group.superOnly || isSuper(me)) && leafShown(me, l));
   const pins = (ui.pins[me.id] ?? []).map((r) => leaves.find((l) => l.route === r)).filter((x): x is Leaf => !!x);
   const recents = (ui.recents[me.id] ?? []).map((r) => ({ ...r, leaf: leaves.find((l) => l.route === r.id) })).filter((r): r is typeof r & { leaf: Leaf } => !!r.leaf);
   const sameDay = (at: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(at) === today();
