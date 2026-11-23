@@ -13,10 +13,10 @@ import { milligramsText, piastresText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { Select } from "@/components/fields/Select";
-import { Button, DataTable, Td, Th, Tr } from "@/components/ui";
+import { Button, Checkbox, DataTable, Td, Th, Tr } from "@/components/ui";
 import { allPages } from "./sales-form-parts";
 import { LOW_STOCK_MAX, brandsOf, inBrand } from "@/lib/items";
-import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, times, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
+import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
 
 const money = (p: number | null | undefined) => (p === null || p === undefined ? "—" : piastresText(p));
 const grams = (mg: number) => `${milligramsText(mg)} g`;
@@ -41,7 +41,17 @@ export default function Page() {
   const countOf = (id: string) => counts[id] ?? 1;
   const bump = (id: string, by: number) => setCounts((c) => ({ ...c, [id]: clampCount((c[id] ?? 1) + by) }));
 
+  // The cards a person selected (owner, 2026-11-23), in the order they were chosen, and the pieces of each in the list below: separate from the card's own count.
+  const [selected, setSelected] = useState<string[]>([]);
+  const [picks, setPicks] = useState<Record<string, number>>({});
+  const toggle = (id: string) => setSelected((s) => toggleId(s, id));
+  const pickOf = (id: string) => picks[id] ?? 1;
+  const pickBump = (id: string, by: number) => setPicks((c) => ({ ...c, [id]: clampCount((c[id] ?? 1) + by) }));
+
   const entries = useMemo(() => entriesOf(board.data?.brands ?? []), [board.data]);
+  const chosen = selected.flatMap((id) => entries.find((e) => e.id === id) ?? []);   // an item that left the board drops out
+  const pickedRows = chosen.map((e) => rowOf(e, pickOf(e.id)));
+  const totals = totalsOf(pickedRows);
   const [aId, setAId] = useState("");
   const [bId, setBId] = useState("");
   const a = entries.find((e) => e.id === aId);
@@ -117,8 +127,10 @@ export default function Page() {
                   {brand.items.map((it) => {
                     const n = countOf(it.id);
                     return (
-                      <li key={it.id} data-tone={it.sellable ? "good" : "bad"}>
+                      <li key={it.id} data-tone={it.sellable ? "good" : "bad"} data-selected={selected.includes(it.id) || undefined}
+                        onClick={(e) => { if (!(e.target as HTMLElement).closest("button,input,label")) toggle(it.id); }}>{/* a click on the card selects it; its own buttons and the box do their own */}
                         <div className="pb-top">
+                          <Checkbox checked={selected.includes(it.id)} onChange={() => toggle(it.id)} aria-label={L("اختيار الصنف", "Select item")} />
                           <div className="pb-name"><b>{it.itemName}</b><small>{it.karat} · {grams(it.weightMg)}</small></div>
                           <div className="pb-price"><span className="pb-total" dir="ltr">{money(times(it.total, n))}</span>{n > 1 && <small dir="ltr">{n} × {money(it.total)}</small>}</div>
                         </div>
@@ -141,6 +153,35 @@ export default function Page() {
               </section>
             ))}
           </div>
+        )}
+
+        {/* 2b. The selected cards: one row each, with its own count, and the foot totals */}
+        <h2 className="pb-h">{L("الأصناف المختارة", "Selected items")}<span className="pb-count">{chosen.length}</span>
+          {chosen.length > 0 && <Button size="sm" className="pb-clear" onClick={() => setSelected([])}>{L("إلغاء الاختيار", "Clear selection")}</Button>}</h2>
+        {chosen.length === 0 ? <p className="quiet-note">{L("اضغط على بطاقة صنف لاختياره.", "Click an item card to select it.")}</p> : (
+          <DataTable className="pb-picked" fixedOrder
+            head={[L("الصنف", "Item"), { label: L("سعر القطعة", "Piece price"), num: true }, L("الكمية", "Quantity"), { label: L("المصنعية", "Workmanship"), num: true }, { label: L("الكاش باك", "Cashback"), num: true }, { label: L("إجمالي السعر", "Total price"), num: true }]}
+            foot={<Tr><Th scope="row" colSpan={3}>{L("الإجمالي", "Total")}</Th><Td num dir="ltr">{totals.incomplete ? "—" : money(totals.workmanship)}</Td><Td num dir="ltr">{totals.incomplete ? "—" : money(totals.cashback)}</Td><Td num dir="ltr"><b>{totals.incomplete ? "—" : money(totals.total)}</b></Td></Tr>}>
+            {chosen.map((e, i) => {
+              const n = pickOf(e.id);
+              return (
+                <Tr key={e.id}>
+                  <Td><b>{e.itemName}</b><small className="pb-sub">{e.brandName} · {e.karat} · {grams(e.weightMg)}</small><span className="pb-pill" data-tone={e.sellable ? "good" : "bad"}>{stockText(e)}</span></Td>
+                  <Td num dir="ltr">{money(pickedRows[i].price)}</Td>
+                  <Td>
+                    <div className="pb-step" role="group" aria-label={L("الكمية", "Quantity")}>
+                      <Button size="sm" aria-label={L("تقليل الكمية", "Decrease quantity")} disabled={n <= 1} onClick={() => pickBump(e.id, -1)}>−</Button>
+                      <output aria-live="polite" dir="ltr">{n}</output>
+                      <Button size="sm" aria-label={L("زيادة الكمية", "Increase quantity")} disabled={n >= 99} onClick={() => pickBump(e.id, 1)}>+</Button>
+                    </div>
+                  </Td>
+                  <Td num dir="ltr">{money(pickedRows[i].workmanship)}</Td>
+                  <Td num dir="ltr">{money(pickedRows[i].cashback)}</Td>
+                  <Td num dir="ltr"><b>{money(pickedRows[i].total)}</b></Td>
+                </Tr>
+              );
+            })}
+          </DataTable>
         )}
 
         {/* 3. The comparison */}

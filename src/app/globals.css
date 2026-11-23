@@ -1289,3 +1289,15 @@ dialog.wide{width:min(56rem,94vw);max-width:none}
 .cp-kind{display:flex;gap:.5rem}
 .cp-gift{display:flex;flex-direction:column;gap:.6rem}
 .cp-actions{display:flex;gap:.5rem;justify-content:flex-end}
+
+/* Selectable cards and the selected list of the Price board (owner, 2026-11-23). */
+.pb-brand li{cursor:pointer;position:relative}
+.pb-brand li[data-selected]{outline:.1875rem solid var(--gold);outline-offset:-.1875rem;background:color-mix(in srgb,var(--gold) 9%,var(--surface))}
+.pb-brand li .pb-top>.chk{margin-block-start:.1rem}
+.pb-h .pb-count{margin-inline-start:.5rem}
+.pb-h .pb-clear{margin-inline-start:.75rem;font-size:.8rem;font-weight:500}
+.pb-picked small.pb-sub{display:block;color:var(--mute);font-size:.85em}
+.pb-picked .pb-pill{display:inline-block;margin-top:.25rem}
+.pb-picked .pb-pill[data-tone=good]{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.pb-picked .pb-pill[data-tone=bad]{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
+.pb-picked tfoot th,.pb-picked tfoot td{font-weight:700;background:var(--gold-wash)}

@@ -91,6 +91,18 @@
     "en": "The A5 invoice print now matches the full design: IBM Plex fonts, a line under every row, and the contact strip at the foot of the page; the Custom print dialog is wider.",
     "ar": "طباعة الفاتورة A5 بقت مطابقة للتصميم الكامل: خط IBM Plex وخط تحت كل صف وشريط التواصل أسفل الصفحة، ونافذة الطباعة المخصّصة بقت أعرض.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "new",
+    "en": "Price board: click an item card to select it (click again to free it); the selected items list below shows each row with its own plus and minus, workmanship, cashback and total price, and a grand total.",
+    "ar": "لوحة الأسعار: اضغط على كارت الصنف عشان تختاره (واضغط تاني عشان تلغيه)، وتحت قايمة الأصناف المختارة بكل صف وزرار زائد وناقص والمصنعية والكاش باك وإجمالي السعر، وإجمالي كل الأصناف.",
+    "route": "/sales/price-board"
+   },
+   {
+    "kind": "fixed",
+    "en": "The invoice print's footer icons, gold lines and labels now use the exact colours of the approved design.",
+    "ar": "أيقونات تذييل طباعة الفاتورة والخطوط الدهبي والعناوين بقت بنفس ألوان التصميم المعتمد بالظبط.",
+    "route": "/sales/invoices"
    }
   ]
  },
