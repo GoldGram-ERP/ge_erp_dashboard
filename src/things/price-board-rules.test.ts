@@ -74,8 +74,8 @@ describe("the selected cards", () => {
   });
   it("adds the rows for the foot, and flags a row without a price", () => {
     const rows = [rowOf({ total: 100, workmanship: 10, cashback: 4 }, 2), rowOf({ total: 50, workmanship: 5, cashback: 1 }, 1)];
-    expect(totalsOf(rows)).toEqual({ workmanship: 25, cashback: 9, total: 250, incomplete: false });
+    expect(totalsOf(rows)).toEqual({ workmanship: 25, cashback: 9, total: 250, goldValue: 225, incomplete: false });
     expect(totalsOf([...rows, rowOf({ total: null, workmanship: null, cashback: null }, 1)]).incomplete).toBe(true);
-    expect(totalsOf([])).toEqual({ workmanship: 0, cashback: 0, total: 0, incomplete: false });
+    expect(totalsOf([])).toEqual({ workmanship: 0, cashback: 0, total: 0, goldValue: 0, incomplete: false });
   });
 });
