@@ -2795,7 +2795,11 @@
     "unlock": "فتح",
     "reprint": "إعادة طباعة",
     "signIn": "تسجيل دخول",
-    "signInFailed": "محاولة دخول فاشلة"
+    "signInFailed": "محاولة دخول فاشلة",
+    "print": "طباعة",
+    "refused": "مرفوض",
+    "request": "طلب (تغيير)",
+    "export": "تصدير"
    },
    "screens": {
     "access": "الدخول",
@@ -3125,6 +3129,7 @@
    "returned-pieces": "قطع مرتجعة (ليست من مبيعاتنا)",
    "sales-desk": "مكتب المبيعات",
    "price-board": "لوحة الأسعار",
+   "activity-log": "سجل النشاط",
    "merchants": "التجار",
    "bug-reports": "بلاغات المشاكل"
   }

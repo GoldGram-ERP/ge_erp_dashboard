@@ -226,6 +226,7 @@ Object.assign(APP, {
   "gold-sales.salesDesk.lockedNote": ["مغلقة", "Locked"],
   "nav.item.sales-desk": ["مكتب المبيعات", "Sales desk"],
   "nav.item.price-board": ["لوحة الأسعار", "Price board"],
+  "nav.item.activity-log": ["سجل النشاط", "Activity log"],
   "gold-sales.salesDesk.title": ["مكتب المبيعات", "Sales desk"],
   "gold-sales.salesDesk.intro": ["سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل. يستلمها المسؤول ويمسح القطع الفعلية ويُنشئ الفاتورة.", "Save the customer's order as a numbered draft and edit it until midnight. An Admin opens it, scans the real pieces and creates the invoice."],
   "gold-sales.salesDesk.ownOnly": ["ترى هنا مسوداتك أنت فقط.", "You see only your own drafts here."],

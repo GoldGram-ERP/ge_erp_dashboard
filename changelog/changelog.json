@@ -133,6 +133,12 @@
     "en": "An accountant now sees every Sales desk draft of their branch (view only); other users still see only their own drafts.",
     "ar": "المحاسب بقى بيشوف كل مسودات مكتب المبيعات في فرعه (للعرض بس)، وباقي المستخدمين لسه بيشوفوا مسوداتهم بس.",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "new",
+    "en": "Admins can now open the Activity log (Admin menu, below Test printer); it never shows what a Super admin did, can be filtered by action, and now records every change request and export.",
+    "ar": "المدير بقى يقدر يفتح سجل النشاط (في قايمة الإدارة تحت تجربة الطابعة)، ومبيظهرلوش اللي عمله السوبر أدمن، وفيه فلتر بالإجراء، والسجل بقى بيسجّل كل طلب تغيير وكل تصدير.",
+    "route": "/setup/activity-log"
    }
   ]
  },
