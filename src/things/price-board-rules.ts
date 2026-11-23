@@ -37,3 +37,21 @@ export const clampCount = (n: number): number => (Number.isFinite(n) ? Math.min(
 
 /** A price for n pieces; no price stays no price. */
 export const times = (value: number | null, n: number): number | null => (value === null ? null : value * clampCount(n));
+
+/** A card selected or freed: added at the end of the selection, or removed. */
+export const toggleId = (ids: readonly string[], id: string): string[] => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
+
+/** One row of the selected list for n pieces: the price of one piece, and workmanship, cashback and total for all n. */
+export type SelectedRow = { price: number | null; workmanship: number | null; cashback: number | null; total: number | null };
+export const rowOf = (e: Pick<BoardItem, "total" | "workmanship" | "cashback">, n: number): SelectedRow => ({
+  price: e.total, workmanship: times(e.workmanship, n), cashback: times(e.cashback, n), total: times(e.total, n),
+});
+
+/** The foot of the selected list. `incomplete` when some row has no price (no gold price today): then the sums would be wrong and the screen shows a dash. */
+export function totalsOf(rows: readonly SelectedRow[]): { workmanship: number; cashback: number; total: number; incomplete: boolean } {
+  const sum = (pick: (r: SelectedRow) => number | null) => rows.reduce((s, r) => s + (pick(r) ?? 0), 0);
+  return {
+    workmanship: sum((r) => r.workmanship), cashback: sum((r) => r.cashback), total: sum((r) => r.total),
+    incomplete: rows.some((r) => r.total === null || r.workmanship === null || r.cashback === null),
+  };
+}

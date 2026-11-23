@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, times, winner, type BoardBrand, type BoardItem } from "./price-board-rules";
+import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type BoardBrand, type BoardItem } from "./price-board-rules";
 
 const item = (id: string, karat: string, weightMg: number, extra: Partial<BoardItem> = {}): BoardItem => ({
   id, itemCode: 1, itemName: id, nickname: null, karat, weightMg, workmanshipPerGram: 0, cashbackPerGram: 0,
@@ -59,5 +59,23 @@ describe("the pieces of one item", () => {
     expect(clampCount(5.9)).toBe(5);
     expect(clampCount(100)).toBe(99);
     expect(clampCount(Number.NaN)).toBe(1);
+  });
+});
+
+describe("the selected cards", () => {
+  it("selects a card at the end of the selection and frees it on the second click", () => {
+    expect(toggleId([], "a")).toEqual(["a"]);
+    expect(toggleId(["a"], "b")).toEqual(["a", "b"]);
+    expect(toggleId(["a", "b"], "a")).toEqual(["b"]);
+  });
+  it("prices a row: one piece's price, and workmanship, cashback and total for n pieces", () => {
+    expect(rowOf({ total: 1_659_00, workmanship: 43, cashback: 28 }, 3)).toEqual({ price: 1_659_00, workmanship: 129, cashback: 84, total: 4_977_00 });
+    expect(rowOf({ total: null, workmanship: null, cashback: null }, 3)).toEqual({ price: null, workmanship: null, cashback: null, total: null });
+  });
+  it("adds the rows for the foot, and flags a row without a price", () => {
+    const rows = [rowOf({ total: 100, workmanship: 10, cashback: 4 }, 2), rowOf({ total: 50, workmanship: 5, cashback: 1 }, 1)];
+    expect(totalsOf(rows)).toEqual({ workmanship: 25, cashback: 9, total: 250, incomplete: false });
+    expect(totalsOf([...rows, rowOf({ total: null, workmanship: null, cashback: null }, 1)]).incomplete).toBe(true);
+    expect(totalsOf([])).toEqual({ workmanship: 0, cashback: 0, total: 0, incomplete: false });
   });
 });

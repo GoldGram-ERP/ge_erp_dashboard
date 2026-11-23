@@ -33,24 +33,24 @@ ol{margin:10px 0 0;padding:0;border-top:1px solid #1c1912}ol li{display:block;bo
 .err{max-width:420px;margin:30px auto;background:#fdf1f0;border:1px solid #b3261e;color:#7a1a14;padding:14px 18px;border-radius:8px;font-weight:600}
 article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8mm;font-size:10.5px;line-height:1.45;color:#1c1912;display:flex;flex-direction:column;font-family:"PlexPrint","Segoe UI",system-ui,Tahoma,sans-serif}
 .pre .top{height:12mm}
-.pre .phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:9px;border-bottom:2px solid #1b2a5a}
-.pre .doc b{display:block;font-size:24px;line-height:1.1;color:#1b2a5a}.pre .doc span{display:block;font-size:8px;letter-spacing:.3em;color:#b08d3c;margin-top:3px}
-.pre .meta{display:grid;grid-template-columns:auto auto;gap:3px 10px;margin:0;font-size:11.5px}.pre .meta dt{font-weight:700;color:#a67c34}.pre .meta dd{margin:0;color:#1b2a5a}
+.pre .phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:9px;border-bottom:2px solid #192e5d}
+.pre .doc b{display:block;font-size:24px;line-height:1.1;color:#192e5d}.pre .doc span{display:block;font-size:8px;letter-spacing:.3em;color:#c2a56e;margin-top:3px}
+.pre .meta{display:grid;grid-template-columns:auto auto;gap:3px 10px;margin:0;font-size:11.5px}.pre .meta dt{font-weight:700;color:#a98446}.pre .meta dd{margin:0;color:#192e5d}
 .pre .cust{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:16px 0 18px}
-.pre .fld{display:flex;gap:10px;align-items:baseline;min-height:16px;font-size:12px;color:#1b2a5a}.pre .fld span{color:#a67c34;font-weight:700;white-space:nowrap}.pre .fld b{font-weight:700}
+.pre .fld{display:flex;gap:10px;align-items:baseline;min-height:16px;font-size:12px;color:#192e5d}.pre .fld span{color:#a98446;font-weight:700;white-space:nowrap}.pre .fld b{font-weight:700}
 .pre .blank{flex:1;min-width:30px;border-bottom:1px dotted #999;height:12px}
-.pre table{margin-top:4px;border-collapse:collapse}.pre th{background:#1b2a5a;color:#fff;border:0;padding:9px 4px;font-weight:700;font-size:10px;white-space:nowrap}.pre td{padding:9px 4px;border:0;color:#1b2a5a;font-size:11px}.pre td.it{width:34%}
-.pre tbody td{border-bottom:1px solid #d9d6cf}
+.pre table{margin-top:4px;border-collapse:collapse}.pre th{background:#192e5d;color:#fff;border:0;padding:9px 4px;font-weight:700;font-size:10px;white-space:nowrap}.pre td{padding:9px 4px;border:0;color:#192e5d;font-size:11px}.pre td.it{width:34%}
+.pre tbody td{border-bottom:1px solid #d5d9e2}
 .pre td.it small{display:block;color:#8a93a8;font-size:8.5px}.pre td.pr{font-weight:700}
 .pre .tot{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-top:18px}
 .pre .boxes{display:flex;flex-direction:column;gap:10px}
-.pre .gbox{border:1px solid #b08d3c;padding:9px 14px;font-size:12px;color:#1b2a5a}.pre .gbox div{white-space:nowrap}.pre .gbox b{font-weight:700}
-.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:8px 14px;margin:0 0 8px;padding-bottom:10px;border-bottom:2px solid #1b2a5a;font-size:11.5px;color:#1b2a5a}.pre .sums dd{margin:0;text-align:end}.pre .sums dt{font-weight:500}
-.pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:16px;color:#1b2a5a;font-weight:700}.pre .grand b{font-size:17px}
-.pre .pfoot{margin-top:48px;padding-top:10px;border-top:1.5px solid #b08d3c;font-size:9.5px;color:#5d6b8a;line-height:1.7}.pre .pfoot span{display:block}
-.pre .contact{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-top:14px;font-size:10px;color:#1b2a5a}
+.pre .gbox{border:1px solid #c2a56e;padding:9px 14px;font-size:12px;color:#192e5d}.pre .gbox div{white-space:nowrap}.pre .gbox b{font-weight:700}
+.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:8px 14px;margin:0 0 8px;padding-bottom:10px;border-bottom:2px solid #192e5d;font-size:11.5px;color:#192e5d}.pre .sums dd{margin:0;text-align:end}.pre .sums dt{font-weight:500}
+.pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:16px;color:#192e5d;font-weight:700}.pre .grand b{font-size:17px}
+.pre .pfoot{margin-top:48px;padding-top:10px;border-top:1.5px solid #c2a56e;font-size:9.5px;color:#5d6b8a;line-height:1.7}.pre .pfoot span{display:block}
+.pre .contact{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-top:14px;font-size:10px;color:#192e5d}
 .pre .contact .crow{display:flex;gap:22px;margin-bottom:6px}.pre .contact span{display:inline-flex;align-items:center;gap:7px}.pre .contact b{font-weight:700}.pre .contact .cr{display:flex;flex-direction:column;gap:6px}
-.pre .contact svg{width:14px;height:14px;flex:none;color:#5d6b8a}
+.pre .contact svg{width:14px;height:14px;flex:none;color:#c2a56e}
 /* Print the colours as drawn (the blue table head has white text: without its background the head reads blank), whatever the "Background graphics" option of the print window says. */
 article.pre,article.pre *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media print{article.pre{width:auto;min-height:208mm;padding:0 12mm 8mm}.bar{display:none}body{background:#fff}main{padding:0;overflow:visible}article{box-shadow:none}article.a4{width:auto;padding:0}article.narrow{width:100%;padding:0}}`;
