@@ -13,10 +13,10 @@ import { milligramsText, piastresText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { Select } from "@/components/fields/Select";
-import { Button, Checkbox, DataTable, Td, Th, Tr } from "@/components/ui";
+import { Button, Checkbox, DataTable, Input, Td, Th, Tr } from "@/components/ui";
 import { allPages } from "./sales-form-parts";
 import { LOW_STOCK_MAX, brandsOf, inBrand } from "@/lib/items";
-import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
+import { filterItems, isFiltering, noFilter, weightBounds, type BrandFilter, clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
 
 const money = (p: number | null | undefined) => (p === null || p === undefined ? "—" : piastresText(p));
 const grams = (mg: number) => `${milligramsText(mg)} g`;
@@ -42,6 +42,9 @@ export default function Page() {
   const bump = (id: string, by: number) => setCounts((c) => ({ ...c, [id]: clampCount((c[id] ?? 1) + by) }));
 
   // The cards a person selected (owner, 2026-11-23), in the order they were chosen, and the pieces of each in the list below: separate from the card's own count.
+  // What each brand card is narrowed by (name, weight from / to): page state by brand, so it survives the refresh.
+  const [filters, setFilters] = useState<Record<string, BrandFilter>>({});
+  const setFilter = (brandId: string, patch: Partial<BrandFilter>) => setFilters((all) => ({ ...all, [brandId]: { ...(all[brandId] ?? noFilter), ...patch } }));
   const [selected, setSelected] = useState<string[]>([]);
   const [picks, setPicks] = useState<Record<string, number>>({});
   const toggle = (id: string) => setSelected((s) => toggleId(s, id));
@@ -120,11 +123,24 @@ export default function Page() {
         <h2 className="pb-h">{L("الماركات", "Brands")}</h2>
         {board.data.brands.length === 0 ? <p className="quiet-note">{L("لا توجد أصناف.", "There are no items.")}</p> : (
           <div className="pb-brands">
-            {board.data.brands.map((brand) => (
+            {board.data.brands.map((brand) => {
+              const f = filters[brand.id] ?? noFilter;
+              const shown = filterItems(brand.items, f);
+              const range = weightBounds(f);
+              return (
               <section className="card pb-brand" key={brand.id} aria-label={brand.name}>
-                <h3>{brand.name}<span className="pb-count">{brand.items.length}</span></h3>
+                <h3>{brand.name}<span className="pb-count">{isFiltering(f) ? `${shown.length} / ${brand.items.length}` : brand.items.length}</span></h3>
+                <div className="pb-filter" role="search" aria-label={L(`بحث في ${brand.name}`, `Search in ${brand.name}`)}>
+                  <div className="field pb-q"><Input type="search" id={`pb-q-${brand.id}`} value={f.q} placeholder={L("ابحث بالاسم", "Search by name")} aria-label={L("ابحث بالاسم", "Search by name")} autoComplete="off" onChange={(e) => setFilter(brand.id, { q: e.target.value })} /></div>
+                  <div className="field"><Input inputMode="decimal" id={`pb-from-${brand.id}`} value={f.from} placeholder={L("الوزن من (جم)", "Weight from (g)")} aria-label={L("الوزن من (جم)", "Weight from (g)")} aria-invalid={range.invalid} autoComplete="off" onChange={(e) => setFilter(brand.id, { from: e.target.value })} /></div>
+                  <div className="field"><Input inputMode="decimal" id={`pb-to-${brand.id}`} value={f.to} placeholder={L("إلى (جم)", "to (g)")} aria-label={L("إلى (جم)", "Weight to (g)")} aria-invalid={range.invalid} autoComplete="off" onChange={(e) => setFilter(brand.id, { to: e.target.value })} /></div>
+                  {range.invalid && <p className="pb-hint" role="alert">{L("الوزن (من) أكبر من الوزن (إلى).", "Weight from is more than weight to.")}</p>}
+                  {isFiltering(f) && <Button size="sm" className="pb-reset" onClick={() => setFilters((all) => ({ ...all, [brand.id]: noFilter }))}>{L("مسح", "Clear")}</Button>}
+                </div>
+                <div className="pb-scroll">
+                {shown.length === 0 && <p className="quiet-note">{L("لا توجد أصناف مطابقة.", "No matching items.")}</p>}
                 <ul>
-                  {brand.items.map((it) => {
+                  {shown.map((it) => {
                     const n = countOf(it.id);
                     return (
                       <li key={it.id} data-tone={it.sellable ? "good" : "bad"} data-selected={selected.includes(it.id) || undefined}
@@ -150,8 +166,10 @@ export default function Page() {
                     );
                   })}
                 </ul>
+                </div>
               </section>
-            ))}
+              );
+            })}
           </div>
         )}
 

@@ -1323,3 +1323,9 @@ dialog.wide{width:min(56rem,94vw);max-width:none}
 .pb-prices .bubble{gap:.9rem}
 .pb-sides small{font-size:.9rem;font-weight:400;color:var(--mute)}
 .pb-sides b{font-size:1.6rem;font-weight:600}
+/* Search and weight range of a brand card, and its scrolling list (owner, 2026-11-24). rem only. */
+.pb-filter{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.6rem}
+.pb-filter .pb-q{grid-column:1/-1}
+.pb-filter .pb-hint{grid-column:1/-1;margin:0;color:var(--warn);font-size:.85rem}
+.pb-filter .pb-reset{grid-column:1/-1;justify-self:start}
+.pb-scroll{max-height:32rem;overflow-y:auto;padding-inline-end:.35rem}
