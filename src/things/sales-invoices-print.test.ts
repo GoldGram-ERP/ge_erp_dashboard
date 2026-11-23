@@ -62,6 +62,13 @@ describe("the preprinted invoice", () => {
     expect(own).not.toContain("برجاء الاحتفاظ");
   });
 
+  it("draws the contact strip of the screenshot at the foot, and a line under every row", () => {
+    const html = renderInvoice(invoice(), tFor("ar"), true);
+    for (const part of ["17937", "01282011114", "goldgram.eg", "295852", "774-088-346", "Cairo Business Plaza, North Tower, Unit 401, New Cairo"]) expect(html, part).toContain(part);
+    expect(html.indexOf('class="contact"')).toBeGreaterThan(html.indexOf('class="pfoot"'));   // the strip comes after the foot note
+    expect(html).toContain(".pre tbody td{border-bottom:1px solid #d9d6cf}");
+  });
+
   it("prints its colours even when the print window has Background graphics off", () => {
     // the table head is white text on blue: without its background it would read blank
     expect(renderInvoice(invoice(), tFor("en"), false)).toContain("article.pre,article.pre *{-webkit-print-color-adjust:exact;print-color-adjust:exact}");

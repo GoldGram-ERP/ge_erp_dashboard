@@ -55,7 +55,7 @@ function CustomPrintDialog({ row, tr, onClose }: { row: Row; tr: Tr; onClose: ()
   };
 
   return (
-    <Modal title={L("طباعة مخصّصة", "Custom print")} titleId="custom-print-title" onClose={onClose}>
+    <Modal className="wide" title={L("طباعة مخصّصة", "Custom print")} titleId="custom-print-title" onClose={onClose}>
       <div className="cp">
         <div className="cp-bar">
           <b>{L("القطع", "Pieces")}</b>
