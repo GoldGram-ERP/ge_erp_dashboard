@@ -127,6 +127,12 @@
     "en": "The Taslem button on a sales invoice now shows only for delivery (Taslem) invoices, not for a plain sale.",
     "ar": "زرار تسليم في فاتورة المبيعات بقى بيظهر بس لفواتير التسليم، مش لفاتورة البيع العادية.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "new",
+    "en": "An accountant now sees every Sales desk draft of their branch (view only); other users still see only their own drafts.",
+    "ar": "المحاسب بقى بيشوف كل مسودات مكتب المبيعات في فرعه (للعرض بس)، وباقي المستخدمين لسه بيشوفوا مسوداتهم بس.",
+    "route": "/sales/desk"
    }
   ]
  },
