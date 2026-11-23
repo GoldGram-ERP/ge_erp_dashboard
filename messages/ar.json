@@ -1682,6 +1682,7 @@
    "titleSub": "INVOICE",
    "pricePerGram": "سعر الجرام",
    "count": "العدد",
+   "weightColumn": "الوزن",
    "pieceMaking": "مصنعية القطعة",
    "piecePrice": "سعر القطعة",
    "rowTotal": "إجمالي المبلغ",

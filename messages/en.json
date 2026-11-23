@@ -1682,6 +1682,7 @@
    "titleSub": "فاتورة",
    "pricePerGram": "Gram price",
    "count": "Count",
+   "weightColumn": "Weight",
    "pieceMaking": "Piece workmanship",
    "piecePrice": "Piece price",
    "rowTotal": "Amount",
