@@ -13,6 +13,7 @@ import { useSession } from "@/stores/session";
 import { Kv, Ltr, Section, ThingPage, cellNode } from "@/components/engine";
 import { LAYOUTS, openPrint } from "./sales-invoices-print";
 import { GiftPrintBox } from "./sales-gift";
+import { CustomPrintBox } from "@/components/invoice/CustomPrintBox";
 import { SalesInvoiceForm } from "./sales-invoices-form";
 import { PIECE_CODE } from "./sales-form-parts";
 import { useAccess } from "./sales-access";
@@ -209,6 +210,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
             <Kv k={m("lineCount")}><Ltr>{tot.lineCount}</Ltr></Kv><Kv k={m("totalWeight")}><Ltr>{milligramsText(tot.weight)}</Ltr></Kv>
           </Section>
           <Section title={m("amounts")} wide><TotalsBar tr={tr} bar={savedBar(tot)} /></Section>
+          {!r.deletedAt && (r.lines?.length ?? 0) > 1 && <CustomPrintBox key={`custom-${r.id}`} row={r} tr={tr} />}
           {!r.deletedAt && <GiftPrintBox key={r.id} row={r} tr={tr} />}
         </>;
       },

@@ -44,7 +44,7 @@ article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8m
 .pre td.it small{display:block;color:#888;font-size:9px}.pre td.pr{font-weight:700;color:#1b2a5a}.pre tfoot td{border:0;color:#777;font-weight:400}
 .pre .tot{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-top:12px}
 .pre .gbox{border:1px solid #c9b27c;border-inline-end:3px solid #b08d3c;padding:6px 10px;font-size:10.5px}.pre .gbox div{white-space:nowrap}.pre .gbox span{color:#444}.pre .gbox b{color:#1b2a5a}
-.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:2px 14px;margin:0 0 4px;padding-bottom:6px;border-bottom:2px solid #1b2a5a}.pre .sums dd{margin:0;text-align:end}
+.pre .boxes{display:flex;flex-direction:column;gap:6px}.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:2px 14px;margin:0 0 4px;padding-bottom:6px;border-bottom:2px solid #1b2a5a}.pre .sums dd{margin:0;text-align:end}
 .pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:15px;color:#1b2a5a}.pre .grand b{font-size:16px}
 .pre .words{margin:10px 0 0;font-size:11px}.pre .words span{color:#777}
 .pre .pay{margin:8px 0 0;color:#555}.pre .pay .tick{margin-inline-start:12px;white-space:nowrap}
@@ -97,12 +97,16 @@ const karatLabel = (k: string) => (k === "999" ? p("silverPrice") : p("karatPric
 const dmy = (iso: string) => { const [y, m, dd] = String(iso).slice(0, 10).split("-"); return `${dd} / ${m} / ${y}`; };
 const methodLabel = (x: any) => (x.kind === "reservation" ? p("reservation", { number: x.label ?? "" }) : x.kind === "cash" ? p("cash") : x.label ?? p("bank"));
 
+// The rows of the A5 table: the backend's merged groups; an older answer without them is one row per piece (count 1).
+const groupsOf = (d: any): any[] =>
+  d.groups ?? d.lines.map((l: any) => ({ itemName: l.itemName, karat: l.karat, count: 1, weight: l.weight, makingCharge: l.makingCharge, piecePrice: l.linePrice, rowTotal: l.linePrice, cashbackPerGram: null, pieceCodes: [l.pieceCode] }));
+
 function a4(d: any) {
   const withPrice = d.layout !== "gift" || (d.totals.total !== null && d.totals.total !== undefined);   // gift: prices only when asked
   const money1 = (a: any) => ltr(money(a));
-  const perGram = (l: any) => (typeof l.goldValue === "number" && l.weight > 0 ? amountText(Math.round((l.goldValue * 1000) / l.weight)) : amountText(l.goldValue));
   const th = (k: string) => `<th>${esc(p(k))}</th>`;
-  const rows = d.lines.map((l: any) => `<tr><td class="it">${esc(l.itemName)}<small>${ltr(l.pieceCode)}</small></td><td>${ltr(gramsText(l.weight))}</td><td>${esc(l.karat)}</td>${withPrice ? `<td>${ltr(perGram(l) ?? "")}</td><td>${ltr(amountText(l.makingCharge) ?? "")}</td><td class="pr">${ltr(amountText(l.linePrice) ?? "")}</td>` : ""}</tr>`).join("");
+  // The rows (owner, 2026-11-23): identical pieces merged with a count; weight, workmanship and price are of ONE piece, the amount is count x piece price.
+  const rows = groupsOf(d).map((g: any) => `<tr><td class="it">${esc(g.itemName)}<small>${(g.pieceCodes ?? []).map((c: string) => ltr(c)).join(" · ")}</small></td><td>${ltr(g.count)}</td><td>${ltr(gramsText(g.weight))}</td><td>${esc(g.karat)}</td>${withPrice ? `<td>${ltr(amountText(g.makingCharge) ?? "")}</td><td>${ltr(amountText(g.piecePrice) ?? "")}</td><td class="pr">${ltr(amountText(g.rowTotal) ?? "")}</td><td>${ltr(amountText(g.cashbackPerGram) ?? "—")}</td>` : ""}</tr>`).join("");
   const year = String(d.invoiceDate).slice(0, 4);
   const customer = [
     fld(d.isGift ? p("recipient") : p("name"), d.customerName ? esc(d.customerName) : ""),
@@ -111,7 +115,14 @@ function a4(d: any) {
     fld(p("branch"), d.branchName ? esc(d.branchName) : ""),
   ].join("");
   const prices = withPrice ? (d.karatPrices ?? []).filter((x: any) => amountText(x.pricePerGram) !== null) : [];
-  const box = prices.length ? `<div class="gbox">${prices.map((x: any) => `<div><span>${esc(karatLabel(x.karat))}:</span> <b>${money1(x.pricePerGram)}</b></div>`).join("")}</div>` : "<div></div>";
+  const priceBox = prices.length ? `<div class="gbox">${prices.map((x: any) => `<div><span>${esc(karatLabel(x.karat))}:</span> <b>${money1(x.pricePerGram)}</b></div>`).join("")}</div>` : "";
+  // The weight box: one line for an invoice of one karat, a line per karat for two (owner, 2026-11-23). Weights are not money, so a gift keeps them.
+  const weights = d.weightsByKarat ?? [];
+  const unit = esc(p("gramUnit"));
+  const weightBox = weights.length === 1 ? `<div class="gbox"><div><span>${esc(p("invoiceWeight"))}:</span> <b>${ltr(gramsText(weights[0].weight))} ${unit}</b></div></div>`
+    : weights.length > 1 ? `<div class="gbox">${weights.map((x: any) => `<div><span>${esc(p("weightKarat", { karat: x.karat }))}:</span> <b>${ltr(gramsText(x.weight))} ${unit}</b></div>`).join("")}</div>`
+    : `<div class="gbox"><div><span>${esc(p("invoiceWeight"))}:</span> <b>${ltr(gramsText(d.totals.weight))} ${unit}</b></div></div>`;
+  const box = `<div class="boxes">${priceBox}${weightBox}</div>`;
   const discount = typeof d.totals.discount === "number" && d.totals.discount > 0 ? `<dt>${esc(p("cashDiscount"))}</dt><dd>${money1(-d.totals.discount)}</dd>` : "";
   const sums = withPrice ? `<div class="sums"><dl><dt>${esc(p("goldValue"))}</dt><dd>${money1(d.totals.goldTotal)}</dd><dt>${esc(p("makingCharge"))}</dt><dd>${money1(d.totals.makingTotal)}</dd>${discount}</dl><div class="grand"><span>${esc(p("total"))}</span><b>${money1(d.totals.total)}</b></div></div>` : "";
   const words = withPrice && typeof d.totals.total === "number" ? `<p class="words"><span>${esc(p("totalInWords"))}</span> ${esc([p("onlyPrefix"), amountInWords(d.totals.total, inArabic ? "ar" : "en"), p("onlySuffix")].filter(Boolean).join(" "))}</p>` : "";
@@ -124,9 +135,9 @@ function a4(d: any) {
     <div class="phead"><div class="doc"><b>${esc(p("title"))}</b><span>${esc(p("titleSub"))}</span></div>
       <dl class="meta"><dt>${esc(p("invoiceNumber"))}</dt><dd>${ltr(`INV/${year}/${String(d.invoiceNumber).padStart(6, "0")}`)}</dd><dt>${esc(p("date"))}</dt><dd>${ltr(`${d.invoiceTime ? d.invoiceTime + " · " : ""}${dmy(d.invoiceDate)}`)}</dd></dl></div>
     <div class="cust">${customer}</div>
-    <table><thead><tr>${th("item")}${th("weight")}${th("karat")}${withPrice ? th("pricePerGram") + th("makingCharge") + th("price") : ""}</tr></thead><tbody>${rows}</tbody>
-      <tfoot><tr><td>${esc(p("total"))} · ${esc(p("lines"))}: ${ltr(d.totals.lineCount)}</td><td>${ltr(gramsText(d.totals.weight))}</td><td colspan="${withPrice ? 4 : 1}"></td></tr></tfoot></table>
-    ${withPrice ? `<div class="tot">${box}${sums}</div>` : ""}${words}${how}
+    <table><thead><tr>${th("item")}${th("count")}${th("weight")}${th("karat")}${withPrice ? th("pieceMaking") + th("piecePrice") + th("rowTotal") + th("cashbackPerGram") : ""}</tr></thead><tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="${withPrice ? 8 : 4}">${esc(p("total"))} · ${esc(p("lines"))}: ${ltr(d.totals.lineCount)}</td></tr></tfoot></table>
+    <div class="tot">${box}${sums}</div>${words}${how}
     <div class="sigs"><div><i></i><span>${esc(p("receiver"))}</span></div><div><i></i><span>${esc(p("sellerCode"))}</span></div><div><i></i><span>${esc(p("stamp"))}</span></div></div>
     <footer class="pfoot" dir="${footDir}" lang="${inArabic ? "ar" : "en"}"><b>${footLine(foot[0])}</b>${foot.slice(1).map((x) => `<span>${footLine(x)}</span>`).join("")}</footer></article>`;
 }
@@ -140,7 +151,8 @@ function narrow(d: any) {
 
 // Must be called straight from the click (the window is opened before the answer, so no pop-up blocker objects).
 // `choices` (gift layout): the recipient of this print and whether the prices show.
-export type PrintChoices = { recipientName?: string; recipientPhone?: string; showPrices?: boolean };
+// `lines`: print only these pieces (their line numbers); left out, the whole invoice (owner, 2026-11-23).
+export type PrintChoices = { recipientName?: string; recipientPhone?: string; showPrices?: boolean; lines?: number[] };
 // An invoice is printed in Arabic ONLY, whatever the language of the page (owner, 2026-11-10): the translator is forced to Arabic here.
 export async function openPrint(id: string, layout: string, pageTr: Tr, choices: PrintChoices = {}) {
   const tr = arabicTr(pageTr);
@@ -153,7 +165,7 @@ export async function openPrint(id: string, layout: string, pageTr: Tr, choices:
   const page = (title: string, body: string, size: string) => { w.document.open(); w.document.write(`<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${CSS}@page{size:${size};margin:${size === "A5" ? "0" : size === "A4" ? "10mm" : "3mm"}}</style></head><body>${body}</body></html>`); w.document.close(); };
   page(p("title"), `<p style="text-align:center;margin-top:40px">${esc(L("جارٍ التحميل…", "Loading…"))}</p>`, "A4");
   try {
-    const d = await api(`/sales-invoices/${id}/print`, { query: { layout, ...(choices.recipientName ? { recipientName: choices.recipientName } : {}), ...(choices.recipientPhone ? { recipientPhone: choices.recipientPhone } : {}), ...(choices.showPrices !== undefined ? { showPrices: String(choices.showPrices) } : {}) } });
+    const d = await api(`/sales-invoices/${id}/print`, { query: { layout, ...(choices.recipientName ? { recipientName: choices.recipientName } : {}), ...(choices.recipientPhone ? { recipientPhone: choices.recipientPhone } : {}), ...(choices.showPrices !== undefined ? { showPrices: String(choices.showPrices) } : {}), ...(choices.lines?.length ? { lines: choices.lines.join(",") } : {}) } });
     const isNarrow = layout === "thermal" || layout === "receipt";
     const bar = `<div class="bar"><b>${esc(t("common", "report.printPreview"))} · ${esc(p(`layouts.${layout}`))}</b><span>${esc(isNarrow ? p("sizes.thermal") : p("sizes.a4"))}</span><button onclick="print()">${esc(t("common", "print"))}</button></div>`;
     page(`${p("title")} ${d.invoiceNumber}`, `${bar}<main>${isNarrow ? narrow(d) : a4(d)}</main>`, isNarrow ? "80mm auto" : "A5");
