@@ -13,6 +13,8 @@ import { Icon, Kv, Ltr, Section, ToastHost, toast, useConfirm } from "@/componen
 import { FieldError } from "@/components/fields/FieldError";
 import { revealFirstError } from "@/lib/submit-guard";
 import { useT } from "@/lib/t";
+import { hasAction } from "@/lib/actions";
+import { useSession } from "@/stores/session";
 import { Breakdown, MissingPreview, PieceLists, ScanFeedback, Summary, useLive, type BoardPiece, type LastScan, type Live } from "./stocktake-count-board";
 import { CopyButton } from "@/components/shell/copy-button";
 import { CameraBox } from "./stocktake-count-camera";
@@ -170,7 +172,7 @@ export function ScanPage({ id, onClose }: { id: string; onClose: () => void }) {
               <CopyButton text={code6(data.countNumber)} />
               <span className={`st ${open ? "good" : "off"}`}><i />{data.deletedAt ? t("gold-sales", "salesInvoices.deletedBadge") : open ? m("statusOpen") : m("statusClosed")}</span>
             </p>
-            {!data.deletedAt && <Button danger id="sc-del" onClick={remove}><Icon name="trash" />{m("delete")}</Button>}
+            {!data.deletedAt && hasAction(useSession.getState().me, "delete-records") && <Button danger id="sc-del" onClick={remove}><Icon name="trash" />{m("delete")}</Button>}
           </div>
           {!open && details}
           {open && (

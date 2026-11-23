@@ -104,3 +104,9 @@ export const lineTakesAccount = (method: string): boolean => method === "bank_tr
 export function forMath<T extends { method: string; bankAccountId: string }>(banks: readonly T[]): T[] {
   return banks.map((b, i) => (!b.bankAccountId && !lineTakesAccount(b.method) ? { ...b, bankAccountId: `none-${i}` } : b));
 }
+
+/** A plain user opening a draft that someone else made. */
+export const isForeignDraft = (me: { id?: string; userType?: string } | null | undefined, draft: { employeeId?: string } | null | undefined): boolean =>
+  Boolean(draft?.employeeId && me?.id && me.userType === "user" && draft.employeeId !== me.id);
+/** An accountant (business role of a plain user) may edit another person's draft of their branch (owner, 2026-11-24); no other plain user may. Complete and Delete stay with the creator. */
+export const mayEditForeignDraft = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean => me?.userType === "user" && me.businessRole === "accountant";

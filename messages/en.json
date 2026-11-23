@@ -212,13 +212,15 @@
     "give-cash-discount": "Give a cash discount",
     "use-treasuries": "Use treasuries",
     "complete-sales-draft": "Complete a sales draft",
-    "confirm-taslem": "Confirm Taslem"
+    "confirm-taslem": "Confirm Taslem",
+    "delete-records": "Delete records"
    },
    "actionHint": {
     "give-cash-discount": "Types a cash discount on a sales invoice and a reservation, out of the making charge only, never the gold price.",
     "use-treasuries": "Sends, accepts and refuses transfers, and adds and deletes cash and gold movements, of their branch's two treasuries.",
     "complete-sales-draft": "Presses Complete on an open sell draft to make the invoice.",
-    "confirm-taslem": "Presses Taslem on a saved invoice; the system records who and when."
+    "confirm-taslem": "Presses Taslem on a saved invoice; the system records who and when.",
+    "delete-records": "May delete any record in the system and sees the Delete buttons."
    },
    "channelsHeading": "Allowed sales channels",
    "channelsHint": "The channels the person may pick on the sales desk.",

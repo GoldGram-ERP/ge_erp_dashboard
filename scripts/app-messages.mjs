@@ -337,6 +337,8 @@ Object.assign(APP, {
   "administration.users.actionHint.use-treasuries": ["يبعت ويقبل ويرفض التحويلات، ويضيف ويمسح حركات النقدية والدهب، في خزنتين فرعه.", "Sends, accepts and refuses transfers, and adds and deletes cash and gold movements, of their branch's two treasuries."],
   "administration.users.actionLabel.complete-sales-draft": ["يكمّل مسودة البيع", "Complete a sales draft"],
   "administration.users.actionHint.complete-sales-draft": ["يدوس إتمام الفاتورة على مسودة بيع مفتوحة فتبقى فاتورة.", "Presses Complete on an open sell draft to make the invoice."],
+  "administration.users.actionLabel.delete-records": ["يحذف السجلات", "Delete records"],
+  "administration.users.actionHint.delete-records": ["يقدر يحذف أي سجل في النظام ويظهر له زرار الحذف.", "May delete any record in the system and sees the Delete buttons."],
   "administration.users.actionLabel.confirm-taslem": ["يأكّد التسليم", "Confirm Taslem"],
   "administration.users.actionHint.confirm-taslem": ["يدوس تسليم على الفاتورة المحفوظة، والنظام يسجّل مين وإمتى.", "Presses Taslem on a saved invoice; the system records who and when."],
   "administration.users.channelsHeading": ["قنوات البيع المسموحة", "Allowed sales channels"],

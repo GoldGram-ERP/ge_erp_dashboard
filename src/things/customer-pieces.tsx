@@ -91,9 +91,9 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         { id: "reprint", label: cp("reprint"), icon: "print", when: (r) => !r.deletedAt, run: (r) => reprint(r) },
         // Delete marks the record and its stock piece; the backend refuses a sold piece or one on a treasury transfer, said here in this screen's words.
         // A piece that was bought leaves only with its whole purchase (the money goes back in the same step): pieceInPurchase says so.
-        { id: "delete", label: L("حذف", "Delete"), icon: "trash", danger: true, when: (r) => !r.deletedAt && !r.purchaseId, confirm: { title: cp("deleteTitle"), text: cp("deleteBody") },
+        { id: "delete", deletes: true, label: L("حذف", "Delete"), icon: "trash", danger: true, when: (r) => !r.deletedAt && !r.purchaseId, confirm: { title: cp("deleteTitle"), text: cp("deleteBody") },
           run: async (r, h) => removal(r, h, `/customer-pieces/${r.id}`) },
-        { id: "deletePurchase", label: cp("deletePurchase"), icon: "trash", danger: true, when: (r) => !r.deletedAt && !!r.purchaseId, confirm: { title: cp("deletePurchaseTitle"), text: cp("deletePurchaseBody") },
+        { id: "deletePurchase", deletes: true, label: cp("deletePurchase"), icon: "trash", danger: true, when: (r) => !r.deletedAt && !!r.purchaseId, confirm: { title: cp("deletePurchaseTitle"), text: cp("deletePurchaseBody") },
           run: async (r, h) => removal(r, h, `/customer-pieces/purchases/${r.purchaseId}`) },
       ],
     },

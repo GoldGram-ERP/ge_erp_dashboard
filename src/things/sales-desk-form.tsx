@@ -13,6 +13,7 @@ import type { CustomFormProps, Option, Row } from "@/lib/engine-types";
 import { backendFieldErrors } from "@/lib/fields";
 import { dateTimeText, latinNumber, milligramsText, piastresText, timeText, today, typedPiastres } from "@/lib/format";
 import { useMe } from "@/lib/session";
+import { hasAction } from "@/lib/actions";
 import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
 import { revealFirstError } from "@/lib/submit-guard";
@@ -23,7 +24,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
 import { canOpen } from "@/nav/tree";
 import { pricePerGram } from "./item-math";
 import { code6 } from "@/lib/code6";
@@ -140,7 +141,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   // The price of everything on the screen is the backend's quote (debounced); nothing is worked out here.
   // One payment list and one discount (issue #35): Visa is what a Visa row says; the discount is an amount or a percent, the same one the draft saves.
   const buy = operation === "buy";
-  const dsc = may ? readDiscount(kind, disc, Number.MAX_SAFE_INTEGER / 4) : { invalid: false, value: 0, tooBig: false, sent: undefined };
+  // Someone else's draft (an accountant edits it; no other plain user can): its saved discount travels back as it is, so saving never drops it.
+  const foreign = isForeignDraft(me, draft);
+  const accountantEdits = foreign && mayEditForeignDraft(me);
+  const dsc = may || accountantEdits ? readDiscount(kind, disc, Number.MAX_SAFE_INTEGER / 4) : { invalid: false, value: 0, tooBig: false, sent: undefined };
   const payment = quotePayment(operation, banks);
   // Reservation (owner, 2026-11-18): the desk saves a real reservation (POST /reservations) instead of a draft. Any item, in stock or not; paid in full;
   // no channel, no typed price, silver priced as wrapped (what the reservation's own pricing does), so the quote shown is the total the Save checks.
@@ -175,8 +179,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
   const note = draft ? lockNote(draft as never, tr) : null;
   // A plain user may open a draft of someone else only when they are an accountant of that branch (owner, 2026-11-24): they read it, never change it.
-  const foreign = Boolean(draft && isUser && draft.employeeId && me?.id && draft.employeeId !== me.id);
-  const readonly = Boolean((draft && note && note.state !== "editable") || foreign);
+  const readonly = Boolean((draft && note && note.state !== "editable") || (foreign && !accountantEdits));
   const isNew = !draft;
   const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
@@ -399,7 +402,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
           {!draft && <p className="tk-quiet tk-intro" id="sd-intro">{rsv ? L("الحجز بيتسجّل مدفوع بالكامل، وتقدر تختار أي قطعة حتى لو مش موجودة في المخزون.", "A reservation is saved paid in full, and any piece can be picked, in stock or not.") : L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
-          {foreign && <div className="note warn" id="sd-foreign" role="status"><b>{L("هذه مسودة مستخدم آخر: للعرض فقط.", "This is another user's draft: view only.")}</b></div>}
+          {foreign && !accountantEdits && <div className="note warn" id="sd-foreign" role="status"><b>{L("هذه مسودة مستخدم آخر: للعرض فقط.", "This is another user's draft: view only.")}</b></div>}
           {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </header>
 
@@ -551,7 +554,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
               {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : rsv ? L("حفظ الحجز", "Save reservation") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
-              {draft && draft.status === "open" && !foreign && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
+              {draft && draft.status === "open" && !foreign && hasAction(me, "delete-records") && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
               <Button id="sd-back" onClick={close}><Icon name="back" size={15} />{d("backToList")}</Button>
             </div>
           </div>
