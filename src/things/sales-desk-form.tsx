@@ -174,7 +174,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   }, [quoteKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const note = draft ? lockNote(draft as never, tr) : null;
-  const readonly = Boolean(draft && note && note.state !== "editable");
+  // A plain user may open a draft of someone else only when they are an accountant of that branch (owner, 2026-11-24): they read it, never change it.
+  const foreign = Boolean(draft && isUser && draft.employeeId && me?.id && draft.employeeId !== me.id);
+  const readonly = Boolean((draft && note && note.state !== "editable") || foreign);
   const isNew = !draft;
   const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
@@ -341,7 +343,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     if (quote) { const q = quote.q, c = quote.cash ?? q, disc = Math.max(0, c.beforeDiscountPiastres - c.totalPiastres); return { gold: q.beforeDiscountPiastres - q.feeTotalPiastres, making: q.feeTotalPiastres, gross: q.beforeDiscountPiastres, discount: disc, makingLeft: q.feeTotalPiastres - disc, paid, left: q.totalPiastres - paid }; }
     return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
-  const canComplete = canCompleteDraft(me, draft?.status, buy);   // Admin / Super admin, or the action complete-sales-draft; hidden until the person is known; a Buy draft is a quote only
+  const canComplete = canCompleteDraft(me, draft?.status, buy) && !foreign;   // Admin / Super admin, or the action complete-sales-draft; hidden until the person is known; a Buy draft is a quote only
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 
@@ -397,6 +399,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
           {!draft && <p className="tk-quiet tk-intro" id="sd-intro">{rsv ? L("الحجز بيتسجّل مدفوع بالكامل، وتقدر تختار أي قطعة حتى لو مش موجودة في المخزون.", "A reservation is saved paid in full, and any piece can be picked, in stock or not.") : L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
+          {foreign && <div className="note warn" id="sd-foreign" role="status"><b>{L("هذه مسودة مستخدم آخر: للعرض فقط.", "This is another user's draft: view only.")}</b></div>}
           {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </header>
 
@@ -548,7 +551,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
               {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : rsv ? L("حفظ الحجز", "Save reservation") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
-              {draft && draft.status === "open" && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
+              {draft && draft.status === "open" && !foreign && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
               <Button id="sd-back" onClick={close}><Icon name="back" size={15} />{d("backToList")}</Button>
             </div>
           </div>
