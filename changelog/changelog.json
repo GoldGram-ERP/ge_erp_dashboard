@@ -145,6 +145,12 @@
     "en": "Changing a user to Admin now gives every admin page: the leftover screens of the old role are cleared, so a user who had only the Sales desk no longer becomes a desk-only Admin.",
     "ar": "لما تحوّل مستخدم لأدمن بقى بياخد كل صفحات الأدمن: شاشات الدور القديم بتتمسح، فاللي كان معاه مكتب المبيعات بس مبقاش يطلع أدمن بمكتب المبيعات بس.",
     "route": "/setup/users"
+   },
+   {
+    "kind": "new",
+    "en": "Price board: each brand card now has a name search and a weight from/to filter (both ends and fractions included), and its list scrolls inside the card.",
+    "ar": "لوحة الأسعار: كل كارت ماركة فيه بحث بالاسم وفلتر وزن من وإلى (بيشمل الطرفين والكسور)، والقايمة بتعمل سكرول جوه الكارت.",
+    "route": "/sales/price-board"
    }
   ]
  },

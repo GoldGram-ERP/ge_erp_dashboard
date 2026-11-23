@@ -1,3 +1,4 @@
+import { typedMilligrams } from "@/lib/format";
 // The Price board's pure rules (owner, 2026-11-22): what the comparison offers as the second item, and the numbers of its table.
 // Money is whole piastres, weight whole milligrams, as the API sends them.
 export type BoardItem = {
@@ -11,6 +12,7 @@ export type BoardPrice = { date: string; sell21: number; buy21: number | null; s
 export type Board = { price: BoardPrice | null; brands: BoardBrand[] };
 
 export type Entry = BoardItem & { brandId: string; brandName: string };
+
 
 /** Every item of the board, each with its brand. */
 export const entriesOf = (brands: readonly BoardBrand[]): Entry[] => brands.flatMap((b) => b.items.map((i) => ({ ...i, brandId: b.id, brandName: b.name })));
@@ -56,4 +58,26 @@ export function totalsOf(rows: readonly SelectedRow[]): { workmanship: number; c
     goldValue: sum((r) => r.total) - sum((r) => r.workmanship),
     incomplete: rows.some((r) => r.total === null || r.workmanship === null || r.cashback === null),
   };
+}
+
+/** What a brand card is narrowed by (owner, 2026-11-24): a name, and a weight from / to in grams as typed. */
+export type BrandFilter = { q: string; from: string; to: string };
+export const noFilter: BrandFilter = { q: "", from: "", to: "" };
+export const isFiltering = (f: BrandFilter): boolean => f.q.trim() !== "" || f.from.trim() !== "" || f.to.trim() !== "";
+
+/** The weight range in whole milligrams. A bound that is empty or not a weight (up to 3 decimals) is ignored; `invalid` when both are given and from is more than to. */
+export function weightBounds(f: Pick<BrandFilter, "from" | "to">): { from?: number; to?: number; invalid: boolean } {
+  const from = f.from.trim() === "" ? undefined : typedMilligrams(f.from);
+  const to = f.to.trim() === "" ? undefined : typedMilligrams(f.to);
+  return { from, to, invalid: from !== undefined && to !== undefined && from > to };
+}
+
+const plain = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+/** The items of a card that match its name box (the item's name or nickname, any letter case) and its weight range (both ends included, fractions counted in milligrams). */
+export function filterItems<T extends { itemName: string; nickname: string | null; weightMg: number }>(items: readonly T[], f: BrandFilter): T[] {
+  const q = plain(f.q);
+  const { from, to, invalid } = weightBounds(f);
+  if (invalid) return [];
+  return items.filter((i) => (q === "" || plain(i.itemName).includes(q) || plain(i.nickname ?? "").includes(q)) && (from === undefined || i.weightMg >= from) && (to === undefined || i.weightMg <= to));
 }

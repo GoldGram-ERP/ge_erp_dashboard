@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type BoardBrand, type BoardItem } from "./price-board-rules";
+import { filterItems, isFiltering, noFilter, weightBounds, clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type BoardBrand, type BoardItem } from "./price-board-rules";
 
 const item = (id: string, karat: string, weightMg: number, extra: Partial<BoardItem> = {}): BoardItem => ({
   id, itemCode: 1, itemName: id, nickname: null, karat, weightMg, workmanshipPerGram: 0, cashbackPerGram: 0,
@@ -77,5 +77,45 @@ describe("the selected cards", () => {
     expect(totalsOf(rows)).toEqual({ workmanship: 25, cashback: 9, total: 250, goldValue: 225, incomplete: false });
     expect(totalsOf([...rows, rowOf({ total: null, workmanship: null, cashback: null }, 1)]).incomplete).toBe(true);
     expect(totalsOf([])).toEqual({ workmanship: 0, cashback: 0, total: 0, goldValue: 0, incomplete: false });
+  });
+});
+
+describe("a brand card's search and weight range", () => {
+  const w = (name: string, mg: number, nickname: string | null = null) => ({ itemName: name, nickname, weightMg: mg });
+  const items = [w("سبيكة ربع جرام", 250), w("Bar 7", 7_999), w("Bar 8", 8_000), w("Bar 10.5", 10_500, "Half bar"), w("Bar 12", 12_000), w("Bar 12.001", 12_001)];
+  const names = (f: Partial<typeof noFilter>) => filterItems(items, { ...noFilter, ...f }).map((i) => i.itemName);
+
+  it("keeps both ends and everything between, fractions included: 8 to 12", () => {
+    expect(names({ from: "8", to: "12" })).toEqual(["Bar 8", "Bar 10.5", "Bar 12"]);
+  });
+  it("counts fractions of a gram: 0.25 to 0.5", () => {
+    expect(names({ from: "0.25", to: "0.5" })).toEqual(["سبيكة ربع جرام"]);
+    expect(names({ from: "0.251", to: "0.5" })).toEqual([]);
+  });
+  it("works with only a from or only a to", () => {
+    expect(names({ from: "12" })).toEqual(["Bar 12", "Bar 12.001"]);
+    expect(names({ to: "0.25" })).toEqual(["سبيكة ربع جرام"]);
+  });
+  it("reads Arabic digits and the Arabic decimal mark", () => {
+    expect(names({ from: "٨", to: "١٠٫٥" })).toEqual(["Bar 8", "Bar 10.5"]);
+  });
+  it("shows nothing and flags the range when from is more than to", () => {
+    expect(weightBounds({ from: "12", to: "8" }).invalid).toBe(true);
+    expect(names({ from: "12", to: "8" })).toEqual([]);
+  });
+  it("ignores a bound that is empty or not a weight", () => {
+    expect(names({ from: "abc", to: "" }).length).toBe(items.length);
+    expect(weightBounds({ from: " ", to: "x" })).toEqual({ from: undefined, to: undefined, invalid: false });
+  });
+  it("searches the name and the nickname, in any letter case, and combines with the weight", () => {
+    expect(names({ q: "bar 1" })).toEqual(["Bar 10.5", "Bar 12", "Bar 12.001"]);
+    expect(names({ q: "HALF" })).toEqual(["Bar 10.5"]);
+    expect(names({ q: "ربع" })).toEqual(["سبيكة ربع جرام"]);
+    expect(names({ q: "bar", from: "8", to: "10.5" })).toEqual(["Bar 8", "Bar 10.5"]);
+  });
+  it("knows when a card is being filtered", () => {
+    expect(isFiltering(noFilter)).toBe(false);
+    expect(isFiltering({ ...noFilter, from: "1" })).toBe(true);
+    expect(isFiltering({ ...noFilter, q: "  " })).toBe(false);
   });
 });
