@@ -31,26 +31,36 @@ section{margin-top:10px;border-top:1px solid #1c1912;padding-top:6px}section h3{
 li{display:flex;justify-content:space-between;gap:12px;padding:2px 0;list-style:none}ul{margin:0;padding:0}li.sum{border-top:1px solid #e3dccb;font-weight:600}
 ol{margin:10px 0 0;padding:0;border-top:1px solid #1c1912}ol li{display:block;border-bottom:1px dashed #c9c0aa;padding:5px 0}ol p{margin:0;display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px}
 .err{max-width:420px;margin:30px auto;background:#fdf1f0;border:1px solid #b3261e;color:#7a1a14;padding:14px 18px;border-radius:8px;font-weight:600}
-article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8mm;font-size:10.5px;line-height:1.45;color:#1c1912}
-.pre .top{height:38mm}
+article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8mm;font-size:10.5px;line-height:1.45;color:#1c1912;display:flex;flex-direction:column;font-family:"PlexPrint","Segoe UI",system-ui,Tahoma,sans-serif}
+.pre .top{height:12mm}
 .pre .phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:9px;border-bottom:2px solid #1b2a5a}
-.pre .doc b{display:block;font-size:30px;line-height:1.1;color:#1b2a5a}.pre .doc span{display:block;font-size:8px;letter-spacing:.3em;color:#b08d3c;margin-top:3px}
-.pre .meta{display:grid;grid-template-columns:auto auto;gap:3px 10px;margin:0;font-size:10.5px}.pre .meta dt{font-weight:700;color:#a67c34}.pre .meta dd{margin:0;color:#1b2a5a}
+.pre .doc b{display:block;font-size:24px;line-height:1.1;color:#1b2a5a}.pre .doc span{display:block;font-size:8px;letter-spacing:.3em;color:#b08d3c;margin-top:3px}
+.pre .meta{display:grid;grid-template-columns:auto auto;gap:3px 10px;margin:0;font-size:11.5px}.pre .meta dt{font-weight:700;color:#a67c34}.pre .meta dd{margin:0;color:#1b2a5a}
 .pre .cust{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:16px 0 18px}
-.pre .fld{display:flex;gap:10px;align-items:baseline;min-height:16px;font-size:11.5px;color:#1b2a5a}.pre .fld span{color:#a67c34;font-weight:700;white-space:nowrap}.pre .fld b{font-weight:700}
+.pre .fld{display:flex;gap:10px;align-items:baseline;min-height:16px;font-size:12px;color:#1b2a5a}.pre .fld span{color:#a67c34;font-weight:700;white-space:nowrap}.pre .fld b{font-weight:700}
 .pre .blank{flex:1;min-width:30px;border-bottom:1px dotted #999;height:12px}
 .pre table{margin-top:4px;border-collapse:collapse}.pre th{background:#1b2a5a;color:#fff;border:0;padding:9px 4px;font-weight:700;font-size:10px;white-space:nowrap}.pre td{padding:9px 4px;border:0;color:#1b2a5a;font-size:11px}.pre td.it{width:34%}
-.pre tbody tr:last-child td{border-bottom:1px solid #d9d6cf}
+.pre tbody td{border-bottom:1px solid #d9d6cf}
 .pre td.it small{display:block;color:#8a93a8;font-size:8.5px}.pre td.pr{font-weight:700}
 .pre .tot{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-top:18px}
 .pre .boxes{display:flex;flex-direction:column;gap:10px}
-.pre .gbox{border:1px solid #b08d3c;padding:9px 14px;font-size:11.5px;color:#1b2a5a}.pre .gbox div{white-space:nowrap}.pre .gbox b{font-weight:700}
-.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:8px 14px;margin:0 0 8px;padding-bottom:10px;border-bottom:2px solid #1b2a5a;font-size:11.5px;color:#1b2a5a}.pre .sums dd{margin:0;text-align:end}
+.pre .gbox{border:1px solid #b08d3c;padding:9px 14px;font-size:12px;color:#1b2a5a}.pre .gbox div{white-space:nowrap}.pre .gbox b{font-weight:700}
+.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:8px 14px;margin:0 0 8px;padding-bottom:10px;border-bottom:2px solid #1b2a5a;font-size:11.5px;color:#1b2a5a}.pre .sums dd{margin:0;text-align:end}.pre .sums dt{font-weight:500}
 .pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:16px;color:#1b2a5a;font-weight:700}.pre .grand b{font-size:17px}
 .pre .pfoot{margin-top:48px;padding-top:10px;border-top:1.5px solid #b08d3c;font-size:9.5px;color:#5d6b8a;line-height:1.7}.pre .pfoot span{display:block}
+.pre .contact{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-top:14px;font-size:10px;color:#1b2a5a}
+.pre .contact .crow{display:flex;gap:22px;margin-bottom:6px}.pre .contact span{display:inline-flex;align-items:center;gap:7px}.pre .contact b{font-weight:700}.pre .contact .cr{display:flex;flex-direction:column;gap:6px}
+.pre .contact svg{width:14px;height:14px;flex:none;color:#5d6b8a}
 /* Print the colours as drawn (the blue table head has white text: without its background the head reads blank), whatever the "Background graphics" option of the print window says. */
 article.pre,article.pre *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-@media print{article.pre{width:auto;min-height:0;padding:0 12mm}.bar{display:none}body{background:#fff}main{padding:0;overflow:visible}article{box-shadow:none}article.a4{width:auto;padding:0}article.narrow{width:100%;padding:0}}`;
+@media print{article.pre{width:auto;min-height:208mm;padding:0 12mm 8mm}.bar{display:none}body{background:#fff}main{padding:0;overflow:visible}article{box-shadow:none}article.a4{width:auto;padding:0}article.narrow{width:100%;padding:0}}`;
+
+// The print window is plain HTML: it loads the dashboard's IBM Plex Sans Arabic (Arabic and Latin) from /fonts, so the weights are the ones drawn, not the system's.
+const FONT_FILES = [400, 600, 700];
+const fontCss = (origin: string) => FONT_FILES.flatMap((w) => [
+  `@font-face{font-family:"PlexPrint";font-weight:${w};src:url(${origin}/fonts/ibm-plex-sans-arabic-arabic-${w}-normal-v5.3.0.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF}`,
+  `@font-face{font-family:"PlexPrint";font-weight:${w};src:url(${origin}/fonts/ibm-plex-sans-arabic-latin-${w}-normal-v5.3.0.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}`,
+]).join("");
 
 function payments(d: any) {
   const rows = d.payments.filter((x: any) => amountText(x.amount) !== null);
@@ -92,6 +102,19 @@ const dmy = (iso: string) => { const [y, m, dd] = String(iso).slice(0, 10).split
 const groupsOf = (d: any): any[] =>
   d.groups ?? d.lines.map((l: any) => ({ itemName: l.itemName, karat: l.karat, count: 1, weight: l.weight, makingCharge: l.makingCharge, piecePrice: l.linePrice, rowTotal: l.linePrice, cashbackPerGram: null, pieceCodes: [l.pieceCode] }));
 
+// The contact strip at the foot of the page (owner's screenshot, 2026-11-23): short number, WhatsApp, site and address on the left; the commercial register and the tax file on the right.
+export const CONTACT = { short: "17937", whatsapp: "01282011114", site: "goldgram.eg", register: "295852", tax: "774-088-346", address: "Cairo Business Plaza, North Tower, Unit 401, New Cairo" };
+const svg = (paths: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const ICON = {
+  phone: svg('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>'),
+  whatsapp: svg('<path d="M3 21l1.6-4.7A8.5 8.5 0 1 1 8 19.5L3 21z"/><path d="M9 8.5c0 3 3 6 6 6l1.2-1.4-2-1-1 .8a4 4 0 0 1-2-2l.8-1-1-2L9 8.5z"/>'),
+  globe: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'),
+  pin: svg('<path d="M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
+  doc: svg('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>'),
+  card: svg('<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>'),
+};
+const contactStrip = () => `<div class="contact" dir="ltr"><div><div class="crow"><span>${ICON.phone}<b>${CONTACT.short}</b></span><span>${ICON.whatsapp}<b>${CONTACT.whatsapp}</b></span><span>${ICON.globe}<b>${CONTACT.site}</b></span></div><div class="crow"><span>${ICON.pin}${esc(CONTACT.address)}</span></div></div><div class="cr"><span>${ICON.doc}<b>${CONTACT.register}</b></span><span>${ICON.card}<b>${CONTACT.tax}</b></span></div></div>`;
+
 function a4(d: any) {
   const withPrice = d.layout !== "gift" || (d.totals.total !== null && d.totals.total !== undefined);   // gift: prices only when asked
   const money1 = (a: any) => ltr(money(a));
@@ -125,7 +148,7 @@ function a4(d: any) {
     <div class="cust">${customer}</div>
     <table><thead><tr>${th("item")}${th("count")}${th("weightColumn")}${th("karat")}${withPrice ? th("pieceMaking") + th("piecePrice") + th("rowTotal") + th("cashbackPerGram") : ""}</tr></thead><tbody>${rows}</tbody></table>
     <div class="tot">${box}${sums}</div>
-        <footer class="pfoot" dir="${footDir}" lang="${inArabic ? "ar" : "en"}">${foot.map((x) => `<span>${footLine(x)}</span>`).join("")}</footer></article>`;
+        <footer class="pfoot" dir="${footDir}" lang="${inArabic ? "ar" : "en"}">${foot.map((x) => `<span>${footLine(x)}</span>`).join("")}</footer>${contactStrip()}</article>`;
 }
 
 // 80 mm paper: every line a small block that wraps; the receipt keeps the header, the total and the payments.
@@ -148,7 +171,7 @@ export async function openPrint(id: string, layout: string, pageTr: Tr, choices:
   const w = window.open("", "_blank");
   if (!w) { toast(L("اسمح بالنوافذ المنبثقة للطباعة.", "Allow pop-ups to print."), { error: true }); return; }
   const dir = ar ? "rtl" : "ltr";
-  const page = (title: string, body: string, size: string) => { w.document.open(); w.document.write(`<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${CSS}@page{size:${size};margin:${size === "A5" ? "0" : size === "A4" ? "10mm" : "3mm"}}</style></head><body>${body}</body></html>`); w.document.close(); };
+  const page = (title: string, body: string, size: string) => { w.document.open(); w.document.write(`<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${fontCss(window.location.origin)}${CSS}@page{size:${size};margin:${size === "A5" ? "0" : size === "A4" ? "10mm" : "3mm"}}</style></head><body>${body}</body></html>`); w.document.close(); };
   page(p("title"), `<p style="text-align:center;margin-top:40px">${esc(L("جارٍ التحميل…", "Loading…"))}</p>`, "A4");
   try {
     const d = await api(`/sales-invoices/${id}/print`, { query: { layout, ...(choices.recipientName ? { recipientName: choices.recipientName } : {}), ...(choices.recipientPhone ? { recipientPhone: choices.recipientPhone } : {}), ...(choices.showPrices !== undefined ? { showPrices: String(choices.showPrices) } : {}), ...(choices.lines?.length ? { lines: choices.lines.join(",") } : {}) } });
@@ -166,5 +189,5 @@ export function renderInvoice(d: any, t: Tr["t"], arabic: boolean): string {
   p = (k, v) => t("gold-sales", `prints.${k}`, v);
   inArabic = arabic;
   const isNarrow = d.layout === "thermal" || d.layout === "receipt";
-  return `<!doctype html><html lang="${arabic ? "ar" : "en"}" dir="${arabic ? "rtl" : "ltr"}"><head><meta charset="utf-8"><style>${CSS}@page{size:${isNarrow ? "80mm auto" : "A5"};margin:0}</style></head><body><main>${isNarrow ? narrow(d) : a4(d)}</main></body></html>`;
+  return `<!doctype html><html lang="${arabic ? "ar" : "en"}" dir="${arabic ? "rtl" : "ltr"}"><head><meta charset="utf-8"><style>${fontCss("")}${CSS}@page{size:${isNarrow ? "80mm auto" : "A5"};margin:0}</style></head><body><main>${isNarrow ? narrow(d) : a4(d)}</main></body></html>`;
 }

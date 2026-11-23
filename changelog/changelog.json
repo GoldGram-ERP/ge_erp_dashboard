@@ -85,6 +85,12 @@
     "en": "The A5 invoice print now looks like the approved design: a large invoice title, gold labels, a clean table, the karat price and weight boxes, and a two-line foot; the total in words, payment line and signatures are gone.",
     "ar": "طباعة الفاتورة A5 بقت زي التصميم المعتمد: عنوان فاتورة كبير وعناوين دهبي وجدول نضيف ومربعات سعر العيار والوزن وتذييل من سطرين، وشلنا الإجمالي كتابة وطريقة الدفع والتوقيعات.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "The A5 invoice print now matches the full design: IBM Plex fonts, a line under every row, and the contact strip at the foot of the page; the Custom print dialog is wider.",
+    "ar": "طباعة الفاتورة A5 بقت مطابقة للتصميم الكامل: خط IBM Plex وخط تحت كل صف وشريط التواصل أسفل الصفحة، ونافذة الطباعة المخصّصة بقت أعرض.",
+    "route": "/sales/invoices"
    }
   ]
  },
