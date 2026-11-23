@@ -26,6 +26,8 @@ const bankAccountSpec = { path: "/bank-accounts", value: "id", label: (r: Row) =
 const categorySpec = { path: "/categories", value: "id", label: "categoryName", query: { pageSize: undefined } };
 
 // The history: a number (1-7 digits) or a phone (8+) goes to the list; a piece code (a letter in it, or digits the list does not know) to /find-invoice.
+// The invoice types that are confirmed with the Taslem button.
+const TASLEM_TYPES = ["delivery", "handover"];
 const asListItem = (inv: Row) => ({ id: inv.id, invoiceType: inv.invoiceType, employeeId: inv.employeeId, sellerName: inv.employeeName, invoiceNumber: inv.invoiceNumber, branchId: inv.branchId, invoiceDate: inv.invoiceDate, customerName: inv.customerName, customerPhone: inv.customerPhone, isGift: inv.isGift, lineCount: inv.totals.lineCount, cashTotal: inv.cashTotal, createdAt: inv.createdAt, deletedAt: inv.deletedAt });
 async function findByPiece(code: string, signal?: AbortSignal) {
   try {
@@ -215,7 +217,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         </>;
       },
       // Print: one button per layout in a new window; the gift layout has its own box above (recipient and prices), so it is not one of them.
-      actions: [{ id: "taslem", label: m("taslem"), icon: "check", when: (r: Row) => !r.deletedAt && !r.taslemAt && hasAction(useSession.getState().me, "confirm-taslem"),
+      actions: [{ id: "taslem", label: m("taslem"), icon: "check", when: (r: Row) => !r.deletedAt && !r.taslemAt && TASLEM_TYPES.includes(r.invoiceType) && hasAction(useSession.getState().me, "confirm-taslem"),   // a plain sale (بيع) is handed over at once: only a delivery or hand-over invoice (both read تسليم) has the Taslem button (owner, 2026-11-24)
           confirm: { title: m("taslemTitle"), text: m("taslemAsk") },
           run: async (r: Row, h: { close: () => void; reload: () => void; toast: (msg: string, o?: { error?: boolean }) => void }) => { await api(`/sales-invoices/${r.id}/taslem`, { method: "POST", saveKey: newSaveKey() }); h.close(); h.toast(m("taslemDone")); h.reload(); } },
         { id: "edit", label: t("common", "edit"), icon: "edit", when: (r: Row) => !!r.editable && !r.deletedAt, run: (r: Row, h: { close: () => void; openForm: (id: string, row?: Row | null) => void }) => { h.close(); h.openForm("edit", r); } }, ...LAYOUTS.filter((layout) => layout !== "gift").map((layout) => ({ id: `print-${layout}`, label: t("gold-sales", `prints.layouts.${layout}`), icon: "print", when: (r: Row) => !r.deletedAt, run: (r: Row) => { openPrint(r.id, layout, tr); } }))],

@@ -121,6 +121,12 @@
     "en": "Price board: the text on the item and price cards is now smaller and lighter (replacing the larger, bolder text of the previous update).",
     "ar": "لوحة الأسعار: خط كروت الأصناف والأسعار بقى أصغر وأخف (بدل الخط الأكبر والأعرض في التحديث اللي فات).",
     "route": "/sales/price-board"
+   },
+   {
+    "kind": "fixed",
+    "en": "The Taslem button on a sales invoice now shows only for delivery (Taslem) invoices, not for a plain sale.",
+    "ar": "زرار تسليم في فاتورة المبيعات بقى بيظهر بس لفواتير التسليم، مش لفاتورة البيع العادية.",
+    "route": "/sales/invoices"
    }
   ]
  },
