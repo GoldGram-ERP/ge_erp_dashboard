@@ -16,6 +16,9 @@ const tFor = (lang: "ar" | "en") => (ns: string, key: string, vars?: Record<stri
 const line = (n: number, karat: string, weight: number, gold: number, making: number) => ({
   lineNumber: n, pieceCode: `GE-00${n}`, itemName: `سبيكة ذهب ${n} جرام`, karat, weight, goldValue: gold, makingCharge: making, discount: 0, linePrice: gold + making, netPrice: gold + making,
 });
+// The merged rows and the karat weights the backend sends, derived from the lines of the fixture (a test may merge by hand with its own groups).
+const groupsFrom = (lines: any[]) => lines.map((l) => ({ itemName: l.itemName, karat: l.karat, count: 1, weight: l.weight, goldValue: l.goldValue, makingCharge: l.makingCharge, piecePrice: l.linePrice, rowTotal: l.linePrice, cashbackPerGram: l.goldValue === null ? null : 2800, pieceCodes: [l.pieceCode] }));
+const weightsFrom = (lines: any[]) => ["24", "21"].flatMap((k) => { const of = lines.filter((l) => l.karat === k); return of.length ? [{ karat: k, weight: of.reduce((s, l) => s + l.weight, 0) }] : []; });
 const invoice = (over: Record<string, any> = {}) => ({
   layout: "a4", shopName: "GoldGram", branchName: "كايرو بيزنس بلازا", invoiceNumber: 142, invoiceDate: "2026-10-21", invoiceTime: "18:03",
   isGift: false, customerName: "أحمد محمد علي", customerPhone: "01012345678", nationalId: "29001011234567",
@@ -25,6 +28,8 @@ const invoice = (over: Record<string, any> = {}) => ({
   totals: { lineCount: 2, weight: 6000, goldTotal: 3_676_700, makingTotal: 49_888, grossTotal: 3_726_588, goldValue: 3_676_700, makingCharge: 49_888, discount: 0, total: 3_726_588, paid: 3_726_588 },
   payments: [{ kind: "cash", label: null, amount: 3_726_588 }],
   ...over,
+  groups: over.groups ?? groupsFrom(over.lines ?? [line(1, "21", 5000, 2_992_500, 24_944), line(2, "24", 1000, 684_200, 24_944)]),
+  weightsByKarat: over.weightsByKarat ?? weightsFrom(over.lines ?? [line(1, "21", 5000, 2_992_500, 24_944), line(2, "24", 1000, 684_200, 24_944)]),
 });
 
 describe("the preprinted invoice", () => {
@@ -73,8 +78,38 @@ describe("the preprinted invoice", () => {
     expect(one).not.toContain("سعر عيار 24:");
   });
 
-  it("derives the gram price of a line from its gold value", () => {
-    expect(renderInvoice(invoice(), tFor("ar"), true)).toContain("5,985.00");   // 2,992,500 piastres over 5 g
+  it("draws the table of the owner's sample: count, one piece's weight, workmanship and price, the amount, and cashback per gram", () => {
+    const html = renderInvoice(invoice(), tFor("ar"), true);
+    const head = html.slice(html.indexOf("<thead>"), html.indexOf("</thead>"));
+    const order = ["الصنف", "العدد", "الوزن (جم)", "العيار", "مصنعية القطعة", "سعر القطعة", "إجمالي المبلغ", "كاش باك / جرام"].map((x) => head.indexOf(x));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(head).not.toContain("سعر الجرام");
+    expect(html).toContain("28.00");   // the cashback per gram of the item
+  });
+
+  it("merges identical pieces into one row: the count, the price of one piece, and count x that price as the amount", () => {
+    const merged = invoice({
+      lines: [line(1, "24", 250, 165_857, 43), line(2, "24", 250, 165_857, 43), line(3, "24", 250, 165_857, 43)],
+      groups: [{ itemName: "GE - 0.25g Gold Bar", karat: "24", count: 3, weight: 250, goldValue: 165_857, makingCharge: 43, piecePrice: 165_900, rowTotal: 497_700, cashbackPerGram: null, pieceCodes: ["GE-001", "GE-002", "GE-003"] }],
+      weightsByKarat: [{ karat: "24", weight: 750 }],
+    });
+    const html = renderInvoice(merged, tFor("ar"), true);
+    expect(html.match(/<tbody>[\s\S]*<\/tbody>/)![0].match(/<tr>/g)).toHaveLength(1);
+    expect(html).toContain("1,659.00");   // one piece
+    expect(html).toContain("4,977.00");   // three pieces
+    expect(html).toContain("—");          // an item with no cashback
+  });
+
+  it("the weight box has one line for one karat and a line per karat for two", () => {
+    const two = renderInvoice(invoice(), tFor("ar"), true);
+    expect(two).toContain("إجمالي وزن عيار 24:");
+    expect(two).toContain("إجمالي وزن عيار 21:");
+    expect(two).not.toContain("إجمالي وزن الفاتورة:");
+    const one = renderInvoice(invoice({ lines: [line(1, "24", 250, 165_857, 43)], weightsByKarat: [{ karat: "24", weight: 250 }], karatPrices: [{ karat: "24", pricePerGram: 684_200 }] }), tFor("ar"), true);
+    expect(one).toContain("إجمالي وزن الفاتورة:");
+    expect(one).toContain("0.250");
+    expect(one).not.toContain("إجمالي وزن عيار");
   });
 
   it("prints the discount so the totals add up", () => {

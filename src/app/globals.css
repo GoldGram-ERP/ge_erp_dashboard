@@ -1278,3 +1278,13 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-table th[scope=row]{font-weight:600;color:var(--ink-2);white-space:nowrap}
 .pb-table td small{display:block;color:var(--mute);font-size:.85em}
 .pb-table td[data-win]{background:color-mix(in srgb,var(--good) 12%,transparent);font-weight:700;color:var(--good)}
+
+/* The custom print dialog of a sales invoice (owner, 2026-11-23). */
+.cp{display:flex;flex-direction:column;gap:.8rem;min-width:min(90vw,34rem)}
+.cp-bar{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
+.cp-bar span{display:flex;gap:.4rem}
+.cp-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem;max-height:40vh;overflow-y:auto}
+.cp-list li{padding:.45rem .6rem;border-radius:.6rem;background:var(--gold-wash)}
+.cp-kind{display:flex;gap:.5rem}
+.cp-gift{display:flex;flex-direction:column;gap:.6rem}
+.cp-actions{display:flex;gap:.5rem;justify-content:flex-end}

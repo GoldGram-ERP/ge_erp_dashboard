@@ -67,6 +67,18 @@
     "en": "Price board: a plus and minus on each item to quote several pieces (the prices multiply by the count), and the page can now be given to a User in the Users screens list.",
     "ar": "لوحة الأسعار: زرار زائد وناقص على كل صنف عشان تحسب كذا قطعة (الأسعار بتتضرب في العدد)، وبقى ينفع تدّي الصفحة لمستخدم من قايمة الشاشات.",
     "route": "/sales/price-board"
+   },
+   {
+    "kind": "better",
+    "en": "The A5 invoice print has a new table: count, one piece's weight, workmanship and price, the amount, and cashback per gram, with a box for the total weight of each karat.",
+    "ar": "طباعة الفاتورة A5 بجدول جديد: العدد ووزن ومصنعية وسعر القطعة الواحدة والإجمالي وكاش باك الجرام، مع مربع لإجمالي وزن كل عيار.",
+    "route": "/sales/invoices"
+   },
+   {
+    "kind": "new",
+    "en": "On a sales invoice with more than one piece, a Custom print button lets you pick which pieces to print, as a normal or a gift invoice.",
+    "ar": "في فاتورة المبيعات اللي فيها أكتر من قطعة، زرار طباعة مخصّصة تختار منه القطع اللي تتطبع، كفاتورة عادية أو كهدية.",
+    "route": "/sales/invoices"
    }
   ]
  },
