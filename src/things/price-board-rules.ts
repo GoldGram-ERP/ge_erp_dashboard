@@ -48,10 +48,12 @@ export const rowOf = (e: Pick<BoardItem, "total" | "workmanship" | "cashback">, 
 });
 
 /** The foot of the selected list. `incomplete` when some row has no price (no gold price today): then the sums would be wrong and the screen shows a dash. */
-export function totalsOf(rows: readonly SelectedRow[]): { workmanship: number; cashback: number; total: number; incomplete: boolean } {
+export function totalsOf(rows: readonly SelectedRow[]): { workmanship: number; cashback: number; total: number; goldValue: number; incomplete: boolean } {
   const sum = (pick: (r: SelectedRow) => number | null) => rows.reduce((s, r) => s + (pick(r) ?? 0), 0);
   return {
     workmanship: sum((r) => r.workmanship), cashback: sum((r) => r.cashback), total: sum((r) => r.total),
+    // A piece's price already holds its workmanship, so the gold alone is the total less the workmanship (never total + workmanship).
+    goldValue: sum((r) => r.total) - sum((r) => r.workmanship),
     incomplete: rows.some((r) => r.total === null || r.workmanship === null || r.cashback === null),
   };
 }

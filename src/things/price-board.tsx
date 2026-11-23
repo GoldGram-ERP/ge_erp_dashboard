@@ -160,14 +160,14 @@ export default function Page() {
           {chosen.length > 0 && <Button size="sm" className="pb-clear" onClick={() => setSelected([])}>{L("إلغاء الاختيار", "Clear selection")}</Button>}</h2>
         {chosen.length === 0 ? <p className="quiet-note">{L("اضغط على بطاقة صنف لاختياره.", "Click an item card to select it.")}</p> : (
           <DataTable className="pb-picked" fixedOrder
-            head={[L("الصنف", "Item"), { label: L("سعر القطعة", "Piece price"), num: true }, L("الكمية", "Quantity"), { label: L("المصنعية", "Workmanship"), num: true }, { label: L("الكاش باك", "Cashback"), num: true }, { label: L("إجمالي السعر", "Total price"), num: true }]}
-            foot={<Tr><Th scope="row" colSpan={3}>{L("الإجمالي", "Total")}</Th><Td num dir="ltr">{totals.incomplete ? "—" : money(totals.workmanship)}</Td><Td num dir="ltr">{totals.incomplete ? "—" : money(totals.cashback)}</Td><Td num dir="ltr"><b>{totals.incomplete ? "—" : money(totals.total)}</b></Td></Tr>}>
+            head={[L("الصنف", "Item"), { label: L("السعر", "Price"), num: true }, L("الكمية", "Quantity"), { label: L("المصنعية", "Workmanship"), num: true }, { label: L("الكاش باك", "Cashback"), num: true }]}
+            foot={<Tr><Th scope="row">{L("الإجمالي", "Total")}</Th><Td num><bdi dir="ltr"><b>{totals.incomplete ? "—" : money(totals.total)}</b></bdi></Td><Td /><Td num><bdi dir="ltr">{totals.incomplete ? "—" : money(totals.workmanship)}</bdi></Td><Td num><bdi dir="ltr">{totals.incomplete ? "—" : money(totals.cashback)}</bdi></Td></Tr>}>
             {chosen.map((e, i) => {
               const n = pickOf(e.id);
               return (
                 <Tr key={e.id}>
                   <Td><b>{e.itemName}</b><small className="pb-sub">{e.brandName} · {e.karat} · {grams(e.weightMg)}</small><span className="pb-pill" data-tone={e.sellable ? "good" : "bad"}>{stockText(e)}</span></Td>
-                  <Td num dir="ltr">{money(pickedRows[i].price)}</Td>
+                  <Td num><bdi dir="ltr"><b>{money(pickedRows[i].total)}</b></bdi></Td>
                   <Td>
                     <div className="pb-step" role="group" aria-label={L("الكمية", "Quantity")}>
                       <Button size="sm" aria-label={L("تقليل الكمية", "Decrease quantity")} disabled={n <= 1} onClick={() => pickBump(e.id, -1)}>−</Button>
@@ -175,13 +175,19 @@ export default function Page() {
                       <Button size="sm" aria-label={L("زيادة الكمية", "Increase quantity")} disabled={n >= 99} onClick={() => pickBump(e.id, 1)}>+</Button>
                     </div>
                   </Td>
-                  <Td num dir="ltr">{money(pickedRows[i].workmanship)}</Td>
-                  <Td num dir="ltr">{money(pickedRows[i].cashback)}</Td>
-                  <Td num dir="ltr"><b>{money(pickedRows[i].total)}</b></Td>
+                  <Td num><bdi dir="ltr">{money(pickedRows[i].workmanship)}</bdi></Td>
+                  <Td num><bdi dir="ltr">{money(pickedRows[i].cashback)}</bdi></Td>
                 </Tr>
               );
             })}
           </DataTable>
+        )}
+        {chosen.length > 0 && (
+          <div className="pb-chips pb-summary" role="group" aria-label={L("ملخص الأصناف المختارة", "Selected items summary")}>
+            <span><small>{L("قيمة الذهب", "Gold value")}</small><b dir="ltr">{totals.incomplete ? "—" : money(totals.goldValue)}</b></span>
+            <span><small>{L("المصنعية", "Workmanship")}</small><b dir="ltr">{totals.incomplete ? "—" : money(totals.workmanship)}</b></span>
+            <span><small>{L("الإجمالي شامل المصنعية", "Total with workmanship")}</small><b dir="ltr">{totals.incomplete ? "—" : money(totals.total)}</b></span>
+          </div>
         )}
 
         {/* 3. The comparison */}
@@ -209,9 +215,9 @@ function compareTable(a: Entry, b: Entry, L: (ar: string, en: string) => string,
     return (
       <Tr key={label}>
         <Th scope="row">{label}</Th>
-        <Td data-win={w === "a" || undefined} dir="ltr">{money(va)}{sub && <small>{sub[0]}</small>}</Td>
-        <Td data-win={w === "b" || undefined} dir="ltr">{money(vb)}{sub && <small>{sub[1]}</small>}</Td>
-        <Td dir="ltr">{d === null ? "—" : `${d > 0 ? "+" : ""}${piastresText(d)}`}</Td>
+        <Td data-win={w === "a" || undefined}><bdi dir="ltr">{money(va)}</bdi>{sub && <small>{sub[0]}</small>}</Td>
+        <Td data-win={w === "b" || undefined}><bdi dir="ltr">{money(vb)}</bdi>{sub && <small>{sub[1]}</small>}</Td>
+        <Td><bdi dir="ltr">{d === null ? "—" : `${d > 0 ? "+" : ""}${piastresText(d)}`}</bdi></Td>
       </Tr>
     );
   };

@@ -103,6 +103,12 @@
     "en": "The invoice print's footer icons, gold lines and labels now use the exact colours of the approved design.",
     "ar": "أيقونات تذييل طباعة الفاتورة والخطوط الدهبي والعناوين بقت بنفس ألوان التصميم المعتمد بالظبط.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "Price board selected list: one Price column (piece price times quantity) with the total under it, a summary card (gold value, workmanship, total with workmanship), and the odd notch between cells is fixed.",
+    "ar": "قايمة الأصناف المختارة في لوحة الأسعار: عمود سعر واحد (سعر القطعة في الكمية) والإجمالي تحته، وكارت ملخص (قيمة الذهب والمصنعية والإجمالي شامل المصنعية)، وصلحنا الحتة الغريبة بين الخلايا.",
+    "route": "/sales/price-board"
    }
   ]
  },

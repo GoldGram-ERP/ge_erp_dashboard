@@ -1301,3 +1301,6 @@ dialog.wide{width:min(56rem,94vw);max-width:none}
 .pb-picked .pb-pill[data-tone=good]{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
 .pb-picked .pb-pill[data-tone=bad]{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
 .pb-picked tfoot th,.pb-picked tfoot td{font-weight:700;background:var(--gold-wash)}
+.pb-summary{margin-top:.75rem}
+.pb-summary span:last-child{background:var(--gold-tint)}
+.pb-summary span:last-child b{font-size:1.15rem}
