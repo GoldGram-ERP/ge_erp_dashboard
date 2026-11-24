@@ -163,6 +163,12 @@
     "en": "An accountant can now edit any Sales desk draft of their branch (Complete and Delete stay with the creator and Admins).",
     "ar": "المحاسب بقى يقدر يعدّل أي مسودة في مكتب المبيعات في فرعه (الإتمام والحذف لسه للي عملها وللأدمن).",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "A user who has only the Sales desk screen now sees all three options on a new draft (Sale, Hand over, Reservation) and can save a reservation from the desk.",
+    "ar": "المستخدم اللي معاه شاشة مكتب المبيعات بس بقى بيشوف الاختيارات التلاتة في المسودة الجديدة (بيع وتسليم وحجز) ويقدر يحفظ حجز من المكتب.",
+    "route": "/sales/desk"
    }
   ]
  },
