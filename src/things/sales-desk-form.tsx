@@ -332,7 +332,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const sellerName = draft?.employeeName ?? (isUser ? me?.name : (([u]) => u && ([u.firstName, u.familyName].filter(Boolean).join(" ") || u.username))(sellers.filter((x) => x.id === sellerId)) ?? me?.name) ?? "";
   const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
   const typedManual = manualPrice(rsv ? "" : operation === "sell" ? manual.sell : manual.buy);
-  const mayReserve = canOpen(me, ["gold-sales/reservations"]);
+  // Every person who has the desk may save a reservation from it (owner, 2026-11-24): the server lets the desk screen do that one create, so the third option no longer needs the Reservations screen.
+  const mayReserve = true;
   const typeLabels: Record<string, string> = { sale: d("typeSale"), delivery: d("typeDelivery"), handover: L("تسليم", "Hand over"), reservation: L("حجز", "Reservation") };
   // The account that received each Instapay or Visa line: asked where the money is really taken (Complete, and a reservation).
   const receivedInto = banks.map((b, i) => (!lineTakesAccount(b.method) && !b.bankAccountId && String(b.amount ?? "").trim() !== "")
