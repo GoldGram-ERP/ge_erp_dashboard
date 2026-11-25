@@ -33,7 +33,7 @@ export const buildConfig = (tr: Parameters<MakeConfig>[0], everyBranch: boolean)
         { id: "all", label: d("all") },
         { id: "open", label: d("status.open"), query: { status: "open" } },
         { id: "completed", label: d("status.completed"), query: { status: "completed" } },
-        { id: "deleted", label: d("status.deleted"), query: { deleted: "only" }, superOnly: true },
+        { id: "deleted", label: d("status.deleted"), query: { deleted: "only" } },
       ],
       ...(branchFilter.length ? { filters: branchFilter } : {}),
       paging: { sizeParam: null, sizes: [20], size: 20 },

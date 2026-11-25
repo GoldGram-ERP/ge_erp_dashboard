@@ -101,7 +101,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         { id: "all", label: L("الكل", "All") },
         { id: "active", label: L("النشطين", "Active"), query: { active: "yes" } },
         { id: "inactive", label: L("غير النشطين", "Inactive"), query: { active: "no" } },
-        { id: "deleted", label: L("المحذوفين", "Deleted"), query: { deleted: "only" }, superOnly: true },
+        { id: "deleted", label: L("المحذوفين", "Deleted"), query: { deleted: "only" } },
       ],
       paging: { sizeParam: null },
       columns: [

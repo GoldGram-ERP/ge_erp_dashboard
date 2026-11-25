@@ -37,7 +37,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       create: [{ form: "createBank", label: b("add"), keys: ["bank-accounts/banks"] }],
       endpoint: "/banks", query: { order: "newest" },
       search: { param: "search", placeholder: b("searchPlaceholder") },
-      chips: [{ id: "all", label: ALL }, { id: "deleted", label: b("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+      chips: [{ id: "all", label: ALL }, { id: "deleted", label: b("deletedOnly"), query: { deleted: "only" } }],
       paging: { sizeParam: null },
       columns: [
         { key: "bankCode", label: b("bankCode"), get: (r) => code6(r.bankCode), render: (r) => <><Ltr>{code6(r.bankCode)}</Ltr>{r.deletedAt && <> {deleted(b("deletedBadge"))}</>}</> },
@@ -50,7 +50,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       create: [{ form: "createAccount", label: a("add"), keys: ["bank-accounts/bank-accounts"] }],
       endpoint: "/bank-accounts", query: { order: "newest" },
       search: { param: "search", placeholder: a("searchPlaceholder") },
-      chips: [{ id: "all", label: ALL }, { id: "deleted", label: a("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+      chips: [{ id: "all", label: ALL }, { id: "deleted", label: a("deletedOnly"), query: { deleted: "only" } }],
       paging: { sizeParam: null },
       columns: [
         { key: "code", label: a("code"), render: (r) => <><Ltr>{code6(r.code)}</Ltr>{r.deletedAt && <> {deleted(a("deletedBadge"))}</>}</> },
