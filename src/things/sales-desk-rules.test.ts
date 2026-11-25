@@ -191,8 +191,8 @@ describe("another person's draft (owner, 2026-11-24)", () => {
     expect(isForeignDraft({ id: "me", userType: "user" }, null)).toBe(false);
     expect(isForeignDraft(undefined, draft)).toBe(false);
   });
-  it("an accountant may edit it, of any branch (owner, 2026-11-25), no other plain user may", () => {
-    expect(mayEditForeignDraft({ userType: "user", businessRole: "accountant" })).toBe(true);
+  it("an accountant, a call center admin and a branch sales manager may edit it, of any branch (owner, 2026-11-25), no other plain user may", () => {
+    for (const role of ["accountant", "call_center_admin", "branch_sales_manager"]) expect(mayEditForeignDraft({ userType: "user", businessRole: role }), role).toBe(true);
     for (const role of ["call_center", "branch_sales", "pricing_specialist", null, undefined]) expect(mayEditForeignDraft({ userType: "user", businessRole: role })).toBe(false);
     expect(mayEditForeignDraft({ userType: "admin", businessRole: "accountant" })).toBe(false);   // an Admin edits anyway: never a "foreign" draft
     expect(mayEditForeignDraft(undefined)).toBe(false);
@@ -201,10 +201,10 @@ describe("another person's draft (owner, 2026-11-24)", () => {
 
 // The list shows the branch column and the branch filter to whoever sees the drafts of every branch (owner, 2026-11-25).
 describe("seesEveryBranchDrafts", () => {
-  it("an Admin, the Super admin and an accountant do", () => {
+  it("an Admin, the Super admin, an accountant, a call center admin and a branch sales manager do", () => {
     expect(seesEveryBranchDrafts({ userType: "admin" })).toBe(true);
     expect(seesEveryBranchDrafts({ userType: "super_admin" })).toBe(true);
-    expect(seesEveryBranchDrafts({ userType: "user", businessRole: "accountant" })).toBe(true);
+    for (const role of ["accountant", "call_center_admin", "branch_sales_manager"]) expect(seesEveryBranchDrafts({ userType: "user", businessRole: role }), role).toBe(true);
   });
   it("no other plain user does, and nobody before the person is known", () => {
     for (const role of ["call_center", "branch_sales", "pricing_specialist", null, undefined]) expect(seesEveryBranchDrafts({ userType: "user", businessRole: role })).toBe(false);

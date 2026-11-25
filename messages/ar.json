@@ -203,6 +203,8 @@
     "accountant": "محاسب",
     "call_center": "كول سنتر",
     "branch_sales": "مبيعات فرع",
+    "call_center_admin": "مدير كول سنتر",
+    "branch_sales_manager": "مدير مبيعات فرع",
     "pricing_specialist": "أخصائي تسعير"
    },
    "actionsHeading": "الإجراءات المسموحة",

@@ -328,6 +328,7 @@ Object.assign(APP, {
   "administration.users.roleHint": ["اختياري. الدور اسم بس عشان نفرّق بين الناس، ومبيغيّرش أي صلاحية.", "Optional. A role is only a name to tell people apart. It changes no permission."],
   "administration.users.roles.accountant": ["محاسب", "Accountant"], "administration.users.roles.call_center": ["كول سنتر", "Call center"],
   "administration.users.roles.branch_sales": ["مبيعات فرع", "Branch sales"], "administration.users.roles.pricing_specialist": ["أخصائي تسعير", "Pricing specialist"],
+  "administration.users.roles.call_center_admin": ["مدير كول سنتر", "Contact center admin"], "administration.users.roles.branch_sales_manager": ["مدير مبيعات فرع", "Branch sales manager"],
   "administration.users.actionsHeading": ["الإجراءات المسموحة", "Allowed actions"],
   "administration.users.actionsHint": ["كل إجراء مخفي لحد ما تديه للشخص. الأدمن والسوبر أدمن معاهم كل الإجراءات.", "Every action stays hidden until you give it to the person. An Admin and a Super admin always have them all."],
   "administration.users.actionsNone": ["مفيش إجراءات مسموحة.", "No actions allowed."],
