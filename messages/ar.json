@@ -2291,7 +2291,17 @@
    "typeLabel": "نوع الفاتورة",
    "goldNone": "لا يوجد سعر ذهب محفوظ.",
    "lockedNote": "مغلقة",
-   "channel": "قناة البيع"
+   "channel": "قناة البيع",
+   "discountCol": "الخصم",
+   "paymentCol": "طريقة الدفع",
+   "discountPercentCell": "نسبة {percent}%",
+   "discountCashCell": "خصم نقدي",
+   "listPay": {
+    "cash": "نقدي",
+    "instapay": "إنستا باي",
+    "bank_transfer": "تحويل بنكي",
+    "visa": "فيزا"
+   }
   }
  },
  "gold-stocktake": {
