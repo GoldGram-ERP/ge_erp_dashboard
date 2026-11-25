@@ -84,13 +84,13 @@ export default function Page() {
       : L("متوفر", "In stock");
 
   const price = board.data?.price;
-  // One segment of the slim prices strip: the metal, the sell price strong and the buy price muted.
-  const priceSeg = (label: string, sell: number | null | undefined, buy: number | null | undefined) => (
-    <section className="pb-seg" aria-label={label}>
+  // Today's prices (owner, 2026-11-22; kept as three cards, owner 2026-11-25): the metal, then its sell and buy price per gram.
+  const priceCard = (label: string, sell: number | null | undefined, buy: number | null | undefined) => (
+    <section className="bubble pb-price" aria-label={label}>
       <span className="pill">{label}</span>
       <div className="pb-sides">
         <div><small>{L("بيع", "Sell")}</small><b dir="ltr">{money(sell)}</b></div>
-        <div className="pb-buy"><small>{L("شراء", "Buy")}</small><b dir="ltr">{money(buy)}</b></div>
+        <div><small>{L("شراء", "Buy")}</small><b dir="ltr">{money(buy)}</b></div>
       </div>
     </section>
   );
@@ -113,10 +113,10 @@ export default function Page() {
       {board.data && (<>
         {/* 1. Today's prices */}
         {price ? (
-          <div className="pb-strip" role="group" aria-label={L("أسعار اليوم", "Today's prices")}>
-            {priceSeg(L("ذهب عيار 21", "Gold 21"), price.sell21, price.buy21)}
-            {priceSeg(L("ذهب عيار 24", "Gold 24"), price.sell24, price.buy24)}
-            {priceSeg(L("الفضة", "Silver"), price.silverSell, price.silverBuy)}
+          <div className="pb-prices">
+            {priceCard(L("ذهب عيار 21", "Gold 21"), price.sell21, price.buy21)}
+            {priceCard(L("ذهب عيار 24", "Gold 24"), price.sell24, price.buy24)}
+            {priceCard(L("الفضة", "Silver"), price.silverSell, price.silverBuy)}
           </div>
         ) : <p className="quiet-note">{L("لم يتم تسجيل سعر الذهب بعد.", "No gold price has been saved yet.")}</p>}
 
@@ -153,7 +153,7 @@ export default function Page() {
                         onClick={(e) => { if (!(e.target as HTMLElement).closest("button,input,label")) toggle(it.id); }}>{/* a click on the card selects it; its own buttons and the box do their own */}
                         <div className="pb-top">
                           <Checkbox checked={selected.includes(it.id)} onChange={() => toggle(it.id)} aria-label={L("اختيار الصنف", "Select item")} />
-                          <div className="pb-name"><b title={it.itemName}>{it.itemName}</b><small>{it.karat} · {grams(it.weightMg)}<span className="pb-dot" data-tone={it.sellable ? "good" : "bad"}>{stockText(it)}</span></small></div>
+                          <div className="pb-name"><b title={it.itemName}>{it.itemName}</b><small><span>{it.karat} · {grams(it.weightMg)}</span><span className="pb-dot" data-tone={it.sellable ? "good" : "bad"}>{stockText(it)}</span></small></div>
                           <div className="pb-price"><span className="pb-total" dir="ltr">{money(times(it.total, n))}</span>{n > 1 && <small dir="ltr">{n} × {money(it.total)}</small>}</div>
                         </div>
                         <div className="pb-meta">
