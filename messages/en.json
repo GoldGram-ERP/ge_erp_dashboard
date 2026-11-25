@@ -2296,7 +2296,17 @@
    "typeLabel": "Invoice type",
    "goldNone": "There is no saved gold price.",
    "lockedNote": "Locked",
-   "channel": "Sales channel"
+   "channel": "Sales channel",
+   "discountCol": "Discount",
+   "paymentCol": "Payment method",
+   "discountPercentCell": "{percent}%",
+   "discountCashCell": "Cash discount",
+   "listPay": {
+    "cash": "Cash",
+    "instapay": "InstaPay",
+    "bank_transfer": "Bank transfer",
+    "visa": "Visa"
+   }
   }
  },
  "gold-stocktake": {

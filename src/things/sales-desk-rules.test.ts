@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody , discountCell, paymentMethodsOf } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -251,5 +251,32 @@ describe("seesEveryBranchDrafts", () => {
     for (const role of ["call_center", "branch_sales", "pricing_specialist", null, undefined]) expect(seesEveryBranchDrafts({ userType: "user", businessRole: role })).toBe(false);
     expect(seesEveryBranchDrafts(undefined)).toBe(false);
     expect(seesEveryBranchDrafts(null)).toBe(false);
+  });
+});
+
+describe("the drafts list columns (dashboard #97)", () => {
+  it("discount: '-' with none; a percent with its amount; a typed cash discount; never on a Buy draft", () => {
+    expect(discountCell({ discountPercent: 0, totals: { discount: 0 } })).toBeNull();
+    expect(discountCell({ totals: null })).toBeNull();
+    expect(discountCell({ discountPercent: 5, totals: { discount: 12_500 } })).toEqual({ kind: "percent", percent: 5, amount: 12_500 });
+    expect(discountCell({ discountPercent: 10, totals: { discount: 30_000 } })).toEqual({ kind: "percent", percent: 10, amount: 30_000 });
+    expect(discountCell({ discountPercent: 0, totals: { discount: 50_000 } })).toEqual({ kind: "cash", amount: 50_000 });
+    expect(discountCell({ operation: "buy", discountPercent: 5, totals: { discount: 12_500 } })).toBeNull();
+  });
+
+  it("payment: every planned method once, in the desk's order", () => {
+    expect(paymentMethodsOf({ paymentMethods: [{ method: "visa" }] })).toEqual(["visa"]);
+    expect(paymentMethodsOf({ paymentMethods: [{ method: "bank_transfer" }, { method: "cash" }, { method: "instapay" }] })).toEqual(["cash", "instapay", "bank_transfer"]);
+    // the same method on two rows (two accounts) is one pill
+    expect(paymentMethodsOf({ paymentMethods: [{ method: "instapay" }, { method: "instapay" }] })).toEqual(["instapay"]);
+  });
+
+  it("payment of an older draft (no methods list) is read from its cash, bank rows and Visa flag; '-' when nothing is planned", () => {
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 100_000, bankPayments: [{ bankAccountId: "a", amount: 5 }] })).toEqual(["cash", "bank_transfer"]);
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 100_000, bankPayments: [] })).toEqual(["cash"]);
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 0, bankPayments: [{ bankAccountId: "a", amount: 5 }] })).toEqual(["bank_transfer"]);
+    expect(paymentMethodsOf({ paymentMethods: null, payByVisa: true, cash: 0, bankPayments: [] })).toEqual(["visa"]);
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 0, bankPayments: [] })).toEqual([]);
+    expect(paymentMethodsOf({})).toEqual([]);
   });
 });

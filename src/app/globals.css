@@ -121,6 +121,8 @@ tr.row:focus-visible{outline-offset:-2px}
 .num{text-align:end;font-variant-numeric:tabular-nums}
 .id{font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums}
 .st{display:inline-flex;align-items:center;gap:7px}
+/* A row of status chips in one table cell (the drafts list, dashboard #97): kept on one line, so a long row scrolls sideways instead of wrapping */
+.st-row{display:inline-flex;align-items:center;gap:.5rem;white-space:nowrap}
 .st i{width:8px;height:8px;border-radius:50%;background:var(--off)}
 .st.good i{background:var(--good)} .st.warn i{background:var(--warn)} .st.info i{background:var(--info)}
 tr.grp td{height:var(--h-row);background:#f6f1e3;font-weight:600;color:var(--ink-2);border-bottom:1px solid var(--line)}
