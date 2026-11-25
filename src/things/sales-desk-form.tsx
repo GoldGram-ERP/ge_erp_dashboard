@@ -125,7 +125,6 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       } else { if (me?.branchId) setBranchId(me.branchId); setChannelId(defaultChannel(me?.salesChannels)); }
     })();
     if (me?.branchId) api(`/branches/${me.branchId}`).then((b: Row) => setOwnBranch(b.branchName)).catch(() => {});
-    if (me && !isUser) allPages("/users").then(setSellers).catch(() => {});
     readPrice();
   }, [me?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -181,6 +180,16 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   // A plain user may open a draft of someone else only when they are an accountant of that branch (owner, 2026-11-24): they read it, never change it.
   const readonly = Boolean((draft && note && note.state !== "editable") || (foreign && !accountantEdits));
   const isNew = !draft;
+  // The seller box (backend #223): on a new draft, for everyone, the call_center and branch_sales users of the draft's branch.
+  // A seller of another branch is let go when the branch changes; nothing is preselected.
+  useEffect(() => {
+    if (!me || draft || !branchId) { setSellers([]); return; }
+    let live = true;
+    api("/sales-drafts/sellers", { query: isUser ? {} : { branchId } })
+      .then((r: Row) => { if (!live) return; const items: Row[] = r.items ?? []; setSellers(items); setSellerId((s) => (items.some((u) => u.id === s) ? s : "")); })
+      .catch(() => { if (live) setSellers([]); });
+    return () => { live = false; };
+  }, [me?.id, branchId, draft?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
   const pickable = items.filter((x) => karatFits(metal, String(x.karat)));
   // an item already on the draft stays visible even if it was switched off since
   const onDraft: Option[] = (draft?.lines ?? []).map((l: Row) => [l.itemId, `${l.itemName} · ${l.karat}`]);
@@ -201,6 +210,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       else if (k.endsWith("Item")) e[k] = fieldErr(code);
       else e[k] = fieldErr(code);
     }
+    // A new draft always names its seller (backend #223); a reservation made here keeps its own rule (a User reserves as themself).
+    if (isNew && !rsv && !sellerId) e.sellerId = fieldErr("required");
     const ce = rsv ? null : channelError(channelId, channels);
     if (ce) e.salesChannelId = fieldErr(ce);
     const money = paidInto();
@@ -227,7 +238,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     }
     setSaving(true);
     const body = {
-      ...(isNew && !isUser && branchId ? { branchId } : {}), invoiceType: type, salesChannelId: channelId, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
+      ...(isNew && !isUser && branchId ? { branchId } : {}), ...(isNew ? { sellerId } : {}), invoiceType: type, salesChannelId: channelId, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
       ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(banks), ...(dsc.sent && !buy ? { cashDiscount: dsc.sent } : {}),
     };
     try {
@@ -255,7 +266,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       else if (f.field === "manualSellPrice" || f.field === "manualBuyPrice") gen = d("desk.manualInvalid");
       else if (payKey) e[payKey] = texts[f.field];
       else if ((r = /^lines\.(\d+)\.(itemId|quantity)$/.exec(f.field))) e[`line${r[1]}${r[2] === "itemId" ? "Item" : "Count"}`] = texts[f.field];
-      else if (["customerName", "customerPhone", "nationalId", "cashDiscount", "branchId", "salesChannelId"].includes(f.field)) e[f.field] = texts[f.field];
+      else if (["customerName", "customerPhone", "nationalId", "cashDiscount", "branchId", "salesChannelId", "sellerId"].includes(f.field)) e[f.field] = texts[f.field];
       else gen = texts[f.field] ?? tr.errorText(err.error);
     }
     if (!Object.keys(e).length && !gen && err.error.message !== "invalidFields") gen = tr.errorText(err.error);
@@ -329,7 +340,12 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   if (gone) return <div className="note warn" role="alert">{tr.errorText({ message: "salesDraftNotFound" })}</div>;
 
   const branchLabel = draft?.branchName ?? (isUser ? ownBranch : branches.find((b) => b.id === branchId)?.branchName) ?? "";
-  const sellerName = draft?.employeeName ?? (isUser ? me?.name : (([u]) => u && ([u.firstName, u.familyName].filter(Boolean).join(" ") || u.username))(sellers.filter((x) => x.id === sellerId)) ?? me?.name) ?? "";
+  // The seller (اسم البائع) and the creator (اسم المستخدم), kept apart since backend #223. A saved draft: its own (an older one's
+  // seller is its creator). A new one: the seller picked; a reservation made here is the picker's, or the person's own.
+  const pickedSeller = sellers.find((x) => x.id === sellerId)?.name as string | undefined;
+  const sellerName = (draft ? draft.sellerName || draft.employeeName : pickedSeller ?? (rsv ? me?.name : "")) ?? "";
+  const creatorName = (draft ? draft.employeeName : me?.name) ?? "";
+  const pickSeller = isNew && !(rsv && isUser);
   const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
   const typedManual = manualPrice(rsv ? "" : operation === "sell" ? manual.sell : manual.buy);
   // Every person who has the desk may save a reservation from it (owner, 2026-11-24): the server lets the desk screen do that one create, so the third option no longer needs the Reservations screen.
@@ -379,15 +395,17 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {draft && <><span className="tk-quiet">{d("draftNumberShort")}</span><b data-draft-number={draft.draftNumber} dir="ltr">{draft.draftNumber}</b></>}
           </div>
           <div className="tk-chips">
-            {isNew && !isUser ? <>
-              <div className="field" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
-                <Choice tr={tr} id="branchId" searchable={false} options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
-              <div className="field" data-seller><label htmlFor="sellerId">{d("desk.seller")}</label>
-                <Choice tr={tr} id="sellerId" searchable={false} options={sellers.filter((u) => u.branchId === branchId && u.userType === "user").map((u) => [u.id, [u.firstName, u.familyName].filter(Boolean).join(" ") || u.username])} value={sellerId} onChange={(v) => setSellerId(v)} /></div>
-            </> : <>
-              <span className="tk-chip" data-k="branchId"><i>{d("branch")}</i>{branchLabel}</span>
-              <span className="tk-chip" data-seller><i>{d("desk.seller")}</i>{sellerName}</span>
-            </>}
+            {isNew && !isUser
+              ? <div className="field" data-k="branchId"><label htmlFor="branchId">{d("branch")}</label>
+                  <Choice tr={tr} id="branchId" searchable={false} options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
+              : <span className="tk-chip" data-k="branchId"><i>{d("branch")}</i>{branchLabel}</span>}
+            {/* The seller: picked by everyone on a new draft, required, nothing preselected; fixed once saved (backend #223). */}
+            {pickSeller
+              ? <div className="field" data-k="sellerId" data-seller data-err={errs.sellerId ? "" : undefined}><label htmlFor="sellerId">{d("desk.seller")}{rsv ? "" : " *"}</label>
+                  <Choice tr={tr} id="sellerId" searchable={false} options={sellers.map((u) => [u.id, u.name])} value={sellerId} invalid={!!errs.sellerId} disabled={saving}
+                    placeholder={branchId && !sellers.length ? d("desk.noSellers") : undefined} onChange={(v) => { touch(); setSellerId(v); setErrs(({ sellerId: _gone, ...rest }) => rest); }} />{err("sellerId")}</div>
+              : <span className="tk-chip" data-seller><i>{d("desk.seller")}</i>{sellerName}</span>}
+            <span className="tk-chip" data-creator><i>{d("desk.creator")}</i>{creatorName}</span>
             {!rsv && <div className="field" data-k="salesChannelId"><label htmlFor="salesChannelId">{d("channel")}</label>
               <Choice tr={tr} id="salesChannelId" searchable={false} options={channels} value={channelId} disabled={!isNew || saving} invalid={!!errs.salesChannelId} onChange={(v) => { touch(); setChannelId(v); }} />{err("salesChannelId")}</div>}
             <span className="tk-chip"><i>{L("التاريخ", "Date")}</i><Ltr>{draft?.createdDay ?? today()}</Ltr></span>

@@ -118,3 +118,41 @@ export const mayDeleteDraft = (me: { userType?: string; actions?: string[] } | n
 /** Who sees the drafts of every branch, so the list shows the branch and a branch filter: an Admin, the Super admin, and a plain user with a desk-wide business role. */
 export const seesEveryBranchDrafts = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean =>
   me?.userType === "admin" || me?.userType === "super_admin" || mayEditForeignDraft(me);
+
+// ── The drafts list (dashboard #97): the discount and payment columns. Pure, from what GET /sales-drafts already answers. ──
+
+/** A payment method of the desk, in the order the list shows them. */
+export type DeskPayMethod = "cash" | "instapay" | "bank_transfer" | "visa";
+export const DESK_PAY_METHODS: readonly DeskPayMethod[] = ["cash", "instapay", "bank_transfer", "visa"];
+
+type DraftMoney = {
+  operation?: string | null;
+  discountPercent?: number | null;
+  totals?: { discount?: number | null } | null;
+  paymentMethods?: { method: string; amountPiastres?: number }[] | null;
+  cash?: number | null;
+  bankPayments?: unknown[] | null;
+  payByVisa?: boolean | null;
+};
+
+/** The discount column: null ("-") when the draft has none; a percent (5 or 10, of the workmanship) with its amount; or a typed cash discount.
+ *  A Buy draft never has one. The amount is whole piastres (totals.discount). */
+export function discountCell(d: DraftMoney): { kind: "percent"; percent: number; amount: number } | { kind: "cash"; amount: number } | null {
+  if (d.operation === "buy") return null;
+  const amount = Number(d.totals?.discount ?? 0);
+  const percent = Number(d.discountPercent ?? 0);
+  if (percent > 0) return { kind: "percent", percent, amount };
+  return amount > 0 ? { kind: "cash", amount } : null;
+}
+
+/** The payment column: every method the draft plans, each once, in the desk's order; [] ("-") when nothing is planned.
+ *  A draft saved before the methods list (paymentMethods null) is read from what it holds: Visa alone, else cash and bank transfer. */
+export function paymentMethodsOf(d: DraftMoney): DeskPayMethod[] {
+  const named = (d.paymentMethods ?? []).map((p) => p.method).filter((m): m is DeskPayMethod => (DESK_PAY_METHODS as readonly string[]).includes(m));
+  if (d.paymentMethods && named.length) return DESK_PAY_METHODS.filter((m) => named.includes(m));
+  if (d.payByVisa) return ["visa"];
+  return [
+    ...(Number(d.cash ?? 0) > 0 ? (["cash"] as const) : []),
+    ...((d.bankPayments ?? []).length > 0 ? (["bank_transfer"] as const) : []),
+  ];
+}

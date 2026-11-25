@@ -186,3 +186,37 @@ describe("the A5 page under the pre-printed logo", () => {
     expect(renderInvoice(invoice({ layout: "thermal" }), tFor("ar"), true)).toContain("@page{size:80mm auto;margin:0}");
   });
 });
+
+// The reservation invoice (فاتورة حجز, backend #225): the same A5 page with its own title, an RSV number, no piece-code line and the fixed footer.
+describe("the reservation invoice", () => {
+  const FOOTER = "تم سداد كامل قيمة الذهب وحجز القطع الموضحة أعلاه، على أن يتم تسليمها في موعد لاحق. يُرجى تقديم أصل هذا المستند عند الاستلام.";
+  const reservation = () => invoice({
+    documentKind: "reservation", invoiceNumber: 12, invoiceDate: "2026-11-23", footer: FOOTER,
+    groups: [{ itemName: "GE - 0.25g Gold Bar", karat: "24", count: 2, weight: 250, goldValue: 165_850, makingCharge: 0, piecePrice: 165_850, rowTotal: 331_700, cashbackPerGram: 2_800, pieceCodes: [] }],
+    weightsByKarat: [{ karat: "24", weight: 500 }],
+  });
+
+  it("is titled فاتورة حجز, numbered RSV/year/number, and keeps the table, the boxes and the total", () => {
+    const html = renderInvoice(reservation(), tFor("ar"), true);
+    for (const must of ["فاتورة حجز", "RSV/2026/000012", "23 / 11 / 2026", "GE - 0.25g Gold Bar", "1,658.50", "3,317.00", "29001011234567"]) expect(html, must).toContain(must);
+    expect(html).not.toContain("INV/2026/");
+  });
+
+  it("prints no piece-code line under the items, and the fixed footer in place of the invoice notes", () => {
+    const html = renderInvoice(reservation(), tFor("ar"), true);
+    expect(html).not.toMatch(/<td class="it">[^<]*<small>/);
+    expect(html).toContain(FOOTER);
+    expect(html).not.toContain("الذهب المباع لا يُرد ولا يُستبدل");
+  });
+
+  it("leaves the sales invoice as it was: its title, its INV number and its piece codes", () => {
+    const html = renderInvoice(invoice({ documentKind: "invoice", groups: [{ ...groupsFrom([line(1, "21", 5000, 2_992_500, 24_944)])[0], pieceCodes: ["GE-001"] }] }), tFor("ar"), true);
+    expect(html).toContain("INV/2026/000142");
+    expect(html).toMatch(/<small>(<[^>]*>)?GE-001/);
+    expect(html).not.toContain("فاتورة حجز");
+  });
+
+  it("has its English title", () => {
+    expect(renderInvoice(reservation(), tFor("en"), false)).toContain("Reservation invoice");
+  });
+});

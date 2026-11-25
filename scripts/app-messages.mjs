@@ -368,3 +368,15 @@ Object.assign(APP, {
   "errors.salesChannelNameTaken": ["توجد قناة بيع أخرى بنفس الاسم.", "Another sales channel already has this name."],
   "errors.positionInUse": ["لم يُحذف: يحمل هذا المسمى الوظيفي {count, plural, zero {لا أحد} one {مستخدم واحد} two {مستخدمان} few {# مستخدمين} other {# مستخدماً}}. انقلهم إلى مسمى آخر أولاً.", "Not deleted: {count, plural, =0 {no users hold} one {# user holds} other {# users hold}} this Position. Move them to another Position first."],
 });
+
+// The drafts list of the Sales desk (dashboard #97): the discount and payment columns.
+Object.assign(APP, {
+  "gold-sales.salesDesk.discountCol": ["الخصم", "Discount"],
+  "gold-sales.salesDesk.paymentCol": ["طريقة الدفع", "Payment method"],
+  "gold-sales.salesDesk.discountPercentCell": ["نسبة {percent}%", "{percent}%"],
+  "gold-sales.salesDesk.discountCashCell": ["خصم نقدي", "Cash discount"],
+  "gold-sales.salesDesk.listPay.cash": ["نقدي", "Cash"],
+  "gold-sales.salesDesk.listPay.instapay": ["إنستا باي", "InstaPay"],
+  "gold-sales.salesDesk.listPay.bank_transfer": ["تحويل بنكي", "Bank transfer"],
+  "gold-sales.salesDesk.listPay.visa": ["فيزا", "Visa"],
+});

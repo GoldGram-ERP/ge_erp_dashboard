@@ -1750,7 +1750,9 @@
    "pricePerGram24": "24K gram price",
    "goldValue": "Gold value",
    "makingChargePerGram": "Making charge per gram",
-   "makingCharge": "Making charge"
+   "makingCharge": "Making charge",
+   "reservationTitle": "Reservation invoice",
+   "reservationTitleSub": "فاتورة حجز"
   },
   "reservations": {
    "title": "Reservations",
@@ -1805,7 +1807,8 @@
    "priceBySystem": "The system works it out once the item and the count are chosen.",
    "priceOfDay": "At the gold price of {date}",
    "itemIncomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
-   "linePriceFailed": "The price could not be worked out. Try again."
+   "linePriceFailed": "The price could not be worked out. Try again.",
+   "printReservation": "Print reservation invoice"
   },
   "returns": {
    "new": "New return",
@@ -2173,7 +2176,9 @@
     "noRead": "No price read yet",
     "refresh": "Read a new price now",
     "waEmpty": "Pick the pieces to see the message.",
-    "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft."
+    "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft.",
+    "creator": "User name",
+    "noSellers": "No seller in this branch: give a user the call center or branch sales role on the Users screen."
    },
    "title": "Sales desk",
    "intro": "Save the customer's order as a numbered draft and edit it until midnight. An Admin opens it, scans the real pieces and creates the invoice.",
@@ -2291,7 +2296,17 @@
    "typeLabel": "Invoice type",
    "goldNone": "There is no saved gold price.",
    "lockedNote": "Locked",
-   "channel": "Sales channel"
+   "channel": "Sales channel",
+   "discountCol": "Discount",
+   "paymentCol": "Payment method",
+   "discountPercentCell": "{percent}%",
+   "discountCashCell": "Cash discount",
+   "listPay": {
+    "cash": "Cash",
+    "instapay": "InstaPay",
+    "bank_transfer": "Bank transfer",
+    "visa": "Visa"
+   }
   }
  },
  "gold-stocktake": {

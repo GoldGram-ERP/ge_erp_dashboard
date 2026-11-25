@@ -9,7 +9,7 @@ import { Ltr, ThingPage } from "@/components/engine";
 import { Status } from "@/components/ui";
 import { useAccess } from "./sales-access";
 import { DraftForm, OpenByNumber } from "./sales-desk-form";
-import { seesEveryBranchDrafts } from "./sales-desk-rules";
+import { discountCell, paymentMethodsOf, seesEveryBranchDrafts } from "./sales-desk-rules";
 
 const KEYS = ["gold-sales/sales-desk"];
 
@@ -43,6 +43,16 @@ export const buildConfig = (tr: Parameters<MakeConfig>[0], everyBranch: boolean)
         { key: "customerName", label: d("customerCol") },
         { key: "customerPhone", label: d("phoneCol"), render: (r) => <Ltr>{r.customerPhone}</Ltr> },
         { key: "total", label: d("total"), render: (r) => <Ltr>{piastresText(r.totals?.total ?? 0)}</Ltr>, className: "num" },
+        // الخصم and طريقة الدفع (dashboard #97): "-" when there is none; the discount with its type; one pill per planned payment method.
+        { key: "discount", label: d("discountCol"), sortable: false, render: (r) => {
+          const cell = discountCell(r);
+          if (!cell) return "-";
+          return <span className="st-row"><Ltr>{piastresText(cell.amount)}</Ltr><Status tone="info" data-discount={cell.kind}>{cell.kind === "percent" ? d("discountPercentCell", { percent: cell.percent }) : d("discountCashCell")}</Status></span>;
+        } },
+        { key: "paymentMethods", label: d("paymentCol"), sortable: false, render: (r) => {
+          const methods = paymentMethodsOf(r);
+          return methods.length ? <span className="st-row">{methods.map((m) => <Status key={m} tone="info" data-method={m}>{d(`listPay.${m}`)}</Status>)}</span> : "-";
+        } },
         { key: "status", label: d("statusLabel"), sortable: false,
           render: (r) => (r.status === "deleted" ? badge("off", d("status.deleted")) : r.status === "completed" ? badge("good", d("status.completed"))
             : r.locked ? badge("warn", d("lock.locked")) : badge("info", d("status.open"))) },
