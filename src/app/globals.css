@@ -1318,6 +1318,17 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-table th[scope=row]{font-weight:600;color:var(--ink-2);white-space:nowrap}
 .pb-table td small{display:block;font-size:.85em;color:var(--mute)}
 .pb-table td[data-win]{background:color-mix(in srgb,var(--good) 12%,transparent);font-weight:700;color:var(--good)}
+/* Customer orders (owner, 2026-11-25): the items and the notes history on the record, and a line of the form. rem and tokens only. */
+.co-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.co-items li{display:flex;justify-content:space-between;gap:.75rem;padding:.4rem .65rem;background:var(--gold-wash);border-radius:.6rem}
+.co-notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.co-notes li{padding:.5rem .7rem;background:var(--surface);border:thin solid var(--line-soft);border-radius:.65rem}
+.co-note-head{display:flex;justify-content:space-between;gap:.75rem;font-size:.85rem}
+.co-note-head small{color:var(--mute);font-variant-numeric:tabular-nums}
+.co-notes p{margin:.25rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.co-by{margin-inline-start:.4rem;color:var(--mute)}
+.co-line{align-items:end}
+.co-rm{align-self:end}
 
 /* The custom print dialog of a sales invoice (owner, 2026-11-23). */
 dialog.wide{width:min(56rem,94vw);max-width:none}
