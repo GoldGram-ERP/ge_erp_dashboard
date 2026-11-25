@@ -8,6 +8,9 @@ import { toast } from "@/components/engine";
 import { arabicTr } from "@/lib/arabic-tr";
 
 export const LAYOUTS = ["a4", "thermal", "receipt", "gift", "star"];
+// The A5 page on the shop's pre-printed paper (dashboard #98): the top 36 mm hold the printed logo and the white under it, on every page,
+// so a long invoice's second page starts as low as the first. Calibrate here if a test print shows the text too high or too low.
+export const A5_MARGIN = "36mm 0 8mm";
 // shortcut: module-level translator set by openPrint (the print window is plain HTML, outside React)
 let p: (k: string, v?: any) => string = (k) => k;
 let inArabic = true;
@@ -31,29 +34,31 @@ section{margin-top:10px;border-top:1px solid #1c1912;padding-top:6px}section h3{
 li{display:flex;justify-content:space-between;gap:12px;padding:2px 0;list-style:none}ul{margin:0;padding:0}li.sum{border-top:1px solid #e3dccb;font-weight:600}
 ol{margin:10px 0 0;padding:0;border-top:1px solid #1c1912}ol li{display:block;border-bottom:1px dashed #c9c0aa;padding:5px 0}ol p{margin:0;display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px}
 .err{max-width:420px;margin:30px auto;background:#fdf1f0;border:1px solid #b3261e;color:#7a1a14;padding:14px 18px;border-radius:8px;font-weight:600}
-article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8mm;font-size:10.5px;line-height:1.45;color:#1c1912;display:flex;flex-direction:column;font-family:"PlexPrint","Segoe UI",system-ui,Tahoma,sans-serif}
-.pre .top{height:12mm}
+article.pre{width:148mm;min-height:210mm;box-sizing:border-box;padding:0 12mm 8mm;font-size:9.5px;line-height:1.45;color:#1c1912;display:flex;flex-direction:column;font-family:"PlexPrint","Segoe UI",system-ui,Tahoma,sans-serif}
+.pre .top{height:36mm}
 .pre .phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:9px;border-bottom:2px solid #192e5d}
 .pre .doc b{display:block;font-size:24px;line-height:1.1;color:#192e5d}.pre .doc span{display:block;font-size:8px;letter-spacing:.3em;color:#c2a56e;margin-top:3px}
-.pre .meta{display:grid;grid-template-columns:auto auto;gap:3px 10px;margin:0;font-size:11.5px}.pre .meta dt{font-weight:700;color:#a98446}.pre .meta dd{margin:0;color:#192e5d}
-.pre .cust{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin:16px 0 18px}
-.pre .fld{display:flex;gap:10px;align-items:baseline;min-height:16px;font-size:12px;color:#192e5d}.pre .fld span{color:#a98446;font-weight:700;white-space:nowrap}.pre .fld b{font-weight:700}
+.pre .meta{display:grid;grid-template-columns:auto auto;gap:3px 10px;margin:0;font-size:10px}.pre .meta dt{font-weight:700;color:#a98446}.pre .meta dd{margin:0;color:#192e5d}
+.pre .cust{display:grid;grid-template-columns:1fr 1fr;gap:10px 28px;margin:12px 0 14px}
+.pre .fld{display:flex;gap:10px;align-items:baseline;min-height:16px;font-size:10.5px;color:#192e5d}.pre .fld span{color:#a98446;font-weight:700;white-space:nowrap}.pre .fld b{font-weight:700}
 .pre .blank{flex:1;min-width:30px;border-bottom:1px dotted #999;height:12px}
-.pre table{margin-top:4px;border-collapse:collapse}.pre th{background:#192e5d;color:#fff;border:0;padding:9px 4px;font-weight:700;font-size:10px;white-space:nowrap}.pre td{padding:9px 4px;border:0;color:#192e5d;font-size:11px}.pre td.it{width:34%}
+.pre table{margin-top:4px;border-collapse:collapse}.pre th{background:#192e5d;color:#fff;border:0;padding:7px 4px;font-weight:700;font-size:9px;white-space:nowrap}.pre td{padding:7px 4px;border:0;color:#192e5d;font-size:9.5px}.pre td.it{width:34%}
 .pre tbody td{border-bottom:1px solid #d5d9e2}
-.pre td.it small{display:block;color:#8a93a8;font-size:8.5px}.pre td.pr{font-weight:700}
-.pre .tot{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-top:18px}
+.pre td.it small{display:block;color:#8a93a8;font-size:7.5px}.pre td.pr{font-weight:700}
+.pre .tot{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-top:14px}
 .pre .boxes{display:flex;flex-direction:column;gap:10px}
-.pre .gbox{border:1px solid #c2a56e;padding:9px 14px;font-size:12px;color:#192e5d}.pre .gbox div{white-space:nowrap}.pre .gbox b{font-weight:700}
-.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:8px 14px;margin:0 0 8px;padding-bottom:10px;border-bottom:2px solid #192e5d;font-size:11.5px;color:#192e5d}.pre .sums dd{margin:0;text-align:end}.pre .sums dt{font-weight:500}
-.pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:16px;color:#192e5d;font-weight:700}.pre .grand b{font-size:17px}
-.pre .pfoot{margin-top:48px;padding-top:10px;border-top:1.5px solid #c2a56e;font-size:9.5px;color:#5d6b8a;line-height:1.7}.pre .pfoot span{display:block}
-.pre .contact{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-top:14px;font-size:10px;color:#192e5d}
+.pre .gbox{border:1px solid #c2a56e;padding:7px 12px;font-size:10.5px;color:#192e5d}.pre .gbox div{white-space:nowrap}.pre .gbox b{font-weight:700}
+.pre .sums{min-width:46%}.pre .sums dl{display:grid;grid-template-columns:1fr auto;gap:8px 14px;margin:0 0 8px;padding-bottom:10px;border-bottom:2px solid #192e5d;font-size:10px;color:#192e5d}.pre .sums dd{margin:0;text-align:end}.pre .sums dt{font-weight:500}
+.pre .grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:14px;color:#192e5d;font-weight:700}.pre .grand b{font-size:15px}
+.pre .pfoot{margin-top:36px;padding-top:10px;border-top:1.5px solid #c2a56e;font-size:9.5px;color:#5d6b8a;line-height:1.7}.pre .pfoot span{display:block}
+.pre .contact{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-top:14px;font-size:9px;color:#192e5d}
 .pre .contact .crow{display:flex;gap:22px;margin-bottom:6px}.pre .contact span{display:inline-flex;align-items:center;gap:7px}.pre .contact b{font-weight:700}.pre .contact .cr{display:flex;flex-direction:column;gap:6px}
 .pre .contact svg{width:14px;height:14px;flex:none;color:#c2a56e}
+/* A long invoice flows onto a second A5 page (dashboard #98): no row, total block, foot or contact strip is cut, and the table head repeats. */
+.pre thead{display:table-header-group}.pre tr,.pre .tot,.pre .pfoot,.pre .contact,.pre .cust,.pre .phead{break-inside:avoid;page-break-inside:avoid}
 /* Print the colours as drawn (the blue table head has white text: without its background the head reads blank), whatever the "Background graphics" option of the print window says. */
 article.pre,article.pre *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-@media print{article.pre{width:auto;min-height:208mm;padding:0 12mm 8mm}.bar{display:none}body{background:#fff}main{padding:0;overflow:visible}article{box-shadow:none}article.a4{width:auto;padding:0}article.narrow{width:100%;padding:0}}`;
+@media print{article.pre{width:auto;min-height:166mm;padding:0 12mm}.pre .top{display:none}.bar{display:none}body{background:#fff}main{padding:0;overflow:visible}article{box-shadow:none}article.a4{width:auto;padding:0}article.narrow{width:100%;padding:0}}`;
 
 // The print window is plain HTML: it loads the dashboard's IBM Plex Sans Arabic (Arabic and Latin) from /fonts, so the weights are the ones drawn, not the system's.
 const FONT_FILES = [400, 600, 700];
@@ -175,7 +180,7 @@ export async function openPrint(id: string, layout: string, pageTr: Tr, choices:
   const w = window.open("", "_blank");
   if (!w) { toast(L("اسمح بالنوافذ المنبثقة للطباعة.", "Allow pop-ups to print."), { error: true }); return; }
   const dir = ar ? "rtl" : "ltr";
-  const page = (title: string, body: string, size: string) => { w.document.open(); w.document.write(`<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${fontCss(window.location.origin)}${CSS}@page{size:${size};margin:${size === "A5" ? "0" : size === "A4" ? "10mm" : "3mm"}}</style></head><body>${body}</body></html>`); w.document.close(); };
+  const page = (title: string, body: string, size: string) => { w.document.open(); w.document.write(`<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${fontCss(window.location.origin)}${CSS}@page{size:${size};margin:${size === "A5" ? A5_MARGIN : size === "A4" ? "10mm" : "3mm"}}</style></head><body>${body}</body></html>`); w.document.close(); };
   page(p("title"), `<p style="text-align:center;margin-top:40px">${esc(L("جارٍ التحميل…", "Loading…"))}</p>`, "A4");
   try {
     const d = source === "reservation" ? await api(`/reservations/${id}/print`) : await api(`/sales-invoices/${id}/print`, { query: { layout, ...(choices.recipientName ? { recipientName: choices.recipientName } : {}), ...(choices.recipientPhone ? { recipientPhone: choices.recipientPhone } : {}), ...(choices.showPrices !== undefined ? { showPrices: String(choices.showPrices) } : {}), ...(choices.lines?.length ? { lines: choices.lines.join(",") } : {}) } });
@@ -193,5 +198,5 @@ export function renderInvoice(d: any, t: Tr["t"], arabic: boolean): string {
   p = (k, v) => t("gold-sales", `prints.${k}`, v);
   inArabic = arabic;
   const isNarrow = d.layout === "thermal" || d.layout === "receipt";
-  return `<!doctype html><html lang="${arabic ? "ar" : "en"}" dir="${arabic ? "rtl" : "ltr"}"><head><meta charset="utf-8"><style>${fontCss("")}${CSS}@page{size:${isNarrow ? "80mm auto" : "A5"};margin:0}</style></head><body><main>${isNarrow ? narrow(d) : a4(d)}</main></body></html>`;
+  return `<!doctype html><html lang="${arabic ? "ar" : "en"}" dir="${arabic ? "rtl" : "ltr"}"><head><meta charset="utf-8"><style>${fontCss("")}${CSS}@page{size:${isNarrow ? "80mm auto" : "A5"};margin:${isNarrow ? "0" : A5_MARGIN}}</style></head><body><main>${isNarrow ? narrow(d) : a4(d)}</main></body></html>`;
 }
