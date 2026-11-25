@@ -2,6 +2,7 @@
 // Buy a returned piece (owner, 2026-11-05): a piece a customer brings back is BOUGHT from them. The form takes the branch, the item and the
 // count; the price is the backend's (GET /customer-pieces/buy-price, shown as a preview: nobody types a price, a weight or a karat) and is
 // paid in full by cash and any number of bank rows (POST /customer-pieces). The answer is one purchase document with its pieces and labels.
+import { PHONE_LENGTH } from "@/lib/phone";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiFailure, keepsKey, newSaveKey } from "@/lib/api";
@@ -261,7 +262,7 @@ export function CustomerPieceForm({ close, tr }: CustomFormProps) {
       <div className="card">
         <div className="formgrid">
           <TextBox name="customerName" label={cp(tr, "customerName")} value={v.customerName} maxLength={TEXT_MAX} error={errs.customerName} onChange={(x) => set({ customerName: x })} />
-          <TextBox name="customerPhone" label={cp(tr, "customerPhone")} help={cp(tr, "phoneHelp")} value={v.customerPhone} maxLength={15} ltr error={errs.customerPhone} onChange={(x) => set({ customerPhone: x })} />
+          <TextBox name="customerPhone" label={cp(tr, "customerPhone")} help={cp(tr, "phoneHelp")} value={v.customerPhone} maxLength={PHONE_LENGTH} ltr error={errs.customerPhone} onChange={(x) => set({ customerPhone: x })} />
           <TextBox name="description" label={cp(tr, "description")} help={cp(tr, "descriptionHelp")} value={v.description} maxLength={TEXT_MAX} error={errs.description} onChange={(x) => set({ description: x })} />
         </div>
         <div className="formbar">

@@ -5,6 +5,7 @@ import { Button, SwitchInput } from "@/components/ui";
 import { useState } from "react";
 import type { Row } from "@/lib/engine-types";
 import { latinNumber } from "@/lib/format";
+import { isPhone, PHONE_LENGTH } from "@/lib/phone";
 import type { Tr } from "@/lib/t";
 import { revealFirstError } from "@/lib/submit-guard";
 import { Section } from "@/components/engine";
@@ -14,14 +15,20 @@ import { openPrint } from "./sales-invoices-print";
 export type Recipient = { name: string; phone: string };
 export type RecipientErrors = { name?: string; phone?: string };
 
-// The same rules as the buyer: a name up to 100 characters, a phone of 8 to 15 digits (Arabic digits read as Latin).
-export function checkRecipient(tr: Tr, r: Recipient): RecipientErrors {
+// The same rules as the buyer: a name up to 100 characters, a phone of the one phone rule (src/lib/phone.ts).
+// `saved`: the phone the invoice already holds. Left as it is, it prints even when it was saved before the
+// rule (backend #222: old records still print); a phone typed now keeps the rule.
+export function checkRecipient(tr: Tr, r: Recipient, saved?: string | null): RecipientErrors {
   const name = r.name.trim(), phone = latinNumber(r.phone.trim());
+  const keptSaved = !!saved && r.phone.trim() === saved.trim();
   return {
     ...(name === "" ? { name: fe(tr, "required") } : name.length > 100 ? { name: fe(tr, "tooLong") } : {}),
-    ...(phone === "" ? { phone: fe(tr, "required") } : /^\d{8,15}$/.test(phone) ? {} : { phone: sg(tr, "phoneInvalid") }),
+    ...(phone === "" ? { phone: fe(tr, "required") } : keptSaved || isPhone(phone) ? {} : { phone: fe(tr, "phone") }),
   };
 }
+/** The recipient phone a print sends: none when the saved one is kept (the backend prints its own), else the typed one in Latin digits. */
+export const printedPhone = (r: Recipient, saved?: string | null): string | undefined =>
+  saved && r.phone.trim() === saved.trim() ? undefined : latinNumber(r.phone.trim());
 
 /** The gift switch of the new invoice; on, it asks for the recipient the print will show. */
 export function GiftFields({ tr, on, onToggle, value, onChange, errors }: { tr: Tr; on: boolean; onToggle: (v: boolean) => void; value: Recipient; onChange: (v: Recipient) => void; errors: RecipientErrors }) {
@@ -33,7 +40,7 @@ export function GiftFields({ tr, on, onToggle, value, onChange, errors }: { tr: 
       </label>
       {on && (
         <div className="formgrid" id="giftRecipient" style={{ marginTop: 8 }}>
-          <TextBox name="giftRecipientPhone" label={`${sg(tr, "recipientPhone")} *`} value={value.phone} maxLength={15} ltr error={errors.phone} help={sg(tr, "phoneHint")} onChange={(phone) => onChange({ ...value, phone })} />
+          <TextBox name="giftRecipientPhone" label={`${sg(tr, "recipientPhone")} *`} value={value.phone} maxLength={PHONE_LENGTH} ltr error={errors.phone} help={sg(tr, "phoneHint")} onChange={(phone) => onChange({ ...value, phone })} />
           <TextBox name="giftRecipientName" label={`${sg(tr, "recipientName")} *`} value={value.name} maxLength={100} error={errors.name} onChange={(name) => onChange({ ...value, name })} />
         </div>
       )}
@@ -47,17 +54,18 @@ export function GiftPrintBox({ row, tr }: { row: Row; tr: Tr }) {
   const [prices, setPrices] = useState(false);
   const [errors, setErrors] = useState<RecipientErrors>({});
   const print = () => {
-    const bad = checkRecipient(tr, rec);
+    const bad = checkRecipient(tr, rec, row.giftRecipientPhone);
     setErrors(bad);
     if (bad.name || bad.phone) { revealFirstError(); return; }
     // Straight from the click: the print window opens before the answer, so no pop-up blocker objects.
-    openPrint(row.id, "gift", tr, { recipientName: rec.name.trim(), recipientPhone: latinNumber(rec.phone.trim()), showPrices: prices });
+    const recipientPhone = printedPhone(rec, row.giftRecipientPhone);
+    openPrint(row.id, "gift", tr, { recipientName: rec.name.trim(), ...(recipientPhone !== undefined ? { recipientPhone } : {}), showPrices: prices });
   };
   return (
     <Section title={sg(tr, "giftPrintTitle")} wide>
       <div id="giftPrint">
         <div className="formgrid">
-          <TextBox name="printRecipientPhone" label={`${sg(tr, "recipientPhone")} *`} value={rec.phone} maxLength={15} ltr error={errors.phone} onChange={(phone) => setRec({ ...rec, phone })} />
+          <TextBox name="printRecipientPhone" label={`${sg(tr, "recipientPhone")} *`} value={rec.phone} maxLength={PHONE_LENGTH} ltr error={errors.phone} onChange={(phone) => setRec({ ...rec, phone })} />
           <TextBox name="printRecipientName" label={`${sg(tr, "recipientName")} *`} value={rec.name} maxLength={100} error={errors.name} onChange={(name) => setRec({ ...rec, name })} />
         </div>
         <label className="field check" style={{ marginTop: 8 }}>

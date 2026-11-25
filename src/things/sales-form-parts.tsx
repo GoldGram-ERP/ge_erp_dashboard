@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { api } from "@/lib/api";
 import type { FieldConfig, Row } from "@/lib/engine-types";
 import { latinNumber, piastresText } from "@/lib/format";
+import { isNationalId, isPhone, NATIONAL_ID_LENGTH, PHONE_LENGTH } from "@/lib/phone";
 import type { Tr } from "@/lib/t";
 import type { Me } from "@/stores/ui";
 import { Select } from "@/components/fields/Select";
@@ -51,14 +52,14 @@ export function Choice({ id, options, value, onChange, tr, placeholder, searchab
 
 // ── customer ──
 export const customerFields = (tr: Tr, disabled?: boolean): FieldConfig[] => [
-  { name: "customerPhone", label: `${sg(tr, "customerPhone")} *`, type: "text", maxLength: 15, disabled, help: sg(tr, "phoneHint") },
+  { name: "customerPhone", label: `${sg(tr, "customerPhone")} *`, type: "text", maxLength: PHONE_LENGTH, disabled, help: sg(tr, "phoneHint") },
   { name: "customerName", label: `${sg(tr, "customerName")} *`, type: "text", maxLength: 100, disabled },
-  { name: "nationalId", label: sg(tr, "nationalId"), type: "text", maxLength: 14, disabled, help: sg(tr, "optional") },
+  { name: "nationalId", label: sg(tr, "nationalId"), type: "text", maxLength: NATIONAL_ID_LENGTH, disabled, help: sg(tr, "nationalIdHint") },
 ];
 export const customerRules = (tr: Tr): Record<string, (v: string) => string | null> => ({
-  customerPhone: (v) => (v === "" ? fe(tr, "required") : /^\d{8,15}$/.test(latinNumber(v)) ? null : sg(tr, "phoneInvalid")),
+  customerPhone: (v) => (v === "" ? fe(tr, "required") : isPhone(v) ? null : fe(tr, "phone")),
   customerName: (v) => (v === "" ? fe(tr, "required") : v.length > 100 ? fe(tr, "tooLong") : null),
-  nationalId: (v) => (v === "" || /^\d{14}$/.test(latinNumber(v)) ? null : sg(tr, "nationalIdInvalid")),
+  nationalId: (v) => (v === "" || isNationalId(v) ? null : fe(tr, "nationalId")),
 });
 /** The customer fields with their rules attached (for the engine's field machinery). */
 export const checkedCustomer = (tr: Tr, fields: FieldConfig[] = customerFields(tr)): FieldConfig[] => {
@@ -68,7 +69,7 @@ export const checkedCustomer = (tr: Tr, fields: FieldConfig[] = customerFields(t
 /** The name last used with a phone (GET /sales-invoices/customer-name); null when none or not a phone. */
 export async function customerNameOf(phone: string): Promise<string | null> {
   const digits = latinNumber(phone.trim());
-  if (!/^\d{8,15}$/.test(digits)) return null;
+  if (!isPhone(digits)) return null;
   try { return (await api("/sales-invoices/customer-name", { query: { phone: digits } })).customerName ?? null; } catch { return null; }
 }
 

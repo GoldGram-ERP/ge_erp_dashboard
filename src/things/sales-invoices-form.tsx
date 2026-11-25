@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { latinNumber, milligramsText, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
+import { isPhone } from "@/lib/phone";
 import { backendFieldErrors } from "@/lib/fields";
 import { useMe } from "@/lib/session";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
@@ -126,7 +127,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   }, [pc, branchId]);
   const phone = latinNumber(String(custNow.customerPhone ?? "").trim());
   useEffect(() => {   // the phone seen on an earlier invoice fills an empty name
-    if (made || !/^\d{8,15}$/.test(phone) || String(custNow.customerName ?? "").trim() !== "") return;
+    if (made || !isPhone(phone) || String(custNow.customerName ?? "").trim() !== "") return;
     customerNameOf(phone).then((n) => { if (n && String(cust.getValues("customerName") ?? "").trim() === "") cust.setValue("customerName", n); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone, made]);
