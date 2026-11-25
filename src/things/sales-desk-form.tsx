@@ -347,7 +347,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     if (quote) { const q = quote.q, c = quote.cash ?? q, disc = Math.max(0, c.beforeDiscountPiastres - c.totalPiastres); return { gold: q.beforeDiscountPiastres - q.feeTotalPiastres, making: q.feeTotalPiastres, gross: q.beforeDiscountPiastres, discount: disc, makingLeft: q.feeTotalPiastres - disc, paid, left: q.totalPiastres - paid }; }
     return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
-  const canComplete = canCompleteDraft(me, draft?.status, buy) && !foreign;   // Admin / Super admin, or the action complete-sales-draft; hidden until the person is known; a Buy draft is a quote only
+  // Admin / Super admin, a desk-wide role (even on another user's draft), or the action complete-sales-draft (own draft only); hidden until the person is known; a Buy draft is a quote only
+  const canComplete = canCompleteDraft(me, draft?.status, buy) && (!foreign || accountantEdits);
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 

@@ -74,12 +74,26 @@ describe("who completes a draft (issue #25; per-person action since 2026-11-10)"
     expect(canCompleteDraft({ userType: "user", actions: ["give-cash-discount"] }, "open", false)).toBe(false);
     expect(canCompleteDraft({ userType: "user", actions: ["complete-sales-draft"] }, "open", false)).toBe(true);
   });
+  it("the accountant, the call center admin and the branch sales manager complete by the role alone, without the action (owner, 2026-11-25)", () => {
+    for (const role of ["accountant", "call_center_admin", "branch_sales_manager"]) {
+      expect(canCompleteDraft({ userType: "user", businessRole: role }, "open", false), role).toBe(true);
+      expect(canCompleteDraft({ userType: "user", businessRole: role, actions: [] }, "open", false), role).toBe(true);
+    }
+  });
+  it("the other roles still need the action", () => {
+    for (const role of ["call_center", "branch_sales", "pricing_specialist", null, undefined]) {
+      expect(canCompleteDraft({ userType: "user", businessRole: role }, "open", false), String(role)).toBe(false);
+      expect(canCompleteDraft({ userType: "user", businessRole: role, actions: ["complete-sales-draft"] }, "open", false), String(role)).toBe(true);
+    }
+  });
   it("nobody does while the person is unknown (the page is still loading)", () => {
     expect(canCompleteDraft(undefined, "open", false)).toBe(false);
   });
-  it("not a completed, deleted or missing draft, and not a Buy draft (a quote only)", () => {
+  it("not a completed, deleted or missing draft, and not a Buy draft (a quote only), whatever the role", () => {
     for (const status of ["completed", "deleted", undefined]) expect(canCompleteDraft({ userType: "admin" }, status, false)).toBe(false);
     expect(canCompleteDraft({ userType: "admin" }, "open", true)).toBe(false);
+    for (const status of ["completed", "deleted", undefined]) expect(canCompleteDraft({ userType: "user", businessRole: "accountant" }, status, false)).toBe(false);
+    expect(canCompleteDraft({ userType: "user", businessRole: "accountant" }, "open", true)).toBe(false);
   });
 });
 
