@@ -109,8 +109,12 @@ export function forMath<T extends { method: string; bankAccountId: string }>(ban
 /** A plain user opening a draft that someone else made. */
 export const isForeignDraft = (me: { id?: string; userType?: string } | null | undefined, draft: { employeeId?: string } | null | undefined): boolean =>
   Boolean(draft?.employeeId && me?.id && me.userType === "user" && draft.employeeId !== me.id);
-/** A plain user with a desk-wide business role (the accountant) may edit another person's draft, of any branch (owner, 2026-11-25); no other plain user may. Complete and Delete have their own rules. */
+/** A plain user with a desk-wide business role (the accountant, the call center admin, the branch sales manager) may edit another person's draft, of any branch (owner, 2026-11-25); no other plain user may. Complete and Delete have their own rules. */
 export const mayEditForeignDraft = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean => me?.userType === "user" && isDeskWideRole(me.businessRole);
+/** Delete on a draft (owner, 2026-11-25): no role matters. Anyone who has the action `delete-records` (an Admin and the Super admin always have it) deletes an open, saved
+ *  draft they have opened; the backend lets them open only the drafts they may see, so opening it is the proof. Never a completed or deleted draft. The backend refuses the rest. */
+export const mayDeleteDraft = (me: { userType?: string; actions?: string[] } | null | undefined, draft: { status?: string } | null | undefined): boolean =>
+  Boolean(draft) && draft?.status === "open" && hasAction(me, "delete-records");
 /** Who sees the drafts of every branch, so the list shows the branch and a branch filter: an Admin, the Super admin, and a plain user with a desk-wide business role. */
 export const seesEveryBranchDrafts = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean =>
   me?.userType === "admin" || me?.userType === "super_admin" || mayEditForeignDraft(me);

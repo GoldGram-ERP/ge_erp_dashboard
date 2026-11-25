@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -210,6 +210,31 @@ describe("another person's draft (owner, 2026-11-24)", () => {
     for (const role of ["call_center", "branch_sales", "pricing_specialist", null, undefined]) expect(mayEditForeignDraft({ userType: "user", businessRole: role })).toBe(false);
     expect(mayEditForeignDraft({ userType: "admin", businessRole: "accountant" })).toBe(false);   // an Admin edits anyway: never a "foreign" draft
     expect(mayEditForeignDraft(undefined)).toBe(false);
+  });
+});
+
+// Delete on a draft (owner, 2026-11-25): the action and an open draft the person has opened; no role, not the creator.
+describe("mayDeleteDraft", () => {
+  const open = { status: "open" };
+  it("anyone with the action deletes an open draft, whatever their role and whoever made it", () => {
+    for (const businessRole of [null, undefined, "call_center", "branch_sales", "pricing_specialist", "accountant", "call_center_admin", "branch_sales_manager"]) {
+      expect(mayDeleteDraft({ userType: "user", businessRole, actions: ["delete-records"] } as any, open), String(businessRole)).toBe(true);
+    }
+  });
+  it("without the action nobody but an Admin and the Super admin does, whatever the role", () => {
+    for (const businessRole of [null, "call_center", "accountant", "call_center_admin", "branch_sales_manager"]) {
+      expect(mayDeleteDraft({ userType: "user", businessRole, actions: [] } as any, open), String(businessRole)).toBe(false);
+      expect(mayDeleteDraft({ userType: "user", businessRole, actions: ["complete-sales-draft"] } as any, open), String(businessRole)).toBe(false);
+    }
+    expect(mayDeleteDraft({ userType: "admin" }, open)).toBe(true);
+    expect(mayDeleteDraft({ userType: "super_admin", actions: [] }, open)).toBe(true);
+  });
+  it("never a completed or deleted draft, a new draft that is not saved, or while the person is unknown", () => {
+    for (const status of ["completed", "deleted", undefined]) expect(mayDeleteDraft({ userType: "admin" }, { status }), String(status)).toBe(false);
+    expect(mayDeleteDraft({ userType: "admin" }, null)).toBe(false);
+    expect(mayDeleteDraft({ userType: "admin" }, undefined)).toBe(false);
+    expect(mayDeleteDraft(undefined, open)).toBe(false);
+    expect(mayDeleteDraft(null, open)).toBe(false);
   });
 });
 
