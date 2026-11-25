@@ -2,7 +2,6 @@
 // the tabs and decides, the status words, and the send form's check and payload. The backend enforces all of it; nothing here guesses beyond showing the right buttons.
 import { latinNumber } from "@/lib/format";
 
-export const REQUESTS_SCREEN = "gold-sales/price-requests";
 export const REQUEST_QUANTITY_MAX = 100;
 export const REQUEST_LINES_MAX = 50;
 export const REQUEST_NOTE_MAX = 1000;
@@ -12,20 +11,18 @@ type Person = { userType?: string; businessRole?: string | null; screens?: strin
 /** The deciders: an Admin, the Super admin and a plain user with the business role accountant. They see every request and accept or reject. */
 export const isRequestDecider = (me: Person): boolean => me?.userType === "admin" || me?.userType === "super_admin" || (me?.userType === "user" && me.businessRole === "accountant");
 
-/** Who gets the two request tabs of the price board: the deciders (the accountant by role, with no tick) and anyone given the screen on the Users form. */
-export const mayUseRequests = (me: Person): boolean => isRequestDecider(me) || Boolean(me?.screens?.includes(REQUESTS_SCREEN));
 
 export type RequestStatus = "pending" | "accepted" | "rejected";
 export const requestStatusText = (L: (ar: string, en: string) => string, status: string): string =>
   status === "accepted" ? L("مقبول", "Accepted") : status === "rejected" ? L("مرفوض", "Rejected") : L("قيد الانتظار", "Pending");
 export const requestStatusTone = (status: string): "good" | "warn" | "off" => (status === "accepted" ? "good" : status === "rejected" ? "off" : "warn");
 
-/** The tabs of the price board, in order: the board for everyone, then Send and Requests for whoever may use requests. An address naming a tab the person
- *  cannot see falls back to the board. */
+/** The tabs of the price board, in order: the board, Send a request and Requests, for everyone who can open the price board (owner, 2026-11-25: no second tick). A person
+ *  sees only their own requests; the deciders see all. An address naming a tab that does not exist falls back to the board. */
 export type BoardTab = "board" | "send" | "requests";
-export const boardTabs = (me: Person): BoardTab[] => (mayUseRequests(me) ? ["board", "send", "requests"] : ["board"]);
-export const tabFromAddress = (tab: string | null | undefined, me: Person): BoardTab => {
-  const tabs = boardTabs(me);
+export const boardTabs = (): BoardTab[] => ["board", "send", "requests"];
+export const tabFromAddress = (tab: string | null | undefined): BoardTab => {
+  const tabs = boardTabs();
   return tabs.includes(tab as BoardTab) ? (tab as BoardTab) : "board";
 };
 

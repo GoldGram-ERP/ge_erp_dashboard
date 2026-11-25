@@ -92,8 +92,8 @@ export default function Page() {
   // A notification link opens Requests with ?tab=requests (and the request with &open=).
   const search = useSearchParams();
   const [wantedTab, setTab] = useState<string>(() => search.get("tab") ?? "board");
-  const pageTabs = boardTabs(me);
-  const tab: BoardTab = tabFromAddress(wantedTab, me);
+  const pageTabs = boardTabs();
+  const tab: BoardTab = tabFromAddress(wantedTab);
   // Today's prices (owner, 2026-11-22; kept as three cards, owner 2026-11-25): the metal, then its sell and buy price per gram.
   const priceCard = (label: string, sell: number | null | undefined, buy: number | null | undefined, metal: "gold" | "silver" = "gold") => (
     <section className="bubble pb-price" data-metal={metal} aria-label={label}>

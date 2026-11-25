@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { REQUEST_QUANTITY_MAX, blankRequestLine, boardTabs, isRequestDecider, mayUseRequests, readRequestForm, requestLinesSummary, requestStatusText, requestStatusTone, tabFromAddress } from "./price-requests-rules";
+import { REQUEST_QUANTITY_MAX, blankRequestLine, boardTabs, isRequestDecider, readRequestForm, requestLinesSummary, requestStatusText, requestStatusTone, tabFromAddress } from "./price-requests-rules";
 
 // Price requests (owner, 2026-11-25, backend #228): who decides and sees the tabs, the words of a status, and the send form.
 const L = (_ar: string, en: string) => en;
@@ -7,25 +7,24 @@ const item = "00000000-0000-4000-8000-000000000001";
 const item2 = "00000000-0000-4000-8000-000000000002";
 
 describe("who decides and who gets the tabs", () => {
-  it("an Admin, the Super admin and an accountant decide, and get the tabs without a tick", () => {
+  it("an Admin, the Super admin and an accountant decide", () => {
     for (const me of [{ userType: "admin" }, { userType: "super_admin" }, { userType: "user", businessRole: "accountant", screens: [] }]) {
       expect(isRequestDecider(me), JSON.stringify(me)).toBe(true);
-      expect(boardTabs(me)).toEqual(["board", "send", "requests"]);
+      expect(boardTabs()).toEqual(["board", "send", "requests"]);
     }
   });
-  it("anyone else gets the tabs only with the screen, and never decides", () => {
-    const seller = { userType: "user", businessRole: "branch_sales", screens: ["gold-sales/price-board"] };
-    expect(boardTabs(seller)).toEqual(["board"]);
-    expect(mayUseRequests({ ...seller, screens: ["gold-sales/price-board", "gold-sales/price-requests"] })).toBe(true);
+  it("a normal user gets the same three tabs with no extra tick, and never decides", () => {
+    const seller = { userType: "user", businessRole: null, screens: ["gold-sales/price-board"] };
+    expect(boardTabs()).toEqual(["board", "send", "requests"]);
+    expect(boardTabs()).toEqual(["board", "send", "requests"]);
     for (const role of ["call_center_admin", "branch_sales_manager", "call_center", null]) expect(isRequestDecider({ userType: "user", businessRole: role }), String(role)).toBe(false);
-    expect(boardTabs(undefined)).toEqual(["board"]);
   });
-  it("an address naming a tab the person cannot see falls back to the board", () => {
+  it("an address names one of the tabs, or falls back to the board", () => {
     const seller = { userType: "user", screens: [] };
-    expect(tabFromAddress("requests", seller)).toBe("board");
-    expect(tabFromAddress("requests", { userType: "admin" })).toBe("requests");
-    expect(tabFromAddress("nonsense", { userType: "admin" })).toBe("board");
-    expect(tabFromAddress(null, { userType: "admin" })).toBe("board");
+    expect(tabFromAddress("requests")).toBe("requests");
+    expect(tabFromAddress("send")).toBe("send");
+    expect(tabFromAddress("nonsense")).toBe("board");
+    expect(tabFromAddress(null)).toBe("board");
   });
 });
 
