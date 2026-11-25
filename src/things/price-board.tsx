@@ -13,10 +13,10 @@ import { milligramsText, piastresText } from "@/lib/format";
 import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { Select } from "@/components/fields/Select";
-import { Button, Checkbox, DataTable, Input, Td, Th, Tr } from "@/components/ui";
+import { Button, Checkbox, DataTable, Input, Seg, Td, Th, Tr } from "@/components/ui";
 import { allPages } from "./sales-form-parts";
 import { LOW_STOCK_MAX, brandsOf, inBrand } from "@/lib/items";
-import { filterItems, isFiltering, noFilter, weightBounds, type BrandFilter, clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
+import { filterItems, isFiltering, noFilter, weightBounds, type BrandFilter, type StockFilter, clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
 
 const money = (p: number | null | undefined) => (p === null || p === undefined ? "—" : piastresText(p));
 const grams = (mg: number) => `${milligramsText(mg)} g`;
@@ -84,12 +84,13 @@ export default function Page() {
       : L("متوفر", "In stock");
 
   const price = board.data?.price;
-  const priceCard = (label: string, sell: number | null | undefined, buy: number | null | undefined) => (
-    <section className="bubble pb-price" aria-label={label}>
+  // One segment of the slim prices strip: the metal, the sell price strong and the buy price muted.
+  const priceSeg = (label: string, sell: number | null | undefined, buy: number | null | undefined) => (
+    <section className="pb-seg" aria-label={label}>
       <span className="pill">{label}</span>
       <div className="pb-sides">
         <div><small>{L("بيع", "Sell")}</small><b dir="ltr">{money(sell)}</b></div>
-        <div><small>{L("شراء", "Buy")}</small><b dir="ltr">{money(buy)}</b></div>
+        <div className="pb-buy"><small>{L("شراء", "Buy")}</small><b dir="ltr">{money(buy)}</b></div>
       </div>
     </section>
   );
@@ -112,10 +113,10 @@ export default function Page() {
       {board.data && (<>
         {/* 1. Today's prices */}
         {price ? (
-          <div className="pb-prices">
-            {priceCard(L("ذهب عيار 21", "Gold 21"), price.sell21, price.buy21)}
-            {priceCard(L("ذهب عيار 24", "Gold 24"), price.sell24, price.buy24)}
-            {priceCard(L("الفضة", "Silver"), price.silverSell, price.silverBuy)}
+          <div className="pb-strip" role="group" aria-label={L("أسعار اليوم", "Today's prices")}>
+            {priceSeg(L("ذهب عيار 21", "Gold 21"), price.sell21, price.buy21)}
+            {priceSeg(L("ذهب عيار 24", "Gold 24"), price.sell24, price.buy24)}
+            {priceSeg(L("الفضة", "Silver"), price.silverSell, price.silverBuy)}
           </div>
         ) : <p className="quiet-note">{L("لم يتم تسجيل سعر الذهب بعد.", "No gold price has been saved yet.")}</p>}
 
@@ -129,7 +130,12 @@ export default function Page() {
               const range = weightBounds(f);
               return (
               <section className="card pb-brand" key={brand.id} aria-label={brand.name}>
-                <h3>{brand.name}<span className="pb-count">{isFiltering(f) ? `${shown.length} / ${brand.items.length}` : brand.items.length}</span></h3>
+                <div className="pb-brand-head">
+                  <h3>{brand.name}<span className="pb-count">{isFiltering(f) ? `${shown.length} / ${brand.items.length}` : brand.items.length}</span></h3>
+                  {/* the stock switch of this brand only: all, the green cards (can be sold now), the red ones */}
+                  <Seg<StockFilter> className="pb-stock" label={L(`المخزون في ${brand.name}`, `Stock in ${brand.name}`)} value={f.stock} onChange={(stock) => setFilter(brand.id, { stock })}
+                    items={[{ id: "all", label: L("الكل", "All"), attrs: { "data-stock": "all" } }, { id: "in", label: L("متوفر", "In stock"), attrs: { "data-stock": "in" } }, { id: "out", label: L("غير متوفر", "Out of stock"), attrs: { "data-stock": "out" } }]} />
+                </div>
                 <div className="pb-filter" role="search" aria-label={L(`بحث في ${brand.name}`, `Search in ${brand.name}`)}>
                   <div className="field pb-q"><Input type="search" id={`pb-q-${brand.id}`} value={f.q} placeholder={L("ابحث بالاسم", "Search by name")} aria-label={L("ابحث بالاسم", "Search by name")} autoComplete="off" onChange={(e) => setFilter(brand.id, { q: e.target.value })} /></div>
                   <div className="field"><Input inputMode="decimal" id={`pb-from-${brand.id}`} value={f.from} placeholder={L("الوزن من (جم)", "Weight from (g)")} aria-label={L("الوزن من (جم)", "Weight from (g)")} aria-invalid={range.invalid} autoComplete="off" onChange={(e) => setFilter(brand.id, { from: e.target.value })} /></div>
@@ -147,15 +153,12 @@ export default function Page() {
                         onClick={(e) => { if (!(e.target as HTMLElement).closest("button,input,label")) toggle(it.id); }}>{/* a click on the card selects it; its own buttons and the box do their own */}
                         <div className="pb-top">
                           <Checkbox checked={selected.includes(it.id)} onChange={() => toggle(it.id)} aria-label={L("اختيار الصنف", "Select item")} />
-                          <div className="pb-name"><b>{it.itemName}</b><small>{it.karat} · {grams(it.weightMg)}</small></div>
+                          <div className="pb-name"><b title={it.itemName}>{it.itemName}</b><small>{it.karat} · {grams(it.weightMg)}<span className="pb-dot" data-tone={it.sellable ? "good" : "bad"}>{stockText(it)}</span></small></div>
                           <div className="pb-price"><span className="pb-total" dir="ltr">{money(times(it.total, n))}</span>{n > 1 && <small dir="ltr">{n} × {money(it.total)}</small>}</div>
                         </div>
-                        <div className="pb-chips">
-                          <span><small>{L("المصنعية", "Workmanship")}</small><b dir="ltr">{money(times(it.workmanship, n))}</b></span>
-                          <span><small>{L("الكاش باك", "Cashback")}</small><b dir="ltr">{money(times(it.cashback, n))}</b></span>
-                        </div>
-                        <div className="pb-foot">
-                          <span className="pb-pill">{stockText(it)}</span>
+                        <div className="pb-meta">
+                          <span className="pb-fig"><small>{L("المصنعية", "Workmanship")}</small><b dir="ltr">{money(times(it.workmanship, n))}</b></span>
+                          <span className="pb-fig"><small>{L("الكاش باك", "Cashback")}</small><b dir="ltr">{money(times(it.cashback, n))}</b></span>
                           <div className="pb-step" role="group" aria-label={L("الكمية", "Quantity")}>
                             <Button size="sm" aria-label={L("تقليل الكمية", "Decrease quantity")} disabled={n <= 1} onClick={() => bump(it.id, -1)}>−</Button>
                             <output aria-live="polite" dir="ltr">{n}</output>

@@ -117,5 +117,41 @@ describe("a brand card's search and weight range", () => {
     expect(isFiltering(noFilter)).toBe(false);
     expect(isFiltering({ ...noFilter, from: "1" })).toBe(true);
     expect(isFiltering({ ...noFilter, q: "  " })).toBe(false);
+    expect(isFiltering({ ...noFilter, stock: "in" })).toBe(true);
+    expect(isFiltering({ ...noFilter, stock: "out" })).toBe(true);
+  });
+});
+
+// The stock switch of a brand card (owner, 2026-11-25): all, only the green cards (sellable now), only the red ones.
+describe("a brand card's stock switch", () => {
+  const s = (name: string, sellable: boolean, mg = 1_000) => ({ itemName: name, nickname: null, weightMg: mg, sellable });
+  const items = [s("Green 1", true, 1_000), s("Red 1", false, 1_000), s("Green 2", true, 5_000), s("Red 2", false, 5_000)];
+  const names = (f: Partial<typeof noFilter>) => filterItems(items, { ...noFilter, ...f }).map((i) => i.itemName);
+
+  it("starts on all: nothing is hidden", () => {
+    expect(noFilter.stock).toBe("all");
+    expect(names({})).toEqual(["Green 1", "Red 1", "Green 2", "Red 2"]);
+  });
+  it("in shows only the items that can be sold now, out only the ones that cannot", () => {
+    expect(names({ stock: "in" })).toEqual(["Green 1", "Green 2"]);
+    expect(names({ stock: "out" })).toEqual(["Red 1", "Red 2"]);
+  });
+  it("combines with the name and the weight range", () => {
+    expect(names({ stock: "in", q: "2" })).toEqual(["Green 2"]);
+    expect(names({ stock: "out", from: "2" })).toEqual(["Red 2"]);
+    expect(names({ stock: "in", from: "1", to: "1" })).toEqual(["Green 1"]);
+    expect(names({ stock: "out", q: "green" })).toEqual([]);
+  });
+  it("an invalid weight range still shows nothing, whatever the switch", () => {
+    expect(names({ stock: "in", from: "9", to: "1" })).toEqual([]);
+  });
+  it("an item with no stock fact counts as not sellable", () => {
+    const bare = [{ itemName: "Bare", nickname: null, weightMg: 1 }];
+    expect(filterItems(bare, { ...noFilter, stock: "out" }).length).toBe(1);
+    expect(filterItems(bare, { ...noFilter, stock: "in" }).length).toBe(0);
+  });
+  it("the reset (noFilter) brings every item back", () => {
+    expect(isFiltering(noFilter)).toBe(false);
+    expect(filterItems(items, noFilter).length).toBe(items.length);
   });
 });

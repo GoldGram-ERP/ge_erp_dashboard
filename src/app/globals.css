@@ -1237,46 +1237,86 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .imp-errors ul{margin:8px 0 0;padding-inline-start:20px;display:grid;gap:4px}
 .imp+.formbar{margin-top:6px}
 
-/* The Price board (owner, 2026-11-22): prices strip, brand cards side by side, and the comparison table. Direction-neutral (logical properties); sizes in rem so the px ratchet is untouched. */
+/* The Price board (owner, 2026-11-22; compact 2026-11-25): a slim prices strip, brand columns with compact two-row item cards, the selected list and the comparison. Logical properties; rem only. */
 .pb-branch{min-width:14rem}
 .pb-h{font-size:var(--fs-base);margin:1.4rem 0 .6rem}
-.pb-prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.9rem}
-.pb-prices .bubble{width:auto;min-width:0}
-.pb-sides{display:flex;gap:1.25rem}
-.pb-sides>div+div{border-inline-start:thin solid var(--line-soft);padding-inline-start:1.25rem}
-.pb-sides small{display:block;color:var(--mute)}
-.pb-sides b{font-size:1.75rem;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums}
+.pb-h .pb-count{margin-inline-start:.5rem}
+.pb-h .pb-clear{margin-inline-start:.75rem;font-size:.8rem;font-weight:500}
+/* The prices strip: one surface, one segment per metal (the metal, the sell price strong, the buy price muted). A hairline shows between segments, side by side or stacked. */
+.pb-strip{display:flex;flex-wrap:wrap;gap:.0625rem;background:var(--line-soft);border:thin solid var(--line-soft);border-radius:.9rem;overflow:hidden}
+.pb-seg{flex:1 1 15rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.55rem .9rem;background:var(--surface)}
+.pb-seg .pill{font-size:.9rem;font-weight:600}
+.pb-sides{display:flex;gap:1rem}
+.pb-sides>div{display:flex;flex-direction:column}
+.pb-sides small{font-size:.75rem;font-weight:400;line-height:1.2;color:var(--mute)}
+.pb-sides b{font-size:1.15rem;line-height:1.25;font-weight:700;font-variant-numeric:tabular-nums}
+.pb-sides .pb-buy b{font-size:1rem;font-weight:500;color:var(--mute)}
+/* The brand columns. Each has a head (name, count, stock switch), a search and weight range, and a scrolling list of compact cards. */
 .pb-brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18.75rem),1fr));gap:.9rem;align-items:start}
 .pb-brand{margin-bottom:0}
-.pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}
-.pb-brand li{border-radius:.75rem;padding:.6rem .75rem;background:var(--surface);border:thin solid var(--line-soft)}
+.pb-brand-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem .6rem;margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:.125rem solid var(--gold-tint)}
+.pb-brand-head h3{display:flex;align-items:center;gap:.5rem;margin:0;font-size:1.05rem;font-weight:600}
+.pb-count{font-size:.8em;font-weight:600;color:var(--gold);background:var(--gold-tint);border-radius:999rem;padding:0 .55rem}
+.pb-stock.seg{padding:.125rem;gap:.0625rem}
+.pb-stock.seg .thumb{top:.125rem;bottom:.125rem}
+.pb-stock.seg button{height:1.6rem;padding:0 .6rem;font-size:.8rem}
+.pb-stock.seg button[aria-pressed=true][data-stock=in]{color:var(--good)}
+.pb-stock.seg button[aria-pressed=true][data-stock=out]{color:var(--warn)}
+.pb-filter{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.6rem}
+.pb-filter .pb-q{grid-column:1/-1}
+.pb-filter .pb-hint{grid-column:1/-1;margin:0;color:var(--warn);font-size:.85rem}
+.pb-filter .pb-reset{grid-column:1/-1;justify-self:start}
+.pb-scroll{max-height:min(44rem,70vh);overflow-y:auto;padding-inline-end:.35rem}
+/* The item card, two rows: name / karat, weight and stock / price; then workmanship, cashback and the count. The edge is green when it can be sold now, red when not. */
+.pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.pb-brand li{position:relative;cursor:pointer;border-radius:.65rem;padding:.5rem .65rem;background:var(--surface);border:thin solid var(--line-soft);transition:box-shadow .15s ease}
 .pb-brand li[data-tone=good]{box-shadow:inset .25rem 0 0 var(--good);background:color-mix(in srgb,var(--good) 8%,var(--surface))}
 .pb-brand li[data-tone=bad]{box-shadow:inset .25rem 0 0 var(--warn);background:color-mix(in srgb,var(--warn) 7%,var(--surface))}
 [dir=rtl] .pb-brand li[data-tone=good]{box-shadow:inset -.25rem 0 0 var(--good)}
 [dir=rtl] .pb-brand li[data-tone=bad]{box-shadow:inset -.25rem 0 0 var(--warn)}
-.pb-brand h3{display:flex;align-items:center;gap:.5rem;padding-bottom:.5rem;border-bottom:.125rem solid var(--gold-tint)}
-.pb-count{font-size:.8em;font-weight:600;color:var(--gold);background:var(--gold-tint);border-radius:999rem;padding:0 .55rem}
-.pb-top{display:flex;justify-content:space-between;gap:.75rem;align-items:flex-start}
-.pb-name{display:flex;flex-direction:column;gap:.1rem;min-width:0}
-.pb-name small,.pb-price small{color:var(--mute);font-size:.85em}
-.pb-price{display:flex;flex-direction:column;align-items:flex-end;text-align:end}
-.pb-total{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pb-chips{display:flex;gap:.5rem;margin-top:.55rem}
-.pb-chips span{flex:1;display:flex;flex-direction:column;background:var(--gold-wash);border-radius:.6rem;padding:.3rem .6rem}
-.pb-chips small{color:var(--mute);font-size:.8em}
-.pb-chips b{font-weight:600;font-variant-numeric:tabular-nums}
-.pb-foot{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-top:.55rem}
-.pb-pill{font-size:.85em;font-weight:600;border-radius:999rem;padding:.1rem .65rem;background:var(--gold-wash);color:var(--mute)}
-.pb-brand li[data-tone=good] .pb-pill{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
-.pb-brand li[data-tone=bad] .pb-pill{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
-.pb-step{display:inline-flex;align-items:center;gap:.35rem}
-.pb-step .btn{min-width:2rem;padding:0;justify-content:center;font-size:1.1rem;line-height:1;border-radius:999rem}
-.pb-step output{min-width:1.6rem;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
-.pb-brand li{transition:box-shadow .15s ease}
 .pb-brand li:hover{box-shadow:0 .25rem .75rem color-mix(in srgb,var(--ink) 8%,transparent)}
+.pb-brand li[data-selected]{outline:.1875rem solid var(--gold);outline-offset:-.1875rem;background:color-mix(in srgb,var(--gold) 9%,var(--surface))}
+.pb-top{display:flex;align-items:flex-start;gap:.6rem}
+.pb-brand li .pb-top>.chk{margin-block-start:.1rem}
+.pb-name{display:flex;flex-direction:column;gap:.05rem;flex:1;min-width:0}
+.pb-name b{display:block;font-size:.9rem;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb-name small{display:flex;align-items:center;gap:.6rem;font-size:.75rem;font-weight:400;color:var(--mute);white-space:nowrap}
+.pb-dot{display:inline-flex;align-items:center;gap:.3rem;font-weight:600;color:var(--mute)}
+.pb-dot::before{content:"";width:.45rem;height:.45rem;border-radius:50%;background:var(--mute)}
+.pb-dot[data-tone=good]{color:var(--good)}
+.pb-dot[data-tone=good]::before{background:var(--good)}
+.pb-dot[data-tone=bad]{color:var(--warn)}
+.pb-dot[data-tone=bad]::before{background:var(--warn)}
+.pb-price{display:flex;flex-direction:column;align-items:flex-end;flex:none;text-align:end}
+.pb-price small{font-size:.7rem;font-weight:400;color:var(--mute)}
+.pb-total{font-size:1.05rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pb-meta{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem .9rem;margin-top:.35rem}
+.pb-fig{display:inline-flex;align-items:baseline;gap:.3rem;font-size:.75rem}
+.pb-fig small{font-weight:400;color:var(--mute)}
+.pb-fig b{font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums}
+.pb-meta .pb-step{margin-inline-start:auto}
+.pb-step{display:inline-flex;align-items:center;gap:.25rem}
+.pb-step .btn{min-width:1.6rem;height:1.6rem;min-height:0;padding:0;justify-content:center;font-size:.95rem;line-height:1;border-radius:999rem}
+.pb-step output{min-width:1.3rem;text-align:center;font-size:.85rem;font-weight:600;font-variant-numeric:tabular-nums}
+/* The selected list and the totals under it. */
+.pb-chips{display:flex;gap:.5rem;margin-top:.55rem}
+.pb-chips span{flex:1;display:flex;flex-direction:column;padding:.4rem .65rem;background:var(--gold-wash);border-radius:.6rem}
+.pb-chips small{font-size:.8rem;font-weight:400;color:var(--mute)}
+.pb-chips b{font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums}
+.pb-pill{font-size:.8rem;font-weight:600;border-radius:999rem;padding:.15rem .7rem;background:var(--gold-wash);color:var(--mute)}
+.pb-picked small.pb-sub{display:block;font-size:.85em;color:var(--mute)}
+.pb-picked .pb-pill{display:inline-block;margin-top:.35rem}
+.pb-picked .pb-pill[data-tone=good]{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.pb-picked .pb-pill[data-tone=bad]{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
+.pb-picked tfoot th,.pb-picked tfoot td{font-weight:700;background:var(--gold-wash)}
+.pb-summary{margin-top:.75rem}
+.pb-summary span:last-child{background:var(--gold-tint)}
+.pb-summary span:last-child b{font-size:1.15rem}
+/* The comparison of two items. */
 .pb-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17.5rem),1fr));gap:.9rem;margin-bottom:.75rem}
+.pb-picked td,.pb-picked th,.pb-table td,.pb-table th{height:auto;padding-block:.8rem}
 .pb-table th[scope=row]{font-weight:600;color:var(--ink-2);white-space:nowrap}
-.pb-table td small{display:block;color:var(--mute);font-size:.85em}
+.pb-table td small{display:block;font-size:.85em;color:var(--mute)}
 .pb-table td[data-win]{background:color-mix(in srgb,var(--good) 12%,transparent);font-weight:700;color:var(--good)}
 
 /* The custom print dialog of a sales invoice (owner, 2026-11-23). */
@@ -1290,42 +1330,3 @@ dialog.wide{width:min(56rem,94vw);max-width:none}
 .cp-gift{display:flex;flex-direction:column;gap:.6rem}
 .cp-actions{display:flex;gap:.5rem;justify-content:flex-end}
 
-/* Selectable cards and the selected list of the Price board (owner, 2026-11-23). */
-.pb-brand li{cursor:pointer;position:relative}
-.pb-brand li[data-selected]{outline:.1875rem solid var(--gold);outline-offset:-.1875rem;background:color-mix(in srgb,var(--gold) 9%,var(--surface))}
-.pb-brand li .pb-top>.chk{margin-block-start:.1rem}
-.pb-h .pb-count{margin-inline-start:.5rem}
-.pb-h .pb-clear{margin-inline-start:.75rem;font-size:.8rem;font-weight:500}
-.pb-picked small.pb-sub{display:block;color:var(--mute);font-size:.85em}
-.pb-picked .pb-pill{display:inline-block;margin-top:.25rem}
-.pb-picked .pb-pill[data-tone=good]{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
-.pb-picked .pb-pill[data-tone=bad]{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
-.pb-picked tfoot th,.pb-picked tfoot td{font-weight:700;background:var(--gold-wash)}
-.pb-summary{margin-top:.75rem}
-.pb-summary span:last-child{background:var(--gold-tint)}
-.pb-summary span:last-child b{font-size:1.15rem}
-/* The Price board typography (owner, 2026-11-24): smaller and lighter than the first draft; price first, then the name, then the labels. rem only. */
-.pb-picked td,.pb-picked th,.pb-table td,.pb-table th{height:auto;padding-block:.8rem}
-.pb-picked .pb-pill{margin-top:.35rem}
-.pb-brand h3{font-size:1.05rem;font-weight:600}
-.pb-brand li{padding:.8rem .95rem}
-.pb-name b{font-size:1rem;font-weight:600;line-height:1.35}
-.pb-name small{font-size:.85rem;font-weight:400;color:var(--mute);white-space:nowrap}
-.pb-price small{font-size:.8rem;font-weight:400;color:var(--mute)}
-.pb-total{font-size:1.2rem;font-weight:600}
-.pb-chips{gap:.5rem}
-.pb-chips span{padding:.4rem .65rem}
-.pb-chips small{font-size:.8rem;font-weight:400;color:var(--mute)}
-.pb-chips b{font-size:1rem;font-weight:600}
-.pb-pill{font-size:.8rem;font-weight:600;padding:.15rem .7rem}
-.pb-step output{font-size:1rem;font-weight:600}
-.pb-prices .pill{font-size:1rem;font-weight:600}
-.pb-prices .bubble{gap:.9rem}
-.pb-sides small{font-size:.9rem;font-weight:400;color:var(--mute)}
-.pb-sides b{font-size:1.6rem;font-weight:600}
-/* Search and weight range of a brand card, and its scrolling list (owner, 2026-11-24). rem only. */
-.pb-filter{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.6rem}
-.pb-filter .pb-q{grid-column:1/-1}
-.pb-filter .pb-hint{grid-column:1/-1;margin:0;color:var(--warn);font-size:.85rem}
-.pb-filter .pb-reset{grid-column:1/-1;justify-self:start}
-.pb-scroll{max-height:32rem;overflow-y:auto;padding-inline-end:.35rem}
