@@ -1750,7 +1750,9 @@
    "pricePerGram24": "24K gram price",
    "goldValue": "Gold value",
    "makingChargePerGram": "Making charge per gram",
-   "makingCharge": "Making charge"
+   "makingCharge": "Making charge",
+   "reservationTitle": "Reservation invoice",
+   "reservationTitleSub": "فاتورة حجز"
   },
   "reservations": {
    "title": "Reservations",
@@ -1805,7 +1807,8 @@
    "priceBySystem": "The system works it out once the item and the count are chosen.",
    "priceOfDay": "At the gold price of {date}",
    "itemIncomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
-   "linePriceFailed": "The price could not be worked out. Try again."
+   "linePriceFailed": "The price could not be worked out. Try again.",
+   "printReservation": "Print reservation invoice"
   },
   "returns": {
    "new": "New return",
