@@ -60,10 +60,13 @@ export function totalsOf(rows: readonly SelectedRow[]): { workmanship: number; c
   };
 }
 
-/** What a brand card is narrowed by (owner, 2026-11-24): a name, and a weight from / to in grams as typed. */
-export type BrandFilter = { q: string; from: string; to: string };
-export const noFilter: BrandFilter = { q: "", from: "", to: "" };
-export const isFiltering = (f: BrandFilter): boolean => f.q.trim() !== "" || f.from.trim() !== "" || f.to.trim() !== "";
+/** Which items of a brand card show by stock (owner, 2026-11-25): all of them, only the ones that can be sold now (the green cards), or only the ones that cannot (the red ones). */
+export type StockFilter = "all" | "in" | "out";
+
+/** What a brand card is narrowed by (owner, 2026-11-24): a name, a weight from / to in grams as typed, and (2026-11-25) the stock. */
+export type BrandFilter = { q: string; from: string; to: string; stock: StockFilter };
+export const noFilter: BrandFilter = { q: "", from: "", to: "", stock: "all" };
+export const isFiltering = (f: BrandFilter): boolean => f.q.trim() !== "" || f.from.trim() !== "" || f.to.trim() !== "" || f.stock !== "all";
 
 /** The weight range in whole milligrams. A bound that is empty or not a weight (up to 3 decimals) is ignored; `invalid` when both are given and from is more than to. */
 export function weightBounds(f: Pick<BrandFilter, "from" | "to">): { from?: number; to?: number; invalid: boolean } {
@@ -74,10 +77,11 @@ export function weightBounds(f: Pick<BrandFilter, "from" | "to">): { from?: numb
 
 const plain = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
-/** The items of a card that match its name box (the item's name or nickname, any letter case) and its weight range (both ends included, fractions counted in milligrams). */
-export function filterItems<T extends { itemName: string; nickname: string | null; weightMg: number }>(items: readonly T[], f: BrandFilter): T[] {
+/** The items of a card that match its name box (the item's name or nickname, any letter case), its weight range (both ends included, fractions counted in milligrams) and its stock switch (in: sellable now; out: not). */
+export function filterItems<T extends { itemName: string; nickname: string | null; weightMg: number; sellable?: boolean }>(items: readonly T[], f: BrandFilter): T[] {
   const q = plain(f.q);
   const { from, to, invalid } = weightBounds(f);
   if (invalid) return [];
-  return items.filter((i) => (q === "" || plain(i.itemName).includes(q) || plain(i.nickname ?? "").includes(q)) && (from === undefined || i.weightMg >= from) && (to === undefined || i.weightMg <= to));
+  const stockOk = (i: T) => f.stock === "all" || (f.stock === "in") === (i.sellable === true);
+  return items.filter((i) => (q === "" || plain(i.itemName).includes(q) || plain(i.nickname ?? "").includes(q)) && (from === undefined || i.weightMg >= from) && (to === undefined || i.weightMg <= to) && stockOk(i));
 }
