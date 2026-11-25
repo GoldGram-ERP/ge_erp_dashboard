@@ -16,7 +16,11 @@ export function notificationText(L: L, n: Pick<NotificationRow, "kind" | "values
   const num = code6(v.number);
   if (n.kind === "price-request.created") {
     const who = String(v.requesterName ?? ""), branch = String(v.branchName ?? "");
-    return L(`طلب بيع جديد رقم ${num} من ${who}${branch ? ` (${branch})` : ""}`, `New sales request ${num} from ${who}${branch ? ` (${branch})` : ""}`);
+    // The type names the request (sale / reservation / handover / delivery); an old one, or one without it, reads as a sale.
+    const kind = String(v.kind ?? "sale");
+    const ar = kind === "reservation" ? "طلب حجز" : kind === "handover" ? "طلب تسليم" : kind === "delivery" ? "طلب توصيل" : "طلب بيع";
+    const en = kind === "reservation" ? "reservation" : kind === "handover" ? "handover" : kind === "delivery" ? "delivery" : "sales";
+    return L(`${ar} جديد رقم ${num} من ${who}${branch ? ` (${branch})` : ""}`, `New ${en} request ${num} from ${who}${branch ? ` (${branch})` : ""}`);
   }
   if (n.kind === "price-request.decided") {
     const by = String(v.deciderName ?? "");

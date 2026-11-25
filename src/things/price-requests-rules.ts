@@ -12,6 +12,13 @@ type Person = { userType?: string; businessRole?: string | null; screens?: strin
 export const isRequestDecider = (me: Person): boolean => me?.userType === "admin" || me?.userType === "super_admin" || (me?.userType === "user" && me.businessRole === "accountant");
 
 
+/** What is asked (backend REQUEST_KINDS): sale, reservation, handover, delivery. Required on a new request; the old ones read as a sale. */
+export const REQUEST_KINDS = ["sale", "reservation", "handover", "delivery"] as const;
+export type RequestKind = (typeof REQUEST_KINDS)[number];
+export const requestKindText = (L: (ar: string, en: string) => string, kind: string): string =>
+  kind === "reservation" ? L("حجز", "Reservation") : kind === "handover" ? L("تسليم", "Handover") : kind === "delivery" ? L("توصيل", "Delivery") : L("بيع", "Sale");
+export const isRequestKind = (v: string): v is RequestKind => (REQUEST_KINDS as readonly string[]).includes(v);
+
 export type RequestStatus = "pending" | "accepted" | "rejected";
 export const requestStatusText = (L: (ar: string, en: string) => string, status: string): string =>
   status === "accepted" ? L("مقبول", "Accepted") : status === "rejected" ? L("مرفوض", "Rejected") : L("قيد الانتظار", "Pending");
@@ -35,9 +42,10 @@ const quantityOf = (typed: string): number | undefined => {
   return n >= 1 && n <= REQUEST_QUANTITY_MAX ? n : undefined;
 };
 
-/** The send form -> the errors by field (`line<N>Item`, `line<N>Quantity`, `lines`), or the payload. Every line needs an item; an item once; counts 1 to 100. */
-export function readRequestForm(L: (ar: string, en: string) => string, lines: readonly RequestLineForm[]): { errors: Record<string, string>; payload?: { lines: { itemId: string; quantity: number }[] } } {
+/** The send form -> the errors by field (`kind`, `line<N>Item`, `line<N>Quantity`, `lines`), or the payload. The type is required. Every line needs an item; an item once; counts 1 to 100. */
+export function readRequestForm(L: (ar: string, en: string) => string, kind: string, lines: readonly RequestLineForm[]): { errors: Record<string, string>; payload?: { kind: RequestKind; lines: { itemId: string; quantity: number }[] } } {
   const errors: Record<string, string> = {};
+  if (!isRequestKind(kind)) errors.kind = L("اختر نوع الطلب.", "Pick the request type.");
   if (lines.length === 0 || lines.length > REQUEST_LINES_MAX) errors.lines = L("أضف صنفًا واحدًا على الأقل.", "Add at least one item.");
   const seen = new Set<string>();
   lines.forEach((line, i) => {
@@ -47,7 +55,7 @@ export function readRequestForm(L: (ar: string, en: string) => string, lines: re
     if (quantityOf(line.quantity) === undefined) errors[`line${i}Quantity`] = L(`العدد من 1 إلى ${REQUEST_QUANTITY_MAX}.`, `The count is 1 to ${REQUEST_QUANTITY_MAX}.`);
   });
   if (Object.keys(errors).length > 0) return { errors };
-  return { errors, payload: { lines: lines.map((l) => ({ itemId: l.itemId, quantity: quantityOf(l.quantity) as number })) } };
+  return { errors, payload: { kind: kind as RequestKind, lines: lines.map((l) => ({ itemId: l.itemId, quantity: quantityOf(l.quantity) as number })) } };
 }
 
 /** The items of a request in one line: "name × 2، name × 1". */
