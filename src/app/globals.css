@@ -1347,6 +1347,8 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .co-by{margin-inline-start:.4rem;color:var(--mute)}
 .co-line{align-items:end}
 .co-rm{align-self:end}
+/* The add-an-item button sits clear of the last line above it and of the next field below it. */
+.co-add{margin-block:.85rem 1.1rem}
 
 /* The custom print dialog of a sales invoice (owner, 2026-11-23). */
 dialog.wide{width:min(56rem,94vw);max-width:none}

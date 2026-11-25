@@ -127,7 +127,7 @@ export default function CustomerOrderForm({ close, reload, tr, row }: CustomForm
           ))}
           {err("lines")}
         </div>
-        <Button size="sm" data-addline aria-disabled={lines.length >= ORDER_LINES_MAX} onClick={() => { if (lines.length < ORDER_LINES_MAX) { touch(); setLines((ls) => [...ls, blankOrderLine()]); } }}>{L("إضافة صنف", "Add an item")}</Button>
+        <Button size="sm" className="co-add" data-addline aria-disabled={lines.length >= ORDER_LINES_MAX} onClick={() => { if (lines.length < ORDER_LINES_MAX) { touch(); setLines((ls) => [...ls, blankOrderLine()]); } }}>{L("إضافة صنف", "Add an item")}</Button>
       </div>
 
       {!edit && (
