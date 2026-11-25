@@ -1,6 +1,7 @@
 "use client";
 // الحجوزات: sales/reservations (history, reserved pieces, cancelled reservations). Ported from docs/nav-preview/app/things/sales-reservations.js (+ the form).
-// Parity: a reservation has exactly two actions, Create sales invoice and Delete (Delete = cancel; no refund screen, no stock moves).
+// Parity: a reservation has two actions of its own, Create sales invoice and Delete (Delete = cancel; no refund screen, no stock moves), and it prints a
+// reservation invoice (backend #225).
 // The list takes only search, fromDate, toDate, deleted, page (20 a page); the reports take their filters, sort, order, page, pageSize.
 import { api } from "@/lib/api";
 import { DataTable, SortedTable, Td, Tr as TRow } from "@/components/ui";
@@ -14,6 +15,7 @@ import { Kv, Ltr, Section, ThingPage, cellNode } from "@/components/engine";
 import { ReservationForm } from "./sales-reservation-form";
 import { ReservationPiecesForm } from "@/components/fields/ReservationPieces";
 import { code6 } from "./sales-form-parts";
+import { openPrint } from "./sales-invoices-print";
 import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
 
 export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
@@ -215,6 +217,11 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         // Only once every line has all its pieces (issue #36): the invoice uses them, with no piece entry.
         when: (r) => !r.deletedAt && !r.salesInvoiceId && Boolean(r.piecesComplete) && canOpen(useSession.getState().me, ["gold-sales/sales-invoices"]),
         run: (r, h) => { h.close(); window.location.assign(`/${tr.locale}/sales/invoices?new=create&reservation=${r.id}`); },
+      }, {
+        // The reservation invoice (فاتورة حجز, backend #225): on every live reservation, before or after its pieces and its invoice.
+        id: "printReservation", icon: "print", label: m("printReservation"),
+        when: (r) => !r.deletedAt,
+        run: (r) => { void openPrint(r.id, "a4", tr, {}, "reservation"); },
       }],
       // Delete = cancel. The backend refuses it (409 reservationInvoiced) once an invoice took it, so the button is hidden then.
       remove: {

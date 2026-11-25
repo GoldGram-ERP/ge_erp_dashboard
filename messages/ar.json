@@ -1743,7 +1743,9 @@
    "pricePerGram24": "سعر جرام عيار 24",
    "goldValue": "قيمة الذهب",
    "makingChargePerGram": "المصنعية للجرام",
-   "makingCharge": "المصنعية"
+   "makingCharge": "المصنعية",
+   "reservationTitle": "فاتورة حجز",
+   "reservationTitleSub": "RESERVATION"
   },
   "reservations": {
    "title": "حجز قطعة ذهب",
@@ -1798,7 +1800,8 @@
    "priceBySystem": "يحسبه النظام بعد اختيار الصنف والعدد.",
    "priceOfDay": "بسعر الذهب يوم {date}",
    "itemIncomplete": "هذا الصنف بلا وزن أو بلا مصنعية للجرام: أكمله في صفحة الأصناف.",
-   "linePriceFailed": "تعذّر حساب السعر. حاول مرة أخرى."
+   "linePriceFailed": "تعذّر حساب السعر. حاول مرة أخرى.",
+   "printReservation": "طباعة فاتورة حجز"
   },
   "returns": {
    "new": "مرتجع جديد",

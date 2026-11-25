@@ -120,7 +120,11 @@ function a4(d: any) {
   const money1 = (a: any) => ltr(money(a));
   const th = (k: string) => `<th>${esc(p(k))}</th>`;
   // The rows (owner, 2026-11-23): identical pieces merged with a count; weight, workmanship and price are of ONE piece, the amount is count x piece price.
-  const rows = groupsOf(d).map((g: any) => `<tr><td class="it">${esc(g.itemName)}<small>${(g.pieceCodes ?? []).map((c: string) => ltr(c)).join(" · ")}</small></td><td>${ltr(g.count)}</td><td>${ltr(gramsText(g.weight))}</td><td>${esc(g.karat)}</td>${withPrice ? `<td>${ltr(amountText(g.makingCharge) ?? "")}</td><td>${ltr(amountText(g.piecePrice) ?? "")}</td><td class="pr">${ltr(amountText(g.rowTotal) ?? "")}</td><td>${ltr(amountText(g.cashbackPerGram) ?? "—")}</td>` : ""}</tr>`).join("");
+  // A reservation invoice (فاتورة حجز, backend #225): the same page with its own title and number, no piece-code line (a reservation holds
+  // items, not pieces) and its fixed footer, which the backend sends as `footer`.
+  const reservation = d.documentKind === "reservation";
+  const codes = (g: any) => (reservation || !(g.pieceCodes ?? []).length ? "" : `<small>${g.pieceCodes.map((c: string) => ltr(c)).join(" · ")}</small>`);
+  const rows = groupsOf(d).map((g: any) => `<tr><td class="it">${esc(g.itemName)}${codes(g)}</td><td>${ltr(g.count)}</td><td>${ltr(gramsText(g.weight))}</td><td>${esc(g.karat)}</td>${withPrice ? `<td>${ltr(amountText(g.makingCharge) ?? "")}</td><td>${ltr(amountText(g.piecePrice) ?? "")}</td><td class="pr">${ltr(amountText(g.rowTotal) ?? "")}</td><td>${ltr(amountText(g.cashbackPerGram) ?? "—")}</td>` : ""}</tr>`).join("");
   const year = String(d.invoiceDate).slice(0, 4);
   const customer = [
     fld(d.isGift ? p("recipient") : p("name"), d.customerName ? esc(d.customerName) : ""),
@@ -143,8 +147,8 @@ function a4(d: any) {
   const foot = saved.length ? saved : inArabic ? DEFAULT_FOOTER.ar : DEFAULT_FOOTER.en;
   const footDir = saved.length ? "auto" : inArabic ? "rtl" : "ltr";
   return `<article class="pre" data-layout="${esc(d.layout)}"><div class="top"></div>
-    <div class="phead"><div class="doc"><b>${esc(p("title"))}</b><span>${esc(p("titleSub"))}</span></div>
-      <dl class="meta"><dt>${esc(p("invoiceNumber"))}</dt><dd>${ltr(`INV/${year}/${String(d.invoiceNumber).padStart(6, "0")}`)}</dd><dt>${esc(p("date"))}</dt><dd>${ltr(`${dmy(d.invoiceDate)}${d.invoiceTime ? " · " + d.invoiceTime : ""}`)}</dd></dl></div>
+    <div class="phead"><div class="doc"><b>${esc(p(reservation ? "reservationTitle" : "title"))}</b><span>${esc(p(reservation ? "reservationTitleSub" : "titleSub"))}</span></div>
+      <dl class="meta"><dt>${esc(p("invoiceNumber"))}</dt><dd>${ltr(`${reservation ? "RSV" : "INV"}/${year}/${String(d.invoiceNumber).padStart(6, "0")}`)}</dd><dt>${esc(p("date"))}</dt><dd>${ltr(`${dmy(d.invoiceDate)}${d.invoiceTime ? " · " + d.invoiceTime : ""}`)}</dd></dl></div>
     <div class="cust">${customer}</div>
     <table><thead><tr>${th("item")}${th("count")}${th("weightColumn")}${th("karat")}${withPrice ? th("pieceMaking") + th("piecePrice") + th("rowTotal") + th("cashbackPerGram") : ""}</tr></thead><tbody>${rows}</tbody></table>
     <div class="tot">${box}${sums}</div>
@@ -163,7 +167,7 @@ function narrow(d: any) {
 // `lines`: print only these pieces (their line numbers); left out, the whole invoice (owner, 2026-11-23).
 export type PrintChoices = { recipientName?: string; recipientPhone?: string; showPrices?: boolean; lines?: number[] };
 // An invoice is printed in Arabic ONLY, whatever the language of the page (owner, 2026-11-10): the translator is forced to Arabic here.
-export async function openPrint(id: string, layout: string, pageTr: Tr, choices: PrintChoices = {}) {
+export async function openPrint(id: string, layout: string, pageTr: Tr, choices: PrintChoices = {}, source: "invoice" | "reservation" = "invoice") {
   const tr = arabicTr(pageTr);
   const { t, L, isAr: ar } = tr;
   p = (k, v) => t("gold-sales", `prints.${k}`, v);
@@ -174,10 +178,10 @@ export async function openPrint(id: string, layout: string, pageTr: Tr, choices:
   const page = (title: string, body: string, size: string) => { w.document.open(); w.document.write(`<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${fontCss(window.location.origin)}${CSS}@page{size:${size};margin:${size === "A5" ? "0" : size === "A4" ? "10mm" : "3mm"}}</style></head><body>${body}</body></html>`); w.document.close(); };
   page(p("title"), `<p style="text-align:center;margin-top:40px">${esc(L("جارٍ التحميل…", "Loading…"))}</p>`, "A4");
   try {
-    const d = await api(`/sales-invoices/${id}/print`, { query: { layout, ...(choices.recipientName ? { recipientName: choices.recipientName } : {}), ...(choices.recipientPhone ? { recipientPhone: choices.recipientPhone } : {}), ...(choices.showPrices !== undefined ? { showPrices: String(choices.showPrices) } : {}), ...(choices.lines?.length ? { lines: choices.lines.join(",") } : {}) } });
+    const d = source === "reservation" ? await api(`/reservations/${id}/print`) : await api(`/sales-invoices/${id}/print`, { query: { layout, ...(choices.recipientName ? { recipientName: choices.recipientName } : {}), ...(choices.recipientPhone ? { recipientPhone: choices.recipientPhone } : {}), ...(choices.showPrices !== undefined ? { showPrices: String(choices.showPrices) } : {}), ...(choices.lines?.length ? { lines: choices.lines.join(",") } : {}) } });
     const isNarrow = layout === "thermal" || layout === "receipt";
     const bar = `<div class="bar"><b>${esc(t("common", "report.printPreview"))} · ${esc(p(`layouts.${layout}`))}</b><span>${esc(isNarrow ? p("sizes.thermal") : p("sizes.a4"))}</span><button onclick="print()">${esc(t("common", "print"))}</button></div>`;
-    page(`${p("title")} ${d.invoiceNumber}`, `${bar}<main>${isNarrow ? narrow(d) : a4(d)}</main>`, isNarrow ? "80mm auto" : "A5");
+    page(`${p(d.documentKind === "reservation" ? "reservationTitle" : "title")} ${d.invoiceNumber}`, `${bar}<main>${isNarrow ? narrow(d) : a4(d)}</main>`, isNarrow ? "80mm auto" : "A5");
   } catch (e: any) {
     // A refusal of the backend (not found, not paid) is the answer, said in its own words.
     page(p("title"), `<main><div class="err">${esc(e instanceof ApiFailure ? tr.errorText(e.error) : L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again."))}</div></main>`, "A4");
