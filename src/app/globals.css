@@ -926,6 +926,16 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .notif-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:22px 18px 26px;color:var(--mute)}
 .notif-empty b{color:var(--ink)}.notif-empty p{margin:0;font-size:13px;line-height:1.6}
 .notif-ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--gold-wash);color:var(--gold)}
+/* The bell's count and the notifications list (owner, 2026-11-25). rem and tokens only. */
+#notif-btn{position:relative}
+.notif-badge{position:absolute;inset-block-start:-.2rem;inset-inline-end:-.25rem;min-width:1.05rem;height:1.05rem;padding:0 .25rem;border-radius:999rem;background:var(--warn);color:var(--surface);font-size:.65rem;font-weight:700;line-height:1.05rem;text-align:center}
+.notif-bar{display:flex;justify-content:flex-end;padding:0 .75rem .25rem}
+.notif-list{list-style:none;margin:0;padding:0 .4rem .5rem;display:flex;flex-direction:column;gap:.15rem}
+.notif-item{display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;width:100%;padding:.55rem .65rem;border-radius:.6rem;text-align:start;color:var(--ink)}
+.notif-item:hover{background:var(--gold-wash)}
+.notif-list li[data-unread] .notif-item{background:color-mix(in srgb,var(--gold) 8%,var(--surface))}
+.notif-list li[data-unread] .notif-text{font-weight:600}
+.notif-item small{font-size:.75rem;color:var(--mute)}
 
 /* the engine table card is a block that scrolls: Tailwind has a .table utility (display:table) that made it as wide as its table, so on a phone the whole page scrolled sideways (worst in Arabic) */
 div.table{display:block}
@@ -1245,49 +1255,55 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .imp-errors ul{margin:8px 0 0;padding-inline-start:20px;display:grid;gap:4px}
 .imp+.formbar{margin-top:6px}
 
-/* The Price board (owner, 2026-11-22; compact 2026-11-25): a slim prices strip, brand columns with compact two-row item cards, the selected list and the comparison. Logical properties; rem only. */
+/* The Price board (owner, 2026-11-22; redesigned 2026-11-25): calm white surfaces on the page's warm background, one accent (gold), stock told by a thin
+   edge and a dot (never by tinted cards), numbers in tabular figures. rem and tokens only. */
 .pb-branch{min-width:14rem}
-.pb-h{font-size:var(--fs-base);margin:1.4rem 0 .6rem}
-.pb-h .pb-count{margin-inline-start:.5rem}
-.pb-h .pb-clear{margin-inline-start:.75rem;font-size:.8rem;font-weight:500}
-/* Today's prices: three cards (gold 21, gold 24, silver), each with its sell and buy price per gram; they stack on a narrow screen. */
-.pb-prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:.9rem}
-.pb-prices .bubble{width:auto;min-width:0;gap:.9rem}
-.pb-prices .pill{font-size:1rem;font-weight:600}
-.pb-sides{display:flex;gap:1.25rem}
-.pb-sides>div+div{border-inline-start:thin solid var(--line-soft);padding-inline-start:1.25rem}
-.pb-sides small{display:block;font-size:.9rem;font-weight:400;color:var(--mute)}
-.pb-sides b{font-size:1.6rem;line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums}
-/* The brand columns. Each has a head (name, count, stock switch), a search and weight range, and a scrolling list of compact cards. */
-.pb-brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18.75rem),1fr));gap:.9rem;align-items:start}
-.pb-brand{margin-bottom:0}
-.pb-brand-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem .6rem;margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:.125rem solid var(--gold-tint)}
-.pb-brand-head h3{display:flex;align-items:center;gap:.5rem;margin:0;font-size:1.05rem;font-weight:600}
-.pb-count{font-size:.8em;font-weight:600;color:var(--gold);background:var(--gold-tint);border-radius:999rem;padding:0 .55rem}
+.pb-h{display:flex;align-items:center;gap:.5rem;margin:1.75rem 0 .8rem;font-size:1.05rem;font-weight:700;color:var(--ink)}
+.pb-h .pb-count{margin-inline-start:.15rem}
+.pb-h .pb-clear{margin-inline-start:auto;font-size:.8rem;font-weight:500}
+/* Today's prices: three compact cards, a colored edge per metal, the sell price strong and the buy price beside it. */
+.pb-prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:.75rem;margin-top:.25rem}
+.pb-prices .bubble{display:flex;flex-direction:column;align-items:stretch;gap:.7rem;width:auto;min-width:0;max-width:none;padding:.95rem 1.15rem 1rem;text-align:start;border-radius:1rem}
+.pb-prices .pill{align-self:flex-start;padding:.15rem .75rem;font-size:.85rem;font-weight:700;line-height:1.5;background:var(--gold-wash);color:var(--gold)}
+.pb-prices .bubble[data-metal=silver] .pill{background:var(--line-soft);color:var(--ink-2)}
+.pb-sides{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.pb-sides>div{display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.pb-sides>div+div{padding-inline-start:.9rem;border-inline-start:thin solid var(--line-soft)}
+.pb-sides small{font-size:.75rem;font-weight:500;color:var(--mute)}
+.pb-sides b{font-size:1.5rem;line-height:1.2;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.pb-sides>div+div b{font-size:1.3rem;font-weight:600;color:var(--ink-2)}
+/* The brand columns: a white panel each, its head (name, count, stock switch), one row of filters, and a scrolling list. */
+/* Two brands to a row (owner, 2026-11-25): wide enough for a name, its weight and its stock on one line; one column on a narrow screen. */
+.pb-brands{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
+@media (max-width:56rem){.pb-brands{grid-template-columns:minmax(0,1fr)}}
+.pb-brand.card{margin-bottom:0;padding:.95rem .85rem .85rem}
+.pb-brand-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem .75rem;margin:0 .1rem .8rem}
+.pb-brand-head h3{display:flex;align-items:center;gap:.5rem;margin:0;font-size:1.15rem;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.pb-count{padding:.05rem .55rem;border-radius:999rem;font-size:.75rem;font-weight:700;font-variant-numeric:tabular-nums;background:var(--gold-wash);color:var(--gold)}
 .pb-stock.seg{padding:.125rem;gap:.0625rem}
 .pb-stock.seg .thumb{top:.125rem;bottom:.125rem}
-.pb-stock.seg button{height:1.6rem;padding:0 .6rem;font-size:.8rem}
+.pb-stock.seg button{height:1.65rem;padding:0 .7rem;font-size:.78rem}
 .pb-stock.seg button[aria-pressed=true][data-stock=in]{color:var(--good)}
 .pb-stock.seg button[aria-pressed=true][data-stock=out]{color:var(--warn)}
-.pb-filter{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.6rem}
-.pb-filter .pb-q{grid-column:1/-1}
+.pb-filter{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr);gap:.4rem;margin-bottom:.8rem}
+.pb-filter .field{margin:0}
+.pb-filter .field input:not([type=checkbox]):not([type=radio]){height:2.25rem;padding:0 .7rem;font-size:.85rem;border-radius:.65rem}
 .pb-filter .pb-hint{grid-column:1/-1;margin:0;color:var(--warn);font-size:.85rem}
 .pb-filter .pb-reset{grid-column:1/-1;justify-self:start}
-.pb-scroll{max-height:min(44rem,70vh);overflow-y:auto;padding-inline-end:.35rem}
-/* The item card, two rows: name / karat, weight and stock / price; then workmanship, cashback and the count. The edge is green when it can be sold now, red when not. */
-.pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}
-.pb-brand li{position:relative;cursor:pointer;border-radius:.75rem;padding:.65rem .8rem;background:var(--surface);border:thin solid var(--line-soft);transition:box-shadow .15s ease}
-.pb-brand li[data-tone=good]{box-shadow:inset .25rem 0 0 var(--good);background:color-mix(in srgb,var(--good) 8%,var(--surface))}
-.pb-brand li[data-tone=bad]{box-shadow:inset .25rem 0 0 var(--warn);background:color-mix(in srgb,var(--warn) 7%,var(--surface))}
-[dir=rtl] .pb-brand li[data-tone=good]{box-shadow:inset -.25rem 0 0 var(--good)}
-[dir=rtl] .pb-brand li[data-tone=bad]{box-shadow:inset -.25rem 0 0 var(--warn)}
-.pb-brand li:hover{box-shadow:0 .25rem .75rem color-mix(in srgb,var(--ink) 8%,transparent)}
-.pb-brand li[data-selected]{outline:.1875rem solid var(--gold);outline-offset:-.1875rem;background:color-mix(in srgb,var(--gold) 9%,var(--surface))}
+.pb-scroll{max-height:min(46rem,72vh);overflow-y:auto;padding-inline-end:.3rem;margin-inline-end:-.3rem;scrollbar-width:thin}
+/* The item card, two rows: name, karat, weight and stock / price; then workmanship, cashback and the count. A thin edge tells the stock; the card stays white. */
+.pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem}
+.pb-brand li{position:relative;cursor:pointer;padding:.55rem .8rem .5rem;border-radius:.85rem;background:var(--surface);box-shadow:0 0 0 thin var(--line-soft);transition:box-shadow .15s ease}
+.pb-brand li::before{content:"";position:absolute;inset-block:.6rem;inset-inline-start:0;width:.2rem;border-radius:999rem;background:var(--line-strong)}
+.pb-brand li[data-tone=good]::before{background:var(--good)}
+.pb-brand li[data-tone=bad]::before{background:color-mix(in srgb,var(--warn) 75%,var(--surface))}
+.pb-brand li:hover{box-shadow:0 0 0 thin var(--line-strong),0 .25rem .75rem color-mix(in srgb,var(--ink) 8%,transparent)}
+.pb-brand li[data-selected]{background:var(--gold-wash);box-shadow:0 0 0 .125rem var(--gold)}
 .pb-top{display:flex;align-items:flex-start;gap:.6rem}
-.pb-brand li .pb-top>.chk{margin-block-start:.1rem}
+.pb-brand li .pb-top>.chk{margin-block-start:.15rem}
 .pb-name{display:flex;flex-direction:column;gap:.05rem;flex:1;min-width:0}
-.pb-name b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font-size:.95rem;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
-.pb-name small{display:flex;align-items:center;flex-wrap:wrap;gap:.15rem .6rem;margin-top:.15rem;font-size:.8rem;font-weight:400;color:var(--mute)}
+.pb-name b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font-size:.92rem;font-weight:600;line-height:1.4;overflow-wrap:anywhere;color:var(--ink)}
+.pb-name small{display:flex;align-items:center;flex-wrap:wrap;gap:.1rem .6rem;margin-top:.05rem;font-size:.78rem;font-weight:400;color:var(--mute)}
 .pb-name small>span:first-child{white-space:nowrap;font-variant-numeric:tabular-nums}
 .pb-dot{display:inline-flex;align-items:center;gap:.3rem;font-weight:600;color:var(--mute);white-space:nowrap}
 .pb-dot::before{content:"";width:.45rem;height:.45rem;border-radius:50%;background:var(--mute)}
@@ -1297,35 +1313,37 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-dot[data-tone=bad]::before{background:var(--warn)}
 .pb-price{display:flex;flex-direction:column;align-items:flex-end;flex:none;text-align:end}
 .pb-price small{font-size:.75rem;font-weight:400;color:var(--mute)}
-.pb-total{font-size:1.15rem;font-weight:700;line-height:1.3;font-variant-numeric:tabular-nums;white-space:nowrap}
-/* Row two: workmanship and cashback (label over value) and the count, always on one line, with a hairline above it. */
-.pb-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:.5rem;margin-top:.55rem;padding-top:.5rem;border-top:thin solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.pb-total{font-size:1.15rem;font-weight:700;line-height:1.3;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+.pb-brand li[data-tone=bad] .pb-total{color:var(--ink-2)}
+.pb-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:.5rem;margin-top:.4rem;padding-top:.4rem;border-top:thin solid var(--line-soft)}
 .pb-fig{display:flex;flex-direction:column;gap:.05rem;min-width:0}
 .pb-fig small{font-size:.72rem;font-weight:400;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pb-fig b{font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums}
-.pb-step{display:inline-flex;align-items:center;gap:.3rem;justify-self:end}
-.pb-step .btn{min-width:1.85rem;height:1.85rem;min-height:0;padding:0;justify-content:center;font-size:1rem;line-height:1;border-radius:999rem}
-.pb-step output{min-width:1.4rem;text-align:center;font-size:.95rem;font-weight:600;font-variant-numeric:tabular-nums}
+.pb-fig b{font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.pb-step{display:inline-flex;align-items:center;gap:.25rem;justify-self:end;padding:.15rem;border-radius:999rem;background:var(--bg);box-shadow:inset 0 0 0 thin var(--line-soft)}
+.pb-step .btn{min-width:1.75rem;height:1.75rem;min-height:0;padding:0;justify-content:center;font-size:1rem;line-height:1;border-radius:999rem;box-shadow:none}
+.pb-step output{min-width:1.4rem;text-align:center;font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums}
 /* The selected list and the totals under it. */
-.pb-chips{display:flex;gap:.5rem;margin-top:.55rem}
-.pb-chips span{flex:1;display:flex;flex-direction:column;padding:.4rem .65rem;background:var(--gold-wash);border-radius:.6rem}
-.pb-chips small{font-size:.8rem;font-weight:400;color:var(--mute)}
-.pb-chips b{font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums}
+.pb-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr));gap:.6rem;margin-top:.6rem}
+.pb-chips span{display:flex;flex-direction:column;gap:.1rem;padding:.65rem .9rem;background:var(--surface);border-radius:.85rem;box-shadow:0 0 0 thin var(--line-soft)}
+.pb-chips small{font-size:.78rem;font-weight:500;color:var(--mute)}
+.pb-chips b{font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums}
 .pb-pill{font-size:.8rem;font-weight:600;border-radius:999rem;padding:.15rem .7rem;background:var(--gold-wash);color:var(--mute)}
 .pb-picked small.pb-sub{display:block;font-size:.85em;color:var(--mute)}
 .pb-picked .pb-pill{display:inline-block;margin-top:.35rem}
-.pb-picked .pb-pill[data-tone=good]{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
-.pb-picked .pb-pill[data-tone=bad]{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
+.pb-picked .pb-pill[data-tone=good]{background:color-mix(in srgb,var(--good) 12%,transparent);color:var(--good)}
+.pb-picked .pb-pill[data-tone=bad]{background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn)}
 .pb-picked tfoot th,.pb-picked tfoot td{font-weight:700;background:var(--gold-wash)}
 .pb-summary{margin-top:.75rem}
 .pb-summary span:last-child{background:var(--gold-tint)}
-.pb-summary span:last-child b{font-size:1.15rem}
+.pb-summary span:last-child b{font-size:1.25rem;color:var(--gold)}
 /* The comparison of two items. */
+.pb-compare.card{margin-bottom:0}
 .pb-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17.5rem),1fr));gap:.9rem;margin-bottom:.75rem}
 .pb-picked td,.pb-picked th,.pb-table td,.pb-table th{height:auto;padding-block:.8rem}
 .pb-table th[scope=row]{font-weight:600;color:var(--ink-2);white-space:nowrap}
 .pb-table td small{display:block;font-size:.85em;color:var(--mute)}
-.pb-table td[data-win]{background:color-mix(in srgb,var(--good) 12%,transparent);font-weight:700;color:var(--good)}
+.pb-table td[data-win]{background:color-mix(in srgb,var(--good) 10%,transparent);font-weight:700;color:var(--good)}
+@media (prefers-reduced-motion: reduce){.pb-brand li{transition:none}}
 /* Customer orders (owner, 2026-11-25): the items and the notes history on the record, and a line of the form. rem and tokens only. */
 .co-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem}
 .co-items li{display:flex;justify-content:space-between;gap:.75rem;padding:.4rem .65rem;background:var(--gold-wash);border-radius:.6rem}
@@ -1337,6 +1355,8 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .co-by{margin-inline-start:.4rem;color:var(--mute)}
 .co-line{align-items:end}
 .co-rm{align-self:end}
+/* The add-an-item button sits clear of the last line above it and of the next field below it. */
+.co-add{margin-block:.85rem 1.1rem}
 
 /* The custom print dialog of a sales invoice (owner, 2026-11-23). */
 dialog.wide{width:min(56rem,94vw);max-width:none}
