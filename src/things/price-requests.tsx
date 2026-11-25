@@ -10,7 +10,7 @@ import { useMe } from "@/lib/session";
 import type { Tr } from "@/lib/t";
 import { Kv, Ltr, Section, ThingPage } from "@/components/engine";
 import { Status } from "@/components/ui";
-import { REQUEST_NOTE_MAX, isRequestDecider, requestLinesSummary, requestStatusText, requestStatusTone } from "./price-requests-rules";
+import { REQUEST_KINDS, REQUEST_NOTE_MAX, isRequestDecider, requestKindText, requestLinesSummary, requestStatusText, requestStatusTone } from "./price-requests-rules";
 import { useAccess } from "./sales-access";
 
 const screenKeys = ["gold-sales/price-board"];
@@ -51,6 +51,7 @@ export const buildRequestsConfig = (tr: Tr, decider: boolean): ThingConfig => {
         { id: "rejected", label: L("مرفوضة", "Rejected"), query: { status: "rejected" } },
       ],
       filters: [
+        { name: "kind", label: L("نوع الطلب", "Request type"), type: "select", options: REQUEST_KINDS.map((k) => [k, requestKindText(L, k)]), placeholder: L("كل الأنواع", "All types") },
         { name: "fromDate", label: L("من تاريخ", "From date"), type: "date" },
         { name: "toDate", label: L("إلى تاريخ", "To date"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? L("«إلى» قبل «من».", "“To” is before “From”.") : null) },
         ...branchFilter,
@@ -59,6 +60,7 @@ export const buildRequestsConfig = (tr: Tr, decider: boolean): ThingConfig => {
       columns: [
         { key: "requestNumber", label: L("رقم الطلب", "Request no."), render: (r) => <Ltr>{code6(r.requestNumber)}</Ltr> },
         { key: "createdAt", label: L("الوقت", "Time"), type: "datetime" },
+        { key: "kind", label: L("النوع", "Type"), sortable: false, render: (r) => requestKindText(L, String(r.kind ?? "")) },
         ...branchColumn,
         { key: "requesterName", label: L("المرسل", "Sent by") },
         { key: "lines", label: L("الأصناف", "Items"), sortable: false, render: (r) => requestLinesSummary(r.lines) },
@@ -76,6 +78,7 @@ export const buildRequestsConfig = (tr: Tr, decider: boolean): ThingConfig => {
           <>
             <Section title={L("التفاصيل", "Details")}>
               <Kv k={L("رقم الطلب", "Request no.")}><Ltr>{code6(full.requestNumber)}</Ltr></Kv>
+              <Kv k={L("نوع الطلب", "Request type")}>{requestKindText(L, String(full.kind ?? ""))}</Kv>
               <Kv k={L("الفرع", "Branch")}>{full.branchName}</Kv>
               <Kv k={L("المرسل", "Sent by")}>{full.requesterName}</Kv>
               <Kv k={L("الوقت", "Time")}><Ltr>{dateTimeText(full.createdAt)}</Ltr></Kv>

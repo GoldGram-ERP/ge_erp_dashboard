@@ -12,7 +12,7 @@ import { toast } from "@/components/engine";
 import { Button, Input, Textarea } from "@/components/ui";
 import { revealFirstError } from "@/lib/submit-guard";
 import { Choice, ErrBox, allPages, code6 } from "./sales-form-parts";
-import { REQUEST_LINES_MAX, REQUEST_NOTE_MAX, blankRequestLine, readRequestForm, type RequestLineForm } from "./price-requests-rules";
+import { REQUEST_KINDS, REQUEST_LINES_MAX, REQUEST_NOTE_MAX, blankRequestLine, readRequestForm, requestKindText, type RequestLineForm } from "./price-requests-rules";
 
 export default function PriceRequestForm({ onSent }: { onSent: () => void }) {
   const tr = useT();
@@ -22,6 +22,7 @@ export default function PriceRequestForm({ onSent }: { onSent: () => void }) {
   const [items, setItems] = useState<Row[]>([]);
   const [branches, setBranches] = useState<Row[]>([]);
   const [branchId, setBranchId] = useState<string>(me?.branchId ?? "");
+  const [kind, setKind] = useState("");
   const [lines, setLines] = useState<RequestLineForm[]>([blankRequestLine()]);
   const [note, setNote] = useState("");
   const [errs, setErrs] = useState<Record<string, string>>({});
@@ -42,7 +43,7 @@ export default function PriceRequestForm({ onSent }: { onSent: () => void }) {
 
   async function submit() {
     if (saving) return;
-    const r = readRequestForm(L, lines);
+    const r = readRequestForm(L, kind, lines);
     const e = { ...r.errors };
     if (!isUser && !branchId) e.branchId = L("اختر الفرع.", "Pick the branch.");
     setErrs(e);
@@ -52,7 +53,7 @@ export default function PriceRequestForm({ onSent }: { onSent: () => void }) {
       const sent = await api<Row>("/price-requests", { method: "POST", body: { ...r.payload, ...(isUser ? {} : { branchId }), ...(note.trim() ? { note: note.trim() } : {}) }, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
       toast(L(`تم إرسال الطلب رقم ${code6(sent.requestNumber)} للمحاسب`, `Request ${code6(sent.requestNumber)} sent to the accountant`));
-      setLines([blankRequestLine()]); setNote(""); setErrs({}); setSaving(false);
+      setKind(""); setLines([blankRequestLine()]); setNote(""); setErrs({}); setSaving(false);
       onSent();
     } catch (error) {
       setSaving(false);
@@ -62,7 +63,7 @@ export default function PriceRequestForm({ onSent }: { onSent: () => void }) {
       for (const f of ((error.error.fields ?? []) as { field: string; message?: string }[])) {
         const m = /^lines\.(\d+)\.(itemId|quantity)$/.exec(f.field);
         if (m) fe[`line${m[1]}${m[2] === "itemId" ? "Item" : "Quantity"}`] = f.message === "duplicateItem" ? L("هذا الصنف مضاف بالفعل.", "This item is already added.") : (texts[f.field] ?? L("غير صالح.", "Not valid."));
-        else if (["branchId", "note", "lines"].includes(f.field)) fe[f.field] = texts[f.field] ?? L("غير صالح.", "Not valid.");
+        else if (["branchId", "kind", "note", "lines"].includes(f.field)) fe[f.field] = texts[f.field] ?? L("غير صالح.", "Not valid.");
         else gen = texts[f.field] ?? tr.errorText(error.error);
       }
       if (!Object.keys(fe).length && !gen) gen = tr.errorText(error.error);
@@ -73,8 +74,12 @@ export default function PriceRequestForm({ onSent }: { onSent: () => void }) {
   return (
     <form id="prq" noValidate aria-busy={saving} onSubmit={(ev) => { ev.preventDefault(); void submit(); }}>
       <div id="banners">{general && <div className="note warn" role="alert" data-field-error><b>{general}</b></div>}</div>
-      <div className="card"><h3>{L("طلب موافقة على بيع", "Ask for approval to sell")}</h3>
+      <div className="card"><h3>{L("طلب موافقة", "Ask for approval")}</h3>
         <div className="help">{L("اختر الأصناف والعدد اللي عايز تبيعه، والطلب هيوصل للمحاسب فورًا. هيوصلك إشعار لما يتقبل أو يترفض.", "Pick the items and counts you want to sell; the accountant is told at once. You are notified when it is accepted or rejected.")}</div>
+        <div className="formgrid">
+          <div className="field" data-k="kind" data-err={errs.kind ? "" : undefined}><label htmlFor="prq-kind">{L("نوع الطلب", "Request type")} *</label>
+            <Choice tr={tr} id="prq-kind" searchable={false} options={REQUEST_KINDS.map((k) => [k, requestKindText(L, k)])} value={kind} invalid={Boolean(errs.kind)} onChange={(v) => { touch(); setErrs((e) => ({ ...e, kind: "" })); setKind(v); }} />{err("kind")}</div>
+        </div>
         {!isUser && (
           <div className="formgrid">
             <div className="field" data-k="branchId" data-err={errs.branchId ? "" : undefined}><label htmlFor="prq-branch">{L("الفرع", "Branch")} *</label>

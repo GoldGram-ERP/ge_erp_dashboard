@@ -39,7 +39,7 @@ const build = (tr: Tr): ThingConfig => {
       endpoint: baseOf(kind),
       // The dashboard sends: search, fromDate, toDate, page, deleted=only. (The backend also takes branchId and limit; the screen does not send them.)
       search: { param: "search", placeholder: m("searchPlaceholder") },
-      chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+      chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" } }],
       filters: [from(m("fromDate")), to(m("toDate"))],
       paging: { sizeParam: null },
       transform: (rows) => rows.map((r) => ({ ...r, _kind: kind })),
