@@ -6,6 +6,7 @@
 import { Status } from "@/components/ui";
 import type { FieldConfig, LookupSpec, MakeConfig, Row, ThingConfig } from "@/lib/engine-types";
 import { today } from "@/lib/format";
+import { isPhone, PHONE_LENGTH, phoneDigits } from "@/lib/phone";
 import type { Tr } from "@/lib/t";
 import { ThingPage, Kv, Ltr, Section } from "@/components/engine";
 import { code6 } from "@/lib/code6";
@@ -25,7 +26,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
   const merchantFields = (adding: boolean): FieldConfig[] => [
     { name: "merchantCode", label: L("كود التاجر", "Merchant code"), type: "code", documentType: "merchant", hint: L("بيتحدد تلقائي", "Given by the system"), section: L("بيانات التاجر", "Merchant") },
     { name: "merchantName", label: L("اسم التاجر", "Name"), type: "text", required: true, maxLength: 100, section: L("بيانات التاجر", "Merchant") },
-    { name: "phone", label: L("التليفون", "Phone"), type: "text", maxLength: 30, section: L("بيانات التاجر", "Merchant") },
+    { name: "phone", label: L("التليفون", "Phone"), type: "text", maxLength: PHONE_LENGTH, help: tr.t("common", "fieldHelp.phone"), validate: (v) => (String(v ?? "").trim() === "" || isPhone(v) ? null : tr.t("common", "fieldErrors.phone")), section: L("بيانات التاجر", "Merchant") },
     { name: "address", label: L("العنوان", "Address"), type: "text", maxLength: 300, wide: true, section: L("بيانات التاجر", "Merchant") },
     { name: "isActive", label: L("نشط", "Active"), type: "checkbox", default: true, help: L("التاجر غير النشط مابيظهرش في فواتير الشراء والبيع الجديدة، لكن بيفضل في الكشف.", "An inactive merchant is left out of new purchases and sales, and stays in the statement."), wide: true, section: L("بيانات التاجر", "Merchant") },
     // The opening balance is set when the merchant is added. Later, the account changes by documents and adjustments.
@@ -39,7 +40,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
   ];
   const merchantPayload = (v: Row, row: Row | null) => ({
     merchantName: v.merchantName,
-    phone: v.phone ? String(v.phone).trim() : null,
+    phone: String(v.phone ?? "").trim() ? phoneDigits(v.phone) : null,
     address: v.address ? String(v.address).trim() : null,
     isActive: !!v.isActive,
     ...(row ? {} : {

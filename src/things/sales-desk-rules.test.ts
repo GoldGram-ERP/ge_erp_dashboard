@@ -6,19 +6,21 @@ const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => 
 const ok = { customerName: " Mona ", customerPhone: "01012345678", nationalId: "" };
 
 describe("customer fields", () => {
-  it("the phone takes 8 to 15 digits, and Arabic-Indic or Persian digits become Latin", () => {
-    expect(readCustomer(tr, { ...ok, customerPhone: "١٢٣٤٥٦٧٨" }).payload?.customerPhone).toBe("12345678");
+  it("the phone is 11 digits starting 010, 011, 012 or 015, and Arabic-Indic or Persian digits become Latin (backend #222)", () => {
+    for (const good of ["01012345678", "01112345678", "01212345678", "01512345678"]) expect(readCustomer(tr, { ...ok, customerPhone: good }).payload?.customerPhone, good).toBe(good);
+    expect(readCustomer(tr, { ...ok, customerPhone: "٠١١٢٣٤٥٦٧٨٩" }).payload?.customerPhone).toBe("01123456789");
     expect(readCustomer(tr, { ...ok, customerPhone: "۰۱۰۱۲۳۴۵۶۷۸" }).payload?.customerPhone).toBe("01012345678");
-    expect(readCustomer(tr, { ...ok, customerPhone: "123456789012345" }).payload?.customerPhone).toBe("123456789012345");
-    for (const bad of ["1234567", "1234567890123456", "0101 234 5678", "+201012345678", "010-1234-5678", "abc12345678"]) {
-      expect(readCustomer(tr, { ...ok, customerPhone: bad }).errors, bad).toEqual({ customerPhone: "salesInvoices.phoneInvalid" });
+    // The old 8-15 digit rule took the first three; a landline and the other prefixes are refused too.
+    for (const bad of ["12345678", "123456789012345", "0223456789", "01312345678", "01412345678", "01612345678", "0101234567", "010123456789", "11012345678",
+      "1234567", "0101 234 5678", "+201012345678", "010-1234-5678", "abc12345678"]) {
+      expect(readCustomer(tr, { ...ok, customerPhone: bad }).errors, bad).toEqual({ customerPhone: "fieldErrors.phone" });
     }
     expect(readCustomer(tr, { ...ok, customerPhone: "" }).errors).toEqual({ customerPhone: "fieldErrors.required" });
   });
   it("the national ID is optional, 14 digits, Arabic digits normalised; the name is trimmed and required", () => {
     expect(readCustomer(tr, ok)).toEqual({ errors: {}, payload: { customerName: "Mona", customerPhone: "01012345678" } });
     expect(readCustomer(tr, { ...ok, nationalId: "٢٩٠٠١٠١١٢٣٤٥٦٧" }).payload?.nationalId).toBe("29001011234567");
-    for (const bad of ["2900101123456", "290010112345678", "2900101123456a"]) expect(readCustomer(tr, { ...ok, nationalId: bad }).errors, bad).toEqual({ nationalId: "salesInvoices.nationalIdInvalid" });
+    for (const bad of ["2900101123456", "290010112345678", "2900101123456a"]) expect(readCustomer(tr, { ...ok, nationalId: bad }).errors, bad).toEqual({ nationalId: "fieldErrors.nationalId" });
     expect(readCustomer(tr, { ...ok, customerName: "  " }).errors).toEqual({ customerName: "fieldErrors.required" });
     expect(readCustomer(tr, { ...ok, customerName: "x".repeat(101) }).errors).toEqual({ customerName: "fieldErrors.tooLong" });
   });

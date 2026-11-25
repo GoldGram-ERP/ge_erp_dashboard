@@ -2,6 +2,7 @@
 // A customer order, one workspace page (forms.create / forms.edit with display "page" + custom). Backend #226.
 // details (branch, date, who records it) -> customer -> what they will buy (an item and a count, or an undefined item) -> a first note -> save.
 // With a `row` it is the EDIT of that order: the branch, the date and the number stay; the customer and the items are saved with PUT. The notes and the status have their own buttons on the record.
+import { PHONE_LENGTH } from "@/lib/phone";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
@@ -107,7 +108,7 @@ export default function CustomerOrderForm({ close, reload, tr, row }: CustomForm
 
       <div className="card" id="sec-customer"><h3>{L("العميل", "Customer")}</h3>
         <div className="formgrid">
-          <TextBox name="customerPhone" label={`${L("رقم الهاتف", "Phone")} *`} value={customerPhone} ltr maxLength={15} error={errs.customerPhone} onChange={(v) => { touch(); setCustomerPhone(v); setErrs((e) => ({ ...e, customerPhone: "" })); }} />
+          <TextBox name="customerPhone" label={`${L("رقم الهاتف", "Phone")} *`} value={customerPhone} ltr maxLength={PHONE_LENGTH} error={errs.customerPhone} onChange={(v) => { touch(); setCustomerPhone(v); setErrs((e) => ({ ...e, customerPhone: "" })); }} />
           <TextBox name="customerName" label={`${L("اسم العميل", "Customer name")} *`} value={customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCustomerName(v); setErrs((e) => ({ ...e, customerName: "" })); }} />
         </div>
       </div>
