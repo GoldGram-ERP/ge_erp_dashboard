@@ -2166,7 +2166,9 @@
     "noRead": "No price read yet",
     "refresh": "Read a new price now",
     "waEmpty": "Pick the pieces to see the message.",
-    "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft."
+    "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft.",
+    "creator": "User name",
+    "noSellers": "No seller in this branch: give a user the call center or branch sales role on the Users screen."
    },
    "title": "Sales desk",
    "intro": "Save the customer's order as a numbered draft and edit it until midnight. An Admin opens it, scans the real pieces and creates the invoice.",
