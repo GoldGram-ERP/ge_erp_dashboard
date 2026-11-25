@@ -24,6 +24,12 @@ export function notificationText(L: L, n: Pick<NotificationRow, "kind" | "values
       ? L(`تمت الموافقة على طلبك رقم ${num}${by ? ` (${by})` : ""}`, `Your request ${num} was accepted${by ? ` (${by})` : ""}`)
       : L(`تم رفض طلبك رقم ${num}${by ? ` (${by})` : ""}`, `Your request ${num} was rejected${by ? ` (${by})` : ""}`);
   }
+  if (n.kind === "price-request.decided-staff") {
+    const by = String(v.deciderName ?? ""), who = String(v.requesterName ?? "");
+    return v.status === "accepted"
+      ? L(`تمت الموافقة على الطلب رقم ${num} من ${who}${by ? ` (بواسطة ${by})` : ""}`, `Request ${num} from ${who} was accepted${by ? ` by ${by}` : ""}`)
+      : L(`تم رفض الطلب رقم ${num} من ${who}${by ? ` (بواسطة ${by})` : ""}`, `Request ${num} from ${who} was rejected${by ? ` by ${by}` : ""}`);
+  }
   return L("إشعار جديد", "New notification");
 }
 

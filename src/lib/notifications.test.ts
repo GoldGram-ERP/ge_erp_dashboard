@@ -16,6 +16,12 @@ describe("notificationText", () => {
     expect(notificationText(en, { kind: "price-request.decided", values: { number: 7, status: "rejected" } })).toBe("Your request 000007 was rejected");
     expect(notificationText(ar, { kind: "price-request.decided", values: { number: 7, status: "rejected", deciderName: "Ali" } })).toBe("تم رفض طلبك رقم 000007 (Ali)");
   });
+  it("a decision seen by the other deciders names the requester and who decided", () => {
+    const n = { kind: "price-request.decided-staff", values: { number: 7, status: "accepted", deciderName: "Ali", requesterName: "Mona" } };
+    expect(notificationText(en, n)).toBe("Request 000007 from Mona was accepted by Ali");
+    expect(notificationText(en, { ...n, values: { ...n.values, status: "rejected" } })).toBe("Request 000007 from Mona was rejected by Ali");
+    expect(notificationText(ar, n)).toBe("تمت الموافقة على الطلب رقم 000007 من Mona (بواسطة Ali)");
+  });
   it("a kind this screen does not know still says something", () => {
     expect(notificationText(en, { kind: "something.new", values: {} })).toBe("New notification");
   });
