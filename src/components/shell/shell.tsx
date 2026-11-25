@@ -18,6 +18,10 @@ import { ReportBug } from "./report-bug";
 import { SearchPalette, SidebarSearch } from "./search-palette";
 import { DASHBOARD_VERSION } from "@/version";
 import { identifyForRum } from "@/lib/rum";
+import { notificationText, useNotificationStream, useUnreadNotifications } from "@/lib/notifications";
+import { useT } from "@/lib/t";
+import { toast } from "@/components/engine";
+import { NotificationsPanel } from "./notifications-panel";
 
 /** Everyone sees the release number; the build commit after the "+" (and its -dirty mark) is for Admin and Super admin only. */
 const RELEASE_VERSION = DASHBOARD_VERSION.split("+")[0];
@@ -31,7 +35,12 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const { data, error } = useMe(initialMe);
   const me = data ?? initialMe;
   const t = useTranslations();
+  const { L } = useT();
   const pathname = usePathname();
+  // Notifications (owner, 2026-11-25, backend #227): the live stream while signed in, and the unread count on the bell. A new one also shows a short toast with Open.
+  const live = me.mustChangePassword ? undefined : me.id;
+  const unread = useUnreadNotifications(Boolean(live));
+  useNotificationStream(live, (n) => toast(notificationText(L, n), n.link ? { action: L("فتح", "Open"), run: () => router.push(n.link as string) } : {}));
   // Real user monitoring: id, login username, user code and role; never the full name, email or phone (src/lib/rum.ts).
   useEffect(() => identifyForRum(me), [me.id, me.username, me.userCode, me.userType]); // eslint-disable-line react-hooks/exhaustive-deps
   // WCAG 2.4.2: each route gets a title from its page heading ("Users - GoldGram").
@@ -47,7 +56,7 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
   const ui = useUi();
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
-  // The notification sheet (bell in the menu header). Under progress: the sheet opens and says so; nothing is sent to it yet.
+  // The notification sheet (bell in the menu header): the person's notifications (NotificationsPanel).
   const [notif, setNotif] = useState(false);
   useEffect(() => { if (!notif) return; const k = (e: KeyboardEvent) => { if (e.key === "Escape") setNotif(false); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [notif]);
   // The Admin and the Super admin get What's new from the version label; a dot says there is a version they have not looked at.
@@ -146,14 +155,14 @@ export function Shell({ initialMe, children }: { initialMe: Me; children: ReactN
           <div className="notif-scrim" onClick={() => setNotif(false)} />
           <section id="notif" className="notif" role="dialog" aria-modal="false" aria-labelledby="notif-title">
             <header><h2 id="notif-title">{t("app.notifications.title")}</h2><ChromeButton aria-label={t("app.notifications.close")} title={t("app.notifications.close")} onClick={() => setNotif(false)}><Icon name="x" size={16} /></ChromeButton></header>
-            <div className="notif-empty"><span className="notif-ico"><Icon name="bell" size={22} /></span><b>{t("app.notifications.progress")}</b><p>{t("app.notifications.empty")}</p></div>
+            <NotificationsPanel onClose={() => setNotif(false)} />
           </section>
         </>
       ) : null}
       <aside id="side"><div className="side-inner">
         <div className="side-head">
           <div className="brand" id="brand"><img className="brand-mark" src="/goldgram-mark.png" alt="" width={32} height={19} />GoldGram</div>
-          <ChromeButton id="notif-btn" aria-haspopup="dialog" aria-expanded={notif} title={t("app.notifications.title")} aria-label={t("app.notifications.title")} onClick={() => setNotif((v) => !v)}><Icon name="bell" size={18} /></ChromeButton>
+          <ChromeButton id="notif-btn" aria-haspopup="dialog" aria-expanded={notif} title={t("app.notifications.title")} aria-label={unread ? `${t("app.notifications.title")} (${unread})` : t("app.notifications.title")} onClick={() => setNotif((v) => !v)}><Icon name="bell" size={18} />{unread > 0 && <span className="notif-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}</ChromeButton>
           <ChromeButton id="fold-all" title={allOpen ? t("app.foldAll") : t("app.unfoldAll")} aria-label={allOpen ? t("app.foldAll") : t("app.unfoldAll")} onClick={() => ui.setGroups(allOpen ? [] : allIds)}><Icon name={allOpen ? "fold" : "unfold"} /></ChromeButton>
           <ChromeButton id="collapse" title={toggleLabel} aria-label={toggleLabel} onClick={toggleSidebar}><Icon name="panel" /></ChromeButton>
         </div>

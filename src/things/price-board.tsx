@@ -7,6 +7,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { Option } from "@/lib/engine-types";
 import { milligramsText, piastresText } from "@/lib/format";
@@ -15,6 +16,9 @@ import { useT } from "@/lib/t";
 import { Select } from "@/components/fields/Select";
 import { Button, Checkbox, DataTable, Input, Seg, Td, Th, Tr } from "@/components/ui";
 import { allPages } from "./sales-form-parts";
+import PriceRequestForm from "./price-request-form";
+import PriceRequestsTab from "./price-requests";
+import { boardTabs, tabFromAddress, type BoardTab } from "./price-requests-rules";
 import { LOW_STOCK_MAX, brandsOf, inBrand } from "@/lib/items";
 import { filterItems, isFiltering, noFilter, weightBounds, type BrandFilter, type StockFilter, clampCount, compareCandidates, differenceOf, entriesOf, netOf, rowOf, times, toggleId, totalsOf, winner, type Board, type BoardItem, type Entry } from "./price-board-rules";
 
@@ -84,6 +88,12 @@ export default function Page() {
       : L("متوفر", "In stock");
 
   const price = board.data?.price;
+  // The tabs (owner, 2026-11-25, backend #228): the board for everyone; Send a request and Requests for whoever may use requests (the screen, or a decider by role).
+  // A notification link opens Requests with ?tab=requests (and the request with &open=).
+  const search = useSearchParams();
+  const [wantedTab, setTab] = useState<string>(() => search.get("tab") ?? "board");
+  const pageTabs = boardTabs(me);
+  const tab: BoardTab = tabFromAddress(wantedTab, me);
   // Today's prices (owner, 2026-11-22; kept as three cards, owner 2026-11-25): the metal, then its sell and buy price per gram.
   const priceCard = (label: string, sell: number | null | undefined, buy: number | null | undefined) => (
     <section className="bubble pb-price" aria-label={label}>
@@ -99,7 +109,7 @@ export default function Page() {
     <>
       <div className="head">
         <div><h1>{title}</h1><div className="sub">{price ? L(`أسعار الجرام بتاريخ ${price.date.slice(0, 10)}`, `Per-gram prices dated ${price.date.slice(0, 10)}`) : ""}</div></div>
-        {!isUser && (
+        {!isUser && tab === "board" && (
           <div className="field pb-branch">
             <label htmlFor="pb-branch">{L("الفرع", "Branch")}</label>
             <Select id="pb-branch" name="branch" value={branchId} onChange={(v) => v && setPicked(v)} options={(branches.data ?? []).map((x) => [String(x.id), String(x.branchName)] as Option)} />
@@ -107,6 +117,14 @@ export default function Page() {
         )}
       </div>
 
+      {pageTabs.length > 1 && (
+        <Seg<BoardTab> className="page" label={L("لوحة الأسعار", "Price board")} value={tab} onChange={setTab}
+          items={([["board", L("لوحة الأسعار", "Price board")], ["send", L("إرسال طلب", "Send a request")], ["requests", L("الطلبات", "Requests")]] as [BoardTab, string][]).filter(([id]) => pageTabs.includes(id)).map(([id, label]) => ({ id, label }))} />
+      )}
+      {tab === "send" && <PriceRequestForm onSent={() => setTab("requests")} />}
+      {tab === "requests" && <PriceRequestsTab />}
+
+      {tab === "board" && <>
       {board.isError && <p className="quiet-note" role="alert">{L("تعذّر تحميل الأسعار. حاول مرة أخرى.", "Could not load the prices. Try again.")}</p>}
       {board.isPending && branchId && <div className="skeleton" aria-busy="true"><i /><i /></div>}
 
@@ -224,6 +242,7 @@ export default function Page() {
           {a && b && compareTable(a, b, L, stockText)}
         </div>
       </>)}
+      </>}
     </>
   );
 }
