@@ -93,7 +93,7 @@ export default function PriceRequestForm({ onSent }: { onSent: () => void }) {
           ))}
           {err("lines")}
         </div>
-        <Button size="sm" aria-disabled={lines.length >= REQUEST_LINES_MAX} onClick={() => { if (lines.length < REQUEST_LINES_MAX) { touch(); setLines((ls) => [...ls, blankRequestLine()]); } }}>{L("إضافة صنف", "Add an item")}</Button>
+        <Button size="sm" className="co-add" aria-disabled={lines.length >= REQUEST_LINES_MAX} onClick={() => { if (lines.length < REQUEST_LINES_MAX) { touch(); setLines((ls) => [...ls, blankRequestLine()]); } }}>{L("إضافة صنف", "Add an item")}</Button>
         <div className="field" data-k="note" data-err={errs.note ? "" : undefined}><label htmlFor="prq-note">{L("ملاحظة (اختياري)", "Note (optional)")}</label>
           <Textarea id="prq-note" value={note} maxLength={REQUEST_NOTE_MAX} onChange={(ev) => { touch(); setNote(ev.target.value); }} />{err("note")}</div>
       </div>
