@@ -203,6 +203,8 @@
     "accountant": "Accountant",
     "call_center": "Call center",
     "branch_sales": "Branch sales",
+    "call_center_admin": "Contact center admin",
+    "branch_sales_manager": "Branch sales manager",
     "pricing_specialist": "Pricing specialist"
    },
    "actionsHeading": "Allowed actions",

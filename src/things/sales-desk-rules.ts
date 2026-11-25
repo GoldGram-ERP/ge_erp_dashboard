@@ -1,6 +1,6 @@
 // The Sales desk's pure rules (issue #6): customer fields, item + count lines, planned payment against the total, the lock note.
 // The phone and national ID rules are the ones of every sales form (customerRules); the payment rules are the payment block's.
-import { hasAction } from "@/lib/actions";
+import { hasAction, isDeskWideRole } from "@/lib/actions";
 import { latinNumber } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { customerRules } from "./sales-form-parts";
@@ -108,5 +108,8 @@ export function forMath<T extends { method: string; bankAccountId: string }>(ban
 /** A plain user opening a draft that someone else made. */
 export const isForeignDraft = (me: { id?: string; userType?: string } | null | undefined, draft: { employeeId?: string } | null | undefined): boolean =>
   Boolean(draft?.employeeId && me?.id && me.userType === "user" && draft.employeeId !== me.id);
-/** An accountant (business role of a plain user) may edit another person's draft of their branch (owner, 2026-11-24); no other plain user may. Complete and Delete stay with the creator. */
-export const mayEditForeignDraft = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean => me?.userType === "user" && me.businessRole === "accountant";
+/** A plain user with a desk-wide business role (the accountant) may edit another person's draft, of any branch (owner, 2026-11-25); no other plain user may. Complete and Delete have their own rules. */
+export const mayEditForeignDraft = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean => me?.userType === "user" && isDeskWideRole(me.businessRole);
+/** Who sees the drafts of every branch, so the list shows the branch and a branch filter: an Admin, the Super admin, and a plain user with a desk-wide business role. */
+export const seesEveryBranchDrafts = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean =>
+  me?.userType === "admin" || me?.userType === "super_admin" || mayEditForeignDraft(me);

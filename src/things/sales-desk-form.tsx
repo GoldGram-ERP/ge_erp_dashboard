@@ -24,7 +24,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
 import { canOpen } from "@/nav/tree";
 import { pricePerGram } from "./item-math";
 import { code6 } from "@/lib/code6";
@@ -577,7 +577,7 @@ export function OpenByNumber({ close, tr, reload }: CustomFormProps) {
   const [num, setNum] = useState("");
   const [msg, setMsg] = useState("");
   const [found, setFound] = useState<Row | null>(null);
-  useEffect(() => { if (me && me.userType !== "user") allPages("/branches").then(setBranches).catch(() => {}); }, [me?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (seesEveryBranchDrafts(me)) allPages("/branches").then(setBranches).catch(() => {}); }, [me?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
   async function go() {
     const n = latinNumber(num.trim());
     if (!/^\d{1,7}$/.test(n)) { setMsg(d("openNotFound")); return; }

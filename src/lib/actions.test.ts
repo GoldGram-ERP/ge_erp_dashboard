@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ACTIONS, hasAction } from "./actions";
+import { ACTIONS, BUSINESS_ROLES, DESK_WIDE_ROLES, hasAction, isDeskWideRole } from "./actions";
+import ar from "../../messages/ar.json";
+import en from "../../messages/en.json";
 
 describe("hasAction", () => {
   it("a plain user holds only the granted keys", () => {
@@ -31,5 +33,29 @@ describe("delete-records (owner, 2026-11-24)", () => {
   });
   it("nobody while the person is unknown", () => {
     expect(hasAction(undefined, "delete-records")).toBe(false);
+  });
+});
+
+// The business roles (owner, 2026-11-25): the accountant and the two new managers work on the Sales desk drafts of every user and every branch.
+describe("business roles", () => {
+  it("the desk-wide roles are the accountant, the call center admin and the branch sales manager", () => {
+    expect([...DESK_WIDE_ROLES]).toEqual(["accountant", "call_center_admin", "branch_sales_manager"]);
+    for (const role of DESK_WIDE_ROLES) {
+      expect(BUSINESS_ROLES as readonly string[]).toContain(role);
+      expect(isDeskWideRole(role)).toBe(true);
+    }
+  });
+  it("no other role, and nobody without one, is desk-wide", () => {
+    for (const role of ["call_center", "branch_sales", "pricing_specialist", "Accountant", "", null, undefined]) expect(isDeskWideRole(role)).toBe(false);
+  });
+  it("every business role has an Arabic and an English label in the user form", () => {
+    for (const role of BUSINESS_ROLES) {
+      expect((ar as any).administration.users.roles[role], `ar ${role}`).toBeTruthy();
+      expect((en as any).administration.users.roles[role], `en ${role}`).toBeTruthy();
+    }
+    expect((ar as any).administration.users.roles.call_center_admin).toBe("مدير كول سنتر");
+    expect((ar as any).administration.users.roles.branch_sales_manager).toBe("مدير مبيعات فرع");
+    expect((en as any).administration.users.roles.call_center_admin).toBe("Contact center admin");
+    expect((en as any).administration.users.roles.branch_sales_manager).toBe("Branch sales manager");
   });
 });
