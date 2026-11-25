@@ -15,7 +15,7 @@ export const deskTypes = (current: string, isNew: boolean, mayReserve: boolean):
 
 /** What POST /reservations takes when the desk saves a reservation: today's date, paid in full, every bank line with its account.
  *  No channel, no typed price and no wrapping: a reservation has none (the backend prices it, silver as wrapped). */
-export function reservationBody(x: { branchId: string; date: string; employeeId: string; customer: { customerName: string; customerPhone: string; nationalId?: string };
+export function reservationBody(x: { branchId: string; date: string; employeeId: string; customer: { customerName: string; customerPhone: string; nationalId: string };
   lines: { itemId: string; quantity: number }[]; cash: string; banks: Bank[]; discount?: { kind: string; value: number }; visa: boolean }) {
   return {
     branchId: x.branchId, date: x.date, employeeId: x.employeeId, ...x.customer, lines: x.lines,
@@ -25,13 +25,13 @@ export function reservationBody(x: { branchId: string; date: string; employeeId:
 }
 
 export type DeskCustomer = { customerName: string; customerPhone: string; nationalId: string };
-/** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin, nationalId left out when empty. */
-export function readCustomer(tr: Tr, f: DeskCustomer): { errors: Record<string, string>; payload?: { customerName: string; customerPhone: string; nationalId?: string } } {
+/** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin. The three are required; the National ID is exactly 14 digits. */
+export function readCustomer(tr: Tr, f: DeskCustomer): { errors: Record<string, string>; payload?: { customerName: string; customerPhone: string; nationalId: string } } {
   const rules = customerRules(tr), name = f.customerName.trim(), phone = f.customerPhone.trim(), id = f.nationalId.trim();
   const errors: Record<string, string> = {};
   for (const [k, v] of [["customerName", name], ["customerPhone", phone], ["nationalId", id]] as const) { const e = rules[k](v); if (e) errors[k] = e; }
   if (Object.keys(errors).length) return { errors };
-  return { errors, payload: { customerName: name, customerPhone: latinNumber(phone), ...(id ? { nationalId: latinNumber(id) } : {}) } };
+  return { errors, payload: { customerName: name, customerPhone: latinNumber(phone), nationalId: latinNumber(id) } };
 }
 
 export type DeskLine = { itemId: string; count: string };

@@ -785,7 +785,7 @@
   },
   "fieldHelp": {
    "phone": "11 digits starting 010, 011, 012 or 015.",
-   "nationalId": "Optional: exactly 14 digits."
+   "nationalId": "Exactly 14 digits."
   }
  },
  "errors": {
@@ -1684,7 +1684,7 @@
    "taslemAsk": "This records that you confirmed this invoice now. It is a record only: stock and cash do not move.",
    "taslemDone": "Taslem recorded.",
    "taslemStamp": "Taslem by {name} at {at}",
-   "nationalIdHint": "Optional: exactly 14 digits."
+   "nationalIdHint": "Exactly 14 digits."
   },
   "prints": {
    "name": "Name",
@@ -2206,7 +2206,7 @@
    "customerPhone": "Customer phone",
    "phoneHelp": "11 digits starting 010, 011, 012 or 015; Arabic digits are accepted.",
    "nationalId": "National ID",
-   "nationalIdHelp": "Optional: exactly 14 digits.",
+   "nationalIdHelp": "Exactly 14 digits.",
    "pieces": "Pieces",
    "item": "Item",
    "itemHelp": "Only active, complete items are listed.",

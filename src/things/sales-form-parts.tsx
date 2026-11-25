@@ -54,12 +54,12 @@ export function Choice({ id, options, value, onChange, tr, placeholder, searchab
 export const customerFields = (tr: Tr, disabled?: boolean): FieldConfig[] => [
   { name: "customerPhone", label: `${sg(tr, "customerPhone")} *`, type: "text", maxLength: PHONE_LENGTH, disabled, help: sg(tr, "phoneHint") },
   { name: "customerName", label: `${sg(tr, "customerName")} *`, type: "text", maxLength: 100, disabled },
-  { name: "nationalId", label: sg(tr, "nationalId"), type: "text", maxLength: NATIONAL_ID_LENGTH, disabled, help: sg(tr, "nationalIdHint") },
+  { name: "nationalId", label: `${sg(tr, "nationalId")} *`, type: "text", maxLength: NATIONAL_ID_LENGTH, disabled, help: sg(tr, "nationalIdHint") },
 ];
 export const customerRules = (tr: Tr): Record<string, (v: string) => string | null> => ({
   customerPhone: (v) => (v === "" ? fe(tr, "required") : isPhone(v) ? null : fe(tr, "phone")),
   customerName: (v) => (v === "" ? fe(tr, "required") : v.length > 100 ? fe(tr, "tooLong") : null),
-  nationalId: (v) => (v === "" || isNationalId(v) ? null : fe(tr, "nationalId")),
+  nationalId: (v) => (v === "" ? fe(tr, "required") : isNationalId(v) ? null : fe(tr, "nationalId")),
 });
 /** The customer fields with their rules attached (for the engine's field machinery). */
 export const checkedCustomer = (tr: Tr, fields: FieldConfig[] = customerFields(tr)): FieldConfig[] => {

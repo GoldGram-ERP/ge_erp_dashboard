@@ -3,7 +3,7 @@ import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEve
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
-const ok = { customerName: " Mona ", customerPhone: "01012345678", nationalId: "" };
+const ok = { customerName: " Mona ", customerPhone: "01012345678", nationalId: "29001011234567" };
 
 describe("customer fields", () => {
   it("the phone is 11 digits starting 010, 011, 012 or 015, and Arabic-Indic or Persian digits become Latin (backend #222)", () => {
@@ -17,8 +17,10 @@ describe("customer fields", () => {
     }
     expect(readCustomer(tr, { ...ok, customerPhone: "" }).errors).toEqual({ customerPhone: "fieldErrors.required" });
   });
-  it("the national ID is optional, 14 digits, Arabic digits normalised; the name is trimmed and required", () => {
-    expect(readCustomer(tr, ok)).toEqual({ errors: {}, payload: { customerName: "Mona", customerPhone: "01012345678" } });
+  it("the national ID is required, 14 digits, Arabic digits normalised; the name is trimmed and required", () => {
+    expect(readCustomer(tr, ok)).toEqual({ errors: {}, payload: { customerName: "Mona", customerPhone: "01012345678", nationalId: "29001011234567" } });
+    expect(readCustomer(tr, { ...ok, nationalId: "" }).errors).toEqual({ nationalId: "fieldErrors.required" });
+    expect(readCustomer(tr, { ...ok, nationalId: "   " }).errors).toEqual({ nationalId: "fieldErrors.required" });
     expect(readCustomer(tr, { ...ok, nationalId: "٢٩٠٠١٠١١٢٣٤٥٦٧" }).payload?.nationalId).toBe("29001011234567");
     for (const bad of ["2900101123456", "290010112345678", "2900101123456a"]) expect(readCustomer(tr, { ...ok, nationalId: bad }).errors, bad).toEqual({ nationalId: "fieldErrors.nationalId" });
     expect(readCustomer(tr, { ...ok, customerName: "  " }).errors).toEqual({ customerName: "fieldErrors.required" });
@@ -170,11 +172,11 @@ describe("the type choice and the reservation the desk saves", () => {
     expect(deskTypes("delivery", false, true)).toEqual(["sale", "delivery", "handover"]);
   });
   it("sends a reservation paid by cash and bank lines, the discount and Visa only when they are there", () => {
-    const base = { branchId: "b1", date: "2026-11-18", employeeId: "u1", customer: { customerName: "Mona", customerPhone: "01012345678" }, lines: [{ itemId: "i1", quantity: 2 }] };
+    const base = { branchId: "b1", date: "2026-11-18", employeeId: "u1", customer: { customerName: "Mona", customerPhone: "01012345678", nationalId: "29001011234567" }, lines: [{ itemId: "i1", quantity: 2 }] };
     expect(reservationBody({ ...base, cash: "100", banks: [{ bankAccountId: "a1", amount: "50.5" }, { bankAccountId: "", amount: "" }], discount: { kind: "amount", value: 0 }, visa: false }))
-      .toEqual({ branchId: "b1", date: "2026-11-18", employeeId: "u1", customerName: "Mona", customerPhone: "01012345678", lines: [{ itemId: "i1", quantity: 2 }], cash: 10000, bankPayments: [{ bankAccountId: "a1", amount: 5050 }] });
+      .toEqual({ branchId: "b1", date: "2026-11-18", employeeId: "u1", customerName: "Mona", customerPhone: "01012345678", nationalId: "29001011234567", lines: [{ itemId: "i1", quantity: 2 }], cash: 10000, bankPayments: [{ bankAccountId: "a1", amount: 5050 }] });
     expect(reservationBody({ ...base, cash: "", banks: [{ bankAccountId: "a2", amount: "300" }], discount: { kind: "percent", value: 5 }, visa: true }))
-      .toEqual({ ...base, customer: undefined, customerName: "Mona", customerPhone: "01012345678", bankPayments: [{ bankAccountId: "a2", amount: 30000 }], cashDiscount: { kind: "percent", value: 5 }, payByVisa: true });
+      .toEqual({ ...base, customer: undefined, customerName: "Mona", customerPhone: "01012345678", nationalId: "29001011234567", bankPayments: [{ bankAccountId: "a2", amount: 30000 }], cashDiscount: { kind: "percent", value: 5 }, payByVisa: true });
   });
 });
 describe("wholesale is not a desk channel, and leaving Reservation drops what is not in stock", () => {
