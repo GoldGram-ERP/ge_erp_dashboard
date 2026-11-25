@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "goldgram-erp-dashboard",
+  "account_id": "7eef115c06c9f2a00efccb7b8e92ceb6",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-20",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "goldgram-erp-dashboard" }],
+  "kv_namespaces": [{ "binding": "NEXT_INC_CACHE_KV", "id": "ae320faf6f224588925ce19ad4727046" }],
+  "durable_objects": { "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  "images": { "binding": "IMAGES" },
+  // Same backend as on Vercel. src/proxy.ts forwards /api/* there; src/lib/api.ts uses it for server-side calls.
+  "vars": { "API_URL": "https://erp.2-25-9-10.sslip.io/api" },
+  "observability": { "enabled": true }
+}

@@ -2,8 +2,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 // Plain JS config on purpose: Hostinger web hosting has glibc 2.28, so Next's native compiler cannot load there;
 // the host builds with `next build --webpack`, which needs no native binary.
-// The browser calls this site's own /api; API_URL (read at build time) is where it is forwarded, so the session cookie stays on this domain.
-const apiUrl = process.env.API_URL?.replace(/\/$/, "");
+// The browser calls this site's own /api; src/proxy.ts forwards it to API_URL (read at run time), so the session cookie stays on this domain.
 
 // CSP: scripts only from this site. 'unsafe-inline' stays for script-src because Next's hydration data and the before-paint snippet are inline
 // and the print windows (about:blank, they inherit this policy) use onclick; shortcut: move to a per-request nonce in proxy.ts to drop it.
@@ -37,9 +36,6 @@ const nextConfig = {
   webpack(config, { dev }) {
     if (dev) config.watchOptions = { ...config.watchOptions, ignored: ["**/node_modules/**", "**/.git/**", "**/e2e-tests/.shots/**", "**/e2e-tests/.e2e/**", "**/.shots/**"] };
     return config;
-  },
-  async rewrites() {
-    return apiUrl ? [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }] : [];
   },
   async headers() {
     return [{
