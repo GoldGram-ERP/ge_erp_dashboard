@@ -84,10 +84,11 @@ export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" |
   return d.locked ? { state: "locked", text: t("reason", { day: d.createdDay }) } : { state: "editable", text: t("editable") };
 }
 
-/** Who completes a draft into an invoice: Admin and Super admin, or a plain user holding the action `complete-sales-draft`, on an open sell draft.
+/** Who completes a draft into an invoice (owner, 2026-11-25): Admin and Super admin, a plain user with a desk-wide business role (the accountant, the call center
+ *  admin, the branch sales manager) by the role alone, or any other plain user holding the action `complete-sales-draft`; on an open sell draft.
  *  Nobody while the person is unknown (the page is loading). A Buy draft is a quote only. The backend refuses the rest (403 notAllowed). */
-export const canCompleteDraft = (me: { userType?: string; actions?: string[] } | undefined, status: string | undefined, buy: boolean): boolean =>
-  hasAction(me, "complete-sales-draft") && status === "open" && !buy;
+export const canCompleteDraft = (me: { userType?: string; actions?: string[]; businessRole?: string | null } | undefined, status: string | undefined, buy: boolean): boolean =>
+  (hasAction(me, "complete-sales-draft") || (me?.userType === "user" && isDeskWideRole(me.businessRole))) && status === "open" && !buy;
 
 /** One channel per payment line (owner, 2026-11-09): a line is Instapay, Visa or Bank transfer, never two at once, and the backend takes each method once per
  *  sale. The methods row `i` may offer: every one not already used by another line ("cash" never counts), plus the row's own value. */
