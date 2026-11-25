@@ -244,7 +244,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
       ...(d.sent && !made ? { cashDiscount: d.sent } : {}),   // the kind and the number typed; the backend works the discount out itself (a reservation invoice has the reservation's)
       ...(fromHolds ? {} : { lines: lines.map((l) => ({ pieceCode: l.pieceCode })) }),   // from a reservation: the backend sells the held pieces
       ...(gift ? { isGift: true, giftRecipientName: recipient.name.trim(), giftRecipientPhone: latinNumber(recipient.phone.trim()) } : {}),
-      ...(made ? (edit ? {} : { reservationId: made.id }) : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), ...(String(c.nationalId ?? "").trim() ? { nationalId: latinNumber(String(c.nationalId).trim()) } : {}) }),
+      ...(made ? (edit ? {} : { reservationId: made.id }) : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), nationalId: latinNumber(String(c.nationalId ?? "").trim()) }),
     };
     try {
       const saved = await api(edit ? `/sales-invoices/${edit.id}` : "/sales-invoices", { method: edit ? "PUT" : "POST", body, saveKey: saveKey.current });

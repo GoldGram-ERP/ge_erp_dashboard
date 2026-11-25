@@ -447,9 +447,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             </section></Section>}
             {!showMore ? (stepBranch && <p className="tk-step-hint" id="sd-step-more">{L("ضيف قطعة عشان تكمّل بيانات العميل والحفظ.", "Add a piece to continue with the customer and saving.")}</p>) : <Section id="sd-customer" collapsible title={L("بيانات العميل", "Customer")} defaultOpen hasError={custErr}>
               <div className="tk-cgrid">
-                <TextBox kind="text" name="customerName" label={d("customerName")} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
-                <TextBox kind="code" name="nationalId" label={d("nationalId")} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
-                <TextBox kind="phone" name="customerPhone" label={d("customerPhone")} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={PHONE_LENGTH} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
+                <TextBox kind="text" name="customerName" label={`${d("customerName")} *`} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
+                <TextBox kind="code" name="nationalId" label={`${d("nationalId")} *`} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
+                <TextBox kind="phone" name="customerPhone" label={`${d("customerPhone")} *`} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={PHONE_LENGTH} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
               </div>
             </Section>}
           </fieldset>
