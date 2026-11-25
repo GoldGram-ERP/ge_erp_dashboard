@@ -1255,11 +1255,9 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-h .pb-clear{margin-inline-start:auto;font-size:.8rem;font-weight:500}
 /* Today's prices: three compact cards, a colored edge per metal, the sell price strong and the buy price beside it. */
 .pb-prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:.75rem;margin-top:.25rem}
-.pb-prices .bubble{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:.7rem;width:auto;min-width:0;max-width:none;padding:.95rem 1.15rem 1rem;text-align:start;background:var(--surface);border-radius:1rem;box-shadow:0 0 0 thin var(--line-soft),0 .125rem .5rem color-mix(in srgb,var(--ink) 5%,transparent);overflow:hidden}
-.pb-prices .bubble::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:.3rem;background:linear-gradient(var(--gold),color-mix(in srgb,var(--gold) 45%,var(--surface)))}
-.pb-prices .bubble[data-metal=silver]::before{background:linear-gradient(var(--off),color-mix(in srgb,var(--off) 40%,var(--surface)))}
+.pb-prices .bubble{display:flex;flex-direction:column;align-items:stretch;gap:.7rem;width:auto;min-width:0;max-width:none;padding:.95rem 1.15rem 1rem;text-align:start;border-radius:1rem}
 .pb-prices .pill{align-self:flex-start;padding:.15rem .75rem;font-size:.85rem;font-weight:700;line-height:1.5;background:var(--gold-wash);color:var(--gold)}
-.pb-prices .bubble[data-metal=silver] .pill{background:color-mix(in srgb,var(--off) 14%,var(--surface));color:var(--ink-2)}
+.pb-prices .bubble[data-metal=silver] .pill{background:var(--line-soft);color:var(--ink-2)}
 .pb-sides{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
 .pb-sides>div{display:flex;flex-direction:column;gap:.1rem;min-width:0}
 .pb-sides>div+div{padding-inline-start:.9rem;border-inline-start:thin solid var(--line-soft)}
@@ -1270,30 +1268,29 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 /* Two brands to a row (owner, 2026-11-25): wide enough for a name, its weight and its stock on one line; one column on a narrow screen. */
 .pb-brands{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
 @media (max-width:56rem){.pb-brands{grid-template-columns:minmax(0,1fr)}}
-.pb-brand.card{margin-bottom:0;padding:1rem .9rem .9rem;background:var(--surface);border-radius:1.15rem;box-shadow:0 0 0 thin var(--line-soft),0 .125rem .6rem color-mix(in srgb,var(--ink) 5%,transparent)}
+.pb-brand.card{margin-bottom:0;padding:.95rem .85rem .85rem}
 .pb-brand-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem .75rem;margin:0 .1rem .8rem}
 .pb-brand-head h3{display:flex;align-items:center;gap:.5rem;margin:0;font-size:1.15rem;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
 .pb-count{padding:.05rem .55rem;border-radius:999rem;font-size:.75rem;font-weight:700;font-variant-numeric:tabular-nums;background:var(--gold-wash);color:var(--gold)}
-.pb-stock.seg{padding:.125rem;gap:.0625rem;background:var(--bg);box-shadow:inset 0 0 0 thin var(--line-soft)}
+.pb-stock.seg{padding:.125rem;gap:.0625rem}
 .pb-stock.seg .thumb{top:.125rem;bottom:.125rem}
 .pb-stock.seg button{height:1.65rem;padding:0 .7rem;font-size:.78rem}
 .pb-stock.seg button[aria-pressed=true][data-stock=in]{color:var(--good)}
 .pb-stock.seg button[aria-pressed=true][data-stock=out]{color:var(--warn)}
 .pb-filter{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr);gap:.4rem;margin-bottom:.8rem}
 .pb-filter .field{margin:0}
-.pb-filter .field input:not([type=checkbox]):not([type=radio]){height:2.25rem;padding:0 .7rem;font-size:.85rem;border-radius:.65rem;background:var(--bg);box-shadow:inset 0 0 0 thin var(--line-soft)}
-.pb-filter .field input:focus{background:var(--surface);box-shadow:inset 0 0 0 .125rem var(--gold)}
+.pb-filter .field input:not([type=checkbox]):not([type=radio]){height:2.25rem;padding:0 .7rem;font-size:.85rem;border-radius:.65rem}
 .pb-filter .pb-hint{grid-column:1/-1;margin:0;color:var(--warn);font-size:.85rem}
 .pb-filter .pb-reset{grid-column:1/-1;justify-self:start}
 .pb-scroll{max-height:min(46rem,72vh);overflow-y:auto;padding-inline-end:.3rem;margin-inline-end:-.3rem;scrollbar-width:thin}
 /* The item card, two rows: name, karat, weight and stock / price; then workmanship, cashback and the count. A thin edge tells the stock; the card stays white. */
 .pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem}
-.pb-brand li{position:relative;cursor:pointer;padding:.55rem .8rem .5rem;border-radius:.85rem;background:var(--bg);box-shadow:inset 0 0 0 thin var(--line-soft);transition:box-shadow .15s ease,background-color .15s ease}
+.pb-brand li{position:relative;cursor:pointer;padding:.55rem .8rem .5rem;border-radius:.85rem;background:var(--surface);box-shadow:0 0 0 thin var(--line-soft);transition:box-shadow .15s ease}
 .pb-brand li::before{content:"";position:absolute;inset-block:.6rem;inset-inline-start:0;width:.2rem;border-radius:999rem;background:var(--line-strong)}
 .pb-brand li[data-tone=good]::before{background:var(--good)}
 .pb-brand li[data-tone=bad]::before{background:color-mix(in srgb,var(--warn) 75%,var(--surface))}
-.pb-brand li:hover{background:var(--surface);box-shadow:inset 0 0 0 thin var(--line-strong),0 .25rem .75rem color-mix(in srgb,var(--ink) 7%,transparent)}
-.pb-brand li[data-selected]{background:color-mix(in srgb,var(--gold) 7%,var(--surface));box-shadow:inset 0 0 0 .125rem var(--gold)}
+.pb-brand li:hover{box-shadow:0 0 0 thin var(--line-strong),0 .25rem .75rem color-mix(in srgb,var(--ink) 8%,transparent)}
+.pb-brand li[data-selected]{background:var(--gold-wash);box-shadow:0 0 0 .125rem var(--gold)}
 .pb-top{display:flex;align-items:flex-start;gap:.6rem}
 .pb-brand li .pb-top>.chk{margin-block-start:.15rem}
 .pb-name{display:flex;flex-direction:column;gap:.05rem;flex:1;min-width:0}
@@ -1314,7 +1311,7 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-fig{display:flex;flex-direction:column;gap:.05rem;min-width:0}
 .pb-fig small{font-size:.72rem;font-weight:400;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pb-fig b{font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink-2)}
-.pb-step{display:inline-flex;align-items:center;gap:.25rem;justify-self:end;padding:.15rem;border-radius:999rem;background:var(--surface);box-shadow:inset 0 0 0 thin var(--line-soft)}
+.pb-step{display:inline-flex;align-items:center;gap:.25rem;justify-self:end;padding:.15rem;border-radius:999rem;background:var(--bg);box-shadow:inset 0 0 0 thin var(--line-soft)}
 .pb-step .btn{min-width:1.75rem;height:1.75rem;min-height:0;padding:0;justify-content:center;font-size:1rem;line-height:1;border-radius:999rem;box-shadow:none}
 .pb-step output{min-width:1.4rem;text-align:center;font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums}
 /* The selected list and the totals under it. */
@@ -1329,10 +1326,10 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-picked .pb-pill[data-tone=bad]{background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn)}
 .pb-picked tfoot th,.pb-picked tfoot td{font-weight:700;background:var(--gold-wash)}
 .pb-summary{margin-top:.75rem}
-.pb-summary span:last-child{background:var(--gold-wash);box-shadow:0 0 0 thin color-mix(in srgb,var(--gold) 35%,transparent)}
+.pb-summary span:last-child{background:var(--gold-tint)}
 .pb-summary span:last-child b{font-size:1.25rem;color:var(--gold)}
 /* The comparison of two items. */
-.pb-compare.card{background:var(--surface);border-radius:1.15rem;box-shadow:0 0 0 thin var(--line-soft),0 .125rem .6rem color-mix(in srgb,var(--ink) 5%,transparent)}
+.pb-compare.card{margin-bottom:0}
 .pb-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17.5rem),1fr));gap:.9rem;margin-bottom:.75rem}
 .pb-picked td,.pb-picked th,.pb-table td,.pb-table th{height:auto;padding-block:.8rem}
 .pb-table th[scope=row]{font-weight:600;color:var(--ink-2);white-space:nowrap}
