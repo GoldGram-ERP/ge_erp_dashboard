@@ -95,8 +95,8 @@ export default function Page() {
   const pageTabs = boardTabs(me);
   const tab: BoardTab = tabFromAddress(wantedTab, me);
   // Today's prices (owner, 2026-11-22; kept as three cards, owner 2026-11-25): the metal, then its sell and buy price per gram.
-  const priceCard = (label: string, sell: number | null | undefined, buy: number | null | undefined) => (
-    <section className="bubble pb-price" aria-label={label}>
+  const priceCard = (label: string, sell: number | null | undefined, buy: number | null | undefined, metal: "gold" | "silver" = "gold") => (
+    <section className="bubble pb-price" data-metal={metal} aria-label={label}>
       <span className="pill">{label}</span>
       <div className="pb-sides">
         <div><small>{L("بيع", "Sell")}</small><b dir="ltr">{money(sell)}</b></div>
@@ -134,7 +134,7 @@ export default function Page() {
           <div className="pb-prices">
             {priceCard(L("ذهب عيار 21", "Gold 21"), price.sell21, price.buy21)}
             {priceCard(L("ذهب عيار 24", "Gold 24"), price.sell24, price.buy24)}
-            {priceCard(L("الفضة", "Silver"), price.silverSell, price.silverBuy)}
+            {priceCard(L("الفضة", "Silver"), price.silverSell, price.silverBuy, "silver")}
           </div>
         ) : <p className="quiet-note">{L("لم يتم تسجيل سعر الذهب بعد.", "No gold price has been saved yet.")}</p>}
 
@@ -156,7 +156,7 @@ export default function Page() {
                 </div>
                 <div className="pb-filter" role="search" aria-label={L(`بحث في ${brand.name}`, `Search in ${brand.name}`)}>
                   <div className="field pb-q"><Input type="search" id={`pb-q-${brand.id}`} value={f.q} placeholder={L("ابحث بالاسم", "Search by name")} aria-label={L("ابحث بالاسم", "Search by name")} autoComplete="off" onChange={(e) => setFilter(brand.id, { q: e.target.value })} /></div>
-                  <div className="field"><Input inputMode="decimal" id={`pb-from-${brand.id}`} value={f.from} placeholder={L("الوزن من (جم)", "Weight from (g)")} aria-label={L("الوزن من (جم)", "Weight from (g)")} aria-invalid={range.invalid} autoComplete="off" onChange={(e) => setFilter(brand.id, { from: e.target.value })} /></div>
+                  <div className="field"><Input inputMode="decimal" id={`pb-from-${brand.id}`} value={f.from} placeholder={L("من (جم)", "From (g)")} aria-label={L("الوزن من (جم)", "Weight from (g)")} aria-invalid={range.invalid} autoComplete="off" onChange={(e) => setFilter(brand.id, { from: e.target.value })} /></div>
                   <div className="field"><Input inputMode="decimal" id={`pb-to-${brand.id}`} value={f.to} placeholder={L("إلى (جم)", "to (g)")} aria-label={L("إلى (جم)", "Weight to (g)")} aria-invalid={range.invalid} autoComplete="off" onChange={(e) => setFilter(brand.id, { to: e.target.value })} /></div>
                   {range.invalid && <p className="pb-hint" role="alert">{L("الوزن (من) أكبر من الوزن (إلى).", "Weight from is more than weight to.")}</p>}
                   {isFiltering(f) && <Button size="sm" className="pb-reset" onClick={() => setFilters((all) => ({ ...all, [brand.id]: noFilter }))}>{L("مسح", "Clear")}</Button>}
