@@ -11,6 +11,13 @@ describe("notificationText", () => {
     expect(notificationText(en, created)).toBe("New sales request 000007 from Mona (Main)");
     expect(notificationText(ar, created)).toBe("طلب بيع جديد رقم 000007 من Mona (Main)");
   });
+  it("a new request names its type", () => {
+    const of = (kind: string) => ({ ...created, values: { ...created.values, kind } });
+    expect(notificationText(en, of("reservation"))).toBe("New reservation request 000007 from Mona (Main)");
+    expect(notificationText(ar, of("handover"))).toBe("طلب تسليم جديد رقم 000007 من Mona (Main)");
+    expect(notificationText(ar, of("delivery"))).toBe("طلب توصيل جديد رقم 000007 من Mona (Main)");
+    expect(notificationText(en, of("sale"))).toBe("New sales request 000007 from Mona (Main)");
+  });
   it("a decision says accepted or rejected, and by whom", () => {
     expect(notificationText(en, { kind: "price-request.decided", values: { number: 7, status: "accepted", deciderName: "Ali" } })).toBe("Your request 000007 was accepted (Ali)");
     expect(notificationText(en, { kind: "price-request.decided", values: { number: 7, status: "rejected" } })).toBe("Your request 000007 was rejected");
