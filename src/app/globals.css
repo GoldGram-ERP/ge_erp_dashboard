@@ -1267,7 +1267,9 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-sides b{font-size:1.5rem;line-height:1.2;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--ink)}
 .pb-sides>div+div b{font-size:1.3rem;font-weight:600;color:var(--ink-2)}
 /* The brand columns: a white panel each, its head (name, count, stock switch), one row of filters, and a scrolling list. */
-.pb-brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,19rem),1fr));gap:1rem;align-items:start}
+/* Two brands to a row (owner, 2026-11-25): wide enough for a name, its weight and its stock on one line; one column on a narrow screen. */
+.pb-brands{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
+@media (max-width:56rem){.pb-brands{grid-template-columns:minmax(0,1fr)}}
 .pb-brand.card{margin-bottom:0;padding:1rem .9rem .9rem;background:var(--surface);border-radius:1.15rem;box-shadow:0 0 0 thin var(--line-soft),0 .125rem .6rem color-mix(in srgb,var(--ink) 5%,transparent)}
 .pb-brand-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem .75rem;margin:0 .1rem .8rem}
 .pb-brand-head h3{display:flex;align-items:center;gap:.5rem;margin:0;font-size:1.15rem;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
@@ -1285,8 +1287,8 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-filter .pb-reset{grid-column:1/-1;justify-self:start}
 .pb-scroll{max-height:min(46rem,72vh);overflow-y:auto;padding-inline-end:.3rem;margin-inline-end:-.3rem;scrollbar-width:thin}
 /* The item card, two rows: name, karat, weight and stock / price; then workmanship, cashback and the count. A thin edge tells the stock; the card stays white. */
-.pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.45rem}
-.pb-brand li{position:relative;cursor:pointer;padding:.7rem .85rem .6rem;border-radius:.85rem;background:var(--bg);box-shadow:inset 0 0 0 thin var(--line-soft);transition:box-shadow .15s ease,background-color .15s ease}
+.pb-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem}
+.pb-brand li{position:relative;cursor:pointer;padding:.55rem .8rem .5rem;border-radius:.85rem;background:var(--bg);box-shadow:inset 0 0 0 thin var(--line-soft);transition:box-shadow .15s ease,background-color .15s ease}
 .pb-brand li::before{content:"";position:absolute;inset-block:.6rem;inset-inline-start:0;width:.2rem;border-radius:999rem;background:var(--line-strong)}
 .pb-brand li[data-tone=good]::before{background:var(--good)}
 .pb-brand li[data-tone=bad]::before{background:color-mix(in srgb,var(--warn) 75%,var(--surface))}
@@ -1295,8 +1297,8 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-top{display:flex;align-items:flex-start;gap:.6rem}
 .pb-brand li .pb-top>.chk{margin-block-start:.15rem}
 .pb-name{display:flex;flex-direction:column;gap:.05rem;flex:1;min-width:0}
-.pb-name b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font-size:.95rem;font-weight:600;line-height:1.4;overflow-wrap:anywhere;color:var(--ink)}
-.pb-name small{display:flex;align-items:center;flex-wrap:wrap;gap:.15rem .6rem;margin-top:.15rem;font-size:.78rem;font-weight:400;color:var(--mute)}
+.pb-name b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font-size:.92rem;font-weight:600;line-height:1.4;overflow-wrap:anywhere;color:var(--ink)}
+.pb-name small{display:flex;align-items:center;flex-wrap:wrap;gap:.1rem .6rem;margin-top:.05rem;font-size:.78rem;font-weight:400;color:var(--mute)}
 .pb-name small>span:first-child{white-space:nowrap;font-variant-numeric:tabular-nums}
 .pb-dot{display:inline-flex;align-items:center;gap:.3rem;font-weight:600;color:var(--mute);white-space:nowrap}
 .pb-dot::before{content:"";width:.45rem;height:.45rem;border-radius:50%;background:var(--mute)}
@@ -1308,7 +1310,7 @@ button.grp-title:focus-visible{outline:.125rem solid color-mix(in srgb,var(--gol
 .pb-price small{font-size:.75rem;font-weight:400;color:var(--mute)}
 .pb-total{font-size:1.15rem;font-weight:700;line-height:1.3;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
 .pb-brand li[data-tone=bad] .pb-total{color:var(--ink-2)}
-.pb-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:.5rem;margin-top:.55rem;padding-top:.5rem;border-top:thin solid var(--line-soft)}
+.pb-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:.5rem;margin-top:.4rem;padding-top:.4rem;border-top:thin solid var(--line-soft)}
 .pb-fig{display:flex;flex-direction:column;gap:.05rem;min-width:0}
 .pb-fig small{font-size:.72rem;font-weight:400;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pb-fig b{font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink-2)}
