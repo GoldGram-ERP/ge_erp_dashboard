@@ -31,7 +31,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
   const m = (k: string, v?: Record<string, string | number>) => t("gold-accounts", k, v);
   const c = (k: string) => t("common", k);
   const statusCol = (): Column => ({ key: "deletedAt", label: c("recordStatus"), type: "status", get: (r) => (r.deletedAt ? "deleted" : "active"), statuses: { active: [c("active"), "good"], deleted: [m("purchaseInvoices.deletedBadge"), "off"] } });
-  const chips = (ns: string) => [{ id: "all", label: c("report.all") }, { id: "deleted", label: m(`${ns}.deletedOnly`), query: { deleted: "only" }, superOnly: true }];   // backend: Super admin only
+  const chips = (ns: string) => [{ id: "all", label: c("report.all") }, { id: "deleted", label: m(`${ns}.deletedOnly`), query: { deleted: "only" } }];
   const itemCell = (r: Row) => <>{r.itemName} <span className="sub" dir="ltr">{code6(r.itemCode)}</span></>;
   const goPieces = (n: unknown) => window.location.assign(`/${tr.locale}/buy/purchases?view=pieces&invoiceNumber=${n}`);
 

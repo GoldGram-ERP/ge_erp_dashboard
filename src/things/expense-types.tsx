@@ -27,7 +27,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
       id: "list", label: m("listTitle"), keys: ["expenses/expense-types-list"],
       endpoint: "/expense-types", query: { order: "newest" },
       search: { param: "search", placeholder: m("searchPlaceholder") },
-      chips: [{ id: "all", label: L("الكل", "All") }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+      chips: [{ id: "all", label: L("الكل", "All") }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" } }],
       paging: { sizeParam: null },   // the list takes `page` only (size fixed at 20)
       serverSort: { on: true, columns: { expenseCode: "expenseCode", expenseTypeName: "expenseTypeName" } },   // the backend takes sort/dir for this list (ge_erp_backend 0.1.23); see ViewConfig.serverSort
       columns: [

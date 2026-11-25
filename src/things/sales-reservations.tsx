@@ -43,7 +43,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     id: "list", label: m("listTitle"), keys: ["gold-sales/reservations-list"],
     endpoint: "/reservations", rowKey: "id",
     search: { param: "search", placeholder: m("searchPlaceholder") },
-    chips: [{ id: "all", label: ALL }, { id: "deleted", label: si("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+    chips: [{ id: "all", label: ALL }, { id: "deleted", label: si("deletedOnly"), query: { deleted: "only" } }],
     filters: [{ name: "fromDate", label: si("fromDate"), type: "date" }, { name: "toDate", label: si("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) }],
     paging: { sizeParam: null, sizes: [20], size: 20 },
     columns: [

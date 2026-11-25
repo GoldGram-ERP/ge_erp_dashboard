@@ -81,7 +81,7 @@ export const makeConfigWith = (x: Ctx) => (tr: Tr): ThingConfig => {
       endpoint: k.path,
       query: { order: "newest" },
       search: { param: "search", placeholder: m(`${k.ns}.searchPlaceholder`) },
-      chips: [{ id: "all", label: c("report.all") }, ...chips, { id: "deleted", label: m(`${k.ns}.deletedOnly`), query: { deleted: "only" }, superOnly: true }],   // Super admin only
+      chips: [{ id: "all", label: c("report.all") }, ...chips, { id: "deleted", label: m(`${k.ns}.deletedOnly`), query: { deleted: "only" } }],
       filters,
       paging: { sizeParam: null },
       columns,

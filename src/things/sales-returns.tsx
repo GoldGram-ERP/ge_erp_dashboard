@@ -35,7 +35,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
     id: "list", label: m("listTitle"), keys: ["gold-sales/returns-list"],
     endpoint: "/returns", rowKey: "id",
     search: { param: "search", placeholder: m("searchPlaceholder") },
-    chips: [{ id: "all", label: ALL }, { id: "deleted", label: si("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+    chips: [{ id: "all", label: ALL }, { id: "deleted", label: si("deletedOnly"), query: { deleted: "only" } }],
     filters: [{ name: "fromDate", label: si("fromDate"), type: "date" }, { name: "toDate", label: si("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) }],
     paging: { sizeParam: null, sizes: [20], size: 20 },
     serverSort: { on: true, columns: { date: "date", returnNumber: "returnNumber", refundTotal: "refundTotal" } },   // backend SALES_RETURN_SORT

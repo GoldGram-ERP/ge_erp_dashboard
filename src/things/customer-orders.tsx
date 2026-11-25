@@ -51,7 +51,7 @@ export const buildConfig = (tr: Tr, everyOrder: boolean): ThingConfig => {
         { id: "all", label: L("الكل", "All") },
         { id: "present", label: L("حاضر", "Came"), query: { attendance: "present" } },
         { id: "absent", label: L("غير حاضر", "Did not come"), query: { attendance: "absent" } },
-        { id: "deleted", label: L("المحذوفة", "Deleted"), query: { deleted: "only" }, superOnly: true },
+        { id: "deleted", label: L("المحذوفة", "Deleted"), query: { deleted: "only" } },
       ],
       filters: [
         { name: "fromDate", label: L("من تاريخ", "From date"), type: "date" },
@@ -120,7 +120,7 @@ export const buildConfig = (tr: Tr, everyOrder: boolean): ThingConfig => {
       remove: {
         when: (r) => !r.deletedAt,
         path: (r) => `/customer-orders/${r.id}`,
-        confirm: (r) => ({ title: L(`حذف الطلب ${code6(r.orderNumber)}؟`, `Delete order ${code6(r.orderNumber)}?`), text: L("يتعلّم الطلب محذوفًا ويُسجَّل من حذفه ومتى، ولا يراه إلا المدير الأعلى.", "The order is marked deleted (who and when); only the Super admin can still see it.") }),
+        confirm: (r) => ({ title: L(`حذف الطلب ${code6(r.orderNumber)}؟`, `Delete order ${code6(r.orderNumber)}?`), text: L("يتعلّم الطلب محذوفًا ويُسجَّل من حذفه ومتى، ويبقى ظاهرًا للقراءة فقط في المحذوفة.", "The order is marked deleted (who and when); it stays visible, read only, under Deleted.") }),
       },
     },
     forms: {
