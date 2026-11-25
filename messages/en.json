@@ -721,7 +721,9 @@
    "duplicateAccount": "This bank account is already on another row.",
    "duplicatePiece": "This piece is already on another line.",
    "inactive": "This item is not active",
-   "incomplete": "This item has no weight or workmanship: complete it on the Items screen"
+   "incomplete": "This item has no weight or workmanship: complete it on the Items screen",
+   "phone": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
+   "nationalId": "The National ID is exactly 14 digits."
   },
   "view": "View",
   "print": "Print",
@@ -780,6 +782,10 @@
     "more": "{count} more",
     "writing": "Writing the file…"
    }
+  },
+  "fieldHelp": {
+   "phone": "11 digits starting 010, 011, 012 or 015.",
+   "nationalId": "Optional: exactly 14 digits."
   }
  },
  "errors": {
@@ -1442,7 +1448,7 @@
    "cpSaved": "Customer piece {code} saved",
    "cpNew": "Another customer piece",
    "cpNotStock": "Not stock: it is never sold, reserved, returned or counted.",
-   "cpPhoneInvalid": "8 to 15 digits.",
+   "cpPhoneInvalid": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
    "fromItem": "Each piece takes the item's weight and workmanship. They are changed on the Items screen only."
   },
   "customerPieces": {
@@ -1461,8 +1467,8 @@
    "customer": "Customer",
    "customerName": "Customer name",
    "customerPhone": "Customer phone",
-   "phoneHelp": "8 to 15 digits. Kept with the record, never printed on the label.",
-   "phoneInvalid": "Write 8 to 15 digits.",
+   "phoneHelp": "Optional: 11 digits starting 010, 011, 012 or 015. Kept with the record, never printed on the label.",
+   "phoneInvalid": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
    "saved": "Purchase {number} saved and its pieces are in stock",
    "another": "Enter another piece",
    "itemInvalid": "This item is not in the chosen category or no longer exists. Choose another.",
@@ -1539,7 +1545,7 @@
    "customerName": "Customer name",
    "customerPhone": "Customer phone",
    "nationalId": "National ID",
-   "phoneHint": "8 to 15 digits. A phone used before fills the name.",
+   "phoneHint": "11 digits starting 010, 011, 012 or 015. A phone used before fills the name.",
    "optional": "Optional: 14 digits.",
    "choose": "Choose…",
    "clearChoice": "Clear the choice",
@@ -1584,8 +1590,8 @@
    "saveWaits": "Save is on when nothing is left to pay.",
    "saveNeedsPiece": "Save is on once at least one piece is added.",
    "dateInvalid": "Write the date as day/month/year, such as 05/10/2026.",
-   "phoneInvalid": "Write 8 to 15 digits.",
-   "nationalIdInvalid": "Write 14 digits.",
+   "phoneInvalid": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
+   "nationalIdInvalid": "The National ID is exactly 14 digits.",
    "amountInvalid": "Enter an amount above zero, such as 1250.50.",
    "savedNumber": "Saved. Number {code}",
    "deleted": "Deleted",
@@ -1677,7 +1683,8 @@
    "taslemTitle": "Confirm Taslem?",
    "taslemAsk": "This records that you confirmed this invoice now. It is a record only: stock and cash do not move.",
    "taslemDone": "Taslem recorded.",
-   "taslemStamp": "Taslem by {name} at {at}"
+   "taslemStamp": "Taslem by {name} at {at}",
+   "nationalIdHint": "Optional: exactly 14 digits."
   },
   "prints": {
    "name": "Name",
@@ -2194,9 +2201,9 @@
    "branchHelp": "Your draft is saved on your branch.",
    "customerName": "Customer name",
    "customerPhone": "Customer phone",
-   "phoneHelp": "8 to 15 digits; Arabic digits are accepted.",
+   "phoneHelp": "11 digits starting 010, 011, 012 or 015; Arabic digits are accepted.",
    "nationalId": "National ID",
-   "nationalIdHelp": "Optional: 14 digits.",
+   "nationalIdHelp": "Optional: exactly 14 digits.",
    "pieces": "Pieces",
    "item": "Item",
    "itemHelp": "Only active, complete items are listed.",

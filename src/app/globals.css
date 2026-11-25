@@ -9,6 +9,7 @@
   --ink:#2b2519; --ink-2:#4a4232; --mute:#6b6149;
   --gold:#6f5110; --gold-ink:#fff; --gold-tint:#efe6cf; --gold-wash:#f6f0df;
   --good:#2a6f45; --warn:#a63a25; --off:#9a917b; --info:#2c5d8a;
+  --bad:rgb(192 38 45); --bad-wash:rgb(253 240 240);         /* a field that refused what was typed: a clear red, readable on white and on its wash */
   --ease:cubic-bezier(.32,.72,0,1);          /* sheets */
   --calm:cubic-bezier(.23,1,.32,1);          /* the dashboard's Animate UI easing: ease-out, no overshoot */
   --font:"Segoe UI",system-ui,"Noto Sans Arabic",Tahoma,sans-serif;
@@ -145,9 +146,16 @@ tr.flash td{animation:flash 1.6s ease-out}
 .field input:not([type=checkbox]):not([type=radio]):disabled,.field select:disabled,.field textarea:disabled{background:#f3efe3;color:var(--mute);opacity:.5;cursor:not-allowed}
 /* read only (a weight from the item): full-contrast text on the sidebar beige, so it reads as shown, not typed */
 .field input[readonly]:not([type=hidden]):not(:disabled){background:var(--side);color:var(--ink);cursor:default}
-.field[data-err] input,.field[data-err] select,.field[data-err] textarea{box-shadow:inset 0 0 0 2px var(--warn)}
-.err{color:var(--warn);font-size:.78rem;margin-top:.25rem}
-.field .err{color:var(--warn);font-size:12.5px;margin-top:4px}
+/* A refused field (data-err) reads as red at a glance: the box gets a red border and a pale red fill (kept while focused, with a soft red ring),
+   its label turns red, and the message under it starts with a round "!" badge, so colour is never the only signal. */
+.field[data-err] input,.field[data-err] select,.field[data-err] textarea{box-shadow:inset 0 0 0 .125rem var(--bad);background:var(--bad-wash)}
+.field[data-err] input:focus,.field[data-err] select:focus,.field[data-err] textarea:focus{box-shadow:inset 0 0 0 .125rem var(--bad),0 0 0 .1875rem rgba(192,38,45,.16)}
+.field[data-err]>label,.field[data-err] .flabel{color:var(--bad)}
+.err{color:var(--bad);font-size:.78rem;margin-top:.25rem}
+.field .err{color:var(--bad);font-size:.78rem;font-weight:600;line-height:1.45;margin-top:.3125rem;display:flex;align-items:flex-start;gap:.375rem}
+.field .err::before{content:"!";flex:none;display:inline-grid;place-items:center;width:1rem;height:1rem;margin-top:.0625rem;border-radius:50%;background:var(--bad);color:var(--surface);font-size:.6875rem;font-weight:700;line-height:1}
+/* the help line under a refused field steps back while the error shows, so the error is what is read */
+.field[data-err] .help{display:none}
 .field .help{color:var(--mute);font-size:12.5px;margin-top:4px}
 /* A row of fields that sit side by side (filters, scan row, desk header) is bottom-aligned, so an ERROR line under ONE field used to push its neighbours down and break the label line (Arabic and English alike). Here the message hangs under its own field without taking row height; the row makes room only while a message shows. */
 :is(.filters,.scanrow,.tk-chips)>.field{position:relative}
@@ -317,7 +325,7 @@ ody.sb-collapsed .status{justify-content:center;padding:10px 0;margin-inline:12p
 .sel-btn svg{flex:none;color:var(--mute);pointer-events:none}
 .sel-btn .chev{transition:transform .2s var(--calm)}
 .sel-btn[aria-expanded=true] .chev{transform:rotate(180deg)}
-.field[data-err] .sel-btn{box-shadow:inset 0 0 0 2px var(--warn)}
+.field[data-err] .sel-btn{box-shadow:inset 0 0 0 .125rem var(--bad);background:var(--bad-wash)}
 .lines .sel-btn{height:34px;min-width:90px}
 .sel.sm{display:inline-block;width:auto;min-width:76px;vertical-align:middle}
 .sel.sm .sel-btn{height:32px;border-radius:8px;padding:0 10px}

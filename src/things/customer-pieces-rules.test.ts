@@ -74,9 +74,12 @@ describe("price preview", () => {
 });
 
 describe("find box", () => {
-  it("a short code is a code; 8 to 15 digits are also a phone; anything else is refused", () => {
+  it("a short code is a code; a number that keeps the phone rule is also a phone; anything else is refused", () => {
     expect(readFind("100234")).toEqual({ code: "100234" });
     expect(readFind("٠١٠١٢٣٤٥٦٧٨")).toEqual({ code: "01012345678", phone: "01012345678" });
+    // 8 to 15 digits were a phone under the old rule: now only a code.
+    expect(readFind("12345678")).toEqual({ code: "12345678" });
+    expect(readFind("01312345678")).toEqual({ code: "01312345678" });
     expect(readFind("خاتم")).toBeNull();
     expect(readFind("")).toBeNull();
   });
