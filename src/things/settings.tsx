@@ -1,6 +1,6 @@
 "use client";
 // الإعدادات: administration/settings. ONE stored row (shop identity + invoice footer): GET /settings, PUT /settings with all six fields (not PATCH).
-// Ported from docs/nav-preview/app/things/settings.js. Admin and Super admin only. Limits: names 200, address 500, phone 500, footer 2000; the logo is kept
+// Ported from docs/nav-preview/app/things/settings.js. Admin and Super admin only. Limits: names 200, address 500, the phone the one phone rule (src/lib/phone.ts), footer 2000; the logo is kept
 // to 90,000 characters (dashboard) although the backend would take more. The logo is a data URL inside the row; null removes it.
 // shortcut: the shell's header brand is not refreshed after a save (a reload shows it), as in the HTML.
 import { FileInput, Button } from "@/components/ui";
@@ -18,6 +18,7 @@ import { useAccess } from "./sales-access";
 import { useT } from "@/lib/t";
 import { useRouter } from "@/i18n/navigation";
 import { useLeaveGuard } from "./leave-guard";
+import { isPhone, PHONE_LENGTH, phoneDigits } from "@/lib/phone";
 
 const LOGO_MAX = 90_000;
 const EDGES = [512, 384, 256, 192, 128];
@@ -50,7 +51,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
     { name: "shopNameAr", label: m("shopNameAr"), type: "text", required: true, maxLength: 201, placeholder: m("shopNamePlaceholder"), section: m("shopIdentity"), validate: tooLong(200) },
     { name: "shopNameEn", label: m("shopNameEn"), type: "text", required: true, maxLength: 201, placeholder: "[Shop name]", section: m("shopIdentity"), validate: tooLong(200) },
     { name: "address", label: m("address"), type: "text", wide: true, maxLength: 501, placeholder: m("addressPlaceholder"), section: m("shopIdentity"), validate: tooLong(500) },
-    { name: "phone", label: m("phone"), type: "text", maxLength: 501, section: m("shopIdentity"), validate: tooLong(500) },
+    { name: "phone", label: m("phone"), type: "text", maxLength: PHONE_LENGTH, help: c("fieldHelp.phone"), section: m("shopIdentity"), validate: (v: string) => (String(v ?? "").trim() === "" || isPhone(v) ? null : c("fieldErrors.phone")) },
     { name: "invoiceFooter", label: m("invoiceFooter"), type: "textarea", wide: true, section: m("printing"), validate: tooLong(2000) },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [tr]);
@@ -87,7 +88,7 @@ function SettingsBody({ tr, saved, onSaved, close }: { tr: CustomFormProps["tr"]
     if (!v) { setAlert(c("couldNotSave", { count: Object.keys(form.formState.errors).length || 1 })); return; }
     setSaving(true); setNote(c("savingNote"));
     try {
-      const row = await api("/settings", { method: "PUT", body: { shopNameAr: v.shopNameAr, shopNameEn: v.shopNameEn, address: v.address || null, phone: v.phone || null, invoiceFooter: v.invoiceFooter || null, logo }, saveKey: key.current });
+      const row = await api("/settings", { method: "PUT", body: { shopNameAr: v.shopNameAr, shopNameEn: v.shopNameEn, address: v.address || null, phone: String(v.phone ?? "").trim() ? phoneDigits(v.phone) : null, invoiceFooter: v.invoiceFooter || null, logo }, saveKey: key.current });
       key.current = newSaveKey(); toast(m("saved")); onSaved(row);
     } catch (e) {
       setSaving(false); setNote("");

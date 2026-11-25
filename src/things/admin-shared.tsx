@@ -157,7 +157,7 @@ function UserFormBody({ row, close, reload, tr, onlyTypes, path, staysAfterAdd =
   const [, setTab] = useState<"job" | "screen">("screen");
   const [q, setQ] = useState("");
   const [permErr, setPermErr] = useState(""), [chanErr, setChanErr] = useState(""), [alert, setAlert] = useState(""), [note, setNote] = useState(""), [saving, setSaving] = useState(false);
-  const permQ = useQuery({ queryKey: ["users", "screens-jobs"], staleTime: Infinity, queryFn: async () => { const [s, j] = await Promise.all([api("/users/screens"), api("/users/jobs")]); return { screens: s, jobScreens: Object.fromEntries((j.jobs ?? []).map((x: any) => [x.id, x.screens as string[]])) as Record<string, string[]> }; } });
+  const permQ = useQuery({ queryKey: ["users", "screens-jobs"], staleTime: 5 * 60_000, queryFn: async () => { const [s, j] = await Promise.all([api("/users/screens"), api("/users/jobs")]); return { screens: s, jobScreens: Object.fromEntries((j.jobs ?? []).map((x: any) => [x.id, x.screens as string[]])) as Record<string, string[]> }; } });
   const savedJobs = useQuery({ enabled: row?.userType === "user", queryKey: ["users", "jobs", row?.id], gcTime: 0, queryFn: () => api(`/users/${row!.id}/jobs`).catch(() => ({ jobIds: [] })) });
   useEffect(() => { if (savedJobs.data) { setJobs(new Set<string>(savedJobs.data.jobIds)); setJobsInit(JSON.stringify([...savedJobs.data.jobIds].sort())); } }, [savedJobs.data]);
   const jobScreens = (id: string) => permQ.data?.jobScreens[id] ?? [];
