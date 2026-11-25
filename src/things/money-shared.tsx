@@ -2,12 +2,10 @@
 // Shared bits of the money pages (cash, treasuries, transfers): number format, gold lines, the totals row, the branch look-up.
 // Ported from docs/nav-preview/app/things/treasuries-parts.js. Read only: nothing here writes.
 import type { ReactNode } from "react";
-import { useMemo } from "react";
 import type { Column, LookupSpec, Row } from "@/lib/engine-types";
 import { milligramsText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { Td } from "@/components/ui";
-import { useMe } from "@/lib/session";
 
 import { code6 } from "@/lib/code6";
 export { code6 };
@@ -41,12 +39,3 @@ export function foot(cols: Column[], name: string, cells: Record<string, ReactNo
   ));
 }
 
-/** Whether the signed-in person is the Super admin (the "deleted only" boxes are drawn for them alone). */
-export function useIsSuper(): boolean {
-  const { data: me } = useMe();
-  return me?.userType === "super_admin";
-}
-export function useMakeConfig(build: (tr: Tr, isSuper: boolean) => import("@/lib/engine-types").ThingConfig) {
-  const isSuper = useIsSuper();
-  return useMemo(() => (tr: Tr) => build(tr, isSuper), [build, isSuper]);
-}

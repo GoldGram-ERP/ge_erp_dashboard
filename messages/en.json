@@ -2218,7 +2218,7 @@
     "deleted": "This draft is deleted."
    },
    "delete": "Delete the draft",
-   "deleteAsk": "Delete draft number {number}? Afterwards only the Super admin can see it.",
+   "deleteAsk": "Delete draft number {number}? Afterwards it stays visible, read only, under Deleted.",
    "deleted": "Draft number {number} deleted",
    "complete": "Complete the invoice",
    "completeIntro": "Scan the real pieces, take the payment, then press Complete. The sales invoice is created once only.",

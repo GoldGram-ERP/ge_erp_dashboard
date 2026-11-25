@@ -8,9 +8,9 @@ import type { Tr } from "@/lib/t";
 import { ThingPage, Kv, Ltr, Section, cellNode } from "@/components/engine";
 import { useAccess } from "./sales-access";
 import { EgpMovementForm } from "./cash-movement-form";
-import { branchSpec, code6, dict, foot, moneyNode, useMakeConfig } from "./money-shared";
+import { branchSpec, code6, dict, foot, moneyNode } from "./money-shared";
 
-export function buildConfig(tr: Tr, isSuper: boolean): ThingConfig {
+export function buildConfig(tr: Tr): ThingConfig {
   const { t, L } = tr;
   const m = (k: string, v?: Record<string, string>) => t("cash-accounts", `cashMovements.${k}`, v);
   const sb = (k: string) => t("cash-accounts", `safeStatement.${k}`);
@@ -25,8 +25,8 @@ export function buildConfig(tr: Tr, isSuper: boolean): ThingConfig {
   const from = (label: string): FilterConfig => ({ name: "fromDate", label, type: "date" });
   const to = (label: string): FilterConfig => ({ name: "toDate", label, type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) });
   const branch = (label: string): FilterConfig => ({ name: "branchId", label, type: "select", optionsFrom: branchSpec, placeholder: ALL });
-  // deleted=only answers a Super admin only (403 otherwise): the box is drawn for them alone.
-  const deletedBox = (): FilterConfig[] => (isSuper ? [{ name: "deleted", label: m("deletedOnly"), type: "checkbox", toQuery: (v) => (v ? { deleted: "only" } : {}) }] : []);
+  // The deleted rows are read by everyone who has the screen (owner, 2026-11-25), read only.
+  const deletedBox = (): FilterConfig[] => [{ name: "deleted", label: m("deletedOnly"), type: "checkbox", toQuery: (v) => (v ? { deleted: "only" } : {}) }];
 
   // The EGP movements as the dashboard's history lists them: newest first; the list takes only these parameters and `page`.
   const egp: ViewConfig = {
@@ -131,6 +131,6 @@ export function buildConfig(tr: Tr, isSuper: boolean): ThingConfig {
   };
 }
 
-export const makeConfig: MakeConfig = (tr) => buildConfig(tr, false);
+export const makeConfig: MakeConfig = (tr) => buildConfig(tr);
 
-export default function Page() { return <ThingPage make={useMakeConfig(buildConfig)} access={useAccess()} />; }
+export default function Page() { return <ThingPage make={buildConfig} access={useAccess()} />; }
