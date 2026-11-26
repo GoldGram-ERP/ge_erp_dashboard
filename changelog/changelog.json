@@ -169,6 +169,12 @@
     "en": "A user who has only the Sales desk screen now sees all three options on a new draft (Sale, Hand over, Reservation) and can save a reservation from the desk.",
     "ar": "المستخدم اللي معاه شاشة مكتب المبيعات بس بقى بيشوف الاختيارات التلاتة في المسودة الجديدة (بيع وتسليم وحجز) ويقدر يحفظ حجز من المكتب.",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "A reservation made on the sales desk now waits there as a draft. The accountant or an Admin presses Confirm reservation, and only then does it appear on Reservations.",
+    "ar": "الحجز اللي بيتعمل من مكتب البيع بقى بيفضل هناك كمسودة. المحاسب أو المدير يدوس تأكيد الحجز، وساعتها بس يظهر في الحجوزات.",
+    "route": "/sales/desk"
    }
   ]
  },

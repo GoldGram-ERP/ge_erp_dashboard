@@ -4,25 +4,14 @@ import { hasAction, isDeskWideRole } from "@/lib/actions";
 import { latinNumber } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { customerRules } from "./sales-form-parts";
-import { LINES_MAX, bankPaid, cashPaid, paymentErrors, sentBanks, type Bank } from "./sales-invoices-math";
+import { LINES_MAX, bankPaid, cashPaid, paymentErrors, type Bank } from "./sales-invoices-math";
 
 export { LINES_MAX };
 
-/** The types the desk's type choice offers (owner, 2026-11-18): Sale, Hand over, and Reservation on a new draft for a person who has the reservations
- *  screen. A draft saved as "delivery" before Hand over replaced it still shows its own type. */
-export const deskTypes = (current: string, isNew: boolean, mayReserve: boolean): string[] =>
-  ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", ...(isNew && mayReserve ? ["reservation"] : [])];
-
-/** What POST /reservations takes when the desk saves a reservation: today's date, paid in full, every bank line with its account.
- *  No channel, no typed price and no wrapping: a reservation has none (the backend prices it, silver as wrapped). */
-export function reservationBody(x: { branchId: string; date: string; employeeId: string; customer: { customerName: string; customerPhone: string; nationalId: string };
-  lines: { itemId: string; quantity: number }[]; cash: string; banks: Bank[]; discount?: { kind: string; value: number }; visa: boolean }) {
-  return {
-    branchId: x.branchId, date: x.date, employeeId: x.employeeId, ...x.customer, lines: x.lines,
-    ...(cashPaid(x.cash) > 0 ? { cash: cashPaid(x.cash) } : {}), bankPayments: sentBanks(x.banks),
-    ...(x.discount && x.discount.value > 0 ? { cashDiscount: x.discount } : {}), ...(x.visa ? { payByVisa: true } : {}),
-  };
-}
+/** The types the desk's type choice offers (owner, 2026-11-18): Sale, Hand over, and Reservation on a new draft. A saved draft keeps its own type: a
+ *  reservation draft (owner, 2026-11-26), or "delivery" from before Hand over replaced it. */
+export const deskTypes = (current: string, isNew: boolean): string[] =>
+  ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", ...(isNew || current === "reservation" ? ["reservation"] : [])];
 
 export type DeskCustomer = { customerName: string; customerPhone: string; nationalId: string };
 /** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin. The three are required; the National ID is exactly 14 digits. */
@@ -77,18 +66,26 @@ export function plannedAgainst(total: number, cash: string, banks: (Bank & { met
 
 export type LockDraft = { status: string; locked: boolean; createdDay: string };
 /** What the screen says about a draft's edit state, from the server's own `locked` and `createdDay` (the client never works out midnight). */
-export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" | "completed" | "deleted"; text: string } {
+export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" | "completed" | "reserved" | "deleted"; text: string } {
   const t = (k: string, v?: Record<string, string | number>) => tr.t("gold-sales", `salesDesk.lock.${k}`, v);
   if (d.status === "completed") return { state: "completed", text: t("completed") };
+  if (d.status === "reserved") return { state: "reserved", text: t("reserved") };
   if (d.status === "deleted") return { state: "deleted", text: t("deleted") };
   return d.locked ? { state: "locked", text: t("reason", { day: d.createdDay }) } : { state: "editable", text: t("editable") };
 }
 
 /** Who completes a draft into an invoice (owner, 2026-11-25): Admin and Super admin, a plain user with a desk-wide business role (the accountant, the call center
  *  admin, the branch sales manager) by the role alone, or any other plain user holding the action `complete-sales-draft`; on an open sell draft.
- *  Nobody while the person is unknown (the page is loading). A Buy draft is a quote only. The backend refuses the rest (403 notAllowed). */
-export const canCompleteDraft = (me: { userType?: string; actions?: string[]; businessRole?: string | null } | undefined, status: string | undefined, buy: boolean): boolean =>
-  (hasAction(me, "complete-sales-draft") || (me?.userType === "user" && isDeskWideRole(me.businessRole))) && status === "open" && !buy;
+ *  Nobody while the person is unknown (the page is loading). A Buy draft is a quote only, and a reservation draft is confirmed, never completed.
+ *  The backend refuses the rest (403 notAllowed). */
+export const canCompleteDraft = (me: { userType?: string; actions?: string[]; businessRole?: string | null } | undefined, status: string | undefined, buy: boolean, invoiceType?: string): boolean =>
+  (hasAction(me, "complete-sales-draft") || (me?.userType === "user" && isDeskWideRole(me.businessRole))) && status === "open" && !buy && invoiceType !== "reservation";
+
+/** Who confirms a reservation draft into a real reservation (owner, 2026-11-26): an Admin, the Super admin and a plain user with the accountant role,
+ *  on an open reservation draft that is not locked for them (the server's `locked`: past midnight only an Admin). The backend refuses the rest. */
+export const canConfirmReservation = (me: { userType?: string; businessRole?: string | null } | null | undefined, draft: { status?: string; invoiceType?: string; locked?: boolean } | null | undefined): boolean =>
+  (me?.userType === "admin" || me?.userType === "super_admin" || (me?.userType === "user" && me.businessRole === "accountant")) &&
+  draft?.status === "open" && draft.invoiceType === "reservation" && !draft.locked;
 
 /** One channel per payment line (owner, 2026-11-09): a line is Instapay, Visa or Bank transfer, never two at once, and the backend takes each method once per
  *  sale. The methods row `i` may offer: every one not already used by another line ("cash" never counts), plus the row's own value. */
