@@ -18,13 +18,14 @@ import { Icon, Ltr, toast, useConfirm } from "@/components/engine";
 import { CopyButton } from "@/components/shell/copy-button";
 import { revealFirstError } from "@/lib/submit-guard";
 import { Section } from "@/components/ui";
-import { Link as NavLink, useRouter } from "@/i18n/navigation";
+import { Link as NavLink } from "@/i18n/navigation";
 import { bankPaid, cashPaid, paymentErrors, paymentKeyOf, readDiscount, sentBanks } from "./sales-invoices-math";
 import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscount, readPieceCode, sg, type DiscountKind } from "./sales-form-parts";
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, canConfirmReservation, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { useConfirmReservation } from "@/components/fields/ConfirmReservation";
 import { canOpen } from "@/nav/tree";
 import { pricePerGram } from "./item-math";
 import { code6 } from "@/lib/code6";
@@ -35,14 +36,13 @@ const trimZeros = (t: string) => t.replace(/\.0+$|(\.\d*?)0+$/, "$1");
 const INVOICES_KEY = "gold-sales/sales-invoices";
 type Scanned = { code: string; itemName: string; karat: string };
 
-export function DraftForm({ row, close, tr }: CustomFormProps) {
+export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const { t, L } = tr;
   const d = (k: string, v?: Record<string, string | number>) => t("gold-sales", `salesDesk.${k}`, v);
   const { data: me } = useMe();
   const isUser = me?.userType === "user";
   const may = me ? mayDiscount(me) : false;
   const [confirm, dialog] = useConfirm();
-  const router = useRouter();
 
   const [draft, setDraft] = useState<Row | null>(null);
   const [loaded, setLoaded] = useState(!row?.id);
@@ -108,7 +108,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     setCash(r.cash); setBanks(r.banks);
     setOperation(r.operation); setMetal(r.metal); setWrapping(r.wrapping); setManual(r.manual);
     setKind(r.kind); setDisc(r.disc);
-    setDirty(false); setErrs({}); setGeneral(""); setPayRefusal(null);
+    setDirty(false); setErrs({}); setGeneral(""); setPayRefusal(null); setPayTo({});
   };
 
   useEffect(() => {
@@ -145,11 +145,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   const accountantEdits = foreign && mayEditForeignDraft(me);
   const dsc = may || accountantEdits ? readDiscount(kind, disc, Number.MAX_SAFE_INTEGER / 4) : { invalid: false, value: 0, tooBig: false, sent: undefined };
   const payment = quotePayment(operation, banks);
-  // Reservation (owner, 2026-11-18): the desk saves a real reservation (POST /reservations) instead of a draft. Any item, in stock or not; paid in full;
-  // no channel, no typed price, silver priced as wrapped (what the reservation's own pricing does), so the quote shown is the total the Save checks.
-  const rsv = !draft && !buy && type === "reservation";
+  // A reservation draft (owner, 2026-11-26): saved as a draft like any other, and made a real reservation only when it is confirmed. Any item, in stock
+  // or not; paid in full, every line with the account that received it; no typed price, silver priced as wrapped (what a reservation's pricing does).
+  const rsv = !buy && type === "reservation";
   const form = { operation, metal, payment, discount: !buy ? dsc.sent : undefined, manualSell: rsv ? "" : manual.sell, manualBuy: manual.buy, wrapping: rsv ? "wrapped" as const : wrapping, lines };
-  // The bank lines with the account that received each Instapay or Visa line (asked at Complete, and on a reservation).
+  // The bank lines with the account that received each Instapay or Visa line (asked at Complete, and on a reservation draft).
   const paidInto = () => banks.map((b, i) => (!b.bankAccountId && !lineTakesAccount(b.method) && String(b.amount ?? "").trim() !== "" ? { ...b, bankAccountId: payTo[i] ?? "" } : b));
   const body = quoteBody(form);
   const quoteKey = `${JSON.stringify(body)}|${tick}`;
@@ -210,9 +210,9 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       else if (k.endsWith("Item")) e[k] = fieldErr(code);
       else e[k] = fieldErr(code);
     }
-    // A new draft always names its seller (backend #223); a reservation made here keeps its own rule (a User reserves as themself).
-    if (isNew && !rsv && !sellerId) e.sellerId = fieldErr("required");
-    const ce = rsv ? null : channelError(channelId, channels);
+    // A new draft always names its seller (backend #223).
+    if (isNew && !sellerId) e.sellerId = fieldErr("required");
+    const ce = channelError(channelId, channels);
     if (ce) e.salesChannelId = fieldErr(ce);
     const money = paidInto();
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, rsv ? money : forMath(banks))));
@@ -225,21 +225,11 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
       // paid in full, as the reservations page: never a silent click, the note says both amounts
       const paid = cashPaid(cash) + bankPaid(banks);
       if (paid !== quote.q.totalPiastres) { setPayRefusal({ total: quote.q.totalPiastres, paid }); revealFirstError(); return; }
-      setSaving(true);
-      try {
-        const saved = await api("/reservations", { method: "POST", saveKey: saveKey.current, body: reservationBody({
-          branchId: (isUser ? me?.branchId : branchId) ?? "", date: today(), employeeId: (isUser ? me?.id : sellerId || me?.id) ?? "",
-          customer: c.payload, lines: l.payload, cash, banks: money, discount: dsc.sent, visa: payment === "visa" }) });
-        saveKey.current = newSaveKey();
-        toast(t("gold-sales", "reservations.savedNumber", { code: code6(saved.reservationNumber) }));
-        if (canOpen(me, ["gold-sales/reservations-list"])) router.push(`/sales/reservations?open=${saved.id}`); else close();
-      } catch (err) { refusal(err); } finally { setSaving(false); }
-      return;
     }
     setSaving(true);
     const body = {
       ...(isNew && !isUser && branchId ? { branchId } : {}), ...(isNew ? { sellerId } : {}), invoiceType: type, salesChannelId: channelId, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
-      ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(banks), ...(dsc.sent && !buy ? { cashDiscount: dsc.sent } : {}),
+      ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(rsv ? money : banks), ...(dsc.sent && !buy ? { cashDiscount: dsc.sent } : {}),
     };
     try {
       const saved = await api(isNew ? "/sales-drafts" : `/sales-drafts/${draft!.id}`, { method: isNew ? "POST" : "PUT", body, saveKey: saveKey.current });
@@ -272,8 +262,17 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     if (!Object.keys(e).length && !gen && err.error.message !== "invalidFields") gen = tr.errorText(err.error);
     if (err.error.message === "notAllowed" && !gen && !Object.keys(e).length) gen = tr.errorText(err.error);
     setErrs(e); setGeneral(gen);
-    if (draft && ["draftLocked", "draftCompleted"].includes(err.error.message)) api(`/sales-drafts/${draft.id}`).then(fill).then(() => setGeneral(tr.errorText(err.error))).catch(() => {});
+    if (draft && ["draftLocked", "draftCompleted", "draftReserved"].includes(err.error.message)) api(`/sales-drafts/${draft.id}`).then(fill).then(() => setGeneral(tr.errorText(err.error))).catch(() => {});
   }
+
+  // ── Confirm of a reservation draft ──
+  const confirmation = useConfirmReservation(tr, {
+    done: (saved) => { fill(saved); reload(); },
+    failed: (text, code) => {
+      setGeneral(text); revealFirstError();
+      if (draft && ["draftLocked", "draftReserved"].includes(code ?? "")) api(`/sales-drafts/${draft.id}`).then(fill).then(() => setGeneral(text)).catch(() => {});
+    },
+  });
 
   async function remove() {
     if (!draft || !(await confirm({ title: d("deleteTitle"), text: d("deleteAsk", { number: draft.draftNumber }), danger: true, ok: L("حذف", "Delete") }))) return;
@@ -341,17 +340,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
   const branchLabel = draft?.branchName ?? (isUser ? ownBranch : branches.find((b) => b.id === branchId)?.branchName) ?? "";
   // The seller (اسم البائع) and the creator (اسم المستخدم), kept apart since backend #223. A saved draft: its own (an older one's
-  // seller is its creator). A new one: the seller picked; a reservation made here is the picker's, or the person's own.
+  // seller is its creator). A new one: the seller picked.
   const pickedSeller = sellers.find((x) => x.id === sellerId)?.name as string | undefined;
-  const sellerName = (draft ? draft.sellerName || draft.employeeName : pickedSeller ?? (rsv ? me?.name : "")) ?? "";
+  const sellerName = (draft ? draft.sellerName || draft.employeeName : pickedSeller) ?? "";
   const creatorName = (draft ? draft.employeeName : me?.name) ?? "";
-  const pickSeller = isNew && !(rsv && isUser);
   const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
   const typedManual = manualPrice(rsv ? "" : operation === "sell" ? manual.sell : manual.buy);
-  // Every person who has the desk may save a reservation from it (owner, 2026-11-24): the server lets the desk screen do that one create, so the third option no longer needs the Reservations screen.
-  const mayReserve = true;
   const typeLabels: Record<string, string> = { sale: d("typeSale"), delivery: d("typeDelivery"), handover: L("تسليم", "Hand over"), reservation: L("حجز", "Reservation") };
-  // The account that received each Instapay or Visa line: asked where the money is really taken (Complete, and a reservation).
+  // The account that received each Instapay or Visa line: asked where the money is really taken (Complete, and a reservation draft).
   const receivedInto = banks.map((b, i) => (!lineTakesAccount(b.method) && !b.bankAccountId && String(b.amount ?? "").trim() !== "")
     ? <div className="field" key={`pt${i}`} data-k={`bank${i}Account`} data-err={errs[`bank${i}Account`] ? "" : undefined}>
         <label htmlFor={`pt${i}-btn`}>{L(`الحساب اللي استلم ${d(`desk.pay.${b.method}`)} (${piastresText(typedPiastres(String(b.amount).trim()) ?? 0)})`, `Account that received ${d(`desk.pay.${b.method}`)} (${piastresText(typedPiastres(String(b.amount).trim()) ?? 0)})`)}</label>
@@ -364,7 +360,8 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
     return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
   // Admin / Super admin, a desk-wide role (even on another user's draft), or the action complete-sales-draft (own draft only); hidden until the person is known; a Buy draft is a quote only
-  const canComplete = canCompleteDraft(me, draft?.status, buy) && (!foreign || accountantEdits);
+  const canComplete = canCompleteDraft(me, draft?.status, buy, draft?.invoiceType) && (!foreign || accountantEdits);
+  const canConfirm = canConfirmReservation(me, draft);
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 
@@ -388,6 +385,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
   return (
     <form id="sd" noValidate aria-busy={saving} onSubmit={(e) => { e.preventDefault(); void save(); }}>
       {dialog}
+      {confirmation.dialog}
       <div id="banners">{general && <div className="note warn" role="alert" data-field-error><b>{general}</b></div>}</div>
       <div className="tk">
         <header className="tk-head" id="sd-head" aria-live="polite">
@@ -400,14 +398,14 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
                   <Choice tr={tr} id="branchId" searchable={false} options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { touch(); setBranchId(v); }} />{err("branchId")}</div>
               : <span className="tk-chip" data-k="branchId"><i>{d("branch")}</i>{branchLabel}</span>}
             {/* The seller: picked by everyone on a new draft, required, nothing preselected; fixed once saved (backend #223). */}
-            {pickSeller
-              ? <div className="field" data-k="sellerId" data-seller data-err={errs.sellerId ? "" : undefined}><label htmlFor="sellerId">{d("desk.seller")}{rsv ? "" : " *"}</label>
+            {isNew
+              ? <div className="field" data-k="sellerId" data-seller data-err={errs.sellerId ? "" : undefined}><label htmlFor="sellerId">{d("desk.seller")} *</label>
                   <Choice tr={tr} id="sellerId" searchable={false} options={sellers.map((u) => [u.id, u.name])} value={sellerId} invalid={!!errs.sellerId} disabled={saving}
                     placeholder={branchId && !sellers.length ? d("desk.noSellers") : undefined} onChange={(v) => { touch(); setSellerId(v); setErrs(({ sellerId: _gone, ...rest }) => rest); }} />{err("sellerId")}</div>
               : <span className="tk-chip" data-seller><i>{d("desk.seller")}</i>{sellerName}</span>}
             <span className="tk-chip" data-creator><i>{d("desk.creator")}</i>{creatorName}</span>
-            {!rsv && <div className="field" data-k="salesChannelId"><label htmlFor="salesChannelId">{d("channel")}</label>
-              <Choice tr={tr} id="salesChannelId" searchable={false} options={channels} value={channelId} disabled={!isNew || saving} invalid={!!errs.salesChannelId} onChange={(v) => { touch(); setChannelId(v); }} />{err("salesChannelId")}</div>}
+            <div className="field" data-k="salesChannelId"><label htmlFor="salesChannelId">{d("channel")}</label>
+              <Choice tr={tr} id="salesChannelId" searchable={false} options={channels} value={channelId} disabled={!isNew || saving} invalid={!!errs.salesChannelId} onChange={(v) => { touch(); setChannelId(v); }} />{err("salesChannelId")}</div>
             <span className="tk-chip"><i>{L("التاريخ", "Date")}</i><Ltr>{draft?.createdDay ?? today()}</Ltr></span>
           </div>
           {/* Owner, 2026-11-16: the sales channel and these three choices are picked once, on the new draft; a saved draft shows them read only. */}
@@ -418,10 +416,10 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             <Seg label={d("desk.metal")} value={metal} onChange={(k) => pick(() => { setMetal(k); setLines([]); })}
               items={(["gold", "silver"] as const).map((k) => ({ id: k, label: d(`desk.${k}`), attrs: { "data-metal": k } }))} />
             {!buy && <Seg label={d("typeLabel")} value={type} onChange={(k) => { touch(); if (type === "reservation" && k !== "reservation") setLines((ls) => linesInStock(ls, stock, new Set(items.filter(switchedOff).map((x) => String(x.id))))); setType(k); setErrs({}); if (k === "reservation") setTyping(false); }}
-              items={deskTypes(type, isNew, mayReserve).map((k) => ({ id: k, label: typeLabels[k], attrs: { "data-type": k } }))} />}
+              items={deskTypes(type, isNew).map((k) => ({ id: k, label: typeLabels[k], attrs: { "data-type": k } }))} />}
           </fieldset>
           {lines.length > 0 && <Button size="sm" id="sd-clear" className="tk-clear" disabled={readonly || saving} onClick={() => { touch(); setLines([]); setDisc(""); setManual({ sell: "", buy: "" }); }}>{d("desk.clear")}</Button>}
-          {!draft && <p className="tk-quiet tk-intro" id="sd-intro">{rsv ? L("الحجز بيتسجّل مدفوع بالكامل، وتقدر تختار أي قطعة حتى لو مش موجودة في المخزون.", "A reservation is saved paid in full, and any piece can be picked, in stock or not.") : L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
+          {!draft && <p className="tk-quiet tk-intro" id="sd-intro">{rsv ? d("rsv.intro") : L("سجّل طلب العميل كمسودة برقم، وعدّلها حتى منتصف الليل.", "Save the order as a numbered draft and edit it until midnight.")}</p>}
           {foreign && !accountantEdits && <div className="note warn" id="sd-foreign" role="status"><b>{L("هذه مسودة مستخدم آخر: للعرض فقط.", "This is another user's draft: view only.")}</b></div>}
           {note && (note.state !== "editable" || isUser) && <div className={`note ${note.state === "editable" ? "" : "warn"}`} id="sd-lock" data-lock={note.state}><b>{note.state === "locked" ? `${d("lock.locked")}: ` : ""}</b>{note.text}</div>}
         </header>
@@ -536,7 +534,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 
             {bar && <div className="tk-card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />
               {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
-              {payRefusal && !canComplete && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
+              {payRefusal && !canComplete && !rsv && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
 
             {canComplete && <div className="grp-block wide" id="sec-complete"><h3 className="grp-title">{L("إتمام الفاتورة", "Complete invoice")}</h3><div className="tk-card"><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
               <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>
@@ -571,9 +569,17 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
             {draft?.status === "completed" && <div className="tk-card" id="sd-done" role="status"><b>{d("completed", { number: draft.salesInvoiceNumber })}</b>
               {mayOpenInvoice ? <NavLink href={`/sales/invoices?open=${draft.salesInvoiceId}`} className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
 
+            {draft?.status === "reserved" && <div className="tk-card" id="sd-reserved" role="status">
+              <b>{draft.reservationNumber ? d("rsv.confirmed", { code: code6(draft.reservationNumber) }) : d("rsv.cancelled")}</b>
+              {draft.reservationNumber && (canOpen(me, ["gold-sales/reservations-list"]) ? <NavLink href={`/sales/reservations?open=${draft.reservationId}`} className="btn primary">{d("rsv.open")}</NavLink> : <div className="help">{d("rsv.noAccess")}</div>)}</div>}
+
             {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
               {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : rsv ? L("حفظ الحجز", "Save reservation") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
+              {canConfirm && <Button variant="primary" id="sd-confirm-reservation" aria-busy={confirmation.confirming} disabled={confirmation.confirming} onClick={() => {
+                if (dirty) { setGeneral(d("rsv.saveFirst")); revealFirstError(); return; }   // what is confirmed is what was saved
+                void confirmation.run(draft!);
+              }}><Icon name="check" size={15} />{d("rsv.confirm")}</Button>}
               {mayDeleteDraft(me, draft) && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
               <Button id="sd-back" onClick={close}><Icon name="back" size={15} />{d("backToList")}</Button>
             </div>

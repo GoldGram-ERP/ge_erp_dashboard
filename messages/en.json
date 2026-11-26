@@ -923,6 +923,7 @@
   "draftLocked": "Not saved: this draft was made on {day} and is locked. Only Delete remains.",
   "documentLocked": "Not saved: this was made on {day} and is locked. A normal user edits on the day it was made; ask an Admin.",
   "draftCompleted": "This draft is already completed. It cannot be edited, deleted or completed again.",
+  "draftReserved": "This reservation is already confirmed. The draft cannot be edited, deleted or confirmed again.",
   "draftItemsMismatch": "The scanned pieces do not match the draft's items and counts. Check the table and scan again.",
   "salesDraftNotFound": "This draft was not found.",
   "merchantNotFound": "This merchant does not exist.",
@@ -2195,7 +2196,21 @@
    "status": {
     "open": "Open",
     "completed": "Completed",
+    "reserved": "Reserved",
     "deleted": "Deleted"
+   },
+   "rsv": {
+    "tag": "Reservation",
+    "intro": "A reservation is saved as a draft, paid in full, and any piece can be picked, in stock or not. It becomes a reservation when the accountant or an Admin confirms it.",
+    "actionCol": "Reservation",
+    "confirm": "Confirm reservation",
+    "confirmTitle": "Confirm the reservation",
+    "confirmAsk": "Confirm draft number {number}? It becomes a reservation and its payment is recorded.",
+    "confirmed": "Reservation number {code} created",
+    "cancelled": "The reservation made from this draft was deleted.",
+    "open": "Open the reservation",
+    "noAccess": "You are not allowed to open the reservation from here.",
+    "saveFirst": "Save the changes first, then confirm."
    },
    "type": "Type",
    "typeSale": "Sale",
@@ -2227,6 +2242,7 @@
     "locked": "Locked",
     "reason": "This draft was made on {day}. A draft can be edited only until midnight (Cairo time) of the day it was made. Only Delete remains.",
     "completed": "This draft is completed and became an invoice, so it cannot be edited.",
+    "reserved": "This draft is confirmed and became a reservation, so it cannot be edited.",
     "deleted": "This draft is deleted."
    },
    "delete": "Delete the draft",
