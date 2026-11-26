@@ -17,7 +17,7 @@ function Chip({ f, value }: { f: FilterConfig; value: unknown }) {
 }
 
 export function FilterSummary({ filters, values, none }: { filters: FilterConfig[]; values: Record<string, unknown>; none: string }) {
-  const used = filters.filter((f) => isUsed(values[f.name]));
+  const used = filters.filter((f) => isUsed(values[f.name]) && (!f.when || f.when(values)));
   if (!used.length) return <span className="fb-none">{none}</span>;
   return <>{used.map((f) => <Chip key={f.name} f={f} value={values[f.name]} />)}</>;
 }
