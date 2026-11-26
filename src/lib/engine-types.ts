@@ -48,7 +48,8 @@ export type FieldConfig = {
   html?: (values: Row) => ReactNode;   // type "html"
 };
 
-export type FilterConfig = FieldConfig & { param?: string; toQuery?: (v: any, all: Record<string, any>) => Query | void };
+// when: the filter is on screen only while it returns true for the other filters' values; its toQuery must send nothing while it does not.
+export type FilterConfig = FieldConfig & { param?: string; toQuery?: (v: any, all: Record<string, any>) => Query | void; when?: (all: Record<string, any>) => boolean };
 
 export type Chip = { id: string; label: string; query?: Query; keys?: string[]; superOnly?: boolean };
 export type ColumnType = "money" | "weight" | "int" | "date" | "datetime" | "bool" | "status" | "text";

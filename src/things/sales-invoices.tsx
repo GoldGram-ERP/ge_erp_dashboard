@@ -19,6 +19,7 @@ import { PIECE_CODE } from "./sales-form-parts";
 import { useAccess } from "./sales-access";
 import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
 import { governorateName } from "@/lib/governorates";
+import { kindFilters } from "./sales-invoices-filters";
 
 import { code6 as code6 } from "@/lib/code6";
 const branchSpec = { path: "/branches", value: "id", label: "branchName", query: { pageSize: undefined } };
@@ -116,7 +117,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         search: { param: "search", placeholder: `${m("searchPlaceholder")} · ${t("gold-sales", "findInvoice.pieceCode")}` },
         chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" } }],
         // The branch filter is for an Admin and the Super admin; a User sells in their own branch.
-        filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), { name: "invoiceType", label: m("invoiceType"), type: "select", options: ["sale", "delivery", "handover", "shipping"].map((k) => [k, m(`invoiceTypes.${k}`)] as [string, string]), placeholder: ALL }, { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
+        filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), ...kindFilters(tr), { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
         paging: { sizeParam: null, sizes: [20], size: 20 },
         // The backend (0.1.23) sorts this list on these ids: the column keys. More than one page: the server sorts across pages; one page: the browser.
         serverSort: { on: true, columns: Object.fromEntries(["invoiceNumber", "invoiceDate", "invoiceType", "customerName", "customerPhone", "sellerName", "lineCount", "cashTotal"].map((k) => [k, k])) },
@@ -130,7 +131,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         endpoint: "/reports/sales-report", rowKey: "_k",
         transform: (rows) => rows.map((r) => ({ ...r, _k: `${r.invoiceId}|${r.lineNumber}` })),   // a sold piece is one line of one invoice
         runLabel: rep("run"), chips: quickChips(),
-        filters: [from(), to(), branch(), { name: "userId", label: t("gold-sales", "salesReport.userId"), type: "select", optionsFrom: userSpec, placeholder: ALL },
+        filters: [from(), to(), branch(), ...kindFilters(tr), { name: "userId", label: t("gold-sales", "salesReport.userId"), type: "select", optionsFrom: userSpec, placeholder: ALL },
           { name: "karat", label: t("gold-sales", "salesReport.karat"), type: "select", options: ["18", "21", "24", "999"].map((k) => [k, k] as [string, string]), placeholder: ALL },
           { name: "itemType", label: t("gold-sales", "salesReport.itemType"), type: "select", options: ["gold", "other_or_silver"].map((k) => [k, t("gold-accounts", `items.itemTypes.${k}`)] as [string, string]), placeholder: ALL },
           { name: "categoryId", label: t("gold-sales", "salesReport.categoryId"), type: "select", optionsFrom: categorySpec, placeholder: ALL },

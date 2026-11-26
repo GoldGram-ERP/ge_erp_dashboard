@@ -205,6 +205,12 @@
     "en": "New type Shipping on sales invoices and the sales desk: pick the governorate and its delivery price is added to the total and printed.",
     "ar": "نوع جديد «توصيل» في فاتورة المبيعات ومكتب البيع: تختار المحافظة وسعر التوصيل يتضاف على الإجمالي ويتطبع.",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "Sales invoices: filter the list and the gold sales report by type (Sale, Delivery, Reservation, Shipping) and by delivery status.",
+    "ar": "فواتير المبيعات: بقى تقدر تفلتر السجل وتقرير مبيعات الذهب بنوع الفاتورة (بيع وتسليم وحجز وتوصيل) وبحالة التسليم.",
+    "route": "/sales/invoices"
    }
   ]
  },

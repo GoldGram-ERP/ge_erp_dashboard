@@ -2,8 +2,8 @@
 // readForm / showErrors / clearOnInput as a hook on react-hook-form: the resolver is the shared readFields rule
 // (parsed money in piastres, weight in milligrams, per-field validate(v, all)), so the HTML configs keep working.
 import { useMemo, type ReactNode } from "react";
-import { FormProvider, useForm, type FieldErrors, type Resolver, type UseFormReturn } from "react-hook-form";
-import type { FieldConfig, Row } from "@/lib/engine-types";
+import { FormProvider, useForm, useWatch, type FieldErrors, type Resolver, type UseFormReturn } from "react-hook-form";
+import type { FieldConfig, FilterConfig, Row } from "@/lib/engine-types";
 import { rawValues, readFields } from "@/lib/fields";
 import { useT } from "@/lib/t";
 import { Field, fieldId } from "./Field";
@@ -69,7 +69,8 @@ export function FormFields({ form, fields, values = {} }: { form: FieldsForm; fi
 }
 
 /** Filters: the same fields in a row, no stars. */
-export function FilterFields({ form, fields }: { form: FieldsForm; fields: FieldConfig[] }): ReactNode {
-  return <FormProvider {...form}>{fields.map((f) => <Field key={f.name} f={{ ...f, required: false }} />)}</FormProvider>;
+export function FilterFields({ form, fields }: { form: FieldsForm; fields: FilterConfig[] }): ReactNode {
+  const values = useWatch({ control: form.control }) as Row;   // a filter with `when` follows the others as they change
+  return <FormProvider {...form}>{fields.filter((f) => !f.when || f.when(values)).map((f) => <Field key={f.name} f={{ ...f, required: false }} />)}</FormProvider>;
 }
 export { fieldId };
