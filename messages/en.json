@@ -947,7 +947,8 @@
   "salesChannelNotFound": "This sales channel does not exist.",
   "bugReportNotFound": "This report does not exist.",
   "bugReportFileNotFound": "This file does not exist.",
-  "alreadyTaslem": "This invoice was already taken through Taslem."
+  "alreadyTaslem": "This invoice was already taken through Taslem.",
+  "draftItemChanged": "{itemName} changed since the draft was saved. Save the draft again, then complete."
  },
  "expenses": {
   "expenseTypes": {
@@ -2098,7 +2099,7 @@
    }
   },
   "salesDesk": {
-   "buyQuoteNote": "A Buy quote is saved as a draft only. It is never completed into an invoice.",
+   "buyQuoteNote": "A Buy is saved as a draft. Completing it pays the customer and adds the pieces to stock.",
    "refused": {
     "discountPercent": "A percent discount cannot go with a typed cash discount. Use only one of them.",
     "discountNotAllowed": "You do not have the cash discount permission, so a draft with a discount cannot be saved.",
@@ -2243,7 +2244,8 @@
     "reason": "This draft was made on {day}. A draft can be edited only until midnight (Cairo time) of the day it was made. Only Delete remains.",
     "completed": "This draft is completed and became an invoice, so it cannot be edited.",
     "reserved": "This draft is confirmed and became a reservation, so it cannot be edited.",
-    "deleted": "This draft is deleted."
+    "deleted": "This draft is deleted.",
+    "bought": "This draft is completed and the pieces were bought, so it cannot be edited."
    },
    "delete": "Delete the draft",
    "deleteAsk": "Delete draft number {number}? Afterwards it stays visible, read only, under Deleted.",
@@ -2322,6 +2324,26 @@
     "instapay": "InstaPay",
     "bank_transfer": "Bank transfer",
     "visa": "Visa"
+   },
+   "buyc": {
+    "title": "Complete invoice",
+    "intro": "Completing pays the customer, gives each piece its code and adds it to stock. Then print the labels.",
+    "code": "Code {code}",
+    "codes": "Codes {from} to {to}",
+    "codesAuto": "Automatic codes",
+    "preview": "The codes shown are the expected ones; the real codes appear after Complete.",
+    "toPay": "To pay the customer",
+    "savedPrice": "Complete pays the saved price. Today's price now gives {total}.",
+    "payMismatch": "Cash and bank transfer together must equal {total}. Entered: {paid}.",
+    "saveFirst": "Save the changes first, then complete.",
+    "confirmTitle": "Complete the buy",
+    "confirmAsk": "Pay {total} to {customer} and add {count} pieces to stock?",
+    "complete": "Complete invoice",
+    "completing": "Completing...",
+    "completed": "Purchase number {code} created: the pieces are in stock",
+    "deleted": "The purchase made from this draft was deleted.",
+    "pieces": "Pieces added to stock",
+    "open": "Open in Returned pieces"
    }
   }
  },

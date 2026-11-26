@@ -59,7 +59,7 @@ export const buildConfig = (tr: Parameters<MakeConfig>[0], everyBranch: boolean,
           return methods.length ? <span className="st-row">{methods.map((m) => <Status key={m} tone="info" data-method={m}>{d(`listPay.${m}`)}</Status>)}</span> : "-";
         } },
         { key: "status", label: d("statusLabel"), sortable: false,
-          render: (r) => (r.status === "deleted" ? badge("off", d("status.deleted")) : r.status === "completed" ? badge("good", d("status.completed"))
+          render: (r) => (r.status === "deleted" ? badge("off", d("status.deleted")) : r.status === "completed" ? badge("good", r.customerPiecePurchaseNumber ? `${d("status.completed")} ${code6(r.customerPiecePurchaseNumber)}` : d("status.completed"))
             : r.status === "reserved" ? badge("good", r.reservationNumber ? `${d("status.reserved")} ${code6(r.reservationNumber)}` : d("status.reserved"))
             : r.locked ? badge("warn", d("lock.locked")) : badge("info", d("status.open"))) },
         { key: "createdDay", label: d("day"), type: "date" },

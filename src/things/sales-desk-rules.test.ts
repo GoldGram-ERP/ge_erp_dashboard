@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, canConfirmReservation, discountCell, paymentMethodsOf } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, canCompleteBuyDraft, canConfirmReservation, discountCell, paymentMethodsOf } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -190,6 +190,25 @@ describe("the type choice and the reservation draft", () => {
     expect(canCompleteDraft(admin, "open", false, "sale")).toBe(true);
   });
 });
+describe("completing a Buy draft", () => {
+  const draft = { status: "open", operation: "buy", locked: false };
+  it("is for the same people as a sale's Complete", () => {
+    expect(canCompleteBuyDraft({ userType: "admin" }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "super_admin" }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "user", businessRole: "accountant" }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "user", actions: ["complete-sales-draft"] }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "user", businessRole: "branch_sales" }, draft)).toBe(false);
+    expect(canCompleteBuyDraft(undefined, draft)).toBe(false);
+  });
+  it("is only on an open Buy draft that is not locked for the person", () => {
+    const admin = { userType: "admin" };
+    for (const status of ["completed", "deleted"]) expect(canCompleteBuyDraft(admin, { ...draft, status }), status).toBe(false);
+    expect(canCompleteBuyDraft(admin, { ...draft, operation: "sell" })).toBe(false);
+    expect(canCompleteBuyDraft(admin, { ...draft, locked: true })).toBe(false);
+    expect(canCompleteBuyDraft(admin, null)).toBe(false);
+  });
+});
+
 describe("wholesale is not a desk channel, and leaving Reservation drops what is not in stock", () => {
   it("never offers the channel named جملة, and a person left with one other channel starts on it", () => {
     const retail = { id: "r", name: "قطاعي" }, whole = { id: "g", name: " جملة " };
