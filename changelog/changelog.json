@@ -211,6 +211,12 @@
     "en": "Sales invoices: filter the list and the gold sales report by type (Sale, Delivery, Reservation, Shipping) and by delivery status.",
     "ar": "فواتير المبيعات: بقى تقدر تفلتر السجل وتقرير مبيعات الذهب بنوع الفاتورة (بيع وتسليم وحجز وتوصيل) وبحالة التسليم.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "better",
+    "en": "Reservation draft: one button at a time. Confirm reservation shows on a saved draft; after a change it becomes Save the changes.",
+    "ar": "مسودة الحجز بقى فيها زرار واحد: «تأكيد الحجز» وهي محفوظة، ولو عدّلت حاجة يظهر مكانه «حفظ التعديلات».",
+    "route": "/sales/desk"
    }
   ]
  },

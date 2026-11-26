@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, canCompleteBuyDraft, canConfirmReservation, discountCell, paymentMethodsOf } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, canCompleteBuyDraft, canConfirmReservation, draftButtons, discountCell, paymentMethodsOf } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -190,6 +190,17 @@ describe("the type choice and the reservation draft", () => {
     expect(canCompleteDraft(admin, "open", false, "sale")).toBe(true);
   });
 });
+describe("the main button of a draft", () => {
+  it("saves a new reservation draft, then confirms the saved one until something changes", () => {
+    expect(draftButtons({ saved: false, reservation: true, dirty: true }).save).toBe(true);
+    expect(draftButtons({ saved: true, reservation: true, dirty: false })).toEqual({ save: false, confirm: true });
+    expect(draftButtons({ saved: true, reservation: true, dirty: true })).toEqual({ save: true, confirm: false });
+  });
+  it("always offers the save of every other draft", () => {
+    for (const saved of [true, false]) for (const dirty of [true, false]) expect(draftButtons({ saved, reservation: false, dirty }).save).toBe(true);
+  });
+});
+
 describe("completing a Buy draft", () => {
   const draft = { status: "open", operation: "buy", locked: false };
   it("is for the same people as a sale's Complete", () => {

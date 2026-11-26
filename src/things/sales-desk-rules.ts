@@ -13,6 +13,11 @@ export { LINES_MAX };
 export const deskTypes = (current: string, isNew: boolean): string[] =>
   ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", "shipping", ...(isNew || current === "reservation" ? ["reservation"] : [])];
 
+/** A reservation draft shows one main button at a time (owner, 2026-11-26), so saving and confirming are never mixed up: a new one is saved;
+ *  a saved one is confirmed until something on it changes, then the changes are saved. Every other draft always offers its save. */
+export const draftButtons = (x: { saved: boolean; reservation: boolean; dirty: boolean }): { save: boolean; confirm: boolean } =>
+  ({ save: !x.saved || !x.reservation || x.dirty, confirm: !x.dirty });
+
 export type DeskCustomer = { customerName: string; customerPhone: string; nationalId: string };
 /** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin. The three are required; the National ID is exactly 14 digits. */
 export function readCustomer(tr: Tr, f: DeskCustomer): { errors: Record<string, string>; payload?: { customerName: string; customerPhone: string; nationalId: string } } {

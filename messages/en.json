@@ -2218,8 +2218,7 @@
     "confirmed": "Reservation number {code} created",
     "cancelled": "The reservation made from this draft was deleted.",
     "open": "Open the reservation",
-    "noAccess": "You are not allowed to open the reservation from here.",
-    "saveFirst": "Save the changes first, then confirm."
+    "noAccess": "You are not allowed to open the reservation from here."
    },
    "type": "Type",
    "typeSale": "Sale",
