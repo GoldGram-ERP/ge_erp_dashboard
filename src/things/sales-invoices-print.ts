@@ -1,6 +1,7 @@
 // Print of a saved sales invoice: GET /sales-invoices/{id}/print?layout=, drawn in a new window with a Print button.
 // Layouts: a4, gift (no amounts unless asked), star (amounts as stars) on A4; thermal and receipt on 80 mm paper. A backend refusal is shown in its own words.
 // A gift prints the recipient where the customer goes, never the real buyer; no layout prints the seller (backend #169).
+import { governorateName } from "@/lib/governorates";
 import { api, ApiFailure } from "@/lib/api";
 import { esc, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
@@ -147,7 +148,8 @@ function a4(d: any) {
     : `<div class="gbox"><div><span>${esc(p("invoiceWeight"))}:</span> <b>${ltr(gramsText(d.totals.weight))} ${unit}</b></div></div>`;
   const box = `<div class="boxes">${priceBox}${weightBox}</div>`;
   const discount = typeof d.totals.discount === "number" && d.totals.discount > 0 ? `<dt>${esc(p("cashDiscount"))}</dt><dd>${money1(-d.totals.discount)}</dd>` : "";
-  const sums = withPrice ? `<div class="sums"><dl><dt>${esc(p("goldValue"))}</dt><dd>${money1(d.totals.goldTotal)}</dd><dt>${esc(p("makingCharge"))}</dt><dd>${money1(d.totals.makingTotal)}</dd>${discount}</dl><div class="grand"><span>${esc(p("total"))}</span><b>${money1(d.totals.total)}</b></div></div>` : "";
+  const delivery = hasDelivery(d) ? `<dt>${esc(deliveryLabel(d))}</dt><dd>${money1(d.delivery.amount)}</dd>` : "";
+  const sums = withPrice ? `<div class="sums"><dl><dt>${esc(p("goldValue"))}</dt><dd>${money1(d.totals.goldTotal)}</dd><dt>${esc(p("makingCharge"))}</dt><dd>${money1(d.totals.makingTotal)}</dd>${discount}${delivery}</dl><div class="grand"><span>${esc(p("total"))}</span><b>${money1(d.totals.total)}</b></div></div>` : "";
   const saved = String(d.footer ?? "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
   const foot = saved.length ? saved : inArabic ? DEFAULT_FOOTER.ar : DEFAULT_FOOTER.en;
   const footDir = saved.length ? "auto" : inArabic ? "rtl" : "ltr";
@@ -160,11 +162,16 @@ function a4(d: any) {
         <footer class="pfoot" dir="${footDir}" lang="${inArabic ? "ar" : "en"}">${foot.map((x) => `<span>${footLine(x)}</span>`).join("")}</footer>${contactStrip()}</article>`;
 }
 
+// The delivery of a shipping invoice (owner, 2026-11-26), already part of the total; not shown when the amounts are hidden.
+const hasDelivery = (d: any) => Boolean(d.delivery) && amountText(d.delivery.amount) !== null;
+const deliveryLabel = (d: any) => p("delivery", { governorate: governorateName(d.delivery.governorate, inArabic) });
+
 // 80 mm paper: every line a small block that wraps; the receipt keeps the header, the total and the payments.
 function narrow(d: any) {
   const receipt = d.layout === "receipt";
   const items = receipt ? "" : `<ol>${d.lines.map((l: any) => `<li><b>${esc(l.itemName)}</b><p><span>${ltr(l.pieceCode)}</span><span>${esc(l.karat)}K · ${ltr(gramsText(l.weight) + " g")}</span>${amountText(l.linePrice) !== null ? `<b>${ltr(amountText(l.linePrice))}</b>` : ""}</p></li>`).join("")}</ol>`;
-  return `<article class="narrow" data-layout="${esc(d.layout)}">${header(d)}${items}<p style="display:flex;justify-content:space-between;font-weight:600;margin:8px 0 0"><span>${esc(p("total"))} · ${ltr(d.totals.lineCount)}</span>${ltr(amountText(d.totals.total) ?? "")}</p>${payments(d)}</article>`;
+  const delivery = hasDelivery(d) ? `<ul><li><span>${esc(deliveryLabel(d))}</span>${ltr(amountText(d.delivery.amount))}</li></ul>` : "";
+  return `<article class="narrow" data-layout="${esc(d.layout)}">${header(d)}${items}${delivery}<p style="display:flex;justify-content:space-between;font-weight:600;margin:8px 0 0"><span>${esc(p("total"))} · ${ltr(d.totals.lineCount)}</span>${ltr(amountText(d.totals.total) ?? "")}</p>${payments(d)}</article>`;
 }
 
 // Must be called straight from the click (the window is opened before the answer, so no pop-up blocker objects).

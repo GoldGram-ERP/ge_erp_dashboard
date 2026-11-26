@@ -39,6 +39,9 @@ export type DeskMessageInput = {
   lines: DeskLine[];
   /** Piastres, worked out by the backend quote: before the discount, final, and the cash total before Visa. */
   totals: { before: number | bigint; final: number | bigint; cashTotal?: number | bigint };
+  /** A shipping sale only (owner, 2026-11-26): the governorate's Arabic name and its price in piastres. The totals above stay the pieces';
+   *  two more lines give the delivery and the total with it. */
+  delivery?: { name: string; amount: number };
 };
 
 /** The reference calculator's WhatsApp text, in Arabic whatever the screen language. Pure formatting: no arithmetic on prices. */
@@ -67,5 +70,5 @@ export function buildDeskMessage(d: DeskMessageInput): string {
     : d.payment2
     ? `${d.payment1}: ${cents(split)} جنيه\n${d.payment2}: ${cents(Number(t.final) - split)} جنيه`
     : `طريقة الدفع: ${d.payment1}`;
-  return `التاريخ: ${d.date}\nالفرع: ${d.branch}\nقناة البيع: ${d.channel}${silver ? " قطعة فضه" : ""}\nاسم البائع: ${d.seller}\nاسم العميل: ${d.customer}\nرقم البطاقة: ${d.nationalId}\nرقم العميل: ${d.phone}\nتفاصيل القطع: ${sell ? "بيع" : "شراء"}\n${price}${manual ? `\nسعر جرام 21 المعتمد: ${money(d.finalPrice21)}` : ""}\n${d.finalPrice24 != null ? `سعر عيار 24 المعتمد: ${money(d.finalPrice24)}\n` : ""}${sell ? "مصنعية" : "كاش باك"}: ${lines.map((l) => l.feePerGram).join(" + ")}\n${d.discount ? `خصم ${d.discount}% على المصنعية\n` : Number(d.discountAmount ?? 0) > 0 ? `خصم ${cents(Number(d.discountAmount))} جنيه على المصنعية\n` : ""}الأوزان:\n${lines.map((l) => `${l.quantity} ${l.productName}${silver ? ` ${l.wrapping === "unwrapped" ? "غير مغلف" : "مغلف"}` : ""}`).join("\n")}\n${totals}\n${payment}`;
+  return `التاريخ: ${d.date}\nالفرع: ${d.branch}\nقناة البيع: ${d.channel}${silver ? " قطعة فضه" : ""}\nاسم البائع: ${d.seller}\nاسم العميل: ${d.customer}\nرقم البطاقة: ${d.nationalId}\nرقم العميل: ${d.phone}\nتفاصيل القطع: ${sell ? "بيع" : "شراء"}\n${price}${manual ? `\nسعر جرام 21 المعتمد: ${money(d.finalPrice21)}` : ""}\n${d.finalPrice24 != null ? `سعر عيار 24 المعتمد: ${money(d.finalPrice24)}\n` : ""}${sell ? "مصنعية" : "كاش باك"}: ${lines.map((l) => l.feePerGram).join(" + ")}\n${d.discount ? `خصم ${d.discount}% على المصنعية\n` : Number(d.discountAmount ?? 0) > 0 ? `خصم ${cents(Number(d.discountAmount))} جنيه على المصنعية\n` : ""}الأوزان:\n${lines.map((l) => `${l.quantity} ${l.productName}${silver ? ` ${l.wrapping === "unwrapped" ? "غير مغلف" : "مغلف"}` : ""}`).join("\n")}\n${totals}${d.delivery ? `\nالتوصيل (${d.delivery.name}): ${cents(d.delivery.amount)}\nالإجمالي شامل التوصيل: ${cents(Number(t.final) + d.delivery.amount)}` : ""}\n${payment}`;
 }

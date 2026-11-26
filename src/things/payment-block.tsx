@@ -61,7 +61,7 @@ export function PaymentBlock({ tr, cash, onCash, banks, onBanks, accounts, error
   );
 }
 
-export type Bar = { gold: number; making: number; gross: number; discount: number; makingLeft: number; paid: number; left: number };
+export type Bar = { gold: number; making: number; gross: number; discount: number; makingLeft: number; paid: number; left: number; delivery?: number };
 /** The bar's numbers of a saved invoice or reservation (its totals). */
 export const savedBar = (t: Row): Bar => ({ gold: t.goldTotal, making: t.makingTotal, gross: t.grossTotal, discount: t.discount ?? 0, makingLeft: t.makingTotal - (t.discount ?? 0), paid: t.paid, left: t.total - t.paid });
 
@@ -76,6 +76,7 @@ export function TotalsBar({ tr, bar }: { tr: Tr; bar: Bar }) {
       {cell("making", sg(tr, "makingTotal"), bar.making)}
       {cell("gross", sg(tr, "grossTotal"), bar.gross)}
       {cell("discount", sg(tr, "cashDiscount"), bar.discount, bar.discount > 0 ? <div className="help" data-cell="makingLeft">{sg(tr, "makingLeft", { amount: piastresText(bar.makingLeft) })}</div> : null)}
+      {bar.delivery !== undefined && cell("delivery", tr.L("التوصيل", "Delivery"), bar.delivery)}
       {cell("paid", sg(tr, "paid"), bar.paid)}
       {cell("left", bar.left < 0 ? sg(tr, "overPaid") : sg(tr, "leftToPay"), Math.abs(bar.left), bar.left > 0 ? <CopyButton text={piastresInput(bar.left)} label={tr.L("انسخ المتبقي للدفع", "Copy the remaining")} /> : null, bar.left !== 0)}
     </div>

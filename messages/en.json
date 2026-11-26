@@ -1547,7 +1547,8 @@
    "invoiceTypes": {
     "sale": "Sale",
     "delivery": "Delivery",
-    "handover": "Hand-over"
+    "handover": "Hand-over",
+    "shipping": "Shipping"
    },
    "customer": "Customer",
    "customerName": "Customer name",
@@ -1760,7 +1761,8 @@
    "makingChargePerGram": "Making charge per gram",
    "makingCharge": "Making charge",
    "reservationTitle": "Reservation invoice",
-   "reservationTitleSub": "فاتورة حجز"
+   "reservationTitleSub": "فاتورة حجز",
+   "delivery": "Delivery ({governorate})"
   },
   "reservations": {
    "title": "Reservations",

@@ -43,7 +43,7 @@ export const buildConfig = (tr: Parameters<MakeConfig>[0], everyBranch: boolean,
       ...(branchFilter.length ? { filters: branchFilter } : {}),
       paging: { sizeParam: null, sizes: [20], size: 20 },
       columns: [
-        { key: "draftNumber", label: d("draftNumberShort"), render: (r) => <><Ltr>{r.draftNumber}</Ltr> {r.operation === "buy" && <Status tone="warn" data-operation="buy">{d("desk.buy")}</Status>}{r.invoiceType === "reservation" && <Status tone="info" data-type="reservation">{d("rsv.tag")}</Status>}</> },
+        { key: "draftNumber", label: d("draftNumberShort"), render: (r) => <><Ltr>{r.draftNumber}</Ltr> {r.operation === "buy" && <Status tone="warn" data-operation="buy">{d("desk.buy")}</Status>}{r.invoiceType === "reservation" && <Status tone="info" data-type="reservation">{d("rsv.tag")}</Status>}{r.invoiceType === "shipping" && <Status tone="info" data-type="shipping">{tr.L("توصيل", "Shipping")}</Status>}</> },
         ...branchColumn,
         { key: "customerName", label: d("customerCol") },
         { key: "customerPhone", label: d("phoneCol"), render: (r) => <Ltr>{r.customerPhone}</Ltr> },

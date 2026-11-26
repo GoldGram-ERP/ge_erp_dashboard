@@ -874,7 +874,9 @@ html:not([data-ready]) #nav,html:not([data-ready]) .side-foot,html:not([data-rea
 .tb-cell .help{font-size:12.5px;color:var(--mute);line-height:1.35}
 .tb-cell[data-cell=gross],.tb-cell[data-cell=left]{background:var(--surface)}
 .tb-cell[data-cell=gross] b,.tb-cell[data-cell=left] b{font-size:19px}
-@media (max-width:900px){.totals-bar{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* a shipping sale has a seventh cell, the delivery */
+.totals-bar:has([data-cell=delivery]){grid-template-columns:repeat(7,minmax(0,1fr))}
+@media (max-width:900px){.totals-bar,.totals-bar:has([data-cell=delivery]){grid-template-columns:repeat(3,minmax(0,1fr))}}
 .price-btn{font:inherit;font-weight:600;font-variant-numeric:tabular-nums;color:var(--gold);padding:2px 6px;margin:-2px -6px;border-radius:6px;text-decoration:underline dotted;text-underline-offset:3px;cursor:help;transition:background .15s}
 .price-btn:hover,.price-btn[aria-expanded=true]{background:var(--gold-wash)}
 .price-btn:active{transform:scale(.97)}

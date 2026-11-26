@@ -198,6 +198,9 @@ Object.assign(APP, {
   "gold-sales.salesDesk.rsv.noAccess": ["لا يُسمح لك بفتح الحجز من هنا.", "You are not allowed to open the reservation from here."],
   "gold-sales.salesDesk.rsv.saveFirst": ["احفظ التعديلات أولًا ثم أكِّد.", "Save the changes first, then confirm."],
   "errors.draftReserved": ["تم تأكيد هذا الحجز بالفعل، فلا تُعدَّل المسودة ولا تُحذف ولا تُؤكَّد مرة أخرى.", "This reservation is already confirmed. The draft cannot be edited, deleted or confirmed again."],
+  // The shipping type (owner, 2026-11-26).
+  "gold-sales.salesInvoices.invoiceTypes.shipping": ["توصيل", "Shipping"],
+  "gold-sales.prints.delivery": ["التوصيل ({governorate})", "Delivery ({governorate})"],
   // Delivery of a reservation (owner, 2026-11-26).
   "errors.reservationNotInvoiced": ["لا يمكن تسليم حجز لم تصدر له فاتورة بعد.", "A reservation cannot be delivered before it has an invoice."],
   "errors.reservationDelivered": ["تم تسليم هذا الحجز من قبل.", "This reservation is already delivered."],

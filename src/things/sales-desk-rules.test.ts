@@ -166,10 +166,10 @@ describe("one channel per payment line (owner, 2026-11-09)", () => {
 
 describe("the type choice and the reservation draft", () => {
   it("offers Reservation on a new draft and on a saved reservation draft only; an old delivery draft keeps its type", () => {
-    expect(deskTypes("sale", true)).toEqual(["sale", "handover", "reservation"]);
-    expect(deskTypes("handover", false)).toEqual(["sale", "handover"]);
-    expect(deskTypes("reservation", false)).toEqual(["sale", "handover", "reservation"]);
-    expect(deskTypes("delivery", false)).toEqual(["sale", "delivery", "handover"]);
+    expect(deskTypes("sale", true)).toEqual(["sale", "handover", "shipping", "reservation"]);
+    expect(deskTypes("handover", false)).toEqual(["sale", "handover", "shipping"]);
+    expect(deskTypes("reservation", false)).toEqual(["sale", "handover", "shipping", "reservation"]);
+    expect(deskTypes("delivery", false)).toEqual(["sale", "delivery", "handover", "shipping"]);
   });
   it("lets an Admin, the Super admin and the accountant confirm an open reservation draft, nobody else", () => {
     const draft = { status: "open", invoiceType: "reservation", locked: false };

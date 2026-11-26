@@ -8,10 +8,10 @@ import { LINES_MAX, bankPaid, cashPaid, paymentErrors, type Bank } from "./sales
 
 export { LINES_MAX };
 
-/** The types the desk's type choice offers (owner, 2026-11-18): Sale, Hand over, and Reservation on a new draft. A saved draft keeps its own type: a
- *  reservation draft (owner, 2026-11-26), or "delivery" from before Hand over replaced it. */
+/** The types the desk's type choice offers (owner, 2026-11-18): Sale, Hand over, Shipping (توصيل, owner 2026-11-26), and Reservation on a new draft.
+ *  A saved draft keeps its own type: a reservation draft (owner, 2026-11-26), or "delivery" from before Hand over replaced it. */
 export const deskTypes = (current: string, isNew: boolean): string[] =>
-  ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", ...(isNew || current === "reservation" ? ["reservation"] : [])];
+  ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", "shipping", ...(isNew || current === "reservation" ? ["reservation"] : [])];
 
 export type DeskCustomer = { customerName: string; customerPhone: string; nationalId: string };
 /** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin. The three are required; the National ID is exactly 14 digits. */

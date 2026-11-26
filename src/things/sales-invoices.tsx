@@ -18,6 +18,7 @@ import { SalesInvoiceForm } from "./sales-invoices-form";
 import { PIECE_CODE } from "./sales-form-parts";
 import { useAccess } from "./sales-access";
 import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
+import { governorateName } from "@/lib/governorates";
 
 import { code6 as code6 } from "@/lib/code6";
 const branchSpec = { path: "/branches", value: "id", label: "branchName", query: { pageSize: undefined } };
@@ -27,7 +28,7 @@ const categorySpec = { path: "/categories", value: "id", label: "categoryName", 
 
 // The history: a number (1-7 digits) or a phone (8+) goes to the list; a piece code (a letter in it, or digits the list does not know) to /find-invoice.
 // The invoice types that are confirmed with the Taslem button.
-const TASLEM_TYPES = ["delivery", "handover"];
+const TASLEM_TYPES = ["delivery", "handover", "shipping"];
 const asListItem = (inv: Row) => ({ id: inv.id, invoiceType: inv.invoiceType, employeeId: inv.employeeId, sellerName: inv.employeeName, invoiceNumber: inv.invoiceNumber, branchId: inv.branchId, invoiceDate: inv.invoiceDate, customerName: inv.customerName, customerPhone: inv.customerPhone, isGift: inv.isGift, lineCount: inv.totals.lineCount, cashTotal: inv.cashTotal, createdAt: inv.createdAt, deletedAt: inv.deletedAt });
 async function findByPiece(code: string, signal?: AbortSignal) {
   try {
@@ -115,7 +116,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         search: { param: "search", placeholder: `${m("searchPlaceholder")} · ${t("gold-sales", "findInvoice.pieceCode")}` },
         chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" } }],
         // The branch filter is for an Admin and the Super admin; a User sells in their own branch.
-        filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), { name: "invoiceType", label: m("invoiceType"), type: "select", options: ["sale", "delivery", "handover"].map((k) => [k, m(`invoiceTypes.${k}`)] as [string, string]), placeholder: ALL }, { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
+        filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), { name: "invoiceType", label: m("invoiceType"), type: "select", options: ["sale", "delivery", "handover", "shipping"].map((k) => [k, m(`invoiceTypes.${k}`)] as [string, string]), placeholder: ALL }, { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
         paging: { sizeParam: null, sizes: [20], size: 20 },
         // The backend (0.1.23) sorts this list on these ids: the column keys. More than one page: the server sorts across pages; one page: the browser.
         serverSort: { on: true, columns: Object.fromEntries(["invoiceNumber", "invoiceDate", "invoiceType", "customerName", "customerPhone", "sellerName", "lineCount", "cashTotal"].map((k) => [k, k])) },
@@ -179,6 +180,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
             <Kv k={m("invoiceNumber")}><Ltr>{code6(r.invoiceNumber)}</Ltr></Kv><Kv k={m("branch")}>{r.branchName ?? ""}</Kv>
             <Kv k={m("invoiceDate")}><Ltr>{String(r.invoiceDate).slice(0, 10)}</Ltr></Kv><Kv k={m("seller")}>{r.employeeName ?? ""}</Kv>
             <Kv k={m("invoiceType")}>{m(`invoiceTypes.${r.invoiceType}`)}</Kv>
+            {r.deliveryGovernorate && <Kv k={tr.L("المحافظة", "Governorate")}>{governorateName(r.deliveryGovernorate, tr.isAr)}</Kv>}
             {r.taslemAt && <Kv k={m("taslem")}><span id="inv-taslem">{m("taslemStamp", { name: r.taslemBy ?? "", at: dateTimeText(r.taslemAt, tr.locale) })}</span></Kv>}
             {r.isGift && <Kv k={m("gift")}><span className="st" data-gift><i />{m("giftBadge")}</span></Kv>}
             <Kv k={m("priceKarat")}><Ltr>{r.priceKarat}</Ltr></Kv><Kv k={m("priceDate")}><Ltr>{String(r.priceDate).slice(0, 10)}</Ltr></Kv><Kv k={m("goldPrice21k")}><Ltr>{piastresText(r.goldPrice21k)}</Ltr></Kv>
@@ -211,7 +213,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
           <Section title={m("totals")}>
             <Kv k={m("lineCount")}><Ltr>{tot.lineCount}</Ltr></Kv><Kv k={m("totalWeight")}><Ltr>{milligramsText(tot.weight)}</Ltr></Kv>
           </Section>
-          <Section title={m("amounts")} wide><TotalsBar tr={tr} bar={savedBar(tot)} /></Section>
+          <Section title={m("amounts")} wide><TotalsBar tr={tr} bar={{ ...savedBar(tot), ...(r.invoiceType === "shipping" ? { delivery: tot.deliveryFee } : {}) }} /></Section>
           {!r.deletedAt && (r.lines?.length ?? 0) > 1 && <CustomPrintBox key={`custom-${r.id}`} row={r} tr={tr} />}
           {!r.deletedAt && <GiftPrintBox key={r.id} row={r} tr={tr} />}
         </>;
