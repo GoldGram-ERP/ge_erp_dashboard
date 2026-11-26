@@ -187,6 +187,12 @@
     "en": "Reservations: invoiced reservations now wait under Ready for delivery. Press Deliver when the customer takes the pieces, and find them under Delivered.",
     "ar": "الحجوزات اللي صدرت لها فاتورة بقت في «جاهزة للتسليم». دوس تسليم لما العميل يستلم القطع، وهتلاقيها في «تم التسليم».",
     "route": "/sales/reservations"
+   },
+   {
+    "kind": "new",
+    "en": "New page Delivery charges: keep the delivery price of each governorate, under Sales.",
+    "ar": "صفحة جديدة «أسعار التوصيل» في المبيعات: بتسجّل فيها سعر التوصيل لكل محافظة.",
+    "route": "/sales/delivery-charges"
    }
   ]
  },

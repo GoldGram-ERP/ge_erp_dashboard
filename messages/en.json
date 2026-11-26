@@ -952,7 +952,9 @@
   "reservationNotInvoiced": "A reservation cannot be delivered before it has an invoice.",
   "reservationDelivered": "This reservation is already delivered.",
   "reservationNotDelivered": "This reservation is not marked delivered.",
-  "invoiceReservationDelivered": "Not deleted: reservation number {reservationNumber} is delivered. An Admin undoes the delivery first."
+  "invoiceReservationDelivered": "Not deleted: reservation number {reservationNumber} is delivered. An Admin undoes the delivery first.",
+  "deliveryChargeNotFound": "This delivery charge does not exist.",
+  "governorateAlreadyPriced": "This governorate already has a delivery price. Edit it instead of adding it again."
  },
  "expenses": {
   "expenseTypes": {
@@ -2893,7 +2895,8 @@
     "securityPolicy": "Security policy",
     "settings": "Settings",
     "stockCount": "Stock count",
-    "user": "Users"
+    "user": "Users",
+    "deliveryCharge": "Delivery charges"
    }
   },
   "dataReset": {
@@ -3200,7 +3203,8 @@
    "customer-orders": "Customer orders",
    "activity-log": "Activity log",
    "merchants": "Merchants",
-   "bug-reports": "Bug reports"
+   "bug-reports": "Bug reports",
+   "delivery-charges": "Delivery charges"
   }
  },
  "app": {

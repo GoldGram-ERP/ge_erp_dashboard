@@ -952,7 +952,9 @@
   "reservationNotInvoiced": "لا يمكن تسليم حجز لم تصدر له فاتورة بعد.",
   "reservationDelivered": "تم تسليم هذا الحجز من قبل.",
   "reservationNotDelivered": "هذا الحجز لم يتم تسليمه.",
-  "invoiceReservationDelivered": "لم تُحذف: الحجز رقم {reservationNumber} تم تسليمه. يلغي المدير التسليم أولاً."
+  "invoiceReservationDelivered": "لم تُحذف: الحجز رقم {reservationNumber} تم تسليمه. يلغي المدير التسليم أولاً.",
+  "deliveryChargeNotFound": "سعر التوصيل هذا غير موجود.",
+  "governorateAlreadyPriced": "لهذه المحافظة سعر توصيل بالفعل. عدّله بدلاً من إضافتها من جديد."
  },
  "expenses": {
   "expenseTypes": {
@@ -2893,7 +2895,8 @@
     "securityPolicy": "سياسة الأمان",
     "settings": "الإعدادات",
     "stockCount": "جرد الذهب",
-    "user": "المستخدمين"
+    "user": "المستخدمين",
+    "deliveryCharge": "أسعار التوصيل"
    }
   },
   "dataReset": {
@@ -3200,7 +3203,8 @@
    "customer-orders": "طلبات العملاء",
    "activity-log": "سجل النشاط",
    "merchants": "التجار",
-   "bug-reports": "بلاغات المشاكل"
+   "bug-reports": "بلاغات المشاكل",
+   "delivery-charges": "أسعار التوصيل"
   }
  },
  "app": {
