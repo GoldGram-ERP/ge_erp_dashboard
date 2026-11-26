@@ -39,7 +39,8 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const edit = row?.id ? row : null;   // a saved invoice: the form starts with its values
   const reservationId: string = edit ? (edit.reservation?.id ?? "") : typeof location === "undefined" ? "" : new URLSearchParams(location.search).get("reservation") ?? "";
 
-  const [type, setType] = useState<string>(edit?.invoiceType ?? "");
+  // From a reservation the type is حجز and cannot be changed (owner, 2026-11-26): the backend saves it so.
+  const [type, setType] = useState<string>(edit?.invoiceType ?? (reservationId ? "reservation" : ""));
   const [branchId, setBranchId] = useState<string>(edit?.branchId ?? me?.branchId ?? "");
   const [branchName, setBranchName] = useState("");
   const [branches, setBranches] = useState<Row[]>([]);
@@ -270,11 +271,12 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   // The type choice of a new invoice. Its third choice, Reservation (owner, 2026-11-26), is not an invoice: the page shows the reservation's own form.
   const typeCard = (
     <div className="field" data-k="invoiceType" data-err={errs.invoiceType ? "" : undefined}><label className="flabel">{m("invoiceType")} *</label>
-      <Seg label={m("invoiceType")} value={type} onChange={(k) => { setType(k); setErrs({}); setGeneral(""); setSubmitted(false); edited(); }}
-        items={["sale", "delivery", "shipping", ...(reservationId ? [] : ["reservation"])].map((k) => ({ id: k, label: k === "reservation" ? L("حجز", "Reservation") : m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />
+      {reservationId ? <Input id="invoiceType" data-type="reservation" disabled readOnly value={m("invoiceTypes.reservation")} />
+        : <Seg label={m("invoiceType")} value={type} onChange={(k) => { setType(k); setErrs({}); setGeneral(""); setSubmitted(false); edited(); }}
+          items={["sale", "delivery", "shipping", "reservation"].map((k) => ({ id: k, label: m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />}
       {errs.invoiceType && <ErrBox>{errs.invoiceType}</ErrBox>}</div>
   );
-  if (!edit && type === "reservation") {
+  if (!edit && !reservationId && type === "reservation") {
     return (
       <>
         <div className="card" id="sec-head">{typeCard}</div>

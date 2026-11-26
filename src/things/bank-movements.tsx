@@ -45,7 +45,7 @@ export function buildConfig(tr: Tr, me?: Me | null): ThingConfig {
     onRow: (row, h) => h.open(row),
   };
 
-  const types = ["deposit", "withdraw", "transferIn", "transferOut", "expense", "expenseRefund", "salesInvoice", "reservation", "salesReturn"];
+  const types = ["deposit", "withdraw", "transferIn", "transferOut", "expense", "expenseRefund", "salesInvoice", "reservation", "salesReturn", "returnedPiecePurchase", "merchantPayment", "merchantReceipt"];
   const sc = (key: string, type?: Column["type"], extra: Partial<Column> = {}): Column => ({ key, label: s(`columns.${key}`), type, ...extra });
   const cols: Column[] = [
     sc("branch"), sc("date", "date"), sc("debit", "money"), sc("credit", "money"), sc("balance", "money"),

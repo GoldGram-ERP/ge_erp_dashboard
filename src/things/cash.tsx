@@ -63,7 +63,7 @@ export function buildConfig(tr: Tr): ThingConfig {
     runLabel: rep("run"),
     filters: [
       branch(sb("branchId")), from(sb("fromDate")), to(sb("toDate")),
-      { name: "movementType", label: sb("movementType"), type: "select", options: ["deposit", "withdraw", "expense", "expenseRefund", "salesInvoice", "salesReturn", "reservation", "transferOut", "transferIn"].map((k) => [k, sb(`types.${k}`)] as [string, string]), placeholder: ALL },
+      { name: "movementType", label: sb("movementType"), type: "select", options: ["deposit", "withdraw", "expense", "expenseRefund", "salesInvoice", "salesReturn", "reservation", "transferOut", "transferIn", "returnedPiecePurchase", "merchantPayment", "merchantReceipt"].map((k) => [k, sb(`types.${k}`)] as [string, string]), placeholder: ALL },
       { name: "accountingType", label: rep("accountingType"), type: "select", options: ["debit", "credit"].map((k) => [k, rep(k)] as [string, string]), placeholder: ALL },
     ],
     sort: { default: { key: "date", dir: "asc" } },

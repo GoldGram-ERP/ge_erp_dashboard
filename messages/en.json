@@ -496,7 +496,10 @@
     "expenseRefund": "Expense refund",
     "salesInvoice": "Sales invoice",
     "reservation": "Reservation",
-    "salesReturn": "Sales return"
+    "salesReturn": "Sales return",
+    "returnedPiecePurchase": "Returned piece purchase",
+    "merchantPayment": "Payment to merchant",
+    "merchantReceipt": "Receipt from merchant"
    },
    "columns": {
     "branch": "Branch",
@@ -583,7 +586,10 @@
     "reservation": "Reservation",
     "transferOut": "Transfer out",
     "transferIn": "Transfer in",
-    "salesReturn": "Sales return"
+    "salesReturn": "Sales return",
+    "returnedPiecePurchase": "Returned piece purchase",
+    "merchantPayment": "Payment to merchant",
+    "merchantReceipt": "Receipt from merchant"
    },
    "columns": {
     "date": "Date",
@@ -1548,7 +1554,8 @@
     "sale": "Sale",
     "delivery": "Delivery",
     "handover": "Hand-over",
-    "shipping": "Shipping"
+    "shipping": "Shipping",
+    "reservation": "Reservation"
    },
    "customer": "Customer",
    "customerName": "Customer name",
@@ -3077,7 +3084,10 @@
    "reservation": "Reservation",
    "expense": "Expense",
    "expenseRefund": "Expense refund",
-   "salesReturn": "Sales return"
+   "salesReturn": "Sales return",
+   "returnedPiecePurchase": "Returned piece purchase",
+   "merchantPayment": "Payment to merchant",
+   "merchantReceipt": "Receipt from merchant"
   }
  },
  "treasury-transfers": {

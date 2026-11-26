@@ -10,7 +10,7 @@ import { Status } from "@/components/ui";
 import { useAccess } from "./sales-access";
 import { ConfirmReservationButton } from "@/components/fields/ConfirmReservation";
 import { DraftForm, OpenByNumber } from "./sales-desk-form";
-import { canConfirmReservation, discountCell, paymentMethodsOf, seesEveryBranchDrafts } from "./sales-desk-rules";
+import { canConfirmReservation, discountCell, draftTag, paymentMethodsOf, seesEveryBranchDrafts, type DraftTag } from "./sales-desk-rules";
 import { code6 } from "@/lib/code6";
 
 const KEYS = ["gold-sales/sales-desk"];
@@ -20,6 +20,7 @@ const KEYS = ["gold-sales/sales-desk"];
 export const buildConfig = (tr: Parameters<MakeConfig>[0], everyBranch: boolean, confirmer = false): ThingConfig => {
   const d = (k: string, v?: Record<string, string | number>) => tr.t("gold-sales", `salesDesk.${k}`, v);
   const badge = (tone: string, text: string) => <span className={`badge ${tone}`}>{text}</span>;
+  const tagText: Record<DraftTag, string> = { buy: d("desk.buy"), sale: d("typeSale"), handover: tr.L("تسليم", "Hand over"), shipping: tr.L("توصيل", "Shipping"), reservation: d("rsv.tag") };
   const branchColumn: Column[] = everyBranch ? [{ key: "branchName", label: d("branch"), sortable: false }] : [];
   const confirmColumn: Column[] = confirmer ? [{ key: "confirm", label: d("rsv.actionCol"), sortable: false, render: (r) => <ConfirmReservationButton row={r} tr={tr} /> }] : [];
   const branchFilter: FilterConfig[] = everyBranch
@@ -43,7 +44,7 @@ export const buildConfig = (tr: Parameters<MakeConfig>[0], everyBranch: boolean,
       ...(branchFilter.length ? { filters: branchFilter } : {}),
       paging: { sizeParam: null, sizes: [20], size: 20 },
       columns: [
-        { key: "draftNumber", label: d("draftNumberShort"), render: (r) => <><Ltr>{r.draftNumber}</Ltr> {r.operation === "buy" && <Status tone="warn" data-operation="buy">{d("desk.buy")}</Status>}{r.invoiceType === "reservation" && <Status tone="info" data-type="reservation">{d("rsv.tag")}</Status>}{r.invoiceType === "shipping" && <Status tone="info" data-type="shipping">{tr.L("توصيل", "Shipping")}</Status>}</> },
+        { key: "draftNumber", label: d("draftNumberShort"), render: (r) => { const tag = draftTag(r); return <><Ltr>{r.draftNumber}</Ltr> <Status tone={tag === "buy" ? "warn" : "info"} data-operation={tag === "buy" ? "buy" : undefined} data-tag={tag}>{tagText[tag]}</Status></>; } },
         ...branchColumn,
         { key: "customerName", label: d("customerCol") },
         { key: "customerPhone", label: d("phoneCol"), render: (r) => <Ltr>{r.customerPhone}</Ltr> },
