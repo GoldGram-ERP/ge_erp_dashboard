@@ -46,6 +46,13 @@ export const NAV: NavGroup[] = [
     ]
    },
    {
+    "id": "delivery-charges",
+    "route": "/sales/delivery-charges",
+    "screens": [
+     "gold-sales/delivery-charges"
+    ]
+   },
+   {
     "id": "customer-orders",
     "route": "/sales/customer-orders",
     "screens": [
