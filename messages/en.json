@@ -721,7 +721,9 @@
    "duplicateAccount": "This bank account is already on another row.",
    "duplicatePiece": "This piece is already on another line.",
    "inactive": "This item is not active",
-   "incomplete": "This item has no weight or workmanship: complete it on the Items screen"
+   "incomplete": "This item has no weight or workmanship: complete it on the Items screen",
+   "phone": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
+   "nationalId": "The National ID is exactly 14 digits."
   },
   "view": "View",
   "print": "Print",
@@ -780,6 +782,10 @@
     "more": "{count} more",
     "writing": "Writing the file…"
    }
+  },
+  "fieldHelp": {
+   "phone": "11 digits starting 010, 011, 012 or 015.",
+   "nationalId": "Exactly 14 digits."
   }
  },
  "errors": {
@@ -917,6 +923,7 @@
   "draftLocked": "Not saved: this draft was made on {day} and is locked. Only Delete remains.",
   "documentLocked": "Not saved: this was made on {day} and is locked. A normal user edits on the day it was made; ask an Admin.",
   "draftCompleted": "This draft is already completed. It cannot be edited, deleted or completed again.",
+  "draftReserved": "This reservation is already confirmed. The draft cannot be edited, deleted or confirmed again.",
   "draftItemsMismatch": "The scanned pieces do not match the draft's items and counts. Check the table and scan again.",
   "salesDraftNotFound": "This draft was not found.",
   "merchantNotFound": "This merchant does not exist.",
@@ -940,7 +947,12 @@
   "salesChannelNotFound": "This sales channel does not exist.",
   "bugReportNotFound": "This report does not exist.",
   "bugReportFileNotFound": "This file does not exist.",
-  "alreadyTaslem": "This invoice was already taken through Taslem."
+  "alreadyTaslem": "This invoice was already taken through Taslem.",
+  "draftItemChanged": "{itemName} changed since the draft was saved. Save the draft again, then complete.",
+  "reservationNotInvoiced": "A reservation cannot be delivered before it has an invoice.",
+  "reservationDelivered": "This reservation is already delivered.",
+  "reservationNotDelivered": "This reservation is not marked delivered.",
+  "invoiceReservationDelivered": "Not deleted: reservation number {reservationNumber} is delivered. An Admin undoes the delivery first."
  },
  "expenses": {
   "expenseTypes": {
@@ -1442,7 +1454,7 @@
    "cpSaved": "Customer piece {code} saved",
    "cpNew": "Another customer piece",
    "cpNotStock": "Not stock: it is never sold, reserved, returned or counted.",
-   "cpPhoneInvalid": "8 to 15 digits.",
+   "cpPhoneInvalid": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
    "fromItem": "Each piece takes the item's weight and workmanship. They are changed on the Items screen only."
   },
   "customerPieces": {
@@ -1461,8 +1473,8 @@
    "customer": "Customer",
    "customerName": "Customer name",
    "customerPhone": "Customer phone",
-   "phoneHelp": "8 to 15 digits. Kept with the record, never printed on the label.",
-   "phoneInvalid": "Write 8 to 15 digits.",
+   "phoneHelp": "Optional: 11 digits starting 010, 011, 012 or 015. Kept with the record, never printed on the label.",
+   "phoneInvalid": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
    "saved": "Purchase {number} saved and its pieces are in stock",
    "another": "Enter another piece",
    "itemInvalid": "This item is not in the chosen category or no longer exists. Choose another.",
@@ -1539,7 +1551,7 @@
    "customerName": "Customer name",
    "customerPhone": "Customer phone",
    "nationalId": "National ID",
-   "phoneHint": "8 to 15 digits. A phone used before fills the name.",
+   "phoneHint": "11 digits starting 010, 011, 012 or 015. A phone used before fills the name.",
    "optional": "Optional: 14 digits.",
    "choose": "Choose…",
    "clearChoice": "Clear the choice",
@@ -1584,8 +1596,8 @@
    "saveWaits": "Save is on when nothing is left to pay.",
    "saveNeedsPiece": "Save is on once at least one piece is added.",
    "dateInvalid": "Write the date as day/month/year, such as 05/10/2026.",
-   "phoneInvalid": "Write 8 to 15 digits.",
-   "nationalIdInvalid": "Write 14 digits.",
+   "phoneInvalid": "Write a valid mobile number: 11 digits starting 010, 011, 012 or 015.",
+   "nationalIdInvalid": "The National ID is exactly 14 digits.",
    "amountInvalid": "Enter an amount above zero, such as 1250.50.",
    "savedNumber": "Saved. Number {code}",
    "deleted": "Deleted",
@@ -1677,7 +1689,8 @@
    "taslemTitle": "Confirm Taslem?",
    "taslemAsk": "This records that you confirmed this invoice now. It is a record only: stock and cash do not move.",
    "taslemDone": "Taslem recorded.",
-   "taslemStamp": "Taslem by {name} at {at}"
+   "taslemStamp": "Taslem by {name} at {at}",
+   "nationalIdHint": "Exactly 14 digits."
   },
   "prints": {
    "name": "Name",
@@ -1743,7 +1756,9 @@
    "pricePerGram24": "24K gram price",
    "goldValue": "Gold value",
    "makingChargePerGram": "Making charge per gram",
-   "makingCharge": "Making charge"
+   "makingCharge": "Making charge",
+   "reservationTitle": "Reservation invoice",
+   "reservationTitleSub": "فاتورة حجز"
   },
   "reservations": {
    "title": "Reservations",
@@ -1798,7 +1813,8 @@
    "priceBySystem": "The system works it out once the item and the count are chosen.",
    "priceOfDay": "At the gold price of {date}",
    "itemIncomplete": "This item has no weight or no workmanship per gram: complete it on the Items page.",
-   "linePriceFailed": "The price could not be worked out. Try again."
+   "linePriceFailed": "The price could not be worked out. Try again.",
+   "printReservation": "Print reservation invoice"
   },
   "returns": {
    "new": "New return",
@@ -2087,7 +2103,7 @@
    }
   },
   "salesDesk": {
-   "buyQuoteNote": "A Buy quote is saved as a draft only. It is never completed into an invoice.",
+   "buyQuoteNote": "A Buy is saved as a draft. Completing it pays the customer and adds the pieces to stock.",
    "refused": {
     "discountPercent": "A percent discount cannot go with a typed cash discount. Use only one of them.",
     "discountNotAllowed": "You do not have the cash discount permission, so a draft with a discount cannot be saved.",
@@ -2166,7 +2182,9 @@
     "noRead": "No price read yet",
     "refresh": "Read a new price now",
     "waEmpty": "Pick the pieces to see the message.",
-    "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft."
+    "buyNotSaved": "A buy is a quote only for now: it is not saved as a draft.",
+    "creator": "User name",
+    "noSellers": "No seller in this branch: give a user the call center or branch sales role on the Users screen."
    },
    "title": "Sales desk",
    "intro": "Save the customer's order as a numbered draft and edit it until midnight. An Admin opens it, scans the real pieces and creates the invoice.",
@@ -2183,7 +2201,21 @@
    "status": {
     "open": "Open",
     "completed": "Completed",
+    "reserved": "Reserved",
     "deleted": "Deleted"
+   },
+   "rsv": {
+    "tag": "Reservation",
+    "intro": "A reservation is saved as a draft, paid in full, and any piece can be picked, in stock or not. It becomes a reservation when the accountant or an Admin confirms it.",
+    "actionCol": "Reservation",
+    "confirm": "Confirm reservation",
+    "confirmTitle": "Confirm the reservation",
+    "confirmAsk": "Confirm draft number {number}? It becomes a reservation and its payment is recorded.",
+    "confirmed": "Reservation number {code} created",
+    "cancelled": "The reservation made from this draft was deleted.",
+    "open": "Open the reservation",
+    "noAccess": "You are not allowed to open the reservation from here.",
+    "saveFirst": "Save the changes first, then confirm."
    },
    "type": "Type",
    "typeSale": "Sale",
@@ -2192,9 +2224,9 @@
    "branchHelp": "Your draft is saved on your branch.",
    "customerName": "Customer name",
    "customerPhone": "Customer phone",
-   "phoneHelp": "8 to 15 digits; Arabic digits are accepted.",
+   "phoneHelp": "11 digits starting 010, 011, 012 or 015; Arabic digits are accepted.",
    "nationalId": "National ID",
-   "nationalIdHelp": "Optional: 14 digits.",
+   "nationalIdHelp": "Exactly 14 digits.",
    "pieces": "Pieces",
    "item": "Item",
    "itemHelp": "Only active, complete items are listed.",
@@ -2215,10 +2247,12 @@
     "locked": "Locked",
     "reason": "This draft was made on {day}. A draft can be edited only until midnight (Cairo time) of the day it was made. Only Delete remains.",
     "completed": "This draft is completed and became an invoice, so it cannot be edited.",
-    "deleted": "This draft is deleted."
+    "reserved": "This draft is confirmed and became a reservation, so it cannot be edited.",
+    "deleted": "This draft is deleted.",
+    "bought": "This draft is completed and the pieces were bought, so it cannot be edited."
    },
    "delete": "Delete the draft",
-   "deleteAsk": "Delete draft number {number}? Afterwards only the Super admin can see it.",
+   "deleteAsk": "Delete draft number {number}? Afterwards it stays visible, read only, under Deleted.",
    "deleted": "Draft number {number} deleted",
    "complete": "Complete the invoice",
    "completeIntro": "Scan the real pieces, take the payment, then press Complete. The sales invoice is created once only.",
@@ -2284,7 +2318,37 @@
    "typeLabel": "Invoice type",
    "goldNone": "There is no saved gold price.",
    "lockedNote": "Locked",
-   "channel": "Sales channel"
+   "channel": "Sales channel",
+   "discountCol": "Discount",
+   "paymentCol": "Payment method",
+   "discountPercentCell": "{percent}%",
+   "discountCashCell": "Cash discount",
+   "listPay": {
+    "cash": "Cash",
+    "instapay": "InstaPay",
+    "bank_transfer": "Bank transfer",
+    "visa": "Visa"
+   },
+   "buyc": {
+    "title": "Complete invoice",
+    "intro": "Completing pays the customer, gives each piece its code and adds it to stock. Then print the labels.",
+    "code": "Code {code}",
+    "codes": "Codes {from} to {to}",
+    "codesAuto": "Automatic codes",
+    "preview": "The codes shown are the expected ones; the real codes appear after Complete.",
+    "toPay": "To pay the customer",
+    "savedPrice": "Complete pays the saved price. Today's price now gives {total}.",
+    "payMismatch": "Cash and bank transfer together must equal {total}. Entered: {paid}.",
+    "saveFirst": "Save the changes first, then complete.",
+    "confirmTitle": "Complete the buy",
+    "confirmAsk": "Pay {total} to {customer} and add {count} pieces to stock?",
+    "complete": "Complete invoice",
+    "completing": "Completing...",
+    "completed": "Purchase number {code} created: the pieces are in stock",
+    "deleted": "The purchase made from this draft was deleted.",
+    "pieces": "Pieces added to stock",
+    "open": "Open in Returned pieces"
+   }
   }
  },
  "gold-stocktake": {

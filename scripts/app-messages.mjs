@@ -182,7 +182,48 @@ Object.assign(APP, {
 
 // The Sales desk (issue #6, backend #168): a sales agent's numbered drafts, edited until Cairo midnight, completed by an Admin who scans the real pieces.
 Object.assign(APP, {
-  "gold-sales.salesDesk.buyQuoteNote": ["عرض سعر الشراء بيتحفظ كمسودة بس، ومش بيتحوّل لفاتورة أبدًا.", "A Buy quote is saved as a draft only. It is never completed into an invoice."],
+  "gold-sales.salesDesk.buyQuoteNote": ["الشراء بيتحفظ كمسودة، ولما يتم بيتدفع للعميل وتدخل القطع المخزون.", "A Buy is saved as a draft. Completing it pays the customer and adds the pieces to stock."],
+  // Reservation drafts (owner, 2026-11-26).
+  "gold-sales.salesDesk.status.reserved": ["محجوزة", "Reserved"],
+  "gold-sales.salesDesk.lock.reserved": ["تم تأكيد هذه المسودة وصارت حجزًا، فلا تُعدَّل.", "This draft is confirmed and became a reservation, so it cannot be edited."],
+  "gold-sales.salesDesk.rsv.tag": ["حجز", "Reservation"],
+  "gold-sales.salesDesk.rsv.intro": ["الحجز يُحفظ كمسودة مدفوعة بالكامل، وتقدر تختار أي قطعة حتى لو مش موجودة في المخزون. يتحول إلى حجز عندما يؤكده المحاسب أو المدير.", "A reservation is saved as a draft, paid in full, and any piece can be picked, in stock or not. It becomes a reservation when the accountant or an Admin confirms it."],
+  "gold-sales.salesDesk.rsv.actionCol": ["الحجز", "Reservation"],
+  "gold-sales.salesDesk.rsv.confirm": ["تأكيد الحجز", "Confirm reservation"],
+  "gold-sales.salesDesk.rsv.confirmTitle": ["تأكيد الحجز", "Confirm the reservation"],
+  "gold-sales.salesDesk.rsv.confirmAsk": ["تأكيد المسودة رقم {number}؟ ستصير حجزًا ويُسجَّل المبلغ المدفوع.", "Confirm draft number {number}? It becomes a reservation and its payment is recorded."],
+  "gold-sales.salesDesk.rsv.confirmed": ["تم إنشاء الحجز رقم {code}", "Reservation number {code} created"],
+  "gold-sales.salesDesk.rsv.cancelled": ["الحجز الذي أُنشئ من هذه المسودة تم حذفه.", "The reservation made from this draft was deleted."],
+  "gold-sales.salesDesk.rsv.open": ["فتح الحجز", "Open the reservation"],
+  "gold-sales.salesDesk.rsv.noAccess": ["لا يُسمح لك بفتح الحجز من هنا.", "You are not allowed to open the reservation from here."],
+  "gold-sales.salesDesk.rsv.saveFirst": ["احفظ التعديلات أولًا ثم أكِّد.", "Save the changes first, then confirm."],
+  "errors.draftReserved": ["تم تأكيد هذا الحجز بالفعل، فلا تُعدَّل المسودة ولا تُحذف ولا تُؤكَّد مرة أخرى.", "This reservation is already confirmed. The draft cannot be edited, deleted or confirmed again."],
+  // Delivery of a reservation (owner, 2026-11-26).
+  "errors.reservationNotInvoiced": ["لا يمكن تسليم حجز لم تصدر له فاتورة بعد.", "A reservation cannot be delivered before it has an invoice."],
+  "errors.reservationDelivered": ["تم تسليم هذا الحجز من قبل.", "This reservation is already delivered."],
+  "errors.reservationNotDelivered": ["هذا الحجز لم يتم تسليمه.", "This reservation is not marked delivered."],
+  "errors.invoiceReservationDelivered": ["لم تُحذف: الحجز رقم {reservationNumber} تم تسليمه. يلغي المدير التسليم أولاً.", "Not deleted: reservation number {reservationNumber} is delivered. An Admin undoes the delivery first."],
+  // Completing a Buy draft (owner, 2026-11-26).
+  "gold-sales.salesDesk.lock.bought": ["اكتملت هذه المسودة وتم شراء القطع، فلا تُعدَّل.", "This draft is completed and the pieces were bought, so it cannot be edited."],
+  "gold-sales.salesDesk.buyc.title": ["إتمام الفاتورة", "Complete invoice"],
+  "gold-sales.salesDesk.buyc.intro": ["عند الإتمام يُدفع للعميل، وتأخذ كل قطعة كودًا وتدخل المخزون، ثم تطبع الملصقات.", "Completing pays the customer, gives each piece its code and adds it to stock. Then print the labels."],
+  "gold-sales.salesDesk.buyc.code": ["الكود {code}", "Code {code}"],
+  "gold-sales.salesDesk.buyc.codes": ["الأكواد من {from} إلى {to}", "Codes {from} to {to}"],
+  "gold-sales.salesDesk.buyc.codesAuto": ["الكود تلقائي", "Automatic codes"],
+  "gold-sales.salesDesk.buyc.preview": ["الأكواد المعروضة متوقعة، والأكواد الفعلية تظهر بعد الإتمام.", "The codes shown are the expected ones; the real codes appear after Complete."],
+  "gold-sales.salesDesk.buyc.toPay": ["المطلوب دفعه للعميل", "To pay the customer"],
+  "gold-sales.salesDesk.buyc.savedPrice": ["الإتمام يدفع السعر المحفوظ. سعر اليوم الآن {total}.", "Complete pays the saved price. Today's price now gives {total}."],
+  "gold-sales.salesDesk.buyc.payMismatch": ["النقدي والتحويل البنكي معًا يجب أن يساويا {total}. المكتوب: {paid}.", "Cash and bank transfer together must equal {total}. Entered: {paid}."],
+  "gold-sales.salesDesk.buyc.saveFirst": ["احفظ التعديلات أولًا ثم أتمم.", "Save the changes first, then complete."],
+  "gold-sales.salesDesk.buyc.confirmTitle": ["إتمام الشراء", "Complete the buy"],
+  "gold-sales.salesDesk.buyc.confirmAsk": ["دفع {total} إلى {customer} وإضافة {count} قطعة إلى المخزون؟", "Pay {total} to {customer} and add {count} pieces to stock?"],
+  "gold-sales.salesDesk.buyc.complete": ["إتمام الفاتورة", "Complete invoice"],
+  "gold-sales.salesDesk.buyc.completing": ["جارٍ الإتمام...", "Completing..."],
+  "gold-sales.salesDesk.buyc.completed": ["تم إنشاء فاتورة شراء رقم {code} ودخلت القطع المخزون", "Purchase number {code} created: the pieces are in stock"],
+  "gold-sales.salesDesk.buyc.deleted": ["فاتورة الشراء التي أُنشئت من هذه المسودة تم حذفها.", "The purchase made from this draft was deleted."],
+  "gold-sales.salesDesk.buyc.pieces": ["القطع المضافة إلى المخزون", "Pieces added to stock"],
+  "gold-sales.salesDesk.buyc.open": ["فتح في القطع المرتجعة", "Open in Returned pieces"],
+  "errors.draftItemChanged": ["تغيّر الصنف {itemName} بعد حفظ المسودة. احفظ المسودة من جديد ثم أتمم.", "{itemName} changed since the draft was saved. Save the draft again, then complete."],
   "gold-sales.salesDesk.refused.discountPercent": ["مينفعش خصم بالنسبة مع خصم نقدي مكتوب. اختار واحد منهم بس.", "A percent discount cannot go with a typed cash discount. Use only one of them."],
   "gold-sales.salesDesk.refused.discountNotAllowed": ["مفيش عندك صلاحية الخصم النقدي، فمينفعش تحفظ مسودة فيها خصم.", "You do not have the cash discount permission, so a draft with a discount cannot be saved."],
   "gold-sales.salesDesk.refused.paymentMethods": ["طرق الدفع مش مظبوطة: مجموع المبالغ أكتر من الإجمالي، أو الطرق دي مينفعش تتجمع مع بعض.", "The payment methods are not valid: the amounts together are more than the total, or these methods cannot go together."],
@@ -367,4 +408,16 @@ Object.assign(APP, {
   "errors.positionNameTaken": ["يوجد مسمى وظيفي آخر بنفس الاسم.", "Another Position already has this name."],
   "errors.salesChannelNameTaken": ["توجد قناة بيع أخرى بنفس الاسم.", "Another sales channel already has this name."],
   "errors.positionInUse": ["لم يُحذف: يحمل هذا المسمى الوظيفي {count, plural, zero {لا أحد} one {مستخدم واحد} two {مستخدمان} few {# مستخدمين} other {# مستخدماً}}. انقلهم إلى مسمى آخر أولاً.", "Not deleted: {count, plural, =0 {no users hold} one {# user holds} other {# users hold}} this Position. Move them to another Position first."],
+});
+
+// The drafts list of the Sales desk (dashboard #97): the discount and payment columns.
+Object.assign(APP, {
+  "gold-sales.salesDesk.discountCol": ["الخصم", "Discount"],
+  "gold-sales.salesDesk.paymentCol": ["طريقة الدفع", "Payment method"],
+  "gold-sales.salesDesk.discountPercentCell": ["نسبة {percent}%", "{percent}%"],
+  "gold-sales.salesDesk.discountCashCell": ["خصم نقدي", "Cash discount"],
+  "gold-sales.salesDesk.listPay.cash": ["نقدي", "Cash"],
+  "gold-sales.salesDesk.listPay.instapay": ["إنستا باي", "InstaPay"],
+  "gold-sales.salesDesk.listPay.bank_transfer": ["تحويل بنكي", "Bank transfer"],
+  "gold-sales.salesDesk.listPay.visa": ["فيزا", "Visa"],
 });

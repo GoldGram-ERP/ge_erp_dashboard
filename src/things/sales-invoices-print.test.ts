@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 vi.mock("@/components/engine", () => ({ toast: () => {} }));   // the toast pulls in Next; the drawing needs none of it
-const { renderInvoice } = await import("./sales-invoices-print");
+const { renderInvoice, A5_MARGIN } = await import("./sales-invoices-print");
 
 // The invoice print on A5 preprinted paper (owner, 2026-11-05): the real messages, the real drawing, no window.
 const dict = { ar, en } as Record<string, any>;
@@ -155,5 +155,68 @@ describe("the preprinted invoice", () => {
   it("English labels exist for every new message", () => {
     const html = renderInvoice(invoice(), tFor("en"), false);
     for (const label of ["Count", "Piece workmanship", "Piece price", "Amount", "Cashback / gram", "Total weight 24K:", "Total weight 21K:"]) expect(html, label).toContain(label);
+  });
+});
+
+// The A5 page on the pre-printed paper (dashboard #98): clear space under the printed logo on every page, and the reference's smaller fonts.
+describe("the A5 page under the pre-printed logo", () => {
+  const html = () => renderInvoice(invoice(), tFor("ar"), true);
+
+  it("leaves 36 mm under the logo: the spacer on screen, the page's top margin in print (so a second page starts as low)", () => {
+    expect(A5_MARGIN).toBe("36mm 0 8mm");
+    expect(html()).toContain(".pre .top{height:36mm}");
+    expect(html()).toContain(`@page{size:A5;margin:${A5_MARGIN}}`);
+    expect(html()).toContain(".pre .top{display:none}");
+  });
+
+  it("uses the reference's smaller fonts: title 24px, table 9.5px, grand total 14px, foot notes 9.5px", () => {
+    for (const rule of [".pre .doc b{display:block;font-size:24px", ".pre td{padding:7px 4px;border:0;color:#192e5d;font-size:9.5px}", "font-size:14px;color:#192e5d;font-weight:700}.pre .grand b{font-size:15px}", ".pre .pfoot{margin-top:36px;padding-top:10px;border-top:1.5px solid #c2a56e;font-size:9.5px"]) expect(html(), rule).toContain(rule);
+  });
+
+  it("never cuts a row, the totals or the foot across pages, and repeats the table head", () => {
+    expect(html()).toContain(".pre thead{display:table-header-group}");
+    expect(html()).toMatch(/\.pre tr,\.pre \.tot,\.pre \.pfoot,[^{]*\{break-inside:avoid/);
+  });
+
+  it("leaves the gift and star prints on the same page, and the 80 mm layouts without the A5 margin", () => {
+    const gift = renderInvoice(invoice({ layout: "gift", isGift: true, nationalId: null, totals: { ...invoice().totals, total: null } }), tFor("ar"), true);
+    expect(gift).toContain('data-layout="gift"');
+    expect(gift).toContain(`margin:${A5_MARGIN}`);
+    expect(renderInvoice(invoice({ layout: "star" }), tFor("ar"), true)).toContain('data-layout="star"');
+    expect(renderInvoice(invoice({ layout: "thermal" }), tFor("ar"), true)).toContain("@page{size:80mm auto;margin:0}");
+  });
+});
+
+// The reservation invoice (فاتورة حجز, backend #225): the same A5 page with its own title, an RSV number, no piece-code line and the fixed footer.
+describe("the reservation invoice", () => {
+  const FOOTER = "تم سداد كامل قيمة الذهب وحجز القطع الموضحة أعلاه، على أن يتم تسليمها في موعد لاحق. يُرجى تقديم أصل هذا المستند عند الاستلام.";
+  const reservation = () => invoice({
+    documentKind: "reservation", invoiceNumber: 12, invoiceDate: "2026-11-23", footer: FOOTER,
+    groups: [{ itemName: "GE - 0.25g Gold Bar", karat: "24", count: 2, weight: 250, goldValue: 165_850, makingCharge: 0, piecePrice: 165_850, rowTotal: 331_700, cashbackPerGram: 2_800, pieceCodes: [] }],
+    weightsByKarat: [{ karat: "24", weight: 500 }],
+  });
+
+  it("is titled فاتورة حجز, numbered RSV/year/number, and keeps the table, the boxes and the total", () => {
+    const html = renderInvoice(reservation(), tFor("ar"), true);
+    for (const must of ["فاتورة حجز", "RSV/2026/000012", "23 / 11 / 2026", "GE - 0.25g Gold Bar", "1,658.50", "3,317.00", "29001011234567"]) expect(html, must).toContain(must);
+    expect(html).not.toContain("INV/2026/");
+  });
+
+  it("prints no piece-code line under the items, and the fixed footer in place of the invoice notes", () => {
+    const html = renderInvoice(reservation(), tFor("ar"), true);
+    expect(html).not.toMatch(/<td class="it">[^<]*<small>/);
+    expect(html).toContain(FOOTER);
+    expect(html).not.toContain("الذهب المباع لا يُرد ولا يُستبدل");
+  });
+
+  it("leaves the sales invoice as it was: its title, its INV number and its piece codes", () => {
+    const html = renderInvoice(invoice({ documentKind: "invoice", groups: [{ ...groupsFrom([line(1, "21", 5000, 2_992_500, 24_944)])[0], pieceCodes: ["GE-001"] }] }), tFor("ar"), true);
+    expect(html).toContain("INV/2026/000142");
+    expect(html).toMatch(/<small>(<[^>]*>)?GE-001/);
+    expect(html).not.toContain("فاتورة حجز");
+  });
+
+  it("has its English title", () => {
+    expect(renderInvoice(reservation(), tFor("en"), false)).toContain("Reservation invoice");
   });
 });

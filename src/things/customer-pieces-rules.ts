@@ -2,6 +2,7 @@
 // The shop BUYS the returned piece (owner, 2026-11-05): the form sends branch, the items with their counts (one or many: owner, 2026-11-10), the
 // payment (cash + bank rows) and the optional description, customer name and phone. Karat, weight, code and price are never sent: the backend works them out (GET /customer-pieces/buy-price).
 import { esc, labelGramsText, latinNumber, piastresText, typedPiastres } from "@/lib/format";
+import { isPhone } from "@/lib/phone";
 import type { Row } from "@/lib/engine-types";
 import type { Tr } from "@/lib/t";
 import { bankPaid, cashPaid, paymentErrors, sentBanks, type Bank } from "./sales-invoices-math";
@@ -10,7 +11,6 @@ import { qrSvgText } from "@/lib/qr";
 export const TEXT_MAX = 100;
 export const QUANTITY_MAX = 100;   // the pieces of all the items together
 export const ITEMS_MAX = 20;       // how many different items one save holds
-const PHONE = /^\d{8,15}$/;                       // the sales invoice's phone rule
 const CODE = /^[A-Za-z0-9 .]{1,20}$/;             // the backend's pattern for a piece code
 
 export type ItemRow = { itemId: string; quantity: string };
@@ -60,7 +60,7 @@ export function readPiece(v: PieceForm, needsBranch: boolean, total: number | nu
   const text = (k: "description" | "customerName") => { const s = v[k].trim(); if (s.length > TEXT_MAX) errors[k] = "tooLong"; return s; };
   const description = text("description"), customerName = text("customerName");
   const customerPhone = latinNumber(v.customerPhone).trim();
-  if (customerPhone && !PHONE.test(customerPhone)) errors.customerPhone = "phoneInvalid";
+  if (customerPhone && !isPhone(customerPhone)) errors.customerPhone = "phoneInvalid";
   Object.assign(errors, paymentErrors(v.cash, v.banks, "any"));
   if (!errors.sum && !Object.keys(errors).some((k) => /^(cash|bank)/.test(k))) {
     if (total === null) errors.sum = "noPrice";
@@ -89,11 +89,11 @@ export function previewTotals(p: BuyPrice): { total: string; priceDate: string }
   return { total: piastresText(p.total), priceDate: String(p.priceDate).slice(0, 10) };
 }
 
-/** What the find box holds: a code, and also a phone when it is 8 to 15 digits (a code can be all digits too). null = neither. */
+/** What the find box holds: a code, and also a phone when it keeps the phone rule (a code can be all digits too). null = neither. */
 export function readFind(typed: unknown): { code: string; phone?: string } | null {
   const s = latinNumber(typed);
   if (!CODE.test(s)) return null;
-  return PHONE.test(s) ? { code: s, phone: s } : { code: s };
+  return isPhone(s) ? { code: s, phone: s } : { code: s };
 }
 
 /** The pieces found, each once, newest first, kept to the chosen category and karat. */

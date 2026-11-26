@@ -152,7 +152,7 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
     const body = {
       ...(edit ? {} : { branchId, date }), employeeId,   // an edit never changes the branch or the date
       customerName: cust.customerName.trim(), customerPhone: latinNumber(cust.customerPhone.trim()),
-      ...(cust.nationalId.trim() ? { nationalId: latinNumber(cust.nationalId.trim()) } : {}),
+      nationalId: latinNumber(cust.nationalId.trim()),
       lines: lines.map((l) => ({ itemId: l.itemId, quantity: qOf(l) })),
       ...(cash !== "" ? { cash: typedPiastres(cash) } : {}),
       bankPayments: sentBanks(banks),

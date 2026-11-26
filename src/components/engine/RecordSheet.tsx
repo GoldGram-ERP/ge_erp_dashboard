@@ -9,6 +9,7 @@ import { useT } from "@/lib/t";
 import { hasAction } from "@/lib/actions";
 import { useMe } from "@/lib/session";
 import { cellNode } from "./Table";
+import { recordActions } from "./record-actions";
 import { Button } from "@/components/ui";
 import { Icon, Kv, Section, Sheet, toast, useConfirm } from "./ui";
 
@@ -24,8 +25,8 @@ export function RecordSheet({ rec, full, row, onClose, reload, openForm }: Props
   // Deleting is a permission (owner, 2026-11-24): the Delete button and every record action that deletes show only to someone who may delete.
   const { data: me } = useMe();
   const mayDelete = hasAction(me, "delete-records");
-  const acts = (rec.actions ?? []).filter((a) => (!a.when || a.when(full)) && (!a.deletes || mayDelete));
-  const remove = mayDelete && rec.remove && (!rec.remove.when || rec.remove.when(full)) ? rec.remove : null;
+  // A deleted record is only read (owner, 2026-11-25): everyone who has the screen may open it, and nobody gets an action on it.
+  const { edit, acts, remove } = recordActions(rec, full, mayDelete);
   const [busy, setBusy] = useState(false);   // one record action at a time: a second click while one runs does nothing
   const del = useMutation({
     mutationFn: () => api(remove!.path(full), { method: "DELETE" }),
@@ -46,7 +47,7 @@ export function RecordSheet({ rec, full, row, onClose, reload, openForm }: Props
   }
 
   const onDelete = async () => {
-    const c = remove!.confirm?.(full) ?? { title: L("حذف هذا السجل؟", "Delete this record?"), text: L("يُعلَّم السجل محذوفًا ويُسجَّل من حذفه ومتى، ولا يراه إلا المدير الأعلى.", "The record is marked deleted (who and when); only the Super admin can still see it.") };
+    const c = remove!.confirm?.(full) ?? { title: L("حذف هذا السجل؟", "Delete this record?"), text: L("يُعلَّم السجل محذوفًا ويُسجَّل من حذفه ومتى، ويبقى ظاهرًا للقراءة فقط في عرض المحذوفات.", "The record is marked deleted (who and when); it stays visible, read only, under Deleted.") };
     if (busy || del.isPending) return;
     setBusy(true);
     try { if (await confirm({ ...c, ok: L("حذف", "Delete"), danger: true })) await del.mutateAsync().catch(() => {}); } finally { setBusy(false); }
@@ -56,7 +57,7 @@ export function RecordSheet({ rec, full, row, onClose, reload, openForm }: Props
     <>
       <Sheet title={rec.title(full)} onRequestClose={onClose}
         footer={<>
-          {rec.edit && <Button variant="primary" data-edit onClick={() => { onClose(); openForm(rec.edit!, full); }}><Icon name="edit" />{L("تعديل", "Edit")}</Button>}
+          {edit && <Button variant="primary" data-edit onClick={() => { onClose(); openForm(rec.edit!, full); }}><Icon name="edit" />{L("تعديل", "Edit")}</Button>}
           {acts.map((a) => (
             <Button key={a.id} danger={!!a.danger} disabled={busy || del.isPending} onClick={async () => {
               if (busy) return;

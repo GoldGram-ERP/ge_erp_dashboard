@@ -48,3 +48,8 @@ ge-erp-dashboard-*.zip
 # local e2e / screenshot output
 .shots/
 .desk-d2b-*
+
+# Cloudflare (OpenNext / wrangler)
+.open-next/
+.wrangler/
+.dev.vars*

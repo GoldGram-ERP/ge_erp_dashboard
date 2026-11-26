@@ -113,7 +113,7 @@ export const makeConfig: MakeConfig = (tr): ThingConfig => {
         id: "list", label: m("listTitle"), keys: ["gold-sales/sales-invoices-list", "gold-sales/find-invoice"],
         load: loadHistory, rowKey: "id",
         search: { param: "search", placeholder: `${m("searchPlaceholder")} · ${t("gold-sales", "findInvoice.pieceCode")}` },
-        chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],   // deleted=only answers a Super admin only
+        chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" } }],
         // The branch filter is for an Admin and the Super admin; a User sells in their own branch.
         filters: [from(), to(), ...(isPlainUser ? [] : [branch()]), { name: "invoiceType", label: m("invoiceType"), type: "select", options: ["sale", "delivery", "handover"].map((k) => [k, m(`invoiceTypes.${k}`)] as [string, string]), placeholder: ALL }, { name: "employeeId", label: m("seller"), type: "select", optionsFrom: userSpec, placeholder: ALL }],
         paging: { sizeParam: null, sizes: [20], size: 20 },

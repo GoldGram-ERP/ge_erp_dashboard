@@ -1,11 +1,13 @@
 "use client";
 // الحجوزات: sales/reservations (history, reserved pieces, cancelled reservations). Ported from docs/nav-preview/app/things/sales-reservations.js (+ the form).
-// Parity: a reservation has exactly two actions, Create sales invoice and Delete (Delete = cancel; no refund screen, no stock moves).
+// Parity: a reservation has two actions of its own, Create sales invoice and Delete (Delete = cancel; no refund screen, no stock moves), and it prints a
+// reservation invoice (backend #225).
 // The list takes only search, fromDate, toDate, deleted, page (20 a page); the reports take their filters, sort, order, page, pageSize.
+import { useMemo } from "react";
 import { api } from "@/lib/api";
 import { DataTable, SortedTable, Td, Tr as TRow } from "@/components/ui";
 import type { Column, CustomFormProps, MakeConfig, Row, ThingConfig, ViewConfig } from "@/lib/engine-types";
-import { intText, latinNumber, piastresText } from "@/lib/format";
+import { dateTimeText, intText, latinNumber, piastresText } from "@/lib/format";
 import { canOpen } from "@/nav/tree";
 import { useMe } from "@/lib/session";
 import { useSession } from "@/stores/session";
@@ -13,10 +15,13 @@ import type { Tr } from "@/lib/t";
 import { Kv, Ltr, Section, ThingPage, cellNode } from "@/components/engine";
 import { ReservationForm } from "./sales-reservation-form";
 import { ReservationPiecesForm } from "@/components/fields/ReservationPieces";
+import { DeliveryButton } from "@/components/fields/ReservationDelivery";
 import { code6 } from "./sales-form-parts";
+import { openPrint } from "./sales-invoices-print";
 import { BankKvs, TotalsBar, bankNamesOf, savedBar } from "./payment-block";
 
-export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
+// `undoer`: the person may undo a delivery (an Admin, the Super admin; owner 2026-11-26), so the delivered tab carries that button.
+export const makeConfig = (tr: Tr, undoer = false): ThingConfig => {
   const { t, L } = tr;
   const m = (k: string, v?: Record<string, string>) => t("gold-sales", `reservations.${k}`, v);
   const si = (k: string, v?: Record<string, string>) => t("gold-sales", `salesInvoices.${k}`, v);
@@ -43,7 +48,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     id: "list", label: m("listTitle"), keys: ["gold-sales/reservations-list"],
     endpoint: "/reservations", rowKey: "id",
     search: { param: "search", placeholder: m("searchPlaceholder") },
-    chips: [{ id: "all", label: ALL }, { id: "deleted", label: si("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+    chips: [{ id: "all", label: ALL }, { id: "deleted", label: si("deletedOnly"), query: { deleted: "only" } }],
     filters: [{ name: "fromDate", label: si("fromDate"), type: "date" }, { name: "toDate", label: si("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) }],
     paging: { sizeParam: null, sizes: [20], size: 20 },
     columns: [
@@ -78,9 +83,9 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
     onRow: (row, h) => h.openForm("assignPieces", row),
   };
 
-  // The life of a reservation (tabs): without pieces -> ready for the invoice (pieces complete, no invoice yet) -> invoiced. A click opens the record,
-  // whose "إنشاء فاتورة" action shows once the pieces are complete.
-  const lifeView = (id: string, label: string, query: Record<string, string>, extra: Column[] = []): ViewConfig => ({
+  // The life of a reservation (tabs): without pieces -> ready for the invoice (pieces complete, no invoice yet) -> invoiced, ready for delivery ->
+  // delivered (owner, 2026-11-26). A click opens the record, whose "إنشاء فاتورة" action shows once the pieces are complete.
+  const lifeView = (id: string, label: string, query: Record<string, string>, extra: Column[] = [], last: Column[] = []): ViewConfig => ({
     id, label, keys: ["gold-sales/reservations-list"],
     endpoint: "/reservations", rowKey: "id", query,
     search: { param: "search", placeholder: m("searchPlaceholder") },
@@ -96,12 +101,18 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       { key: "held", label: L("القطع المحجوزة", "Pieces held"), render: (r) => <Ltr>{piecesText(r)}</Ltr> },
       { key: "total", label: si("total"), type: "money", get: (r) => r.totals.total },
       { key: "paid", label: m("paid"), type: "money", get: (r) => r.totals.paid },
+      ...last,
     ],
     onRow: (row, h) => h.open(row),
   });
   const readyView = lifeView("ready-for-invoice", L("حجوزات جاهزة للفاتورة", "Ready for the invoice"), { readyForInvoice: "true" });
-  const invoicedView = lifeView("invoiced", L("حجوزات صدرت لها فاتورة", "Invoiced reservations"), { invoiced: "true" },
-    [{ key: "salesInvoiceNumber", label: m("invoicedBy"), render: (r) => <Ltr>{r.salesInvoiceNumber === null || r.salesInvoiceNumber === undefined ? "" : code6(r.salesInvoiceNumber)}</Ltr> }]);
+  const invoiceColumn: Column = { key: "salesInvoiceNumber", label: m("invoicedBy"), render: (r) => <Ltr>{r.salesInvoiceNumber === null || r.salesInvoiceNumber === undefined ? "" : code6(r.salesInvoiceNumber)}</Ltr> };
+  const deliveryColumn = (key: string, undo: boolean): Column => ({ key, label: L("التسليم", "Delivery"), sortable: false, render: (r) => <DeliveryButton row={r} tr={tr} undo={undo} /> });
+  // The invoiced reservations the customer has not received yet. The address keeps its old name (?view=invoiced).
+  const invoicedView = lifeView("invoiced", L("جاهزة للتسليم", "Ready for delivery"), { invoiced: "true", delivered: "false" }, [invoiceColumn], [deliveryColumn("deliver", false)]);
+  const deliveredView = lifeView("delivered", L("تم التسليم", "Delivered"), { delivered: "true" }, [invoiceColumn,
+    { key: "deliveredAt", label: L("تاريخ التسليم", "Delivered on"), type: "datetime" }, { key: "deliveredByName", label: L("سلّمه", "Delivered by") }],
+    undoer ? [deliveryColumn("undo", true)] : []);
 
   // The two reports: one row per reservation line.
   const reportView = (id: string, keyName: string, endpoint: string, own: (c: (key: string, type: Column["type"], get: (r: Row) => unknown) => Column) => Column): ViewConfig => {
@@ -146,6 +157,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
       needsPiecesView,
       readyView,
       invoicedView,
+      deliveredView,
       reportView("reserved-pieces", "reservedPieces", "/reports/reserved-pieces", (c) => c("daysReserved", "int", (r) => r.daysReserved)),
       reportView("cancelled-reservations", "cancelledReservations", "/reports/cancelled-reservations", (c) => c("cancelledDate", "date", (r) => r.cancelledDate)),
     ].map((v) => (v.onRow === undefined ? { ...v, onRow: (row: Row, h: { open: (r: Row) => void }) => h.open(row) } : v)),
@@ -164,6 +176,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
           <>
             {r.deletedAt && <div className="note warn">{si("deletedBadge")}</div>}
             {r.salesInvoiceId && <div className="note">{m("invoicedBy")} <a href={`/${tr.locale}/sales/invoices?open=${r.salesInvoiceId}`} dir="ltr">{r.salesInvoiceNumber === null ? "" : code6(r.salesInvoiceNumber)}</a>{!r.deletedAt && <><br />{m("invoicedNote")}</>}</div>}
+            {r.deliveredAt && <div className="note">{L("تم التسليم", "Delivered")} · <Ltr>{dateTimeText(r.deliveredAt)}</Ltr>{r.deliveredByName ? ` · ${r.deliveredByName}` : ""}</div>}
             <Section title={m("details")}>
               <Kv k={m("reservationNumber")}><Ltr>{code6(r.reservationNumber)}</Ltr></Kv><Kv k={si("branch")}>{r.branchName ?? ""}</Kv>
               <Kv k={m("date")}><Ltr>{String(r.date).slice(0, 10)}</Ltr></Kv><Kv k={m("employee")}>{r.employeeName ?? ""}</Kv>
@@ -215,6 +228,11 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
         // Only once every line has all its pieces (issue #36): the invoice uses them, with no piece entry.
         when: (r) => !r.deletedAt && !r.salesInvoiceId && Boolean(r.piecesComplete) && canOpen(useSession.getState().me, ["gold-sales/sales-invoices"]),
         run: (r, h) => { h.close(); window.location.assign(`/${tr.locale}/sales/invoices?new=create&reservation=${r.id}`); },
+      }, {
+        // The reservation invoice (فاتورة حجز, backend #225): on every live reservation, before or after its pieces and its invoice.
+        id: "printReservation", icon: "print", label: m("printReservation"),
+        when: (r) => !r.deletedAt,
+        run: (r) => { void openPrint(r.id, "a4", tr, {}, "reservation"); },
       }],
       // Delete = cancel. The backend refuses it (409 reservationInvoiced) once an invoice took it, so the button is hidden then.
       remove: {
@@ -236,5 +254,7 @@ export const makeConfig: MakeConfig = (tr: Tr): ThingConfig => {
 export default function Page() {
   const { data: me } = useMe();
   const access = { canOpen: (keys?: string[]) => !keys || canOpen(me, keys), isSuper: me?.userType === "super_admin" };
-  return <ThingPage make={makeConfig} access={access} />;
+  const undoer = me?.userType === "admin" || me?.userType === "super_admin";
+  const make = useMemo<MakeConfig>(() => (tr) => makeConfig(tr, undoer), [undoer]);
+  return <ThingPage make={make} access={access} />;
 }

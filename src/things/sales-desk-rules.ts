@@ -4,34 +4,23 @@ import { hasAction, isDeskWideRole } from "@/lib/actions";
 import { latinNumber } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { customerRules } from "./sales-form-parts";
-import { LINES_MAX, bankPaid, cashPaid, paymentErrors, sentBanks, type Bank } from "./sales-invoices-math";
+import { LINES_MAX, bankPaid, cashPaid, paymentErrors, type Bank } from "./sales-invoices-math";
 
 export { LINES_MAX };
 
-/** The types the desk's type choice offers (owner, 2026-11-18): Sale, Hand over, and Reservation on a new draft for a person who has the reservations
- *  screen. A draft saved as "delivery" before Hand over replaced it still shows its own type. */
-export const deskTypes = (current: string, isNew: boolean, mayReserve: boolean): string[] =>
-  ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", ...(isNew && mayReserve ? ["reservation"] : [])];
-
-/** What POST /reservations takes when the desk saves a reservation: today's date, paid in full, every bank line with its account.
- *  No channel, no typed price and no wrapping: a reservation has none (the backend prices it, silver as wrapped). */
-export function reservationBody(x: { branchId: string; date: string; employeeId: string; customer: { customerName: string; customerPhone: string; nationalId?: string };
-  lines: { itemId: string; quantity: number }[]; cash: string; banks: Bank[]; discount?: { kind: string; value: number }; visa: boolean }) {
-  return {
-    branchId: x.branchId, date: x.date, employeeId: x.employeeId, ...x.customer, lines: x.lines,
-    ...(cashPaid(x.cash) > 0 ? { cash: cashPaid(x.cash) } : {}), bankPayments: sentBanks(x.banks),
-    ...(x.discount && x.discount.value > 0 ? { cashDiscount: x.discount } : {}), ...(x.visa ? { payByVisa: true } : {}),
-  };
-}
+/** The types the desk's type choice offers (owner, 2026-11-18): Sale, Hand over, and Reservation on a new draft. A saved draft keeps its own type: a
+ *  reservation draft (owner, 2026-11-26), or "delivery" from before Hand over replaced it. */
+export const deskTypes = (current: string, isNew: boolean): string[] =>
+  ["sale", ...(current === "delivery" ? ["delivery"] : []), "handover", ...(isNew || current === "reservation" ? ["reservation"] : [])];
 
 export type DeskCustomer = { customerName: string; customerPhone: string; nationalId: string };
-/** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin, nationalId left out when empty. */
-export function readCustomer(tr: Tr, f: DeskCustomer): { errors: Record<string, string>; payload?: { customerName: string; customerPhone: string; nationalId?: string } } {
+/** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin. The three are required; the National ID is exactly 14 digits. */
+export function readCustomer(tr: Tr, f: DeskCustomer): { errors: Record<string, string>; payload?: { customerName: string; customerPhone: string; nationalId: string } } {
   const rules = customerRules(tr), name = f.customerName.trim(), phone = f.customerPhone.trim(), id = f.nationalId.trim();
   const errors: Record<string, string> = {};
   for (const [k, v] of [["customerName", name], ["customerPhone", phone], ["nationalId", id]] as const) { const e = rules[k](v); if (e) errors[k] = e; }
   if (Object.keys(errors).length) return { errors };
-  return { errors, payload: { customerName: name, customerPhone: latinNumber(phone), ...(id ? { nationalId: latinNumber(id) } : {}) } };
+  return { errors, payload: { customerName: name, customerPhone: latinNumber(phone), nationalId: latinNumber(id) } };
 }
 
 export type DeskLine = { itemId: string; count: string };
@@ -75,20 +64,36 @@ export function plannedAgainst(total: number, cash: string, banks: (Bank & { met
   return { errors: paymentErrors(cash, forMath(banks), "none"), planned, left: total - planned, over: planned > total };
 }
 
-export type LockDraft = { status: string; locked: boolean; createdDay: string };
+export type LockDraft = { status: string; locked: boolean; createdDay: string; operation?: string };
 /** What the screen says about a draft's edit state, from the server's own `locked` and `createdDay` (the client never works out midnight). */
-export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" | "completed" | "deleted"; text: string } {
+export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" | "completed" | "reserved" | "deleted"; text: string } {
   const t = (k: string, v?: Record<string, string | number>) => tr.t("gold-sales", `salesDesk.lock.${k}`, v);
-  if (d.status === "completed") return { state: "completed", text: t("completed") };
+  if (d.status === "completed") return { state: "completed", text: t(d.operation === "buy" ? "bought" : "completed") };
+  if (d.status === "reserved") return { state: "reserved", text: t("reserved") };
   if (d.status === "deleted") return { state: "deleted", text: t("deleted") };
   return d.locked ? { state: "locked", text: t("reason", { day: d.createdDay }) } : { state: "editable", text: t("editable") };
 }
 
+type Completer = { userType?: string; actions?: string[]; businessRole?: string | null } | undefined;
+const mayComplete = (me: Completer): boolean => hasAction(me, "complete-sales-draft") || (me?.userType === "user" && isDeskWideRole(me.businessRole));
+
 /** Who completes a draft into an invoice (owner, 2026-11-25): Admin and Super admin, a plain user with a desk-wide business role (the accountant, the call center
  *  admin, the branch sales manager) by the role alone, or any other plain user holding the action `complete-sales-draft`; on an open sell draft.
- *  Nobody while the person is unknown (the page is loading). A Buy draft is a quote only. The backend refuses the rest (403 notAllowed). */
-export const canCompleteDraft = (me: { userType?: string; actions?: string[]; businessRole?: string | null } | undefined, status: string | undefined, buy: boolean): boolean =>
-  (hasAction(me, "complete-sales-draft") || (me?.userType === "user" && isDeskWideRole(me.businessRole))) && status === "open" && !buy;
+ *  Nobody while the person is unknown (the page is loading). A Buy draft is never an invoice (canCompleteBuyDraft), and a reservation draft is
+ *  confirmed, never completed. The backend refuses the rest (403 notAllowed). */
+export const canCompleteDraft = (me: Completer, status: string | undefined, buy: boolean, invoiceType?: string): boolean =>
+  mayComplete(me) && status === "open" && !buy && invoiceType !== "reservation";
+
+/** Who completes a Buy draft (owner, 2026-11-26): the same people as a sale, on an open Buy draft that is not locked for them (the server's
+ *  `locked`: past midnight only an Admin). It pays the customer and puts the pieces in stock. */
+export const canCompleteBuyDraft = (me: Completer, draft: { status?: string; operation?: string; locked?: boolean } | null | undefined): boolean =>
+  mayComplete(me) && draft?.status === "open" && draft.operation === "buy" && !draft.locked;
+
+/** Who confirms a reservation draft into a real reservation (owner, 2026-11-26): an Admin, the Super admin and a plain user with the accountant role,
+ *  on an open reservation draft that is not locked for them (the server's `locked`: past midnight only an Admin). The backend refuses the rest. */
+export const canConfirmReservation = (me: { userType?: string; businessRole?: string | null } | null | undefined, draft: { status?: string; invoiceType?: string; locked?: boolean } | null | undefined): boolean =>
+  (me?.userType === "admin" || me?.userType === "super_admin" || (me?.userType === "user" && me.businessRole === "accountant")) &&
+  draft?.status === "open" && draft.invoiceType === "reservation" && !draft.locked;
 
 /** One channel per payment line (owner, 2026-11-09): a line is Instapay, Visa or Bank transfer, never two at once, and the backend takes each method once per
  *  sale. The methods row `i` may offer: every one not already used by another line ("cash" never counts), plus the row's own value. */
@@ -118,3 +123,41 @@ export const mayDeleteDraft = (me: { userType?: string; actions?: string[] } | n
 /** Who sees the drafts of every branch, so the list shows the branch and a branch filter: an Admin, the Super admin, and a plain user with a desk-wide business role. */
 export const seesEveryBranchDrafts = (me: { userType?: string; businessRole?: string | null } | null | undefined): boolean =>
   me?.userType === "admin" || me?.userType === "super_admin" || mayEditForeignDraft(me);
+
+// ── The drafts list (dashboard #97): the discount and payment columns. Pure, from what GET /sales-drafts already answers. ──
+
+/** A payment method of the desk, in the order the list shows them. */
+export type DeskPayMethod = "cash" | "instapay" | "bank_transfer" | "visa";
+export const DESK_PAY_METHODS: readonly DeskPayMethod[] = ["cash", "instapay", "bank_transfer", "visa"];
+
+type DraftMoney = {
+  operation?: string | null;
+  discountPercent?: number | null;
+  totals?: { discount?: number | null } | null;
+  paymentMethods?: { method: string; amountPiastres?: number }[] | null;
+  cash?: number | null;
+  bankPayments?: unknown[] | null;
+  payByVisa?: boolean | null;
+};
+
+/** The discount column: null ("-") when the draft has none; a percent (5 or 10, of the workmanship) with its amount; or a typed cash discount.
+ *  A Buy draft never has one. The amount is whole piastres (totals.discount). */
+export function discountCell(d: DraftMoney): { kind: "percent"; percent: number; amount: number } | { kind: "cash"; amount: number } | null {
+  if (d.operation === "buy") return null;
+  const amount = Number(d.totals?.discount ?? 0);
+  const percent = Number(d.discountPercent ?? 0);
+  if (percent > 0) return { kind: "percent", percent, amount };
+  return amount > 0 ? { kind: "cash", amount } : null;
+}
+
+/** The payment column: every method the draft plans, each once, in the desk's order; [] ("-") when nothing is planned.
+ *  A draft saved before the methods list (paymentMethods null) is read from what it holds: Visa alone, else cash and bank transfer. */
+export function paymentMethodsOf(d: DraftMoney): DeskPayMethod[] {
+  const named = (d.paymentMethods ?? []).map((p) => p.method).filter((m): m is DeskPayMethod => (DESK_PAY_METHODS as readonly string[]).includes(m));
+  if (d.paymentMethods && named.length) return DESK_PAY_METHODS.filter((m) => named.includes(m));
+  if (d.payByVisa) return ["visa"];
+  return [
+    ...(Number(d.cash ?? 0) > 0 ? (["cash"] as const) : []),
+    ...((d.bankPayments ?? []).length > 0 ? (["bank_transfer"] as const) : []),
+  ];
+}

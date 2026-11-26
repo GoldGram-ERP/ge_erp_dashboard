@@ -12,7 +12,10 @@
     "pack:hostinger": "node scripts/pack-hostinger.mjs",
     "pack:check": "node scripts/pack-check.mjs",
     "release": "node scripts/release.mjs",
-    "release:publish": "node scripts/publish-release.mjs"
+    "release:publish": "node scripts/publish-release.mjs",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "npm run cf:build && opennextjs-cloudflare preview",
+    "cf:deploy": "npm run cf:build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@animate-ui/react": "^2.4.3",
@@ -45,6 +48,13 @@
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "@opennextjs/cloudflare": "1.20.18",
+    "wrangler": "^4.148.0"
+  },
+  "overrides": {
+    "@opennextjs/aws": {
+      "cookie": "0.7.2"
+    }
   }
 }

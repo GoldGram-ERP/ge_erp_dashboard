@@ -29,7 +29,7 @@ export function buildConfig(tr: Tr, me?: Me | null): ThingConfig {
     create: [{ form: "create", label: m("add"), keys: ["bank-movements/bank-movements"] }],
     endpoint: "/bank-movements",
     search: { param: "search", placeholder: m("searchPlaceholder") },
-    chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+    chips: [{ id: "all", label: ALL }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" } }],
     filters: [from(), to()],
     paging: { sizeParam: null },      // the list takes only `page`; its size is fixed
     columns: [

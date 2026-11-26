@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiFailure, newSaveKey } from "@/lib/api";
 import type { CustomFormProps, Row } from "@/lib/engine-types";
 import { latinNumber, milligramsText, piastresInput, piastresText, today, typedPiastres } from "@/lib/format";
+import { isPhone } from "@/lib/phone";
 import { backendFieldErrors } from "@/lib/fields";
 import { useMe } from "@/lib/session";
 import { FormFields, useFieldsForm } from "@/components/fields/useFieldsForm";
@@ -126,7 +127,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   }, [pc, branchId]);
   const phone = latinNumber(String(custNow.customerPhone ?? "").trim());
   useEffect(() => {   // the phone seen on an earlier invoice fills an empty name
-    if (made || !/^\d{8,15}$/.test(phone) || String(custNow.customerName ?? "").trim() !== "") return;
+    if (made || !isPhone(phone) || String(custNow.customerName ?? "").trim() !== "") return;
     customerNameOf(phone).then((n) => { if (n && String(cust.getValues("customerName") ?? "").trim() === "") cust.setValue("customerName", n); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone, made]);
@@ -243,7 +244,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
       ...(d.sent && !made ? { cashDiscount: d.sent } : {}),   // the kind and the number typed; the backend works the discount out itself (a reservation invoice has the reservation's)
       ...(fromHolds ? {} : { lines: lines.map((l) => ({ pieceCode: l.pieceCode })) }),   // from a reservation: the backend sells the held pieces
       ...(gift ? { isGift: true, giftRecipientName: recipient.name.trim(), giftRecipientPhone: latinNumber(recipient.phone.trim()) } : {}),
-      ...(made ? (edit ? {} : { reservationId: made.id }) : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), ...(String(c.nationalId ?? "").trim() ? { nationalId: latinNumber(String(c.nationalId).trim()) } : {}) }),
+      ...(made ? (edit ? {} : { reservationId: made.id }) : { customerName: String(c.customerName).trim(), customerPhone: latinNumber(String(c.customerPhone).trim()), nationalId: latinNumber(String(c.nationalId ?? "").trim()) }),
     };
     try {
       const saved = await api(edit ? `/sales-invoices/${edit.id}` : "/sales-invoices", { method: edit ? "PUT" : "POST", body, saveKey: saveKey.current });

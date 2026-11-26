@@ -6,11 +6,12 @@ import { useState } from "react";
 import { Button, Checkbox, Modal, Toggle } from "@/components/ui";
 import { Section } from "@/components/engine";
 import type { Row } from "@/lib/engine-types";
-import { latinNumber, milligramsText } from "@/lib/format";
+import { milligramsText } from "@/lib/format";
+import { PHONE_LENGTH } from "@/lib/phone";
 import type { Tr } from "@/lib/t";
 import { revealFirstError } from "@/lib/submit-guard";
 import { TextBox, sg } from "@/things/sales-form-parts";
-import { checkRecipient, type Recipient, type RecipientErrors } from "@/things/sales-gift";
+import { checkRecipient, printedPhone, type Recipient, type RecipientErrors } from "@/things/sales-gift";
 import { openPrint } from "@/things/sales-invoices-print";
 import { printLines, toggled } from "@/things/sales-print-rules";
 
@@ -42,14 +43,15 @@ function CustomPrintDialog({ row, tr, onClose }: { row: Row; tr: Tr; onClose: ()
     setNone(picked === null);
     if (picked === null) return;
     if (gift) {
-      const bad = checkRecipient(tr, rec);
+      const bad = checkRecipient(tr, rec, row.giftRecipientPhone);
       setErrors(bad);
       if (bad.name || bad.phone) { revealFirstError(); return; }
     }
     // Straight from the click: the print window opens before the answer, so no pop-up blocker objects.
+    const recipientPhone = printedPhone(rec, row.giftRecipientPhone);
     openPrint(row.id, gift ? "gift" : "a4", tr, {
       ...(picked ? { lines: picked } : {}),
-      ...(gift ? { recipientName: rec.name.trim(), recipientPhone: latinNumber(rec.phone.trim()), showPrices: prices } : {}),
+      ...(gift ? { recipientName: rec.name.trim(), ...(recipientPhone !== undefined ? { recipientPhone } : {}), showPrices: prices } : {}),
     });
     onClose();
   };
@@ -85,7 +87,7 @@ function CustomPrintDialog({ row, tr, onClose }: { row: Row; tr: Tr; onClose: ()
         {gift && (
           <div className="cp-gift">
             <div className="formgrid">
-              <TextBox name="customRecipientPhone" label={`${sg(tr, "recipientPhone")} *`} value={rec.phone} maxLength={15} ltr error={errors.phone} onChange={(phone) => setRec({ ...rec, phone })} />
+              <TextBox name="customRecipientPhone" label={`${sg(tr, "recipientPhone")} *`} value={rec.phone} maxLength={PHONE_LENGTH} ltr error={errors.phone} onChange={(phone) => setRec({ ...rec, phone })} />
               <TextBox name="customRecipientName" label={`${sg(tr, "recipientName")} *`} value={rec.name} maxLength={100} error={errors.name} onChange={(name) => setRec({ ...rec, name })} />
             </div>
             <Toggle checked={prices} onChange={setPrices}><b>{sg(tr, "showPrices")}</b> <span className="help">{sg(tr, "showPricesHint")}</span></Toggle>

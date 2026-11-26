@@ -45,7 +45,7 @@ export const makeConfigWith = (onScan: (id: string) => void, lists: Lists): Make
     endpoint: "/stock-counts",
     rowKey: "id",
     search: { param: "search", placeholder: m("stockCount.searchPlaceholder") },
-    chips: [{ id: "all", label: ALL }, { id: "deleted", label: t("gold-sales", "salesInvoices.deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+    chips: [{ id: "all", label: ALL }, { id: "deleted", label: t("gold-sales", "salesInvoices.deletedOnly"), query: { deleted: "only" } }],
     filters: [from("missingPieces"), to("missingPieces")],
     paging: { sizeParam: null, sizes: [20], size: 20 },     // the list takes only page; its size is fixed
     columns: [

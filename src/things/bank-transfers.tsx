@@ -23,7 +23,7 @@ export function buildConfig(tr: Tr, me?: Me | null): ThingConfig {
     create: [{ form: "create", label: m("add"), keys: ["bank-movements/bank-transfers"] }],
     endpoint: "/bank-transfers",
     search: { param: "search", placeholder: m("searchPlaceholder") },
-    chips: [{ id: "all", label: rep("all") }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" }, superOnly: true }],
+    chips: [{ id: "all", label: rep("all") }, { id: "deleted", label: m("deletedOnly"), query: { deleted: "only" } }],
     filters: [
       { name: "fromDate", label: m("fromDate"), type: "date" },
       { name: "toDate", label: m("toDate"), type: "date", validate: (v, all) => (v && all.fromDate && v < all.fromDate ? rep("toBeforeFrom") : null) },

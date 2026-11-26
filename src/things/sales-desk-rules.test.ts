@@ -1,24 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, reservationBody } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, canCompleteBuyDraft, canConfirmReservation, discountCell, paymentMethodsOf } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
-const ok = { customerName: " Mona ", customerPhone: "01012345678", nationalId: "" };
+const ok = { customerName: " Mona ", customerPhone: "01012345678", nationalId: "29001011234567" };
 
 describe("customer fields", () => {
-  it("the phone takes 8 to 15 digits, and Arabic-Indic or Persian digits become Latin", () => {
-    expect(readCustomer(tr, { ...ok, customerPhone: "١٢٣٤٥٦٧٨" }).payload?.customerPhone).toBe("12345678");
+  it("the phone is 11 digits starting 010, 011, 012 or 015, and Arabic-Indic or Persian digits become Latin (backend #222)", () => {
+    for (const good of ["01012345678", "01112345678", "01212345678", "01512345678"]) expect(readCustomer(tr, { ...ok, customerPhone: good }).payload?.customerPhone, good).toBe(good);
+    expect(readCustomer(tr, { ...ok, customerPhone: "٠١١٢٣٤٥٦٧٨٩" }).payload?.customerPhone).toBe("01123456789");
     expect(readCustomer(tr, { ...ok, customerPhone: "۰۱۰۱۲۳۴۵۶۷۸" }).payload?.customerPhone).toBe("01012345678");
-    expect(readCustomer(tr, { ...ok, customerPhone: "123456789012345" }).payload?.customerPhone).toBe("123456789012345");
-    for (const bad of ["1234567", "1234567890123456", "0101 234 5678", "+201012345678", "010-1234-5678", "abc12345678"]) {
-      expect(readCustomer(tr, { ...ok, customerPhone: bad }).errors, bad).toEqual({ customerPhone: "salesInvoices.phoneInvalid" });
+    // The old 8-15 digit rule took the first three; a landline and the other prefixes are refused too.
+    for (const bad of ["12345678", "123456789012345", "0223456789", "01312345678", "01412345678", "01612345678", "0101234567", "010123456789", "11012345678",
+      "1234567", "0101 234 5678", "+201012345678", "010-1234-5678", "abc12345678"]) {
+      expect(readCustomer(tr, { ...ok, customerPhone: bad }).errors, bad).toEqual({ customerPhone: "fieldErrors.phone" });
     }
     expect(readCustomer(tr, { ...ok, customerPhone: "" }).errors).toEqual({ customerPhone: "fieldErrors.required" });
   });
-  it("the national ID is optional, 14 digits, Arabic digits normalised; the name is trimmed and required", () => {
-    expect(readCustomer(tr, ok)).toEqual({ errors: {}, payload: { customerName: "Mona", customerPhone: "01012345678" } });
+  it("the national ID is required, 14 digits, Arabic digits normalised; the name is trimmed and required", () => {
+    expect(readCustomer(tr, ok)).toEqual({ errors: {}, payload: { customerName: "Mona", customerPhone: "01012345678", nationalId: "29001011234567" } });
+    expect(readCustomer(tr, { ...ok, nationalId: "" }).errors).toEqual({ nationalId: "fieldErrors.required" });
+    expect(readCustomer(tr, { ...ok, nationalId: "   " }).errors).toEqual({ nationalId: "fieldErrors.required" });
     expect(readCustomer(tr, { ...ok, nationalId: "٢٩٠٠١٠١١٢٣٤٥٦٧" }).payload?.nationalId).toBe("29001011234567");
-    for (const bad of ["2900101123456", "290010112345678", "2900101123456a"]) expect(readCustomer(tr, { ...ok, nationalId: bad }).errors, bad).toEqual({ nationalId: "salesInvoices.nationalIdInvalid" });
+    for (const bad of ["2900101123456", "290010112345678", "2900101123456a"]) expect(readCustomer(tr, { ...ok, nationalId: bad }).errors, bad).toEqual({ nationalId: "fieldErrors.nationalId" });
     expect(readCustomer(tr, { ...ok, customerName: "  " }).errors).toEqual({ customerName: "fieldErrors.required" });
     expect(readCustomer(tr, { ...ok, customerName: "x".repeat(101) }).errors).toEqual({ customerName: "fieldErrors.tooLong" });
   });
@@ -160,21 +164,51 @@ describe("one channel per payment line (owner, 2026-11-09)", () => {
   });
 });
 
-describe("the type choice and the reservation the desk saves", () => {
-  it("offers Sale and Hand over; Reservation only on a new draft for a person with the reservations screen; an old delivery draft keeps its type", () => {
-    expect(deskTypes("sale", true, true)).toEqual(["sale", "handover", "reservation"]);
-    expect(deskTypes("sale", true, false)).toEqual(["sale", "handover"]);
-    expect(deskTypes("handover", false, true)).toEqual(["sale", "handover"]);
-    expect(deskTypes("delivery", false, true)).toEqual(["sale", "delivery", "handover"]);
+describe("the type choice and the reservation draft", () => {
+  it("offers Reservation on a new draft and on a saved reservation draft only; an old delivery draft keeps its type", () => {
+    expect(deskTypes("sale", true)).toEqual(["sale", "handover", "reservation"]);
+    expect(deskTypes("handover", false)).toEqual(["sale", "handover"]);
+    expect(deskTypes("reservation", false)).toEqual(["sale", "handover", "reservation"]);
+    expect(deskTypes("delivery", false)).toEqual(["sale", "delivery", "handover"]);
   });
-  it("sends a reservation paid by cash and bank lines, the discount and Visa only when they are there", () => {
-    const base = { branchId: "b1", date: "2026-11-18", employeeId: "u1", customer: { customerName: "Mona", customerPhone: "01012345678" }, lines: [{ itemId: "i1", quantity: 2 }] };
-    expect(reservationBody({ ...base, cash: "100", banks: [{ bankAccountId: "a1", amount: "50.5" }, { bankAccountId: "", amount: "" }], discount: { kind: "amount", value: 0 }, visa: false }))
-      .toEqual({ branchId: "b1", date: "2026-11-18", employeeId: "u1", customerName: "Mona", customerPhone: "01012345678", lines: [{ itemId: "i1", quantity: 2 }], cash: 10000, bankPayments: [{ bankAccountId: "a1", amount: 5050 }] });
-    expect(reservationBody({ ...base, cash: "", banks: [{ bankAccountId: "a2", amount: "300" }], discount: { kind: "percent", value: 5 }, visa: true }))
-      .toEqual({ ...base, customer: undefined, customerName: "Mona", customerPhone: "01012345678", bankPayments: [{ bankAccountId: "a2", amount: 30000 }], cashDiscount: { kind: "percent", value: 5 }, payByVisa: true });
+  it("lets an Admin, the Super admin and the accountant confirm an open reservation draft, nobody else", () => {
+    const draft = { status: "open", invoiceType: "reservation", locked: false };
+    expect(canConfirmReservation({ userType: "admin" }, draft)).toBe(true);
+    expect(canConfirmReservation({ userType: "super_admin" }, draft)).toBe(true);
+    expect(canConfirmReservation({ userType: "user", businessRole: "accountant" }, draft)).toBe(true);
+    for (const role of ["call_center", "branch_sales", "call_center_admin", "branch_sales_manager", "pricing_specialist", null]) {
+      expect(canConfirmReservation({ userType: "user", businessRole: role }, draft), String(role)).toBe(false);
+    }
+    expect(canConfirmReservation(undefined, draft)).toBe(false);
+  });
+  it("offers Confirm only while the draft waits for it, and Complete never on a reservation draft", () => {
+    const admin = { userType: "admin" };
+    for (const status of ["completed", "reserved", "deleted"]) expect(canConfirmReservation(admin, { status, invoiceType: "reservation" }), status).toBe(false);
+    expect(canConfirmReservation(admin, { status: "open", invoiceType: "sale" })).toBe(false);
+    expect(canConfirmReservation(admin, { status: "open", invoiceType: "reservation", locked: true })).toBe(false);
+    expect(canCompleteDraft(admin, "open", false, "reservation")).toBe(false);
+    expect(canCompleteDraft(admin, "open", false, "sale")).toBe(true);
   });
 });
+describe("completing a Buy draft", () => {
+  const draft = { status: "open", operation: "buy", locked: false };
+  it("is for the same people as a sale's Complete", () => {
+    expect(canCompleteBuyDraft({ userType: "admin" }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "super_admin" }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "user", businessRole: "accountant" }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "user", actions: ["complete-sales-draft"] }, draft)).toBe(true);
+    expect(canCompleteBuyDraft({ userType: "user", businessRole: "branch_sales" }, draft)).toBe(false);
+    expect(canCompleteBuyDraft(undefined, draft)).toBe(false);
+  });
+  it("is only on an open Buy draft that is not locked for the person", () => {
+    const admin = { userType: "admin" };
+    for (const status of ["completed", "deleted"]) expect(canCompleteBuyDraft(admin, { ...draft, status }), status).toBe(false);
+    expect(canCompleteBuyDraft(admin, { ...draft, operation: "sell" })).toBe(false);
+    expect(canCompleteBuyDraft(admin, { ...draft, locked: true })).toBe(false);
+    expect(canCompleteBuyDraft(admin, null)).toBe(false);
+  });
+});
+
 describe("wholesale is not a desk channel, and leaving Reservation drops what is not in stock", () => {
   it("never offers the channel named جملة, and a person left with one other channel starts on it", () => {
     const retail = { id: "r", name: "قطاعي" }, whole = { id: "g", name: " جملة " };
@@ -249,5 +283,32 @@ describe("seesEveryBranchDrafts", () => {
     for (const role of ["call_center", "branch_sales", "pricing_specialist", null, undefined]) expect(seesEveryBranchDrafts({ userType: "user", businessRole: role })).toBe(false);
     expect(seesEveryBranchDrafts(undefined)).toBe(false);
     expect(seesEveryBranchDrafts(null)).toBe(false);
+  });
+});
+
+describe("the drafts list columns (dashboard #97)", () => {
+  it("discount: '-' with none; a percent with its amount; a typed cash discount; never on a Buy draft", () => {
+    expect(discountCell({ discountPercent: 0, totals: { discount: 0 } })).toBeNull();
+    expect(discountCell({ totals: null })).toBeNull();
+    expect(discountCell({ discountPercent: 5, totals: { discount: 12_500 } })).toEqual({ kind: "percent", percent: 5, amount: 12_500 });
+    expect(discountCell({ discountPercent: 10, totals: { discount: 30_000 } })).toEqual({ kind: "percent", percent: 10, amount: 30_000 });
+    expect(discountCell({ discountPercent: 0, totals: { discount: 50_000 } })).toEqual({ kind: "cash", amount: 50_000 });
+    expect(discountCell({ operation: "buy", discountPercent: 5, totals: { discount: 12_500 } })).toBeNull();
+  });
+
+  it("payment: every planned method once, in the desk's order", () => {
+    expect(paymentMethodsOf({ paymentMethods: [{ method: "visa" }] })).toEqual(["visa"]);
+    expect(paymentMethodsOf({ paymentMethods: [{ method: "bank_transfer" }, { method: "cash" }, { method: "instapay" }] })).toEqual(["cash", "instapay", "bank_transfer"]);
+    // the same method on two rows (two accounts) is one pill
+    expect(paymentMethodsOf({ paymentMethods: [{ method: "instapay" }, { method: "instapay" }] })).toEqual(["instapay"]);
+  });
+
+  it("payment of an older draft (no methods list) is read from its cash, bank rows and Visa flag; '-' when nothing is planned", () => {
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 100_000, bankPayments: [{ bankAccountId: "a", amount: 5 }] })).toEqual(["cash", "bank_transfer"]);
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 100_000, bankPayments: [] })).toEqual(["cash"]);
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 0, bankPayments: [{ bankAccountId: "a", amount: 5 }] })).toEqual(["bank_transfer"]);
+    expect(paymentMethodsOf({ paymentMethods: null, payByVisa: true, cash: 0, bankPayments: [] })).toEqual(["visa"]);
+    expect(paymentMethodsOf({ paymentMethods: null, cash: 0, bankPayments: [] })).toEqual([]);
+    expect(paymentMethodsOf({})).toEqual([]);
   });
 });
