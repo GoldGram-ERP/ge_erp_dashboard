@@ -16,6 +16,9 @@ import { useMe } from "@/lib/session";
 import { useT } from "@/lib/t";
 import { allPages } from "./sales-form-parts";
 import { useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { boardTabs, tabFromAddress, type BoardTab } from "./price-requests-rules";
+import { BoardRequests, BoardSend } from "./board-requests";
 import { dateText, timeText } from "@/lib/format";
 import type { BoardPrice } from "./price-board-rules";
 import { brandsOf } from "@/lib/items";
@@ -113,6 +116,11 @@ export default function Page() {
     for (const [k, n, o] of [["21", price.sell21, was.sell21], ["24", price.sell24, was.sell24], ["ag", price.silverSell, was.silverSell]] as const) { const d = dir(n, o); if (d) next[k] = d; }
     if (Object.keys(next).length) setMoves(next);
   }, [price]);
+  // The tabs (owner, 2026-11-25, backend #228), as main's old board: the board, Send a request and Requests; a notification link opens ?tab=requests&open=<id>.
+  const search = useSearchParams();
+  const [wantedTab, setTab] = useState<string>(() => search.get("tab") ?? "board");
+  const pageTabs = boardTabs();
+  const tab: BoardTab = tabFromAddress(wantedTab);
   const lean = winner(netA, netB, "lower");
   const gap = differenceOf(netA, netB);
 
@@ -148,12 +156,21 @@ export default function Page() {
       <div className="flex flex-wrap items-center gap-2">
         {price ? <Chip tone="gold">{L("أسعار يوم", "Prices of")} <span dir="ltr">{dateText(price.date)}</span></Chip> : <Chip tone="amber">{L("مفيش سعر دهب النهارده", "No gold price today")}</Chip>}
         {refreshed && <Chip>{L("اتحدّث", "Refreshed")} <span dir="ltr">{refreshed}</span></Chip>}
-        {!isUser && branchOptions.length > 1 && (
+        {!isUser && tab === "board" && branchOptions.length > 1 && (
           <span className="ms-auto">
             <Select id="branchId" ariaLabel={L("الفرع", "Branch")} value={branchId} onChange={(v) => v && setPicked(v)} options={branchOptions.map((o) => ({ value: String(o[0]), label: o[1] }))} />
           </span>
         )}
       </div>
+      {pageTabs.length > 1 && (
+        <Segmented<BoardTab> label={title} value={tab} onChange={setTab}
+          options={([["board", L("لوحة الأسعار", "Price board")], ["send", L("إرسال طلب", "Send a request")], ["requests", L("الطلبات", "Requests")]] as [BoardTab, string][]).filter(([id]) => pageTabs.includes(id)).map(([value, label]) => ({ value, label }))} />
+      )}
+      {tab === "send" && <BoardSend picked={chosen.map((e) => ({ id: e.id, itemName: e.itemName, brandName: e.brandName, weightMg: e.weightMg, quantity: pickOf(e.id) }))} boardBranchId={branchId}
+        onStep={pickBump} onRemove={toggle} onPickMore={() => setTab("board")} onSent={() => { setSelected([]); setPicks({}); setTab("requests"); }} />}
+      {tab === "requests" && <BoardRequests openId={search.get("open")} />}
+
+      {tab === "board" && <>
       {board.isError && <Banner tone="warn" live>{L("مش قادر أحدّث دلوقتي، الأسعار دي آخر حاجة وصلت", "Can't refresh now; these are the last prices received")}</Banner>}
 
       <div className="grid items-start gap-5 wide:grid-cols-[minmax(0,1fr)_20rem]">
@@ -269,8 +286,10 @@ export default function Page() {
       <ActionBar label={L("الخطوة الجاية", "Next step")} summary={chosen.length > 0
         ? <span className="flex flex-col"><span className="meta">{L("الإجمالي", "Total")}</span><b className="text-title font-bold" dir="ltr">{totals.incomplete ? "—" : money(totals.total)}</b></span>
         : <span className="flex flex-col"><span className="meta">{L("دهب ٢١ · بيع", "Gold 21 · sell")}</span><b className="text-title font-bold" dir="ltr">{money(price?.sell21)}</b></span>}>
+        {chosen.length > 0 && pageTabs.includes("send") && <Button variant="soft" id="ask-approval" onClick={() => setTab("send")}>{L("اطلب موافقة", "Ask for approval")}</Button>}
         <Button variant="primary" onClick={() => openDraft()} disabled={!price}>{L("اعمل مسودة بالسعر ده", "Create draft at this price")}</Button>
       </ActionBar>
+      </>}
     </div>
   );
 }

@@ -25,7 +25,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, reservationBody, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { canOpen } from "@/nav/tree";
 import { pricePerGram } from "./item-math";
 import { code6 } from "@/lib/code6";
@@ -211,20 +211,11 @@ export default function DeskTwoForm({ row, close, tr }: CustomFormProps) {
     if (Object.keys(e).length || !c.payload || !l.payload) { setGeneral(t("common", "couldNotSave", { count: Object.keys(e).length })); revealFirstError(); return; }
     // the draft keeps the desk's choices and the methods' amounts of the quote: no quote (a typed price that is not valid, a refused price) means nothing to save
     if (!quote || (!rsv && (manualPrice(manual.sell).invalid || manualPrice(manual.buy).invalid))) { setGeneral(quoteMsg || d("desk.manualInvalid")); revealFirstError(); return; }
+    // A reservation saves as a normal draft with invoiceType "reservation" (main, 2026-11-26), still paid in full.
     if (rsv) {
       // paid in full, as the reservations page: never a silent click, the note says both amounts
       const paid = cashPaid(cash) + bankPaid(banks);
       if (paid !== quote.q.totalPiastres) { setPayRefusal({ total: quote.q.totalPiastres, paid }); revealFirstError(); return; }
-      setSaving(true);
-      try {
-        const saved = await api("/reservations", { method: "POST", saveKey: saveKey.current, body: reservationBody({
-          branchId: (isUser ? me?.branchId : branchId) ?? "", date: today(), employeeId: (isUser ? me?.id : sellerId || me?.id) ?? "",
-          customer: c.payload, lines: l.payload, cash, banks: money, discount: dsc.sent, visa: payment === "visa" }) });
-        saveKey.current = newSaveKey();
-        toast(t("gold-sales", "reservations.savedNumber", { code: code6(saved.reservationNumber) }));
-        if (canOpen(me, ["gold-sales/reservations-list"])) router.push(`/sales/reservations?open=${saved.id}`); else close();
-      } catch (err) { refusal(err); } finally { setSaving(false); }
-      return;
     }
     setSaving(true);
     const body = {
@@ -333,8 +324,6 @@ export default function DeskTwoForm({ row, close, tr }: CustomFormProps) {
   const sellerName = draft?.employeeName ?? (isUser ? me?.name : (([u]) => u && ([u.firstName, u.familyName].filter(Boolean).join(" ") || u.username))(sellers.filter((x) => x.id === sellerId)) ?? me?.name) ?? "";
   const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
   const typedManual = manualPrice(rsv ? "" : operation === "sell" ? manual.sell : manual.buy);
-  // Every person who has the desk may save a reservation from it (owner, 2026-11-24): the server lets the desk screen do that one create, so the third option no longer needs the Reservations screen.
-  const mayReserve = true;
   const typeLabels: Record<string, string> = { sale: d("typeSale"), delivery: d("typeDelivery"), handover: L("تسليم", "Hand over"), reservation: L("حجز", "Reservation") };
   // The account that received each Instapay or Visa line: asked where the money is really taken (Complete, and a reservation).
   const receivedInto = banks.map((b, i) => (!lineTakesAccount(b.method) && !b.bankAccountId && String(b.amount ?? "").trim() !== "")
@@ -444,7 +433,7 @@ export default function DeskTwoForm({ row, close, tr }: CustomFormProps) {
                   onChange={(v) => pick(() => { setOperation(v); setBanks([]); if (v === "buy" && type === "reservation") setType("sale"); })} />
                 <TwoToggleGroup label={d("desk.metal")} value={metal} items={[{ id: "gold" as Metal, label: d("desk.gold") }, { id: "silver" as Metal, label: d("desk.silver") }]}
                   onChange={(v) => pick(() => { setMetal(v); setLines([]); })} />
-                {!buy && <TwoToggleGroup label={d("type")} value={type} items={deskTypes(type, isNew, mayReserve).map((k) => ({ id: k, label: typeLabels[k] }))} onChange={(v) => pick(() => setType(v))} />}
+                {!buy && <TwoToggleGroup label={d("type")} value={type} items={deskTypes(type, isNew).map((k) => ({ id: k, label: typeLabels[k] }))} onChange={(v) => pick(() => setType(v))} />}
                 {metal === "silver" && !rsv && <TwoToggleGroup label={d("desk.wrapping")} value={wrapping} items={[{ id: "wrapped" as Wrapping, label: d("desk.wrapped") }, { id: "unwrapped" as Wrapping, label: d("desk.unwrapped") }]} onChange={(v) => pick(() => setWrapping(v))} />}
               </div>
               <div className="d2-fields">

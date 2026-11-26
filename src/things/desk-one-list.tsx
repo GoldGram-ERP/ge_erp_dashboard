@@ -2,6 +2,7 @@
 // The redesigned Sales desk's drafts list on the Hallmark kit: the engine's `list` slot. The data, the address (?q, ?chip, ?branchId, ?sort) and the row opener are
 // the engine's (useViewRows, the same query the old table read); this file only draws it: actions, one filter row, one inset group of rows, paging, every state.
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ListSlotProps, Row } from "@/lib/engine-types";
 import { initialViewState } from "@/lib/fields";
 import { dateText, intText, piastresText } from "@/lib/format";
@@ -10,6 +11,20 @@ import { useT } from "@/lib/t";
 import { Ltr, useViewRows } from "@/components/engine";
 import { useLookup } from "@/components/fields/useLookup";
 import { Banner, Button, Chip, EmptyState, Icons, Picker, SearchPill, Segmented, TapRow } from "@/components/hallmark";
+import { toast } from "@/components/engine";
+import { useConfirmReservation } from "@/components/fields/ConfirmReservation";
+import { code6 } from "@/lib/code6";
+import { useMe } from "@/lib/session";
+import type { Tr } from "@/lib/t";
+import { canConfirmReservation, discountCell, paymentMethodsOf } from "./sales-desk-rules";
+
+// «تأكيد الحجز» beside a reservation draft's row (owner, 2026-11-26): outside the row's button, so its click never opens the draft.
+function RowConfirm({ row, tr, cfgId }: { row: Row; tr: Tr; cfgId: string }) {
+  const qc = useQueryClient();
+  const reload = () => void qc.invalidateQueries({ queryKey: ["thing", cfgId] });
+  const { run, confirming, dialog } = useConfirmReservation(tr, { done: reload, failed: (text) => { toast(text, { error: true }); reload(); } });
+  return <>{dialog}<Button size="sm" variant="primary" data-confirm-reservation={row.draftNumber} pending={confirming} icon={<Icons.Check aria-hidden />} onClick={() => void run(row)}>{tr.L("تأكيد الحجز", "Confirm")}</Button></>;
+}
 
 // The sort choices of the page (only when the whole list is on it, as the old table did): key, direction, how it reads, the value it sorts by.
 const SORTS: { id: string; key: string; dir: "asc" | "desc"; type?: string; get: (r: Row) => unknown }[] = [
@@ -22,6 +37,7 @@ const SORTS: { id: string; key: string; dir: "asc" | "desc"; type?: string; get:
 export default function DeskOneList({ cfgId, view, vs, set, sortToUrl, chips, unit, creates, onCreate, onRow }: ListSlotProps) {
   const tr = useT();
   const { L, errorText } = tr;
+  const { data: me } = useMe();
   const { q, answer, rows: got, total, pages, filtered, whole } = useViewRows(cfgId, view, vs);
 
   // search, debounced (as the engine's table)
@@ -44,7 +60,8 @@ export default function DeskOneList({ cfgId, view, vs, set, sortToUrl, chips, un
 
   const clear = () => { const s = initialViewState(view); setQText(""); set({ q: "", chip: s.chip, filters: s.filters, page: 1 }); };
   const status = (r: Row) => (r.status === "deleted" ? <Chip tone="carnelian">{L("محذوفة", "Deleted")}</Chip>
-    : r.status === "completed" ? <Chip tone="malachite">{L("مكتملة", "Completed")}</Chip>
+    : r.status === "completed" ? <Chip tone="malachite">{L("مكتملة", "Completed")}{r.customerPiecePurchaseNumber && <span dir="ltr">{code6(r.customerPiecePurchaseNumber)}</span>}</Chip>
+    : r.status === "reserved" ? <Chip tone="malachite">{L("محجوزة", "Reserved")}{r.reservationNumber && <span dir="ltr">{code6(r.reservationNumber)}</span>}</Chip>
     : r.locked ? <Chip tone="amber">{L("مقفولة", "Locked")}</Chip>
     : <Chip tone="lapis">{L("مفتوحة", "Open")}</Chip>);
   const newDraft = hasCreate("draft") && <Button variant="primary" id="new-draft" icon={<Icons.Plus aria-hidden />} onClick={() => onCreate("draft")}>{L("مسودة جديدة", "New draft")}</Button>;
@@ -102,7 +119,7 @@ export default function DeskOneList({ cfgId, view, vs, set, sortToUrl, chips, un
       ) : (
         <div className="hm-grp @container" role="list" id="drafts">
           {rows.map((r) => (
-            <div role="listitem" key={String(r.id)} className={r.deletedAt ? "opacity-60" : undefined}>
+            <div role="listitem" key={String(r.id)} className={`flex items-center${r.deletedAt ? " opacity-60" : ""}`}>
               <TapRow onClick={() => onRow(r)} data-k={String(r.id)} aria-label={`${L("مسودة", "Draft")} ${r.draftNumber} · ${r.customerName ?? ""}`}
                 className={branchFilter
                   ? "grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 [grid-template-areas:'n_c_t'_'n_m_s'] @min-[44rem]:grid-cols-[5.5rem_minmax(0,1fr)_7.5rem_6.5rem_7.5rem_5.5rem_5.5rem] @min-[44rem]:[grid-template-areas:'n_c_p_b_t_s_d']"
@@ -110,8 +127,20 @@ export default function DeskOneList({ cfgId, view, vs, set, sortToUrl, chips, un
                 <span className="flex flex-col items-start gap-1 self-center [grid-area:n]">
                   <Chip><Ltr>{r.draftNumber}</Ltr></Chip>
                   {r.operation === "buy" && <Chip tone="amber">{L("شراء", "Buy")}</Chip>}
+                  {r.invoiceType === "reservation" && <Chip tone="gold">{L("حجز", "Reservation")}</Chip>}
                 </span>
-                <span className="truncate font-semibold [grid-area:c]" title={r.customerName ?? ""}>{r.customerName || "—"}</span>
+                <span className="flex min-w-0 flex-col gap-1 [grid-area:c]">
+                  <span className="truncate font-semibold" title={r.customerName ?? ""}>{r.customerName || "—"}</span>
+                  {(() => {
+                    // الخصم and طريقة الدفع (dashboard #97): nothing shown when there is none.
+                    const cell = discountCell(r), methods = paymentMethodsOf(r);
+                    if (!cell && !methods.length) return null;
+                    return <span className="flex flex-wrap items-center gap-1" data-money>
+                      {cell && <Chip tone="lapis" title={L("الخصم", "Discount")}><Ltr>− {piastresText(cell.amount)}</Ltr>{cell.kind === "percent" ? <Ltr>{cell.percent}%</Ltr> : L("كاش", "cash")}</Chip>}
+                      {methods.map((m) => <Chip key={m}>{{ cash: L("كاش", "Cash"), instapay: L("إنستا باي", "Instapay"), bank_transfer: L("تحويل بنكي", "Bank transfer"), visa: L("فيزا", "Visa") }[m]}</Chip>)}
+                    </span>;
+                  })()}
+                </span>
                 <span className="meta flex min-w-0 items-center gap-1.5 [grid-area:m] @min-[44rem]:contents">
                   <span className="shrink-0 whitespace-nowrap @min-[44rem]:[grid-area:p]"><Ltr>{r.customerPhone || "—"}</Ltr></span>
                   {branchFilter && <span className="min-w-0 truncate before:me-1.5 before:content-['·'] @min-[44rem]:[grid-area:b] @min-[44rem]:before:content-none" title={r.branchName ?? ""}>{r.branchName || "—"}</span>}
@@ -120,6 +149,7 @@ export default function DeskOneList({ cfgId, view, vs, set, sortToUrl, chips, un
                 <span className="whitespace-nowrap text-end font-semibold tabular-nums [grid-area:t]"><Ltr>{piastresText(r.totals?.total ?? 0)}</Ltr> <span className="meta">{L("ج.م", "EGP")}</span></span>
                 <span className="justify-self-end @min-[44rem]:justify-self-start [grid-area:s]">{status(r)}</span>
               </TapRow>
+              {canConfirmReservation(me, r) && <span className="shrink-0 pe-3"><RowConfirm row={r} tr={tr} cfgId={cfgId} /></span>}
             </div>
           ))}
         </div>
