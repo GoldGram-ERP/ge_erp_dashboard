@@ -24,7 +24,7 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, canCompleteBuyDraft, canConfirmReservation, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, canCompleteBuyDraft, canConfirmReservation, draftButtons, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { useConfirmReservation } from "@/components/fields/ConfirmReservation";
 import { CompleteBuySection } from "@/components/fields/CompleteBuyDraft";
 import { BoughtPieces } from "@/components/fields/BoughtPieces";
@@ -381,7 +381,8 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
   // Admin / Super admin, a desk-wide role (even on another user's draft), or the action complete-sales-draft (own draft only); hidden until the person is known; a Buy draft is a quote only
   const canComplete = canCompleteDraft(me, draft?.status, buy, draft?.invoiceType) && (!foreign || accountantEdits);
-  const canConfirm = canConfirmReservation(me, draft);
+  const buttons = draftButtons({ saved: Boolean(draft), reservation: rsv, dirty });
+  const canConfirm = canConfirmReservation(me, draft) && buttons.confirm;
   const canCompleteBuy = canCompleteBuyDraft(me, draft) && (!foreign || accountantEdits);
   // Whoever completes takes the payment here: typing it is not a change of the draft.
   const takesPayment = canComplete || canCompleteBuy;
@@ -609,11 +610,9 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
 
             {buy && draft?.status !== "completed" && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
-              {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : rsv ? L("حفظ الحجز", "Save reservation") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
-              {canConfirm && <Button variant="primary" id="sd-confirm-reservation" aria-busy={confirmation.confirming} disabled={confirmation.confirming} onClick={() => {
-                if (dirty) { setGeneral(d("rsv.saveFirst")); revealFirstError(); return; }   // what is confirmed is what was saved
-                void confirmation.run(draft!);
-              }}><Icon name="check" size={15} />{d("rsv.confirm")}</Button>}
+              {!readonly && buttons.save && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : !isNew ? d("saveChanges") : rsv ? L("حفظ الحجز", "Save reservation") : d("saveDraft")}</Button>}
+              {canConfirm && <Button variant="primary" id="sd-confirm-reservation" aria-busy={confirmation.confirming} disabled={confirmation.confirming}
+                onClick={() => void confirmation.run(draft!)}><Icon name="check" size={15} />{d("rsv.confirm")}</Button>}
               {mayDeleteDraft(me, draft) && <Button danger id="sd-delete" onClick={() => void remove()}><Icon name="trash" size={15} />{d("delete")}</Button>}
               <Button id="sd-back" onClick={close}><Icon name="back" size={15} />{d("backToList")}</Button>
             </div>
