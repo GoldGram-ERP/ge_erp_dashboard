@@ -15,7 +15,7 @@ things["sales/desk"] = { load: () => import("./sales-desk") };
 things["sales/returns"] = { load: () => import("./sales-returns") };
 things["sales/reservations"] = { load: () => import("./sales-reservations") };
 things["sales/customer-orders"] = { load: () => import("./customer-orders") };
-things["sales/delivery-charges"] = { load: () => import("./delivery-charges") };
+things["setup/delivery-charges"] = { load: () => import("./delivery-charges") };
 things["sales/pieces"] = { load: () => import("./sales-pieces") };
 things["buy/items"] = { load: () => import("./gold-items") };
 things["buy/purchases"] = { load: () => import("./gold-purchases") };

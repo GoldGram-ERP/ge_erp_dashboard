@@ -190,9 +190,9 @@
    },
    {
     "kind": "new",
-    "en": "New page Delivery charges: keep the delivery price of each governorate, under Sales.",
-    "ar": "صفحة جديدة «أسعار التوصيل» في المبيعات: بتسجّل فيها سعر التوصيل لكل محافظة.",
-    "route": "/sales/delivery-charges"
+    "en": "New page Delivery charges: keep the delivery price of each governorate.",
+    "ar": "صفحة جديدة «أسعار التوصيل»: بتسجّل فيها سعر التوصيل لكل محافظة.",
+    "route": "/setup/delivery-charges"
    },
    {
     "kind": "new",
@@ -223,6 +223,18 @@
     "en": "Sales desk: every draft shows its type, and a First available button fills in a piece code. Invoices from reservations are of type Reservation, and statement kinds have their names.",
     "ar": "مكتب البيع: كل مسودة بقى باين نوعها، وزرار «أول قطعة متاحة» بيكتب كود القطعة. وفاتورة الحجز نوعها «حجز»، وأسماء الحركات في كشوف الحساب بقت ظاهرة صح.",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "new",
+    "en": "A Buy draft can be completed with pieces we sold before: enter their old codes and they come back into stock.",
+    "ar": "تقدر تتمم فاتورة الشراء وفيها قطع من مبيعاتنا: اكتب الكود القديم والقطعة ترجع للمخزون.",
+    "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "Delivery charges moved to the Admin menu.",
+    "ar": "صفحة أسعار التوصيل اتنقلت لقائمة الإدارة.",
+    "route": "/setup/delivery-charges"
    }
   ]
  },

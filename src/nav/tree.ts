@@ -46,13 +46,6 @@ export const NAV: NavGroup[] = [
     ]
    },
    {
-    "id": "delivery-charges",
-    "route": "/sales/delivery-charges",
-    "screens": [
-     "gold-sales/delivery-charges"
-    ]
-   },
-   {
     "id": "customer-orders",
     "route": "/sales/customer-orders",
     "screens": [
@@ -261,6 +254,13 @@ export const NAV: NavGroup[] = [
     "screens": [
      "system-codes/gold-prices",
      "system-codes/gold-prices-history"
+    ]
+   },
+   {
+    "id": "delivery-charges",
+    "route": "/setup/delivery-charges",
+    "screens": [
+     "gold-sales/delivery-charges"
     ]
    },
    // Workmanship and cashback (bulk): Admin and Super admin only, the same screen key as Settings (no screen key of its own in the backend yet).
