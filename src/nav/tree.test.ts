@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { withMovedRoutes } from "@/stores/ui";
 import { allLeaves, leafShown } from "./tree";
+
+// Delivery charges moved to the Admin menu (owner, 2026-11-26): its tick box on the Users form follows the menu group, and a plain user can still be given it.
+describe("the delivery charges menu item", () => {
+  const leaf = allLeaves().find((l) => l.id === "delivery-charges")!;
+  it("sits in the Admin group, shown to a plain user who has the screen", () => {
+    expect([leaf.route, leaf.group.id]).toEqual(["/setup/delivery-charges", "setup"]);
+    expect(leaf.screens).toEqual(["gold-sales/delivery-charges"]);
+    expect(leafShown({ screens: ["gold-sales/delivery-charges"], userType: "user" }, leaf)).toBe(true);
+  });
+  it("keeps what a browser saved under the old address", () => {
+    const saved = { lastRoute: "/sales/delivery-charges", pins: { u: ["/sales/desk", "/sales/delivery-charges"] }, recents: { u: [{ id: "/sales/delivery-charges", at: 1 }] }, textStep: 2 };
+    expect(withMovedRoutes(saved)).toEqual({ lastRoute: "/setup/delivery-charges", pins: { u: ["/sales/desk", "/setup/delivery-charges"] }, recents: { u: [{ id: "/setup/delivery-charges", at: 1 }] }, textStep: 2 });
+  });
+});
 
 // The activity log item of the Admin menu (owner, 2026-11-24): an Admin gets it, the Super admin (who has the log in "الأمان والبيانات") does not.
 describe("the activity log menu item", () => {

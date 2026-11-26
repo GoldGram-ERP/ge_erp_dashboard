@@ -17,6 +17,14 @@ type UiState = {
   togglePin: (userId: string, route: string) => void; recordRecent: (userId: string, route: string) => void;
 };
 export const UI_KEY = "ge-erp:ui";
+// Pages that moved: what this browser saved under the old address (pins, recents, the last page) follows to the new one.
+const MOVED_ROUTES: Record<string, string> = { "/sales/delivery-charges": "/setup/delivery-charges" };
+const movedRoute = (r: string) => MOVED_ROUTES[r] ?? r;
+export function withMovedRoutes<T>(saved: T): T {
+  const s = (saved ?? {}) as { lastRoute?: string; pins?: Record<string, string[]>; recents?: Record<string, Recent[]> };
+  const each = <V,>(by: Record<string, V[]> | undefined, change: (v: V) => V) => Object.fromEntries(Object.entries(by ?? {}).map(([u, list]) => [u, list.map(change)]));
+  return { ...s, ...(s.lastRoute ? { lastRoute: movedRoute(s.lastRoute) } : {}), ...(s.pins ? { pins: each(s.pins, movedRoute) } : {}), ...(s.recents ? { recents: each(s.recents, (r) => ({ ...r, id: movedRoute(r.id) })) } : {}) } as T;
+}
 export const useUi = create<UiState>()(persist((set) => ({
   collapsed: false, openGroups: ["pins", "sales"], textStep: 1, lastRoute: "",
   pins: {}, recents: {},
@@ -27,4 +35,4 @@ export const useUi = create<UiState>()(persist((set) => ({
   setLastRoute: (lastRoute) => set({ lastRoute }),
   togglePin: (u, route) => set((s) => { const p = s.pins[u] ?? []; return { pins: { ...s.pins, [u]: p.includes(route) ? p.filter((x) => x !== route) : [...p, route] } }; }),
   recordRecent: (u, route) => set((s) => ({ recents: { ...s.recents, [u]: [{ id: route, at: Date.now() }, ...(s.recents[u] ?? []).filter((r) => r.id !== route)].slice(0, 5) } })),
-}), { name: UI_KEY, partialize: (s) => ({ collapsed: s.collapsed, openGroups: s.openGroups, textStep: s.textStep, lastRoute: s.lastRoute, pins: s.pins, recents: s.recents }) }));
+}), { name: UI_KEY, version: 1, migrate: (saved) => withMovedRoutes(saved) as UiState, partialize: (s) => ({ collapsed: s.collapsed, openGroups: s.openGroups, textStep: s.textStep, lastRoute: s.lastRoute, pins: s.pins, recents: s.recents }) }));

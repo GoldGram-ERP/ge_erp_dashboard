@@ -960,7 +960,9 @@
   "reservationNotDelivered": "This reservation is not marked delivered.",
   "invoiceReservationDelivered": "Not deleted: reservation number {reservationNumber} is delivered. An Admin undoes the delivery first.",
   "deliveryChargeNotFound": "This delivery charge does not exist.",
-  "governorateAlreadyPriced": "This governorate already has a delivery price. Edit it instead of adding it again."
+  "governorateAlreadyPriced": "This governorate already has a delivery price. Edit it instead of adding it again.",
+  "returnedPieceMismatch": "Not saved: the piece is not of the item and karat of its draft line.",
+  "returnedPieceOtherBranch": "Not saved: the piece was sold by another branch."
  },
  "expenses": {
   "expenseTypes": {
@@ -1856,7 +1858,9 @@
    "noMatchTitle": "No returns match",
    "noMatchBody": "Try a different number, piece code or date.",
    "noDeletedTitle": "No deleted returns",
-   "refundRequired": "Type the refund in cash or in a bank account."
+   "refundRequired": "Type the refund in cash or in a bank account.",
+   "returnedPieceMismatch": "Not saved: the piece is not of the item and karat of its draft line.",
+   "returnedPieceOtherBranch": "Not saved: the piece was sold by another branch."
   },
   "reprintLabel": {
    "title": "Reprint label",
@@ -2357,7 +2361,35 @@
     "completed": "Purchase number {code} created: the pieces are in stock",
     "deleted": "The purchase made from this draft was deleted.",
     "pieces": "Pieces added to stock",
-    "open": "Open in Returned pieces"
+    "open": "Open in Returned pieces",
+    "completeAllNew": "Complete invoice (all pieces new)",
+    "withOurs": "Complete with pieces from our sales",
+    "backAllNew": "Back: all pieces new",
+    "mixedHelp": "Say for each piece whether it is new or from our sales. For one of ours enter its old code: it comes back into stock under it, as a sales return at the draft's price.",
+    "pieceOf": "{item} ({number} of {of})",
+    "new": "New",
+    "ours": "From our sales",
+    "oldCode": "Old code",
+    "check": "Check",
+    "found": "{code} · sales invoice {invoice} · {customer}",
+    "foundNoSale": "Piece {code} is sold.",
+    "chooseOurs": "Mark at least one piece as from our sales, or go back to all pieces new.",
+    "problem": {
+     "empty": "Enter the piece's old code.",
+     "duplicate": "This code is already entered for another piece.",
+     "notFound": "No piece of the branch has this code.",
+     "notSold": "This piece was not sold, so it cannot come back.",
+     "otherBranch": "This piece was sold by another branch.",
+     "mismatch": "The item or karat does not match {item}."
+    },
+    "noneNew": "No new pieces",
+    "returnedAmount": "Value of the pieces from our sales",
+    "newAmount": "Value of the new pieces",
+    "confirmMixed": "Pay {total} to {customer} and put {count} pieces into stock, {old} of them from our sales?",
+    "completedReturn": "Sales return {code} was made and its pieces are back in stock",
+    "returnDeleted": "The sales return made from this draft was deleted.",
+    "returnedPieces": "Pieces back from our sales",
+    "openReturn": "Open the return"
    }
   }
  },

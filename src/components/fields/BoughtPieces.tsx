@@ -1,12 +1,13 @@
 "use client";
 // A completed Buy draft (owner, 2026-11-26): the purchase it made, each piece now in stock with its code, and their labels, as the Coding page
-// prints them. The pieces travel with the draft, so a desk user without the Returned pieces screen sees and prints them too.
+// prints them; and the pieces we had sold that came back, with their sales return. The pieces travel with the draft, so a desk user without the
+// Returned pieces or the Returns screen sees them too.
 import { Icon, Ltr } from "@/components/engine";
 import { Button, CopyButton } from "@/components/ui";
 import { Link as NavLink } from "@/i18n/navigation";
 import { code6 } from "@/lib/code6";
 import type { Row } from "@/lib/engine-types";
-import { milligramsText } from "@/lib/format";
+import { milligramsText, piastresText } from "@/lib/format";
 import type { Tr } from "@/lib/t";
 import { canOpen } from "@/nav/tree";
 import { openLabelPrint } from "@/things/customer-pieces-form";
@@ -17,9 +18,26 @@ export function BoughtPieces({ tr, draft, me }: { tr: Tr; draft: Row; me: { scre
   const cp = (k: string, v?: Record<string, string>) => tr.t("gold-accounts", `customerPieces.${k}`, v);
   const pieces = (draft.boughtPieces ?? []) as Row[];
   const number = draft.customerPiecePurchaseNumber;
+  const back = (draft.returnedPieces ?? []) as Row[];
+  const returnNumber = draft.salesReturnNumber;
   return (
     <>
-      <div className="tk-card" id="sd-bought" role="status">
+      {draft.salesReturnId && <div className="tk-card" id="sd-returned" role="status">
+        <b>{returnNumber ? d("completedReturn", { code: code6(returnNumber) }) : d("returnDeleted")}</b>
+        {back.length > 0 && <>
+          <div className="help">{d("returnedPieces")}</div>
+          <ul id="sd-returned-pieces" className="tk-list">
+            {back.map((p) => (
+              <li key={p.code} className="kv" data-returned-code={p.code}>
+                <span className="st-row"><b dir="ltr">{p.code}</b><CopyButton text={String(p.code)} /> {p.itemName} · <Ltr>{p.karat}</Ltr></span>
+                <b dir="ltr">{piastresText(p.amount)}</b>
+              </li>
+            ))}
+          </ul>
+          {returnNumber && canOpen(me, ["gold-sales/returns", "gold-sales/returns-list"]) && <NavLink href={`/sales/returns?open=${draft.salesReturnId}`} className="btn primary">{d("openReturn")}</NavLink>}
+        </>}
+      </div>}
+      {(draft.customerPiecePurchaseId || !draft.salesReturnId) && <div className="tk-card" id="sd-bought" role="status">
         <b>{number ? d("completed", { code: code6(number) }) : d("deleted")}</b>
         {pieces.length > 0 && <>
           <div className="help">{d("pieces")}</div>
@@ -33,7 +51,7 @@ export function BoughtPieces({ tr, draft, me }: { tr: Tr; draft: Row; me: { scre
           </ul>
           {number && canOpen(me, ["gold-accounts/purchase-coding"]) && <NavLink href={`/sales/returns?view=returned-pieces&open=${pieces[0].id}`} className="btn primary">{d("open")}</NavLink>}
         </>}
-      </div>
+      </div>}
       {pieces.length > 0 && <LabelsCard tr={tr} title={tr.t("gold-accounts", "purchaseCoding.madeLabels")} labels={pieces.map((p) => ({ ...p.label, itemName: p.itemName, tagPrice: 0 }))} />}
     </>
   );

@@ -614,7 +614,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
               {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
             </div></div>}
 
-            {canCompleteBuy && <CompleteBuySection key={draft!.id} tr={tr} draft={draft!} cash={cash} banks={banks} dirty={dirty}
+            {canCompleteBuy && <CompleteBuySection key={`${draft!.id}:${draft!.updatedAt}`} tr={tr} draft={draft!} cash={cash} banks={banks} dirty={dirty}
               todayTotal={kept && quote && quote.q.totalPiastres !== total ? quote.q.totalPiastres : undefined}
               onPayErrors={(p) => setErrs(payErrorTexts(tr, p))} done={(saved) => { fill(saved); reload(); }}
               stale={() => { api(`/sales-drafts/${draft!.id}`).then(fill).catch(() => {}); }} />}

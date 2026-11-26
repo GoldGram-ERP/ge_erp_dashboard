@@ -7,6 +7,7 @@ import { ThingHost } from "@/components/shell/thing-host";
 // Screens that moved: the old address sends the person to the new one (bookmarks, links, old pins). `new=create` is carried over to the tab's own form id.
 const MOVED: Record<string, { to: string; params: Record<string, string>; form?: string }> = {
   "/buy/returned-pieces": { to: "/sales/returns", params: { view: "returned-pieces" }, form: "createReturnedPiece" },
+  "/sales/delivery-charges": { to: "/setup/delivery-charges", params: {} },
 };
 
 export default async function ThingPage({ params, searchParams }: { params: Promise<{ locale: string; path: string[] }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
