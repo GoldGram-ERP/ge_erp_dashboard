@@ -1,0 +1,13 @@
+.two-co { border-top: 1px solid var(--line); }
+.two-co-head { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 4px; cursor: pointer; border-radius: 8px;
+  transition: background-color .18s var(--calm); }
+.two-co-head:hover { background: var(--line-soft); }
+.two-co-head:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.two-co-title { font-weight: 600; font-size: 1rem; color: var(--ink); }
+.two-co-sum { flex: 1; min-width: 0; color: var(--ink-2); font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: end; font-variant-numeric: tabular-nums; }
+.two-co-chev { display: inline-flex; color: var(--ink-2); transform: rotate(90deg); transition: transform .2s var(--calm); margin-inline-start: auto; }
+.two-co-head[data-panel-open] .two-co-chev { transform: rotate(-90deg); }
+.two-co[data-invalid] .two-co-title { color: var(--warn); }
+.two-co-panel { overflow: hidden; }
+.two-co-body { padding: 4px 4px 20px; display: grid; gap: 14px; }
+@media (prefers-reduced-motion: reduce) { .two-co-head, .two-co-chev { transition: none; } }

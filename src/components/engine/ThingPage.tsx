@@ -149,13 +149,18 @@ function Engine({ cfg, access, initial }: { cfg: ThingConfig; access?: Access; i
   const actions = [...(view.actions ?? []), ...exportActions(view, tr)].filter((a) => seen(a.keys ?? view.keys ?? cfg.keys));
   const chips = (view.chips ?? []).filter((c) => seen(c.keys) && (!c.superOnly || isSuper));
   const sheetForm = form && !pageForm ? cfg.forms![form.id] : null;
+  const jumpTo = (j: RowJump) => go({ view: j.view, ...Object.fromEntries(Object.entries(j.filters ?? {}).map(([k, v]) => [k, v === undefined || v === null ? null : String(v)])) }, true);
 
   return (
     <div className="thing-root" style={{ display: "flex", flexDirection: "column" }}>   {/* NOT position:relative: a sheet is placed against .main (the whole page height), never against this short wrapper, or it stops growing at the list height and scrolls with room to spare. A column that takes its content's height: the page (.ws) scrolls, not the table */}
+      {cfg.list ? (
+        <cfg.list key={view.id + rel} cfgId={cfg.id} view={view} vs={vs} set={set} sortToUrl={(k, d) => go({ sort: k, dir: d })} chips={chips} unit={unit} flashId={flashId} creates={creates} onCreate={(id) => openForm(id)}
+          onRow={(r) => { if (typeof view.onRow !== "function") return openRecord(r); const j = view.onRow(r, { open: openRecord, openForm, filters: vs!.filters }); if (j && typeof j === "object" && j.view) jumpTo(j); }} />
+      ) : (<>
       <Header cfg={cfg} creates={creates} actions={actions} view={view} vs={vs} onCreate={(id) => openForm(id)} reload={reload} />
       {views.length > 1 && <Seg className="page" label={L("العرض", "View")} items={views.map((v) => ({ id: v.id, label: v.label }))} value={view.id} onChange={(id) => { pickView(cfg.id, id); bump((n) => n + 1); go({ view: id }, true); }} />}
-      <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} sortToUrl={(k, d) => go({ sort: k, dir: d })} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm}
-        jump={(j) => go({ view: j.view, ...Object.fromEntries(Object.entries(j.filters ?? {}).map(([k, v]) => [k, v === undefined || v === null ? null : String(v)])) }, true)} />
+      <ViewBody key={view.id + rel} cfg={cfg} view={view} vs={vs} set={set} sortToUrl={(k, d) => go({ sort: k, dir: d })} chips={chips} unit={unit} flashId={flashId} onRow={openRecord} openForm={openForm} jump={jumpTo} />
+      </>)}
       {opened && rec && (
         <RecordSheet rec={rec} full={opened.full} row={opened.row} onClose={closeRecord} reload={reload} openForm={openForm} />
       )}
@@ -189,16 +194,12 @@ function Header({ cfg, creates, actions, view, vs, onCreate, reload }: { cfg: Th
   );
 }
 
-function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, openForm, jump }: {
-  cfg: ThingConfig; view: ViewConfig; vs: ViewState; set: (p: Partial<ViewState>) => void; sortToUrl: (key: string, dir: "asc" | "desc") => void; chips: NonNullable<ViewConfig["chips"]>;
-  unit: string; flashId: string | null; onRow: (row: Row) => void; openForm: (id: string, row?: Row | null) => void; jump: (j: RowJump) => void;
-}) {
-  const tr = useT();
-  const { L, errorText } = tr;
+/** The rows of a view on live data: the same TanStack query (key, params, other-keyboard retry) the engine's table reads; a `list` slot uses it too. */
+export function useViewRows(cfgId: string, view: ViewConfig, vs: ViewState) {
   const [manyPages, setManyPages] = useState(false);   // known from the first answer; only a serverSort that is ON reads it
   const query = buildQuery(view, vs, { manyPages });
   const q = useQuery({
-    queryKey: ["thing", cfg.id, view.id, query],
+    queryKey: ["thing", cfgId, view.id, query],
     enabled: vs.ran,
     placeholderData: keepPreviousData,
     // A search that finds nothing is tried once more as the same keys on the other language's keyboard ("lfduhj" is "مبيعات").
@@ -218,6 +219,23 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
   if (answer && view.transform) rows = view.transform(rows, answer);
   const total = answer ? (view.totalPath ? Number(view.totalPath.split(".").reduce((o: any, k) => o?.[k], answer)) : (answer.total ?? answer.count ?? rows.length)) : NaN;
 
+  const many = !!view.paging && Number.isFinite(total) && (total > rows.length || vs.page > 1);
+  useEffect(() => { if (answer && view.serverSort?.on) setManyPages(many); }, [answer, many, view.serverSort?.on]);
+  const paging = view.paging || null;
+  const pageSize = paging ? (paging.sizeParam === null ? (paging.size ?? 20) : vs.size) : 0;   // fixed-size lists page at the backend's own size
+  const pages = Number.isFinite(total) && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1;
+  const filtered = !!vs.q || (!!view.chips && vs.chip !== view.chips[0].id) || Object.values(vs.filters).some((v) => v && v !== true);
+  const whole = !paging || (Number.isFinite(total) && total <= rows.length && vs.page === 1);
+  return { q, answer, rows, total, many, pages, filtered, whole };
+}
+
+function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, openForm, jump }: {
+  cfg: ThingConfig; view: ViewConfig; vs: ViewState; set: (p: Partial<ViewState>) => void; sortToUrl: (key: string, dir: "asc" | "desc") => void; chips: NonNullable<ViewConfig["chips"]>;
+  unit: string; flashId: string | null; onRow: (row: Row) => void; openForm: (id: string, row?: Row | null) => void; jump: (j: RowJump) => void;
+}) {
+  const tr = useT();
+  const { L, errorText } = tr;
+  const { q, answer, rows, total, pages, filtered, whole } = useViewRows(cfg.id, view, vs);
   // the sub line under the title: count, sum, extra
   let sub = " ";
   if (answer) {
@@ -228,8 +246,6 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
     }
     if (view.answerExtra) sub += ` · ${view.answerExtra(answer)}`;
   }
-  const many = !!view.paging && Number.isFinite(total) && (total > rows.length || vs.page > 1);
-  useEffect(() => { if (answer && view.serverSort?.on) setManyPages(many); }, [answer, many, view.serverSort?.on]);
   useEffect(() => { const el = document.getElementById("sub"); if (el) el.textContent = sub; }, [sub]);
 
   // search, debounced
@@ -258,9 +274,6 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
   });
 
   const paging = view.paging || null;
-  const pageSize = paging ? (paging.sizeParam === null ? (paging.size ?? 20) : vs.size) : 0;   // fixed-size lists page at the backend's own size
-  const pages = Number.isFinite(total) && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1;
-  const filtered = !!vs.q || (view.chips && vs.chip !== view.chips[0].id) || Object.values(vs.filters).some((v) => v && v !== true);
 
   const clear = () => {
     const s = initialViewState(view);
@@ -310,7 +323,7 @@ function ViewBody({ cfg, view, vs, set, sortToUrl, chips, unit, flashId, onRow, 
             <EmptyState title={filtered ? L("لا توجد نتائج", "No results") : L("لا توجد سجلات بعد", "No records yet")} text={filtered ? L("جرّب كلمة أخرى أو غيّر الفلاتر.", "Try another word or change the filters.") : ""}>
               {filtered && <Button id="clear" onClick={clear}>{L("مسح البحث والفلاتر", "Clear search and filters")}</Button>}
             </EmptyState>
-          ) : <Table view={view} rows={rows} vs={vs} answer={answer} unit={unit} flashId={flashId} whole={!paging || (Number.isFinite(total) && total <= rows.length && vs.page === 1)}
+          ) : <Table view={view} rows={rows} vs={vs} answer={answer} unit={unit} flashId={flashId} whole={whole}
               onSort={(k, dir) => { set({ sort: { key: k, dir }, page: 1 }); sortToUrl(k, dir); }}
               onRow={(r) => {
                 if (typeof view.onRow !== "function") return onRow(r);

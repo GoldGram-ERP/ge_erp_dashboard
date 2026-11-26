@@ -1,0 +1,18 @@
+/* InsetGroup / InsetRow / InsetText: the grouped list. App tokens only. */
+.ig{display:grid;gap:.375rem;min-width:0}
+.ig-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:1.75rem;padding-inline:.75rem}
+.ig-title{margin:0;font-size:.75rem;font-weight:600;color:var(--mute);line-height:1.4}
+.ig-action{display:flex;align-items:center;gap:.375rem}
+.ig-body{border-radius:.75rem;background:var(--surface);box-shadow:0 0 0 1px var(--line);overflow:hidden}
+.ig-row{display:flex;align-items:center;gap:.75rem;min-height:2.25rem;padding:.3rem .75rem}
+.ig-row+.ig-row,.ig-row+.ig-text,.ig-text+.ig-row{box-shadow:inset 0 1px 0 var(--line-soft)}
+.ig-label{flex:1 1 auto;min-width:0;font-size:.8125rem;color:var(--ink-2)}
+.ig-value{font-weight:600;color:var(--ink);white-space:nowrap}
+.ig-value.is-num{font-variant-numeric:tabular-nums}
+.ig-value.is-good{color:var(--good)} .ig-value.is-warn{color:var(--warn)} .ig-value.is-mute{color:var(--mute);font-weight:500}
+.ig-row.is-strong .ig-label{color:var(--ink);font-weight:600}
+.ig-row.is-strong .ig-value{font-size:1.05rem;font-weight:700}
+.ig-trailing{display:flex;align-items:center;gap:.375rem;flex:none}
+.ig-text{margin:0;padding:.5rem .75rem;font-size:.8125rem;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+.ig-text.is-empty{color:var(--mute)}
+@media (pointer:coarse){.ig-row{min-height:2.75rem}}

@@ -101,6 +101,9 @@ for (const lang of LANGS) {
     const pieces = ((await (await apiAs('superadmin', ROOT))('GET', '/piece-choices?search=&page=1')).body.items as any[]).filter((p) => p.itemName === 'Desk ring' && !p.sold && !p.inTransfer).slice(0, 2);
     expect(pieces.length).toBe(2);
     const admin = await apiAs('deskadmin', PASS);
+    // Price protection: "Customer sent the money" and the accountant's received money (exactly the total) come before Complete.
+    await admin('POST', `/sales-drafts/${dr.id}/customer-sent`);
+    await admin('PUT', `/sales-drafts/${dr.id}/received`, { payments: [{ method: 'cash', amountPiastres: dr.totals.total }] });
     // one piece for two is refused by the server with the mismatch
     const short = await admin('POST', `/sales-drafts/${dr.id}/complete`, { lines: [{ pieceCode: pieces[0].pieceCode }], cash: 100 });
     expect(short.status).toBe(409);

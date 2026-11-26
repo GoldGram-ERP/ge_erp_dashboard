@@ -4,7 +4,7 @@ import { Button, Disclosure, Input, Seg, TextButton } from "@/components/ui";
 // The Sales desk draft page (issue #6): ONE page for a new draft, an edit and an Admin opening it. Type -> customer -> item + count lines
 // (each price read only, the system's) -> planned payment + cash discount -> totals -> WhatsApp summary -> (Admin) Complete with the real pieces.
 // The page STAYS on the saved draft (it shows the number). Locked / completed / deleted drafts are read only; the SERVER decides (`locked`).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ItemPicker } from "@/components/fields/ItemPicker";
 import { stockMapOf, switchedOff } from "@/lib/items";
@@ -568,7 +568,7 @@ export function DraftForm({ row, close, tr }: CustomFormProps) {
 }
 
 /** "Open a draft by its number": the number (and the branch, when the person has several), then the draft opens on its own page. */
-export function OpenByNumber({ close, tr, reload }: CustomFormProps) {
+export function OpenByNumber({ close, tr, reload, form: Found = DraftForm }: CustomFormProps & { form?: ComponentType<CustomFormProps> }) {
   const { t } = tr;
   const d = (k: string, v?: Record<string, string | number>) => t("gold-sales", `salesDesk.${k}`, v);
   const { data: me } = useMe();
@@ -588,7 +588,7 @@ export function OpenByNumber({ close, tr, reload }: CustomFormProps) {
       if (hit) setFound(hit); else setMsg(d("openNotFound"));
     } catch (e) { setMsg(e instanceof ApiFailure ? tr.errorText(e.error) : d("openNotFound")); }
   }
-  if (found) return <DraftForm row={found} close={close} reload={reload} tr={tr} />;
+  if (found) return <Found row={found} close={close} reload={reload} tr={tr} />;
   return (
     <form onSubmit={(e) => { e.preventDefault(); void go(); }} noValidate style={{ maxWidth: 420 }}>
       <div className="card">

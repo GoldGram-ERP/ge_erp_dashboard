@@ -4,6 +4,7 @@
 import type { ConfirmOptions } from "@/components/engine/ui";
 import type { ComponentType, ReactNode } from "react";
 import type { Tr } from "./t";
+import type { ViewState } from "./fields";
 
 export type Row = Record<string, any>;
 export type Query = Record<string, string | number | boolean | undefined | null>;
@@ -148,6 +149,14 @@ export type ThingConfig = {
   record?: RecordConfig;
   forms?: Record<string, FormConfig>;
   create?: CreateButton[];
+  /** Draws the list part (header, filters, rows, paging) instead of the engine's table; the engine keeps the data, the address, the forms and the sheets. */
+  list?: ComponentType<ListSlotProps>;
+};
+
+/** What a `list` slot gets: the view and its state (read the rows with `useViewRows`), the create buttons and the row opener the engine would use. */
+export type ListSlotProps = {
+  cfgId: string; view: ViewConfig; vs: ViewState; set: (p: Partial<ViewState>) => void; sortToUrl: (key: string, dir: "asc" | "desc") => void;
+  chips: NonNullable<ViewConfig["chips"]>; unit: string; creates: CreateButton[]; onCreate: (formId: string) => void; onRow: (row: Row) => void; flashId: string | null;
 };
 
 export type MakeConfig = (tr: Tr) => ThingConfig;

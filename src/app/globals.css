@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../components/hallmark/hallmark.css";
 
 /* Ported from docs/nav-preview/app/style.css + jobs/jobs.css. Class names and custom properties are the contract for src/components/engine, fields and things. */
 /* GE ERP: design mockup. Operate surface: beige neutrals, gold only for the current item and the main action.
@@ -13,12 +14,15 @@
   --calm:cubic-bezier(.23,1,.32,1);          /* the dashboard's Animate UI easing: ease-out, no overshoot */
   --font:"Segoe UI",system-ui,"Noto Sans Arabic",Tahoma,sans-serif;
 }
+/* Element resets live in the base layer (under Tailwind utilities, like Tailwind's own preflight), so a kit component's utility classes win; the ERP's class rules below stay unlayered. */
+@layer base{
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{font:var(--fs-base)/1.7 var(--font);background:var(--bg);color:var(--ink);display:flex;overflow:hidden;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0}
 button:disabled{cursor:not-allowed;opacity:.5}
+}
+html,body{height:100%}
+body{font:var(--fs-base)/1.7 var(--font);background:var(--bg);color:var(--ink);display:flex;overflow:hidden;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--gold-tint);color:var(--ink)}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
 svg{flex-shrink:0}
@@ -214,7 +218,8 @@ dialog .row{display:flex;gap:8px;justify-content:flex-start}
 /* ───── Jobs ───── */
 .jobs-title{font-size:26px;margin-bottom:6px}
 .grp-title{font-size:13px;font-weight:600;color:var(--mute);margin:26px 0 10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+/* never inside the Hallmark kit, where `grid` is Tailwind's display utility */
+.grid:not(.hallmark *){display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .tile{display:flex;align-items:center;gap:14px;text-align:start;padding:14px 16px;border-radius:14px;background:var(--surface);box-shadow:0 0 0 1px var(--line);transition:background .15s,box-shadow .15s,transform .1s;min-height:68px}
 .tile:hover{background:var(--gold-wash);box-shadow:0 0 0 1px var(--line-strong)}
 .tile:active{transform:scale(.98)}

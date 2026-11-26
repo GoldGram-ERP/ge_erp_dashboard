@@ -1,0 +1,10 @@
+.two-tg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 10px; background: var(--line-soft); max-width: 100%; }
+.two-tg-item { font: inherit; font-size: .875rem; color: var(--ink-2); background: transparent; border: 0; border-radius: 7px; padding: 6px 14px; min-height: 34px; cursor: pointer;
+  transition: background-color .18s var(--calm), color .18s var(--calm), box-shadow .18s var(--calm), transform .12s var(--calm); }
+.two-tg-item:hover:not([data-disabled]):not([data-pressed]) { color: var(--ink); }
+.two-tg-item:active:not([data-disabled]) { transform: scale(.97); }
+.two-tg-item[data-pressed] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(43,37,25,.14); }
+.two-tg-item[data-disabled] { cursor: default; opacity: .5; }
+.two-tg-item[data-disabled][data-pressed] { opacity: 1; }
+.two-tg-item:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .two-tg-item { transition: none; } .two-tg-item:active { transform: none; } }
