@@ -948,7 +948,11 @@
   "bugReportNotFound": "This report does not exist.",
   "bugReportFileNotFound": "This file does not exist.",
   "alreadyTaslem": "This invoice was already taken through Taslem.",
-  "draftItemChanged": "{itemName} changed since the draft was saved. Save the draft again, then complete."
+  "draftItemChanged": "{itemName} changed since the draft was saved. Save the draft again, then complete.",
+  "reservationNotInvoiced": "A reservation cannot be delivered before it has an invoice.",
+  "reservationDelivered": "This reservation is already delivered.",
+  "reservationNotDelivered": "This reservation is not marked delivered.",
+  "invoiceReservationDelivered": "Not deleted: reservation number {reservationNumber} is delivered. An Admin undoes the delivery first."
  },
  "expenses": {
   "expenseTypes": {

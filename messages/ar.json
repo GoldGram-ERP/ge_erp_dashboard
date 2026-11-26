@@ -948,7 +948,11 @@
   "bugReportNotFound": "البلاغ ده مش موجود.",
   "bugReportFileNotFound": "الملف ده مش موجود.",
   "alreadyTaslem": "الفاتورة دي اتسلّمت قبل كده.",
-  "draftItemChanged": "تغيّر الصنف {itemName} بعد حفظ المسودة. احفظ المسودة من جديد ثم أتمم."
+  "draftItemChanged": "تغيّر الصنف {itemName} بعد حفظ المسودة. احفظ المسودة من جديد ثم أتمم.",
+  "reservationNotInvoiced": "لا يمكن تسليم حجز لم تصدر له فاتورة بعد.",
+  "reservationDelivered": "تم تسليم هذا الحجز من قبل.",
+  "reservationNotDelivered": "هذا الحجز لم يتم تسليمه.",
+  "invoiceReservationDelivered": "لم تُحذف: الحجز رقم {reservationNumber} تم تسليمه. يلغي المدير التسليم أولاً."
  },
  "expenses": {
   "expenseTypes": {

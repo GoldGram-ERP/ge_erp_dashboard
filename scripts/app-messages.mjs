@@ -198,6 +198,11 @@ Object.assign(APP, {
   "gold-sales.salesDesk.rsv.noAccess": ["لا يُسمح لك بفتح الحجز من هنا.", "You are not allowed to open the reservation from here."],
   "gold-sales.salesDesk.rsv.saveFirst": ["احفظ التعديلات أولًا ثم أكِّد.", "Save the changes first, then confirm."],
   "errors.draftReserved": ["تم تأكيد هذا الحجز بالفعل، فلا تُعدَّل المسودة ولا تُحذف ولا تُؤكَّد مرة أخرى.", "This reservation is already confirmed. The draft cannot be edited, deleted or confirmed again."],
+  // Delivery of a reservation (owner, 2026-11-26).
+  "errors.reservationNotInvoiced": ["لا يمكن تسليم حجز لم تصدر له فاتورة بعد.", "A reservation cannot be delivered before it has an invoice."],
+  "errors.reservationDelivered": ["تم تسليم هذا الحجز من قبل.", "This reservation is already delivered."],
+  "errors.reservationNotDelivered": ["هذا الحجز لم يتم تسليمه.", "This reservation is not marked delivered."],
+  "errors.invoiceReservationDelivered": ["لم تُحذف: الحجز رقم {reservationNumber} تم تسليمه. يلغي المدير التسليم أولاً.", "Not deleted: reservation number {reservationNumber} is delivered. An Admin undoes the delivery first."],
   // Completing a Buy draft (owner, 2026-11-26).
   "gold-sales.salesDesk.lock.bought": ["اكتملت هذه المسودة وتم شراء القطع، فلا تُعدَّل.", "This draft is completed and the pieces were bought, so it cannot be edited."],
   "gold-sales.salesDesk.buyc.title": ["إتمام الفاتورة", "Complete invoice"],
