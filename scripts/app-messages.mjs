@@ -197,6 +197,17 @@ Object.assign(APP, {
   "gold-sales.salesDesk.rsv.open": ["فتح الحجز", "Open the reservation"],
   "gold-sales.salesDesk.rsv.noAccess": ["لا يُسمح لك بفتح الحجز من هنا.", "You are not allowed to open the reservation from here."],
   "errors.draftReserved": ["تم تأكيد هذا الحجز بالفعل، فلا تُعدَّل المسودة ولا تُحذف ولا تُؤكَّد مرة أخرى.", "This reservation is already confirmed. The draft cannot be edited, deleted or confirmed again."],
+  // Statement kinds that had no name, and the invoice type of a reservation (owner, 2026-11-26).
+  "treasury-reports.lineKinds.returnedPiecePurchase": ["شراء قطع مرتجعة","Returned piece purchase"],
+  "treasury-reports.lineKinds.merchantPayment": ["دفعة لتاجر","Payment to merchant"],
+  "treasury-reports.lineKinds.merchantReceipt": ["استلام من تاجر","Receipt from merchant"],
+  "cash-accounts.safeStatement.types.returnedPiecePurchase": ["شراء قطع مرتجعة","Returned piece purchase"],
+  "cash-accounts.safeStatement.types.merchantPayment": ["دفعة لتاجر","Payment to merchant"],
+  "cash-accounts.safeStatement.types.merchantReceipt": ["استلام من تاجر","Receipt from merchant"],
+  "bank-movements.bankStatement.types.returnedPiecePurchase": ["شراء قطع مرتجعة","Returned piece purchase"],
+  "bank-movements.bankStatement.types.merchantPayment": ["دفعة لتاجر","Payment to merchant"],
+  "bank-movements.bankStatement.types.merchantReceipt": ["استلام من تاجر","Receipt from merchant"],
+  "gold-sales.salesInvoices.invoiceTypes.reservation": ["حجز","Reservation"],
   // The shipping type (owner, 2026-11-26).
   "gold-sales.salesInvoices.invoiceTypes.shipping": ["توصيل", "Shipping"],
   "gold-sales.prints.delivery": ["التوصيل ({governorate})", "Delivery ({governorate})"],

@@ -496,7 +496,10 @@
     "expenseRefund": "مرتد مصروف",
     "salesInvoice": "فاتورة بيع",
     "reservation": "حجز",
-    "salesReturn": "مرتجع بيع"
+    "salesReturn": "مرتجع بيع",
+    "returnedPiecePurchase": "شراء قطع مرتجعة",
+    "merchantPayment": "دفعة لتاجر",
+    "merchantReceipt": "استلام من تاجر"
    },
    "columns": {
     "branch": "الفرع",
@@ -583,7 +586,10 @@
     "reservation": "حجز",
     "transferOut": "تحويل صادر",
     "transferIn": "تحويل وارد",
-    "salesReturn": "مرتجع بيع"
+    "salesReturn": "مرتجع بيع",
+    "returnedPiecePurchase": "شراء قطع مرتجعة",
+    "merchantPayment": "دفعة لتاجر",
+    "merchantReceipt": "استلام من تاجر"
    },
    "columns": {
     "date": "التاريخ",
@@ -1548,7 +1554,8 @@
     "sale": "بيع",
     "delivery": "تسليم",
     "handover": "تسليم",
-    "shipping": "توصيل"
+    "shipping": "توصيل",
+    "reservation": "حجز"
    },
    "customer": "العميل",
    "customerName": "اسم العميل",
@@ -3077,7 +3084,10 @@
    "reservation": "حجز",
    "expense": "مصروف",
    "expenseRefund": "مرتد مصروف",
-   "salesReturn": "مرتجع بيع"
+   "salesReturn": "مرتجع بيع",
+   "returnedPiecePurchase": "شراء قطع مرتجعة",
+   "merchantPayment": "دفعة لتاجر",
+   "merchantReceipt": "استلام من تاجر"
   }
  },
  "treasury-transfers": {

@@ -18,6 +18,14 @@ export const deskTypes = (current: string, isNew: boolean): string[] =>
 export const draftButtons = (x: { saved: boolean; reservation: boolean; dirty: boolean }): { save: boolean; confirm: boolean } =>
   ({ save: !x.saved || !x.reservation || x.dirty, confirm: !x.dirty });
 
+/** The type every row of the drafts list shows (owner, 2026-11-26): a Buy, else the draft's type; the old "delivery" reads as Hand over (تسليم). */
+export type DraftTag = "buy" | "sale" | "handover" | "shipping" | "reservation";
+export const draftTag = (d: { operation?: string | null; invoiceType?: string | null }): DraftTag => {
+  if (d.operation === "buy") return "buy";
+  if (d.invoiceType === "delivery" || d.invoiceType === "handover") return "handover";
+  return d.invoiceType === "shipping" || d.invoiceType === "reservation" ? d.invoiceType : "sale";
+};
+
 export type DeskCustomer = { customerName: string; customerPhone: string; nationalId: string };
 /** The customer fields: error texts by field, and (when none) what is sent: trimmed, digits in Latin. The three are required; the National ID is exactly 14 digits. */
 export function readCustomer(tr: Tr, f: DeskCustomer): { errors: Record<string, string>; payload?: { customerName: string; customerPhone: string; nationalId: string } } {

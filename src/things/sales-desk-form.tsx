@@ -99,6 +99,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const [pcErr, setPcErr] = useState("");
   const [scanning, setScanning] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [seeking, setSeeking] = useState("");   // the item whose first available piece is being asked for
   const [codeErr, setCodeErr] = useState<Record<string, string>>({});
   const [mismatch, setMismatch] = useState<Row[]>([]);
   const [completeMsg, setCompleteMsg] = useState("");
@@ -317,6 +318,24 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
     } catch (err) { setPcErr(err instanceof ApiFailure ? tr.errorText(err.error) : d("codeNotFound")); }
     finally { setAdding(false); document.getElementById("sd-code")?.focus(); }
   };
+  // "First available" (owner, 2026-11-26): the code of a piece of this item in stock in the draft's branch, not scanned yet, into the box; the
+  // person still presses Add. The pages are read until one is found: the first ones may all be scanned already.
+  async function firstAvailable(line: Row) {
+    if (!draft || seeking) return;
+    setSeeking(line.itemId); setPcErr("");
+    try {
+      for (let page = 1; ; page++) {
+        const r = await api("/piece-choices", { query: { itemId: line.itemId, branchId: draft.branchId, state: "available", page } });
+        const items = (r.items ?? []) as Row[];
+        const free = items.find((p) => !scanned.some((s) => s.code.toLowerCase() === String(p.pieceCode).toLowerCase()));
+        if (free) { setPc(String(free.pieceCode)); document.getElementById("sd-code")?.focus(); return; }
+        if (!items.length || page * Number(r.pageSize) >= Number(r.total)) break;
+      }
+      setPcErr(L(`لا توجد قطعة متاحة من ${line.itemName} في الفرع.`, `No piece of ${line.itemName} is available in the branch.`));
+    } catch (err) { setPcErr(err instanceof ApiFailure ? tr.errorText(err.error) : d("codeNotFound")); }
+    finally { setSeeking(""); }
+  }
+
   async function complete() {
     if (!draft || completing) return;
     const money = paidInto();
@@ -575,7 +594,8 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
                 {scanning && <PieceScanner label={d("codeLabel")} onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setPc(c); void addCode(c); }} />}
                 <div className="help">{d("scanHelp")}</div>{pcErr && <ErrBox>{pcErr}</ErrBox>}</div>
               <ul id="sd-need" className="tk-list">
-                {(draft!.lines as Row[]).map((l) => <li key={l.lineNumber} className="kv" data-need={l.itemName}><span>{l.itemName} · <Ltr>{l.karat}</Ltr></span><b dir="ltr">{d("scanned", { scanned: need(l), total: l.quantity })}</b></li>)}
+                {(draft!.lines as Row[]).map((l) => <li key={l.lineNumber} className="kv" data-need={l.itemName}><span>{l.itemName} · <Ltr>{l.karat}</Ltr></span><b dir="ltr">{d("scanned", { scanned: need(l), total: l.quantity })}</b>
+                  <Button size="sm" data-first={l.itemName} aria-busy={seeking === l.itemId} disabled={need(l) >= l.quantity || Boolean(seeking)} onClick={() => void firstAvailable(l)}>{L("أول قطعة متاحة", "First available")}</Button></li>)}
               </ul>
               {scanned.length > 0 && <><div className="help">{d("scannedList")}</div>
                 <ul id="sd-codes" className="tk-list">{scanned.map((s) => <li key={s.code} className="kv" data-code={s.code} data-bad={codeErr[s.code] ? "" : undefined}>

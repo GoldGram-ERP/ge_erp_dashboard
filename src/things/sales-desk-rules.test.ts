@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, canCompleteBuyDraft, canConfirmReservation, draftButtons, discountCell, paymentMethodsOf } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, methodsLeftFor, plannedAgainst, readCustomer, readLines, canCompleteBuyDraft, canConfirmReservation, draftButtons, draftTag, discountCell, paymentMethodsOf } from "./sales-desk-rules";
 
 // The engine's own translator answers the key when a message is missing; the rules are the real ones.
 const tr: any = { t: (_ns: string, key: string, v?: Record<string, unknown>) => (v ? `${key}|${JSON.stringify(v)}` : key) };
@@ -198,6 +198,18 @@ describe("the main button of a draft", () => {
   });
   it("always offers the save of every other draft", () => {
     for (const saved of [true, false]) for (const dirty of [true, false]) expect(draftButtons({ saved, reservation: false, dirty }).save).toBe(true);
+  });
+});
+
+describe("the type every draft row shows", () => {
+  it("is Buy for a buy, else the draft's type, the old delivery reading as Hand over", () => {
+    expect(draftTag({ operation: "buy", invoiceType: "sale" })).toBe("buy");
+    expect(draftTag({ operation: "sell", invoiceType: "sale" })).toBe("sale");
+    expect(draftTag({ invoiceType: "delivery" })).toBe("handover");
+    expect(draftTag({ invoiceType: "handover" })).toBe("handover");
+    expect(draftTag({ invoiceType: "shipping" })).toBe("shipping");
+    expect(draftTag({ invoiceType: "reservation" })).toBe("reservation");
+    expect(draftTag({})).toBe("sale");
   });
 });
 

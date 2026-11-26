@@ -217,6 +217,12 @@
     "en": "Reservation draft: one button at a time. Confirm reservation shows on a saved draft; after a change it becomes Save the changes.",
     "ar": "مسودة الحجز بقى فيها زرار واحد: «تأكيد الحجز» وهي محفوظة، ولو عدّلت حاجة يظهر مكانه «حفظ التعديلات».",
     "route": "/sales/desk"
+   },
+   {
+    "kind": "better",
+    "en": "Sales desk: every draft shows its type, and a First available button fills in a piece code. Invoices from reservations are of type Reservation, and statement kinds have their names.",
+    "ar": "مكتب البيع: كل مسودة بقى باين نوعها، وزرار «أول قطعة متاحة» بيكتب كود القطعة. وفاتورة الحجز نوعها «حجز»، وأسماء الحركات في كشوف الحساب بقت ظاهرة صح.",
+    "route": "/sales/desk"
    }
   ]
  },
