@@ -64,22 +64,30 @@ export function plannedAgainst(total: number, cash: string, banks: (Bank & { met
   return { errors: paymentErrors(cash, forMath(banks), "none"), planned, left: total - planned, over: planned > total };
 }
 
-export type LockDraft = { status: string; locked: boolean; createdDay: string };
+export type LockDraft = { status: string; locked: boolean; createdDay: string; operation?: string };
 /** What the screen says about a draft's edit state, from the server's own `locked` and `createdDay` (the client never works out midnight). */
 export function lockNote(d: LockDraft, tr: Tr): { state: "editable" | "locked" | "completed" | "reserved" | "deleted"; text: string } {
   const t = (k: string, v?: Record<string, string | number>) => tr.t("gold-sales", `salesDesk.lock.${k}`, v);
-  if (d.status === "completed") return { state: "completed", text: t("completed") };
+  if (d.status === "completed") return { state: "completed", text: t(d.operation === "buy" ? "bought" : "completed") };
   if (d.status === "reserved") return { state: "reserved", text: t("reserved") };
   if (d.status === "deleted") return { state: "deleted", text: t("deleted") };
   return d.locked ? { state: "locked", text: t("reason", { day: d.createdDay }) } : { state: "editable", text: t("editable") };
 }
 
+type Completer = { userType?: string; actions?: string[]; businessRole?: string | null } | undefined;
+const mayComplete = (me: Completer): boolean => hasAction(me, "complete-sales-draft") || (me?.userType === "user" && isDeskWideRole(me.businessRole));
+
 /** Who completes a draft into an invoice (owner, 2026-11-25): Admin and Super admin, a plain user with a desk-wide business role (the accountant, the call center
  *  admin, the branch sales manager) by the role alone, or any other plain user holding the action `complete-sales-draft`; on an open sell draft.
- *  Nobody while the person is unknown (the page is loading). A Buy draft is a quote only, and a reservation draft is confirmed, never completed.
- *  The backend refuses the rest (403 notAllowed). */
-export const canCompleteDraft = (me: { userType?: string; actions?: string[]; businessRole?: string | null } | undefined, status: string | undefined, buy: boolean, invoiceType?: string): boolean =>
-  (hasAction(me, "complete-sales-draft") || (me?.userType === "user" && isDeskWideRole(me.businessRole))) && status === "open" && !buy && invoiceType !== "reservation";
+ *  Nobody while the person is unknown (the page is loading). A Buy draft is never an invoice (canCompleteBuyDraft), and a reservation draft is
+ *  confirmed, never completed. The backend refuses the rest (403 notAllowed). */
+export const canCompleteDraft = (me: Completer, status: string | undefined, buy: boolean, invoiceType?: string): boolean =>
+  mayComplete(me) && status === "open" && !buy && invoiceType !== "reservation";
+
+/** Who completes a Buy draft (owner, 2026-11-26): the same people as a sale, on an open Buy draft that is not locked for them (the server's
+ *  `locked`: past midnight only an Admin). It pays the customer and puts the pieces in stock. */
+export const canCompleteBuyDraft = (me: Completer, draft: { status?: string; operation?: string; locked?: boolean } | null | undefined): boolean =>
+  mayComplete(me) && draft?.status === "open" && draft.operation === "buy" && !draft.locked;
 
 /** Who confirms a reservation draft into a real reservation (owner, 2026-11-26): an Admin, the Super admin and a plain user with the accountant role,
  *  on an open reservation draft that is not locked for them (the server's `locked`: past midnight only an Admin). The backend refuses the rest. */

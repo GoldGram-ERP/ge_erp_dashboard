@@ -24,8 +24,10 @@ import { Choice, DiscountBox, ErrBox, TextBox, allPages, latestPrice, mayDiscoun
 import { TotalsBar, accountOptions, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { DeskPayRows } from "@/components/fields/DeskPayRows";
 import { PieceScanner } from "./piece-scanner";
-import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, canConfirmReservation, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
+import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEveryBranchDrafts, canCompleteDraft, canCompleteBuyDraft, canConfirmReservation, channelError, channelOptions, defaultChannel, deskTypes, forMath, lineTakesAccount, linesInStock, lockNote, plannedAgainst, readCustomer, readLines, type DeskLine } from "./sales-desk-rules";
 import { useConfirmReservation } from "@/components/fields/ConfirmReservation";
+import { CompleteBuySection } from "@/components/fields/CompleteBuyDraft";
+import { BoughtPieces } from "@/components/fields/BoughtPieces";
 import { canOpen } from "@/nav/tree";
 import { pricePerGram } from "./item-math";
 import { code6 } from "@/lib/code6";
@@ -195,8 +197,10 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const onDraft: Option[] = (draft?.lines ?? []).map((l: Row) => [l.itemId, `${l.itemName} · ${l.karat}`]);
   const channels = channelOptions(me?.salesChannels, draft?.salesChannelId ? { id: draft.salesChannelId, name: draft.salesChannelName ?? "" } : null);
   const channelName = channels.find(([id]) => id === channelId)?.[1] ?? "";
-  // the live quote wins over the saved totals, so adding or removing a piece re-prices the totals and the remaining amount
-  const total = quote?.q.totalPiastres ?? draft?.totals?.total ?? 0;
+  // the live quote wins over the saved totals, so adding or removing a piece re-prices the totals and the remaining amount. A saved Buy draft with
+  // nothing changed shows its saved prices instead (`kept`, owner 2026-11-26): Complete pays exactly those.
+  const kept = Boolean(draft && draft.operation === "buy" && !dirty);
+  const total = (kept ? draft?.totals?.total : quote?.q.totalPiastres) ?? draft?.totals?.total ?? 0;
   const against = plannedAgainst(total, cash, banks);
 
   async function save() {
@@ -356,12 +360,15 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
       </div> : null);
   const pick = (patch: () => void) => { touch(); patch(); };
   const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned;
-    if (quote) { const q = quote.q, c = quote.cash ?? q, disc = Math.max(0, c.beforeDiscountPiastres - c.totalPiastres); return { gold: q.beforeDiscountPiastres - q.feeTotalPiastres, making: q.feeTotalPiastres, gross: q.beforeDiscountPiastres, discount: disc, makingLeft: q.feeTotalPiastres - disc, paid, left: q.totalPiastres - paid }; }
+    if (quote && !kept) { const q = quote.q, c = quote.cash ?? q, disc = Math.max(0, c.beforeDiscountPiastres - c.totalPiastres); return { gold: q.beforeDiscountPiastres - q.feeTotalPiastres, making: q.feeTotalPiastres, gross: q.beforeDiscountPiastres, discount: disc, makingLeft: q.feeTotalPiastres - disc, paid, left: q.totalPiastres - paid }; }
     return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
   // Admin / Super admin, a desk-wide role (even on another user's draft), or the action complete-sales-draft (own draft only); hidden until the person is known; a Buy draft is a quote only
   const canComplete = canCompleteDraft(me, draft?.status, buy, draft?.invoiceType) && (!foreign || accountantEdits);
   const canConfirm = canConfirmReservation(me, draft);
+  const canCompleteBuy = canCompleteBuyDraft(me, draft) && (!foreign || accountantEdits);
+  // Whoever completes takes the payment here: typing it is not a change of the draft.
+  const takesPayment = canComplete || canCompleteBuy;
   const mayOpenInvoice = Boolean(me?.screens.some((s: string) => s === INVOICES_KEY || s === "gold-sales/sales-invoices-list"));
   const allScanned = draft ? (draft.lines as Row[]).every((l) => need(l) === l.quantity) && scanned.length === draft.totals.quantity : false;
 
@@ -374,7 +381,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const shownPrice = (s: "sell" | "buy") => (price ? piastresText(metal === "silver" ? (s === "sell" ? price.silverSellPrice : price.silverBuyPrice) : s === "sell" ? price.sellPrice : price.buyPrice) : "—");
   // Karat 24 beside karat 21 (owner, 2026-11-18): the 21 price x 24 / 21, half up, the same rule every price uses (pricePerGram).
   const shown24 = (s: "sell" | "buy") => { const p21 = price ? (s === "sell" ? price.sellPrice : price.buyPrice) : null; const p = p21 == null ? null : pricePerGram({ sellPrice: p21, silverSellPrice: null }, "24"); return p === null ? "—" : piastresText(Number(p)); };
-  const totalText = quote ? piastresText(quote.q.totalPiastres) : "—";
+  const totalText = kept ? piastresText(total) : quote ? piastresText(quote.q.totalPiastres) : "—";
   const statusText = price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading");
   const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone);
   // Progressive steps (owner, 2026-11-08): the branch first, then the pieces, then the customer and saving. A saved draft, and any error, shows everything.
@@ -451,7 +458,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
                             </div>
                             {/* Each piece's own workmanship (a buy: cashback) per gram, as the quote read it from the item, beside its price (owner, 2026-11-18). */}
                             {priced && <span className="tk-w" data-fee={priced.feePerGram}>{d(buy ? "desk.cashback" : "desk.workmanship")} <Ltr>{piastresText(priced.feePerGram)}</Ltr> / {d("desk.gram")}</span>}
-                            <b className="tk-lp" dir="ltr">{priced ? piastresText(priced.pricePiastres) : "—"}</b>
+                            <b className="tk-lp" dir="ltr">{kept && draft?.lines?.[i] ? piastresText(draft.lines[i].linePrice) : priced ? piastresText(priced.pricePiastres) : "—"}</b>
                             <Button size="sm" variant="plain" aria-label={d("removeLine")} data-rmline={i} onClick={() => dropLine(i)}><Icon name="trash" size={14} /></Button>
                           </div>
                           {err(`line${i}Item`)}{err(`line${i}Count`)}{lineMsg[i] && <ErrBox>{lineMsg[i]}</ErrBox>}
@@ -487,7 +494,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
                 {!rsv && <TextButton id="sd-typeprice" aria-expanded={manualOpen} onClick={() => setTyping((x) => !x)}>{L("اكتب سعرًا", "Type a price")}</TextButton>}
               </div>
               {manualOpen && !rsv && <div className="tk-manual"><div className="field"><label htmlFor={`f-manual${side}`}>{d(buy ? "desk.manualBuy" : "desk.manualSell")}</label>
-                <Input kind="money" id={`f-manual${side}`} inputMode="decimal" autoComplete="off" dir="ltr" value={manual[side]} onChange={(e) => setManual((m) => ({ ...m, [side]: e.target.value }))} /></div>
+                <Input kind="money" id={`f-manual${side}`} inputMode="decimal" autoComplete="off" dir="ltr" value={manual[side]} onChange={(e) => { if (draft) touch(); setManual((m) => ({ ...m, [side]: e.target.value })); }} /></div>
                 <small className={`tk-quiet${quote?.q.manualPriceUsed ? " tk-good" : ""}`} id={`sd-${side}mode`}>{quote?.q.manualPriceUsed ? d("desk.manualUsed") : d("desk.listUsed")}</small></div>}
               {quoteMsg && <div className="note warn" role="alert" id="sd-quotemsg"><b>{quoteMsg}</b></div>}
               {typedManual.invalid && <div className="note warn" role="alert" id="sd-manualmsg"><b>{d("desk.manualInvalid")}</b></div>}
@@ -518,10 +525,10 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
             <fieldset disabled={readonly || saving} className="tk-save">
               {showMore && <Section id="sec-payment" collapsible title={L("الدفع والحفظ", "Payment and saving")} defaultOpen hasError={payErr}>
                 <div className="tk-draft"><p className="tk-quiet">{rsv ? t("gold-sales", "reservations.paymentNote") : d("plannedHelp")}</p>
-                  <DeskPayRows tr={tr} cash={cash} onCash={(v) => { if (canComplete) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }}
-                    banks={banks} onBanks={(b) => { if (canComplete) setGeneral(""); else touch(); setBanks(b as DeskBank[]); if (visaChosen(operation, b as DeskBank[])) setCash(""); setErrs(withoutPayErrors); }}
+                  <DeskPayRows tr={tr} cash={cash} onCash={(v) => { if (takesPayment) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }}
+                    banks={banks} onBanks={(b) => { if (takesPayment) setGeneral(""); else touch(); setBanks(b as DeskBank[]); if (visaChosen(operation, b as DeskBank[])) setCash(""); setErrs(withoutPayErrors); }}
                     accounts={accountOptions(accounts)} methods={bankMethodChoices(operation)} methodLabel={(m) => d(`desk.pay.${m}`)} blank={() => blankDeskBank(operation)}
-                    total={quote?.q.totalPiastres} paid={cashPaid(cash) + bankPaid(banks)} errors={errs} />
+                    total={kept ? total : quote?.q.totalPiastres} paid={cashPaid(cash) + bankPaid(banks)} errors={errs} />
                   {rsv && receivedInto}
                   {rsv && payRefusal && <div className="note warn" role="alert" data-field-error id="sd-rsvpay"><b>{t("gold-sales", "reservations.paidInvalid", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
                   {!buy && payment === "visa" && <p className="tk-quiet">{L(`الفيزا تضيف ${VISA_PERCENT}% على الإجمالي.`, `Visa adds ${VISA_PERCENT}% to the total.`)}</p>}
@@ -534,7 +541,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
 
             {bar && <div className="tk-card" id="sec-totals"><TotalsBar tr={tr} bar={bar} />
               {against.over && <ErrBox>{d("plannedOver")}</ErrBox>}
-              {payRefusal && !canComplete && !rsv && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
+              {payRefusal && !takesPayment && !rsv && <div className="note warn" role="alert"><b>{d("payRefused", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}</div>}
 
             {canComplete && <div className="grp-block wide" id="sec-complete"><h3 className="grp-title">{L("إتمام الفاتورة", "Complete invoice")}</h3><div className="tk-card"><div className="help">{d("completeIntro")}</div><div className="help">{d("completePayHelp")}</div>
               <div className="field tk-code" data-k="pieceCode"><label htmlFor="sd-code">{d("scan")}</label>
@@ -566,14 +573,21 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
               {dirty && <div className="help" role="status">{d("pricesStale")}</div>}
             </div></div>}
 
-            {draft?.status === "completed" && <div className="tk-card" id="sd-done" role="status"><b>{d("completed", { number: draft.salesInvoiceNumber })}</b>
+            {canCompleteBuy && <CompleteBuySection key={draft!.id} tr={tr} draft={draft!} cash={cash} banks={banks} dirty={dirty}
+              todayTotal={kept && quote && quote.q.totalPiastres !== total ? quote.q.totalPiastres : undefined}
+              onPayErrors={(p) => setErrs(payErrorTexts(tr, p))} done={(saved) => { fill(saved); reload(); }}
+              stale={() => { api(`/sales-drafts/${draft!.id}`).then(fill).catch(() => {}); }} />}
+
+            {draft?.status === "completed" && draft.operation === "buy" && <BoughtPieces tr={tr} draft={draft} me={me} />}
+
+            {draft?.status === "completed" && draft.operation !== "buy" && <div className="tk-card" id="sd-done" role="status"><b>{d("completed", { number: draft.salesInvoiceNumber })}</b>
               {mayOpenInvoice ? <NavLink href={`/sales/invoices?open=${draft.salesInvoiceId}`} className="btn primary">{d("openInvoice")}</NavLink> : <div className="help">{d("invoiceNoAccess")}</div>}</div>}
 
             {draft?.status === "reserved" && <div className="tk-card" id="sd-reserved" role="status">
               <b>{draft.reservationNumber ? d("rsv.confirmed", { code: code6(draft.reservationNumber) }) : d("rsv.cancelled")}</b>
               {draft.reservationNumber && (canOpen(me, ["gold-sales/reservations-list"]) ? <NavLink href={`/sales/reservations?open=${draft.reservationId}`} className="btn primary">{d("rsv.open")}</NavLink> : <div className="help">{d("rsv.noAccess")}</div>)}</div>}
 
-            {buy && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
+            {buy && draft?.status !== "completed" && <p className="tk-quiet" id="sd-buynote">{d("buyQuoteNote")}</p>}
             <div className="tk-actions" id="sec-save">
               {!readonly && <Button variant="primary" type="submit" aria-disabled={saving} id="sd-save"><Icon name="check" size={15} />{saving ? d("saving") : rsv ? L("حفظ الحجز", "Save reservation") : isNew ? d("saveDraft") : d("saveChanges")}</Button>}
               {canConfirm && <Button variant="primary" id="sd-confirm-reservation" aria-busy={confirmation.confirming} disabled={confirmation.confirming} onClick={() => {
