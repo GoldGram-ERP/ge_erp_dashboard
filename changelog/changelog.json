@@ -193,6 +193,12 @@
     "en": "New page Delivery charges: keep the delivery price of each governorate, under Sales.",
     "ar": "صفحة جديدة «أسعار التوصيل» في المبيعات: بتسجّل فيها سعر التوصيل لكل محافظة.",
     "route": "/sales/delivery-charges"
+   },
+   {
+    "kind": "new",
+    "en": "New sales invoice: choose Reservation to reserve items for a customer. It is saved on the Reservations page.",
+    "ar": "فاتورة المبيعات الجديدة بقى فيها اختيار «حجز»: تحجز أصناف للعميل، والحجز بيتحفظ في صفحة الحجوزات.",
+    "route": "/sales/invoices"
    }
   ]
  },

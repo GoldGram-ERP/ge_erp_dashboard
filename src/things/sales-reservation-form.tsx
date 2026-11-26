@@ -31,7 +31,8 @@ const qOf = (l: Line) => { const s = latinNumber(l.quantity); const n = /^\d{1,3
 type Priced = { ok: Row } | { why: string } | { loading: true };
 const keyOf = (l: Line, date: string) => (l.itemId && qOf(l) && DAY.test(date) ? `${l.itemId}|${qOf(l)}|${date}` : "");
 
-export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
+// `onSaved` (owner, 2026-11-26): the new sales invoice shows this form for its Reservation choice and takes the saved reservation from here.
+export function ReservationForm({ close, reload, tr, row, onSaved }: CustomFormProps & { onSaved?: (saved: Row) => void }) {
   const { t, L } = tr;
   const rm = (k: string, v?: Record<string, string>) => t("gold-sales", `reservations.${k}`, v);
   const { data: me } = useMe();
@@ -162,7 +163,7 @@ export function ReservationForm({ close, reload, tr, row }: CustomFormProps) {
       const saved = await api(edit ? `/reservations/${edit.id}` : "/reservations", { method: edit ? "PUT" : "POST", body, saveKey: saveKey.current });
       saveKey.current = newSaveKey();
       toast(rm("savedNumber", { code: code6(saved.reservationNumber) }));
-      reload();
+      if (onSaved) onSaved(saved); else reload();
     } catch (err) { setSaving(false); refusal(err); }
   }
   function refusal(err: unknown) {

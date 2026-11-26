@@ -20,7 +20,9 @@ import { LINES_MAX, makingBase, paymentErrors, paymentKeyOf, readDiscount, sentB
 import { Choice, DiscountBox, ErrBox, PIECE_CODE, allPages, checkedCustomer, code6, customerFields, customerNameOf, fe, latestPrice, mayDiscount, sg, type DiscountKind } from "./sales-form-parts";
 import { Breakdown, PaymentBlock, PriceButton, TotalsBar, accountOptions, blankBank, payErrorTexts, withoutPayErrors } from "./payment-block";
 import { pricePerGram } from "./item-math";
-import { Link as NavLink } from "@/i18n/navigation";
+import { Link as NavLink, useRouter } from "@/i18n/navigation";
+import { canOpen } from "@/nav/tree";
+import { ReservationForm } from "./sales-reservation-form";
 import { GiftFields, checkRecipient, type Recipient, type RecipientErrors } from "./sales-gift";
 import { PieceScanner } from "./piece-scanner";
 
@@ -31,6 +33,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const { t, L, errorText } = tr;
   const m = (k: string, v?: Record<string, string | number>) => sg(tr, k, v);
   const { data: me } = useMe();
+  const router = useRouter();
   const isUser = me?.userType === "user";
   const edit = row?.id ? row : null;   // a saved invoice: the form starts with its values
   const reservationId: string = edit ? (edit.reservation?.id ?? "") : typeof location === "undefined" ? "" : new URLSearchParams(location.search).get("reservation") ?? "";
@@ -254,6 +257,24 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     } catch (x) { setSaving(false); refusal(x); }
   };
 
+  // The type choice of a new invoice. Its third choice, Reservation (owner, 2026-11-26), is not an invoice: the page shows the reservation's own form.
+  const typeCard = (
+    <div className="field" data-k="invoiceType" data-err={errs.invoiceType ? "" : undefined}><label className="flabel">{m("invoiceType")} *</label>
+      <Seg label={m("invoiceType")} value={type} onChange={(k) => { setType(k); setErrs({}); setGeneral(""); setSubmitted(false); edited(); }}
+        items={["sale", "delivery", ...(reservationId ? [] : ["reservation"])].map((k) => ({ id: k, label: k === "reservation" ? L("حجز", "Reservation") : m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />
+      {errs.invoiceType && <ErrBox>{errs.invoiceType}</ErrBox>}</div>
+  );
+  if (!edit && type === "reservation") {
+    return (
+      <>
+        <div className="card" id="sec-head">{typeCard}</div>
+        {/* Saved: it is opened on the Reservations page; a person without that list stays here, told its number. */}
+        <ReservationForm row={null} close={close} reload={reload} tr={tr}
+          onSaved={(saved) => { if (canOpen(me, ["gold-sales/reservations-list"])) router.push(`/sales/reservations?open=${saved.id}`); else reload(); }} />
+      </>
+    );
+  }
+
   // ── draw ──
   const banner = (cls: string, body: ReactNode) => <div className={`note ${cls}`} role="alert" data-field-error>{body}</div>;
   const refusedCount = Object.keys(errs).length;
@@ -284,10 +305,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
         </div>
       </div>
       {!edit && <div className="card" id="sec-head">
-        <div className="field" data-k="invoiceType" data-err={errs.invoiceType ? "" : undefined}><label className="flabel">{m("invoiceType")} *</label>
-          <Seg label={m("invoiceType")} value={type} onChange={(k) => { setType(k); edited(); }}
-            items={["sale", "delivery"].map((k) => ({ id: k, label: m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />
-          {errs.invoiceType && <ErrBox>{errs.invoiceType}</ErrBox>}</div>
+        {typeCard}
         {pickBranch && <div className="field" data-k="branchId" style={{ marginTop: 12, maxWidth: 320 }}><label htmlFor="branchId">{m("branch")} *</label>
           <Choice tr={tr} id="branchId" options={branches.map((b) => [b.id, b.branchName])} value={branchId} onChange={(v) => { setBranchId(v); setBranchName(branches.find((b) => b.id === v)?.branchName ?? ""); edited(); }} />
           {errs.branchId && <ErrBox>{errs.branchId}</ErrBox>}</div>}
