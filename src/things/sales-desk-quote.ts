@@ -67,7 +67,7 @@ export function quoteBody(f: QuoteForm, payment: Payment = f.payment): QuoteBody
     ...(typed.value ? { [sell ? "manualSellPrice" : "manualBuyPrice"]: typed.value } : {}), lines };
 }
 
-export type MessageParts = { date: string; branch: string; channel: string; seller: string; customer: string; nationalId: string; phone: string; rows: PayRow[] };
+export type MessageParts = { date: string; branch: string; channel: string; seller: string; customer: string; nationalId: string; phone: string; rows: PayRow[]; delivery?: { name: string; amount: number } };
 /** The WhatsApp builder's input from the form and the quote (`cash`: the same quote paid in cash, the "before Visa" total). */
 export function messageInput(f: QuoteForm, q: Quote, cash: Quote | null, p: MessageParts): DeskMessageInput {
   const sell = f.operation === "sell", visa = sell && f.payment === "visa";
@@ -77,6 +77,7 @@ export function messageInput(f: QuoteForm, q: Quote, cash: Quote | null, p: Mess
     discount: sell && f.discount?.kind === "percent" ? f.discount.value : 0, ...(sell && f.discount?.kind === "amount" ? { discountAmount: f.discount.value } : {}), visa, visaPercent: VISA_PERCENT, basePrice21: q.goldPriceUsed / 100, finalPrice21: q.pricePerGram21 / 100, manual: q.manualPriceUsed,
     lines: q.lines.map((l) => ({ productName: l.itemName, quantity: l.quantity, feePerGram: l.feePerGram / 100, wrapping: f.metal === "silver" ? f.wrapping : undefined })),
     totals: { before: q.beforeDiscountPiastres, final: q.totalPiastres, cashTotal: cash?.totalPiastres },
+    ...(p.delivery ? { delivery: p.delivery } : {}),
   };
 }
 

@@ -199,6 +199,12 @@
     "en": "New sales invoice: choose Reservation to reserve items for a customer. It is saved on the Reservations page.",
     "ar": "فاتورة المبيعات الجديدة بقى فيها اختيار «حجز»: تحجز أصناف للعميل، والحجز بيتحفظ في صفحة الحجوزات.",
     "route": "/sales/invoices"
+   },
+   {
+    "kind": "new",
+    "en": "New type Shipping on sales invoices and the sales desk: pick the governorate and its delivery price is added to the total and printed.",
+    "ar": "نوع جديد «توصيل» في فاتورة المبيعات ومكتب البيع: تختار المحافظة وسعر التوصيل يتضاف على الإجمالي ويتطبع.",
+    "route": "/sales/desk"
    }
   ]
  },

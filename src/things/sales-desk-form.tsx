@@ -28,6 +28,8 @@ import { LINES_MAX, isForeignDraft, mayEditForeignDraft, mayDeleteDraft, seesEve
 import { useConfirmReservation } from "@/components/fields/ConfirmReservation";
 import { CompleteBuySection } from "@/components/fields/CompleteBuyDraft";
 import { BoughtPieces } from "@/components/fields/BoughtPieces";
+import { DeliveryGovernorateField, useDeliveryPrices } from "@/components/fields/DeliveryGovernorate";
+import { governorateName } from "@/lib/governorates";
 import { canOpen } from "@/nav/tree";
 import { pricePerGram } from "./item-math";
 import { code6 } from "@/lib/code6";
@@ -54,6 +56,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const [branches, setBranches] = useState<Row[]>([]);
   const [price, setPrice] = useState<Row | null | undefined>(undefined);
   const [type, setType] = useState("sale");
+  const [governorate, setGovernorate] = useState("");
   const [operation, setOperation] = useState<Operation>("sell");
   const [metal, setMetal] = useState<Metal>("gold");
   const [wrapping, setWrapping] = useState<Wrapping>("wrapped");
@@ -103,7 +106,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const completeKey = useRef(newSaveKey());
 
   const fill = (x: Row) => {
-    setDraft(x); setType(x.invoiceType ?? "sale"); setBranchId(x.branchId ?? ""); setChannelId(x.salesChannelId ?? "");
+    setDraft(x); setType(x.invoiceType ?? "sale"); setGovernorate(x.deliveryGovernorate ?? ""); setBranchId(x.branchId ?? ""); setChannelId(x.salesChannelId ?? "");
     setCust({ customerName: x.customerName ?? "", customerPhone: x.customerPhone ?? "", nationalId: x.nationalId ?? "" });
     setLines(x.lines?.length ? x.lines.map((l: Row) => ({ itemId: l.itemId, count: String(l.quantity) })) : []);
     const r = restoreChoices(x);   // the desk's choices come back exactly as saved
@@ -200,7 +203,15 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   // the live quote wins over the saved totals, so adding or removing a piece re-prices the totals and the remaining amount. A saved Buy draft with
   // nothing changed shows its saved prices instead (`kept`, owner 2026-11-26): Complete pays exactly those.
   const kept = Boolean(draft && draft.operation === "buy" && !dirty);
-  const total = (kept ? draft?.totals?.total : quote?.q.totalPiastres) ?? draft?.totals?.total ?? 0;
+  // A shipping sale (owner, 2026-11-26) adds its governorate's price. A saved draft with nothing changed keeps the price saved on it (what
+  // Complete charges); a new or changed one shows the list's, which the save takes.
+  const shipping = !buy && type === "shipping";
+  const delivery = useDeliveryPrices(shipping);
+  const keptFee = Boolean(draft && !dirty && draft.deliveryGovernorate && draft.deliveryGovernorate === governorate);
+  const listFee = delivery.prices.find((p) => p.governorate === governorate)?.pricePiastres;
+  const fee = !shipping ? 0 : keptFee ? Number(draft!.totals?.deliveryFee ?? 0) : (listFee ?? 0);
+  const noGovernorate = shipping && !keptFee && listFee === undefined;
+  const total = (kept ? draft?.totals?.total : quote ? quote.q.totalPiastres + fee : undefined) ?? draft?.totals?.total ?? 0;
   const against = plannedAgainst(total, cash, banks);
 
   async function save() {
@@ -218,6 +229,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
     if (isNew && !sellerId) e.sellerId = fieldErr("required");
     const ce = channelError(channelId, channels);
     if (ce) e.salesChannelId = fieldErr(ce);
+    if (shipping && (!governorate || (delivery.loaded && listFee === undefined))) e.deliveryGovernorate = fieldErr(governorate ? "invalid" : "required");
     const money = paidInto();
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, rsv ? money : forMath(banks))));
     if (dsc.invalid && !buy) e.cashDiscount = sg(tr, "cashDiscountInvalid");
@@ -232,7 +244,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
     }
     setSaving(true);
     const body = {
-      ...(isNew && !isUser && branchId ? { branchId } : {}), ...(isNew ? { sellerId } : {}), invoiceType: type, salesChannelId: channelId, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
+      ...(isNew && !isUser && branchId ? { branchId } : {}), ...(isNew ? { sellerId } : {}), invoiceType: type, ...(shipping ? { deliveryGovernorate: governorate } : {}), salesChannelId: channelId, ...c.payload, ...deskChoices(form, payRows(cash, banks), l.payload), ...(payment === "visa" ? { payByVisa: true } : {}),
       ...(cashPaid(cash) > 0 ? { cash: cashPaid(cash) } : {}), bankPayments: sentBanks(rsv ? money : banks), ...(dsc.sent && !buy ? { cashDiscount: dsc.sent } : {}),
     };
     try {
@@ -260,7 +272,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
       else if (f.field === "manualSellPrice" || f.field === "manualBuyPrice") gen = d("desk.manualInvalid");
       else if (payKey) e[payKey] = texts[f.field];
       else if ((r = /^lines\.(\d+)\.(itemId|quantity)$/.exec(f.field))) e[`line${r[1]}${r[2] === "itemId" ? "Item" : "Count"}`] = texts[f.field];
-      else if (["customerName", "customerPhone", "nationalId", "cashDiscount", "branchId", "salesChannelId", "sellerId"].includes(f.field)) e[f.field] = texts[f.field];
+      else if (["customerName", "customerPhone", "nationalId", "cashDiscount", "branchId", "salesChannelId", "sellerId", "deliveryGovernorate"].includes(f.field)) e[f.field] = texts[f.field];
       else gen = texts[f.field] ?? tr.errorText(err.error);
     }
     if (!Object.keys(e).length && !gen && err.error.message !== "invalidFields") gen = tr.errorText(err.error);
@@ -348,9 +360,10 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const pickedSeller = sellers.find((x) => x.id === sellerId)?.name as string | undefined;
   const sellerName = (draft ? draft.sellerName || draft.employeeName : pickedSeller) ?? "";
   const creatorName = (draft ? draft.employeeName : me?.name) ?? "";
-  const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks) })) : "";
+  const waText = quote ? buildDeskMessage(messageInput(form, quote.q, quote.cash, { date: today(), branch: branchLabel, channel: channelName, seller: sellerName, customer: cust.customerName.trim(), nationalId: latinNumber(cust.nationalId.trim()), phone: latinNumber(cust.customerPhone.trim()), rows: payRows(cash, banks), delivery: shipping && governorate && !noGovernorate ? { name: governorateName(governorate, true), amount: fee } : undefined })) : "";
   const typedManual = manualPrice(rsv ? "" : operation === "sell" ? manual.sell : manual.buy);
-  const typeLabels: Record<string, string> = { sale: d("typeSale"), delivery: d("typeDelivery"), handover: L("تسليم", "Hand over"), reservation: L("حجز", "Reservation") };
+  // "delivery" is the old type some saved drafts hold: it reads تسليم, as on the invoices, so توصيل is the shipping type alone.
+  const typeLabels: Record<string, string> = { sale: d("typeSale"), delivery: L("تسليم", "Delivery"), handover: L("تسليم", "Hand over"), shipping: L("توصيل", "Shipping"), reservation: L("حجز", "Reservation") };
   // The account that received each Instapay or Visa line: asked where the money is really taken (Complete, and a reservation draft).
   const receivedInto = banks.map((b, i) => (!lineTakesAccount(b.method) && !b.bankAccountId && String(b.amount ?? "").trim() !== "")
     ? <div className="field" key={`pt${i}`} data-k={`bank${i}Account`} data-err={errs[`bank${i}Account`] ? "" : undefined}>
@@ -359,9 +372,12 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
         {errs[`bank${i}Account`] && <ErrBox>{errs[`bank${i}Account`]}</ErrBox>}
       </div> : null);
   const pick = (patch: () => void) => { touch(); patch(); };
-  const bar = draft ? (() => { const tt = draft.totals; const paid = against.planned;
-    if (quote && !kept) { const q = quote.q, c = quote.cash ?? q, disc = Math.max(0, c.beforeDiscountPiastres - c.totalPiastres); return { gold: q.beforeDiscountPiastres - q.feeTotalPiastres, making: q.feeTotalPiastres, gross: q.beforeDiscountPiastres, discount: disc, makingLeft: q.feeTotalPiastres - disc, paid, left: q.totalPiastres - paid }; }
-    return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid }; })() : null;
+  // The totals bar: of a saved draft, and of a new shipping one, so its delivery shows below before the first save.
+  const bar = draft || (shipping && quote) ? (() => { const paid = against.planned, ship = shipping ? { delivery: fee } : {};
+    if (quote && !kept) { const q = quote.q, c = quote.cash ?? q, disc = Math.max(0, c.beforeDiscountPiastres - c.totalPiastres); return { gold: q.beforeDiscountPiastres - q.feeTotalPiastres, making: q.feeTotalPiastres, gross: q.beforeDiscountPiastres, discount: disc, makingLeft: q.feeTotalPiastres - disc, paid, left: total - paid, ...ship }; }
+    if (!draft) return null;
+    const tt = draft.totals;
+    return { gold: tt.goldTotal, making: tt.makingTotal, gross: tt.grossTotal, discount: tt.discount, makingLeft: tt.makingTotal - tt.discount, paid, left: tt.total - paid, ...(draft.invoiceType === "shipping" ? { delivery: tt.deliveryFee } : {}) }; })() : null;
   const err = (k: string) => errs[k] && <ErrBox>{errs[k]}</ErrBox>;
   // Admin / Super admin, a desk-wide role (even on another user's draft), or the action complete-sales-draft (own draft only); hidden until the person is known; a Buy draft is a quote only
   const canComplete = canCompleteDraft(me, draft?.status, buy, draft?.invoiceType) && (!foreign || accountantEdits);
@@ -381,9 +397,9 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
   const shownPrice = (s: "sell" | "buy") => (price ? piastresText(metal === "silver" ? (s === "sell" ? price.silverSellPrice : price.silverBuyPrice) : s === "sell" ? price.sellPrice : price.buyPrice) : "—");
   // Karat 24 beside karat 21 (owner, 2026-11-18): the 21 price x 24 / 21, half up, the same rule every price uses (pricePerGram).
   const shown24 = (s: "sell" | "buy") => { const p21 = price ? (s === "sell" ? price.sellPrice : price.buyPrice) : null; const p = p21 == null ? null : pricePerGram({ sellPrice: p21, silverSellPrice: null }, "24"); return p === null ? "—" : piastresText(Number(p)); };
-  const totalText = kept ? piastresText(total) : quote ? piastresText(quote.q.totalPiastres) : "—";
+  const totalText = kept || quote ? piastresText(total) : "—";
   const statusText = price ? d("desk.priceOk") : price === null ? d("goldNone") : d("desk.priceReading");
-  const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone);
+  const custErr = Boolean(errs.customerName || errs.nationalId || errs.customerPhone || errs.deliveryGovernorate);
   // Progressive steps (owner, 2026-11-08): the branch first, then the pieces, then the customer and saving. A saved draft, and any error, shows everything.
   const payErr = Object.keys(errs).some((k) => k === "cash" || k === "sum" || k === "cashDiscount" || k.startsWith("bank"));
   const stepBranch = !(isNew && !isUser) || Boolean(branchId);
@@ -473,6 +489,9 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
                 <TextBox kind="text" name="customerName" label={`${d("customerName")} *`} placeholder={d("desk.phName")} value={cust.customerName} maxLength={100} error={errs.customerName} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerName: v })); }} />
                 <TextBox kind="code" name="nationalId" label={`${d("nationalId")} *`} placeholder={d("desk.phNid")} value={cust.nationalId} ltr maxLength={14} help={d("nationalIdHelp")} error={errs.nationalId} onChange={(v) => { touch(); setCust((c) => ({ ...c, nationalId: v })); }} />
                 <TextBox kind="phone" name="customerPhone" label={`${d("customerPhone")} *`} placeholder="01xxxxxxxxx" value={cust.customerPhone} ltr maxLength={PHONE_LENGTH} help={d("phoneHelp")} error={errs.customerPhone} onChange={(v) => { touch(); setCust((c) => ({ ...c, customerPhone: v })); }} />
+                {shipping && <DeliveryGovernorateField tr={tr} value={governorate} read={delivery} error={errs.deliveryGovernorate} disabled={readonly || saving}
+                  saved={draft?.deliveryGovernorate && (keptFee || listFee === undefined) ? { governorate: draft.deliveryGovernorate, pricePiastres: Number(draft.totals?.deliveryFee ?? 0) } : undefined}
+                  onChange={(v) => { touch(); setGovernorate(v); setErrs(({ deliveryGovernorate: _gone, ...rest }) => rest); }} />}
               </div>
             </Section>}
           </fieldset>
@@ -509,6 +528,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
                     <dt>{d(buy ? "desk.cashback" : "desk.workmanship")}</dt><dd id="sd-fees" dir="ltr">{piastresText(quote.q.feeTotalPiastres)}</dd>
                     {dsc.sent && !buy && <><dt>{d("desk.discountPercent")}</dt><dd dir="ltr">{dsc.sent.kind === "percent" ? `${dsc.sent.value}%` : piastresText(dsc.sent.value)}</dd></>}
                     {!buy && payment === "visa" && quote.cash && <><dt>{d("desk.pay.visa")} +{VISA_PERCENT}%</dt><dd dir="ltr">{piastresText(quote.q.totalPiastres)}</dd></>}
+                    {shipping && <><dt>{L("التوصيل", "Delivery")}</dt><dd id="sd-delivery" dir="ltr">{piastresText(fee)}</dd></>}
                     <dt>{d("desk.weight")}</dt><dd id="sd-weight" dir="ltr">{trimZeros(milligramsText(quote.q.weightMg))}</dd>
                     <dt>{d("desk.units")}</dt><dd id="sd-units" dir="ltr">{quote.q.units}</dd></>}
                 </dl>
@@ -528,7 +548,7 @@ export function DraftForm({ row, close, reload, tr }: CustomFormProps) {
                   <DeskPayRows tr={tr} cash={cash} onCash={(v) => { if (takesPayment) setGeneral(""); else touch(); setCash(v); setErrs(withoutPayErrors); }}
                     banks={banks} onBanks={(b) => { if (takesPayment) setGeneral(""); else touch(); setBanks(b as DeskBank[]); if (visaChosen(operation, b as DeskBank[])) setCash(""); setErrs(withoutPayErrors); }}
                     accounts={accountOptions(accounts)} methods={bankMethodChoices(operation)} methodLabel={(m) => d(`desk.pay.${m}`)} blank={() => blankDeskBank(operation)}
-                    total={kept ? total : quote?.q.totalPiastres} paid={cashPaid(cash) + bankPaid(banks)} errors={errs} />
+                    total={kept || quote ? total : undefined} paid={cashPaid(cash) + bankPaid(banks)} errors={errs} />
                   {rsv && receivedInto}
                   {rsv && payRefusal && <div className="note warn" role="alert" data-field-error id="sd-rsvpay"><b>{t("gold-sales", "reservations.paidInvalid", { paid: piastresText(payRefusal.paid), total: piastresText(payRefusal.total) })}</b></div>}
                   {!buy && payment === "visa" && <p className="tk-quiet">{L(`الفيزا تضيف ${VISA_PERCENT}% على الإجمالي.`, `Visa adds ${VISA_PERCENT}% to the total.`)}</p>}

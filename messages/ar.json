@@ -1547,7 +1547,8 @@
    "invoiceTypes": {
     "sale": "بيع",
     "delivery": "تسليم",
-    "handover": "تسليم"
+    "handover": "تسليم",
+    "shipping": "توصيل"
    },
    "customer": "العميل",
    "customerName": "اسم العميل",
@@ -1760,7 +1761,8 @@
    "makingChargePerGram": "المصنعية للجرام",
    "makingCharge": "المصنعية",
    "reservationTitle": "فاتورة حجز",
-   "reservationTitleSub": "RESERVATION"
+   "reservationTitleSub": "RESERVATION",
+   "delivery": "التوصيل ({governorate})"
   },
   "reservations": {
    "title": "حجز قطعة ذهب",

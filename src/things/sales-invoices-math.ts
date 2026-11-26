@@ -41,12 +41,13 @@ export const cashPaid = (typed: unknown) => typedPiastres(String(typed ?? "").tr
 // The totals bar (owner, 2026-11-05): without workmanship (gold), workmanship, with workmanship (gross), cash discount, paid, remaining.
 // lines: [{linePrice, goldValue}] ; discount: piastres taken off the workmanship ; made: the reservation an invoice fills (its totals rule) ;
 // cash: typed text ; banks: rows. making = gross - gold exactly, so the three always add up; makingLeft is the workmanship after the discount.
-export function totalsOf({ lines, discount, made, cash, banks }: { lines: any[]; discount: number; made?: any; cash: string; banks: Bank[] }) {
+// delivery (owner, 2026-11-26): the delivery price of a shipping sale, added to the total after the discount; left out on every other type.
+export function totalsOf({ lines, discount, made, cash, banks, delivery }: { lines: any[]; discount: number; made?: any; cash: string; banks: Bank[]; delivery?: number }) {
   const gross = made ? made.totals.grossTotal : sum(lines.map((l) => l.linePrice));
   const gold = made ? made.totals.goldTotal : sum(lines.map((l) => l.goldValue));
-  const total = gross - discount;
+  const total = gross - discount + (delivery ?? 0);
   const paid = (made?.totals.paid ?? 0) + cashPaid(cash) + bankPaid(banks);
-  return { gold, making: gross - gold, gross, discount, makingLeft: gross - gold - discount, total, paid, left: total - paid };
+  return { gold, making: gross - gold, gross, discount, makingLeft: gross - gold - discount, total, paid, left: total - paid, ...(delivery === undefined ? {} : { delivery }) };
 }
 
 // One row of bank payment: nothing typed = not sent; half a row needs the other half; an account once.

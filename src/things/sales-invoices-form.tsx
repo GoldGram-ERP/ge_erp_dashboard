@@ -23,6 +23,7 @@ import { pricePerGram } from "./item-math";
 import { Link as NavLink, useRouter } from "@/i18n/navigation";
 import { canOpen } from "@/nav/tree";
 import { ReservationForm } from "./sales-reservation-form";
+import { DeliveryGovernorateField, useDeliveryPrices } from "@/components/fields/DeliveryGovernorate";
 import { GiftFields, checkRecipient, type Recipient, type RecipientErrors } from "./sales-gift";
 import { PieceScanner } from "./piece-scanner";
 
@@ -73,6 +74,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const [recipient, setRecipient] = useState<Recipient>({ name: edit?.giftRecipientName ?? "", phone: edit?.giftRecipientPhone ?? "" });
   const [recipientErr, setRecipientErr] = useState<RecipientErrors>({});
   const [saving, setSaving] = useState(false);
+  const [governorate, setGovernorate] = useState<string>(edit?.deliveryGovernorate ?? "");
   const saveKey = useRef(newSaveKey());
   const edited = () => { saveKey.current = newSaveKey(); setShort(false); setPayRefusal(null); };
 
@@ -150,7 +152,12 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pricedKey, Boolean(made), edit?.id]);
   const d = made ? { value: made.totals.discount ?? 0, invalid: false, tooBig: false, sent: undefined } : mayDiscount(me!) ? readDiscount(kind, disc, base) : { value: 0, invalid: false, tooBig: false, sent: undefined };
-  const tot = totalsOf({ lines, discount: d.value, made, cash, banks });
+  // A shipping invoice (owner, 2026-11-26) adds its governorate's price to the total; a saved one keeps the price it was saved with.
+  const shipping = type === "shipping";
+  const delivery = useDeliveryPrices(shipping && !edit);
+  const fee = !shipping ? undefined : edit ? Number(edit.totals?.deliveryFee ?? 0) : (delivery.prices.find((p) => p.governorate === governorate)?.pricePiastres ?? 0);
+  const noGovernorate = shipping && !edit && !delivery.prices.some((p) => p.governorate === governorate);
+  const tot = totalsOf({ lines, discount: d.value, made, cash, banks, delivery: fee });
   const scannedOf = (ln: Row) => lines.filter((p) => fills(ln, p)).length;
   const allFilled = made ? made.lines.every((ln: Row) => scannedOf(ln) === ln.quantity) && lines.length === made.totals.quantity : true;
   const rules = checkedCustomer(tr);
@@ -162,8 +169,8 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   // A new invoice from a reservation uses the pieces it holds: it waits until every line has all its pieces, and has no piece box (issue #36).
   const fromHolds = Boolean(made) && !edit;
   const waitsForPieces = fromHolds && !made!.piecesComplete;
-  const may = open && lines.length > 0 && allFilled && tot.left === 0 && !saving && !d.invalid && !d.tooBig && !waitsForPieces;
-  const nothingToPay = Boolean(made) && made!.totals.remaining === 0;
+  const may = open && lines.length > 0 && allFilled && tot.left === 0 && !saving && !d.invalid && !d.tooBig && !waitsForPieces && !noGovernorate;
+  const nothingToPay = Boolean(made) && made!.totals.remaining + (fee ?? 0) === 0;
 
   // ── the piece box ──
   const addPiece = async (scanned?: string) => {
@@ -197,6 +204,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     if (!(e instanceof ApiFailure)) { setGeneral(L("حدث خطأ. حاول مرة أخرى.", "Something went wrong. Try again.")); return; }
     const key = e.error.message, v: any = e.error.values ?? {};
     const own = key === "reservationAlreadyInvoiced" || key === "reservationItemsMismatch";
+    if (shipping && !edit) delivery.refresh();   // the delivery price may have changed: read it again
     if (key === "reservationAlreadyInvoiced") { setTakenBy(Number(v.invoiceNumber ?? 0)); reloadReservation(); }
     if (key === "reservationItemsMismatch") setMismatch(Array.isArray(v.items) ? v.items.map((i: any) => ({ item: String(i.itemName ?? ""), karat: String(i.karat ?? ""), expected: Number(i.expected ?? 0), scanned: Number(i.scanned ?? 0) })) : []);
     const texts = backendFieldErrors(e.error, tr), out: Record<string, string> = {}, lerr: Record<string, string> = {};
@@ -209,7 +217,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
       else if ((row = /^lines\.(\d+)\.(pieceCode|linePrice)$/.exec(f.field))) { const line = lines[+row[1]]; if (line) lerr[line.pieceCode] = key === "pieceNotForSale" ? errorText({ message: key }) : texts[f.field]; }
       else if (f.field === "giftRecipientName" || f.field === "giftRecipientPhone") setRecipientErr((prev) => ({ ...prev, [f.field === "giftRecipientName" ? "name" : "phone"]: texts[f.field] }));
       else if (f.field === "lines") out.pieceCode = texts[f.field];
-      else if (["invoiceType", "branchId", "cashDiscount", "customerPhone", "customerName", "nationalId"].includes(f.field)) {
+      else if (["invoiceType", "branchId", "cashDiscount", "customerPhone", "customerName", "nationalId", "deliveryGovernorate"].includes(f.field)) {
         if (f.field.startsWith("customer") || f.field === "nationalId") cust.setError(f.field, { type: "server", message: texts[f.field] }); else out[f.field] = texts[f.field];
       } else gen = texts[f.field] ?? errorText(e.error);
     }
@@ -226,6 +234,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     if (!made && !(await cust.read())) e.customer = "x";
     Object.assign(e, payErrorTexts(tr, paymentErrors(cash, banks)));
     if (!lines.length) e.pieceCode = fe(tr, "required");
+    if (noGovernorate) e.deliveryGovernorate = fe(tr, "required");
     const rErr = gift ? checkRecipient(tr, recipient) : {};
     setRecipientErr(rErr);
     if (rErr.name || rErr.phone) e.giftRecipient = "x";
@@ -242,6 +251,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
     const body = {
       ...(isUser || edit ? {} : { branchId }),   // an edit never changes the branch, the type or the reservation
       ...(edit ? {} : { invoiceType: type }),
+      ...(shipping && !edit ? { deliveryGovernorate: governorate } : {}),   // an edit keeps the saved delivery
       ...(cash !== "" ? { cash: typedPiastres(cash) } : {}),
       bankPayments: sentBanks(banks),
       ...(d.sent && !made ? { cashDiscount: d.sent } : {}),   // the kind and the number typed; the backend works the discount out itself (a reservation invoice has the reservation's)
@@ -261,7 +271,7 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
   const typeCard = (
     <div className="field" data-k="invoiceType" data-err={errs.invoiceType ? "" : undefined}><label className="flabel">{m("invoiceType")} *</label>
       <Seg label={m("invoiceType")} value={type} onChange={(k) => { setType(k); setErrs({}); setGeneral(""); setSubmitted(false); edited(); }}
-        items={["sale", "delivery", ...(reservationId ? [] : ["reservation"])].map((k) => ({ id: k, label: k === "reservation" ? L("حجز", "Reservation") : m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />
+        items={["sale", "delivery", "shipping", ...(reservationId ? [] : ["reservation"])].map((k) => ({ id: k, label: k === "reservation" ? L("حجز", "Reservation") : m(`invoiceTypes.${k}`), attrs: { "data-type": k } }))} />
       {errs.invoiceType && <ErrBox>{errs.invoiceType}</ErrBox>}</div>
   );
   if (!edit && type === "reservation") {
@@ -340,6 +350,9 @@ export function SalesInvoiceForm({ close, reload, tr, row }: CustomFormProps) {
       )}
 
       {showCustomer && <div className="card" id="sec-customer"><h3>{m("customer")}</h3><FormFields form={cust} fields={checkedCustomer(tr, customerFields(tr, Boolean(made)))} />
+        {shipping && <div className="formgrid"><DeliveryGovernorateField tr={tr} value={governorate} read={delivery} disabled={Boolean(edit) || saving} error={errs.deliveryGovernorate}
+          saved={edit?.deliveryGovernorate ? { governorate: edit.deliveryGovernorate, pricePiastres: Number(edit.totals?.deliveryFee ?? 0) } : undefined}
+          onChange={(v) => { setGovernorate(v); setErrs(({ deliveryGovernorate: _gone, ...rest }) => rest); edited(); }} /></div>}
         <GiftFields tr={tr} on={gift} onToggle={(v) => { setGift(v); setRecipientErr({}); edited(); }} value={recipient} onChange={(v) => { setRecipient(v); setRecipientErr({}); }} errors={recipientErr} /></div>}
 
       {showPayment && (
