@@ -1,0 +1,30 @@
+/* The Price board's Animate UI controls, from the app tokens only. */
+.bd-act {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: background-color .15s var(--calm), border-color .15s var(--calm);
+}
+.bd-act.sm { min-height: 30px; padding: 0 10px; font-size: 13px; }
+.bd-act.quiet:hover { background: var(--gold-wash); border-color: var(--gold); }
+.bd-act.strong { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+.bd-act.strong:hover { background: color-mix(in oklab, var(--gold) 88%, black); }
+.bd-act:disabled { opacity: .5; cursor: not-allowed; }
+.bd-act:focus-visible, .bd-choice-item:focus-visible, .bd-tick:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.bd-choice { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--side); border: 1px solid var(--line); position: relative; }
+.bd-choice-item {
+  position: relative; z-index: 1; min-height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--ink-2); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap;
+}
+.bd-choice-item[data-pressed] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgb(43 37 25 / .12); }
+
+.bd-tick {
+  inline-size: 20px; block-size: 20px; flex: none; display: inline-grid; place-items: center; padding: 0;
+  border: 1.5px solid var(--line-strong); border-radius: 5px; background: var(--surface); color: var(--gold-ink); cursor: pointer;
+}
+.bd-tick[data-checked] { background: var(--gold); border-color: var(--gold); }
+.bd-tick-mark { display: grid; place-items: center; }
+.bd-tick-mark svg { inline-size: 14px; block-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) { .bd-act, .bd-choice-item { transition: none; } }

@@ -1,0 +1,13 @@
+/* Readout: one large number. App tokens only. */
+.ro{display:grid;gap:.125rem;justify-items:start;min-width:0}
+.ro-label{font-size:.8rem;color:var(--mute)}
+.ro-num{display:inline-flex;align-items:baseline;gap:.375rem;font-variant-numeric:tabular-nums;animation:ro-in .2s var(--calm)}
+.ro-num b{font-weight:700;letter-spacing:-.015em;line-height:1.15;color:var(--ink)}
+.ro-num small{font-size:.8rem;font-weight:600;color:var(--mute)}
+.ro-lg .ro-num b{font-size:1.75rem}
+.ro-md .ro-num b{font-size:1.25rem}
+.ro-empty{font-size:.9rem;color:var(--mute);line-height:1.6;padding-block:.35rem}
+.ro-caption{font-size:.78rem;color:var(--mute)}
+@keyframes ro-in{from{opacity:0;transform:translateY(4px)}}
+@media (prefers-reduced-motion:reduce){.ro-num{animation:ro-fade .2s}}
+@keyframes ro-fade{from{opacity:0}}

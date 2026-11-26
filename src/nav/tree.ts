@@ -17,6 +17,27 @@ export const NAV: NavGroup[] = [
     ]
    },
    {
+    "id": "desk-one",
+    "route": "/redesignedsales/one",
+    "screens": [
+     "gold-sales/sales-desk"
+    ]
+   },
+   {
+    "id": "desk-two",
+    "route": "/redesignedsales/two",
+    "screens": [
+     "gold-sales/sales-desk"
+    ]
+   },
+   {
+    "id": "board-new",
+    "route": "/redesignedsales/price-board",
+    "screens": [
+     "gold-sales/price-board"
+    ]
+   },
+   {
     "id": "price-board",
     "route": "/sales/price-board",
     "screens": [
@@ -267,6 +288,14 @@ export const NAV: NavGroup[] = [
    {
     "id": "item-fees",
     "route": "/setup/item-fees",
+    "screens": [
+     "administration/settings"
+    ]
+   },
+   // Price protection: the two windows and the tolerance. Admin and Super admin edit (the backend refuses anyone else); the same screen key as Settings.
+   {
+    "id": "price-protection",
+    "route": "/setup/price-protection",
     "screens": [
      "administration/settings"
     ]

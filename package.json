@@ -24,6 +24,8 @@
     "@tanstack/query-sync-storage-persister": "^5.105.3",
     "@tanstack/react-query": "^5.105.3",
     "@tanstack/react-query-persist-client": "^5.105.3",
+    "clsx": "2.1.1",
+    "lucide-react": "1.76.0",
     "motion": "^14.11.1",
     "next": "16.4.5",
     "next-intl": "^4.14.9",
@@ -32,6 +34,7 @@
     "react-dom": "19.3.0",
     "react-hook-form": "^7.91.0",
     "read-excel-file": "^9.3.14",
+    "tailwind-merge": "3.7.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
   },
